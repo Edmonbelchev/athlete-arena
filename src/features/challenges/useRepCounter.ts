@@ -23,6 +23,13 @@ export function useRepCounter({
   const currentRepsRef = useRef(initialReps);
 
   useEffect(() => {
+    if (initialReps <= currentRepsRef.current) {
+      if (currentRepsRef.current >= targetReps) {
+        setState('stopped');
+      }
+      return;
+    }
+
     currentRepsRef.current = initialReps;
     setCurrentReps(initialReps);
 

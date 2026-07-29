@@ -57,7 +57,7 @@ export default function FriendChallengeScreen() {
 
   const handleTimerExpire = useCallback(() => {
     setIsTimedOut(true);
-    void refresh();
+    void refresh({ silent: true });
   }, [refresh]);
 
   const { elapsedSeconds, secondsRemaining } = useFriendChallengeRaceTimer({
@@ -89,7 +89,7 @@ export default function FriendChallengeScreen() {
 
       try {
         await completeFriendChallenge(participantId, repCount);
-        await refresh();
+        await refresh({ silent: true });
       } catch (err) {
         setSyncError(formatUserError(err, 'Failed to sync repetition'));
       } finally {
@@ -112,7 +112,7 @@ export default function FriendChallengeScreen() {
     },
   });
 
-  const { phase: posePhase, processLandmarks } = useExercisePoseDetection({
+  const { phase: posePhase, trackingMessage, processLandmarks } = useExercisePoseDetection({
     exerciseType: challenge?.exerciseType ?? 'push_ups',
     enabled: canAttempt && raceStarted,
     onRepDetected: () => {
@@ -135,7 +135,7 @@ export default function FriendChallengeScreen() {
 
     try {
       await startFriendChallenge(participantId);
-      await refresh();
+      await refresh({ silent: true });
       repCounter.start();
     } catch (err) {
       setSyncError(formatUserError(err, 'Failed to start challenge timer'));
@@ -300,9 +300,17 @@ export default function FriendChallengeScreen() {
               <PoseGuidanceBanner exerciseType={challenge.exerciseType} />
 
               {autoRepCounting ? (
-                <Text style={StyleSheet.flatten([styles.phaseLabel, { color: theme.textSecondary }])}>
-                  Phase: {posePhase} · auto counting
-                </Text>
+                <>
+                  <Text style={StyleSheet.flatten([styles.phaseLabel, { color: theme.textSecondary }])}>
+                    Phase: {posePhase}
+                    {trackingMessage ? '' : ' · counting'}
+                  </Text>
+                  {trackingMessage ? (
+                    <Text style={StyleSheet.flatten([styles.trackingMessage, { color: theme.streak }])}>
+                      {trackingMessage}
+                    </Text>
+                  ) : null}
+                </>
               ) : null}
             </>
           )}
@@ -404,6 +412,12 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
     textAlign: 'center',
     textTransform: 'uppercase',
+  },
+  trackingMessage: {
+    fontSize: 13,
+    fontWeight: '700',
+    lineHeight: 18,
+    textAlign: 'center',
   },
   progressTrack: {
     height: 12,

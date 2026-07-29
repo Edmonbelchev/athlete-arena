@@ -1,4 +1,4 @@
-import { isLandmarkVisible, type PoseLandmark } from './landmarks';
+import { isLandmarkDrawable, type PoseLandmark } from './landmarks';
 
 /** MediaPipe BlazePose skeleton connections (33 landmarks). */
 export const POSE_CONNECTIONS: ReadonlyArray<readonly [number, number]> = [
@@ -110,7 +110,7 @@ export function drawPoseSkeleton(
   ctx.fillStyle = style.jointColor;
 
   for (const landmark of landmarks) {
-    if (!isLandmarkVisible(landmark) || (landmark.visibility ?? 1) < style.minVisibility) {
+    if (!isLandmarkDrawable(landmark) || (landmark.visibility ?? 1) < style.minVisibility) {
       continue;
     }
 

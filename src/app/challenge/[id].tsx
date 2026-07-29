@@ -20,7 +20,7 @@ export default function ChallengeScreen() {
   const theme = useTheme();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { challenge, isLoading, error, refresh } = useChallenge(id);
+  const { challenge, isLoading, error, applyChallenge } = useChallenge(id);
   const [syncError, setSyncError] = useState<string | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
   const isSyncingRef = useRef(false);
@@ -43,8 +43,8 @@ export default function ChallengeScreen() {
       setSyncError(null);
 
       try {
-        await completeChallenge(activeChallenge.id, repCount);
-        await refresh();
+        const updated = await completeChallenge(activeChallenge.id, repCount);
+        applyChallenge(updated);
       } catch (err) {
         setSyncError(formatUserError(err, 'Failed to sync repetition'));
       } finally {
@@ -52,7 +52,7 @@ export default function ChallengeScreen() {
         setIsSyncing(false);
       }
     },
-    [refresh],
+    [applyChallenge],
   );
 
   const repCounter = useRepCounter({
@@ -64,7 +64,7 @@ export default function ChallengeScreen() {
     },
   });
 
-  const { phase: posePhase, processLandmarks } = useExercisePoseDetection({
+  const { phase: posePhase, trackingMessage, processLandmarks } = useExercisePoseDetection({
     exerciseType: challenge?.exercise_type ?? 'push_ups',
     enabled: Boolean(challenge) && !isCompleted,
     onRepDetected: () => {
@@ -123,9 +123,17 @@ export default function ChallengeScreen() {
           {!isCompleted ? <PoseGuidanceBanner exerciseType={challenge.exercise_type} /> : null}
 
           {!isCompleted && autoRepCounting ? (
-            <Text style={StyleSheet.flatten([styles.phaseLabel, { color: theme.textSecondary }])}>
-              Phase: {posePhase} · auto counting
-            </Text>
+            <>
+              <Text style={StyleSheet.flatten([styles.phaseLabel, { color: theme.textSecondary }])}>
+                Phase: {posePhase}
+                {trackingMessage ? '' : ' · counting'}
+              </Text>
+              {trackingMessage ? (
+                <Text style={StyleSheet.flatten([styles.trackingMessage, { color: theme.streak }])}>
+                  {trackingMessage}
+                </Text>
+              ) : null}
+            </>
           ) : null}
 
           <View style={StyleSheet.flatten([styles.progressTrack, { backgroundColor: theme.backgroundSelected }])}>
@@ -209,6 +217,12 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
     textAlign: 'center',
     textTransform: 'uppercase',
+  },
+  trackingMessage: {
+    fontSize: 13,
+    fontWeight: '700',
+    lineHeight: 18,
+    textAlign: 'center',
   },
   progressTrack: {
     height: 12,

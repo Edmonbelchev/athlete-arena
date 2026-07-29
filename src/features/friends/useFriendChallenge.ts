@@ -9,7 +9,7 @@ export function useFriendChallenge(participantId: string | undefined) {
   const [isLoading, setIsLoading] = useState(Boolean(participantId));
   const [error, setError] = useState<string | null>(null);
 
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(async (options?: { silent?: boolean }) => {
     if (!participantId) {
       setChallenge(null);
       setIsLoading(false);
@@ -17,7 +17,9 @@ export function useFriendChallenge(participantId: string | undefined) {
       return;
     }
 
-    setIsLoading(true);
+    if (!options?.silent) {
+      setIsLoading(true);
+    }
     setError(null);
 
     try {

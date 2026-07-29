@@ -9,6 +9,7 @@ import {
 } from '@/features/challenges/pose/drawPoseSkeleton';
 import type { PoseLandmark } from '@/features/challenges/pose/landmarks';
 import { createWebPoseLandmarker, type WebPoseLandmarker } from '@/lib/mediapipeWeb';
+import { POSE_QUALITY } from '@/constants/poseDetection';
 import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -122,7 +123,7 @@ export function CameraPreview({
                   lineWidth: 3,
                   jointColor: '#FFFFFF',
                   jointRadius: 4,
-                  minVisibility: 0.45,
+                  minVisibility: POSE_QUALITY.skeletonMinVisibility,
                 });
                 onLandmarksRef.current?.(mapped);
                 setTrackingBody(true);

@@ -1,4 +1,7 @@
-import { POSE_LANDMARK_MIN_VISIBILITY } from '@/constants/poseDetection';
+import {
+  POSE_LANDMARK_MIN_VISIBILITY,
+  POSE_REP_MIN_VISIBILITY,
+} from '@/constants/poseDetection';
 
 export const PoseLandmarkIndex = {
   LEFT_SHOULDER: 11,
@@ -27,10 +30,15 @@ export interface Point2D {
   y: number;
 }
 
-const MIN_VISIBILITY = POSE_LANDMARK_MIN_VISIBILITY;
+const MIN_VISIBILITY = POSE_REP_MIN_VISIBILITY;
+const DRAW_MIN_VISIBILITY = POSE_LANDMARK_MIN_VISIBILITY;
 
 export function isLandmarkVisible(landmark: PoseLandmark | undefined): landmark is PoseLandmark {
   return Boolean(landmark && (landmark.visibility ?? 1) >= MIN_VISIBILITY);
+}
+
+export function isLandmarkDrawable(landmark: PoseLandmark | undefined): landmark is PoseLandmark {
+  return Boolean(landmark && (landmark.visibility ?? 1) >= DRAW_MIN_VISIBILITY);
 }
 
 /** Angle at point B formed by A-B-C, in degrees. */
@@ -101,6 +109,32 @@ export function averageElbowAngle(landmarks: PoseLandmark[]): number | null {
       (value): value is number => value !== null,
     ),
   );
+}
+
+/** Most-bent visible elbow — better depth signal than averaging both arms. */
+export function pushUpElbowAngle(landmarks: PoseLandmark[]): number | null {
+  const angles = [getElbowAngle(landmarks, 'left'), getElbowAngle(landmarks, 'right')].filter(
+    (value): value is number => value !== null,
+  );
+
+  if (angles.length === 0) {
+    return null;
+  }
+
+  return Math.min(...angles);
+}
+
+/** Most-bent visible knee — better depth signal than averaging both legs. */
+export function squatKneeAngle(landmarks: PoseLandmark[]): number | null {
+  const angles = [getKneeAngle(landmarks, 'left'), getKneeAngle(landmarks, 'right')].filter(
+    (value): value is number => value !== null,
+  );
+
+  if (angles.length === 0) {
+    return null;
+  }
+
+  return Math.min(...angles);
 }
 
 export function averageKneeAngle(landmarks: PoseLandmark[]): number | null {

@@ -4,11 +4,16 @@ import { getChallengeById, startChallenge } from '@/services/challengeService';
 import { formatUserError } from '@/lib/errors';
 import type { DailyChallenge } from '@/types';
 
+interface RefreshOptions {
+  silent?: boolean;
+}
+
 interface UseChallengeResult {
   challenge: DailyChallenge | null;
   isLoading: boolean;
   error: string | null;
-  refresh: () => Promise<void>;
+  refresh: (options?: RefreshOptions) => Promise<void>;
+  applyChallenge: (updated: DailyChallenge) => void;
 }
 
 export function useChallenge(challengeId: string | undefined): UseChallengeResult {
@@ -16,7 +21,12 @@ export function useChallenge(challengeId: string | undefined): UseChallengeResul
   const [isLoading, setIsLoading] = useState(Boolean(challengeId));
   const [error, setError] = useState<string | null>(null);
 
-  const refresh = useCallback(async () => {
+  const applyChallenge = useCallback((updated: DailyChallenge) => {
+    setChallenge(updated);
+    setError(null);
+  }, []);
+
+  const refresh = useCallback(async (options?: RefreshOptions) => {
     if (!challengeId) {
       setChallenge(null);
       setIsLoading(false);
@@ -24,7 +34,9 @@ export function useChallenge(challengeId: string | undefined): UseChallengeResul
       return;
     }
 
-    setIsLoading(true);
+    if (!options?.silent) {
+      setIsLoading(true);
+    }
     setError(null);
 
     try {
@@ -60,5 +72,6 @@ export function useChallenge(challengeId: string | undefined): UseChallengeResul
     isLoading,
     error,
     refresh,
+    applyChallenge,
   };
 }
