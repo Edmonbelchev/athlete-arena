@@ -1,56 +1,147 @@
-# Welcome to your Expo app 👋
+# Exercise Challenger
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Daily fitness challenges with pose-based rep counting, XP, streaks, and profiles. Built with Expo (SDK 57), React Native, and Supabase.
 
-## Get started
+## Features
 
-1. Install dependencies
+- Register / login with persistent sessions
+- One random daily challenge (push-ups or squats)
+- Automatic rep counting via MediaPipe pose detection
+- XP, levels, and streak tracking
+- Profile stats and editable display name
 
-   ```bash
-   npm install
-   ```
+## Quick start
 
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+### 1. Install dependencies
 
 ```bash
-npm run reset-project
+cd exercise-challenger
+npm install
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+### 2. Configure environment
 
-### Other setup steps
+```bash
+cp .env.example .env
+```
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+Set your Supabase project values:
 
-## Learn more
+```env
+EXPO_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+EXPO_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+### 3. Set up Supabase
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+In the [Supabase SQL Editor](https://supabase.com/dashboard), run:
 
-## Join the community
+1. **`supabase/setup.sql`** - core tables and daily challenges
+2. **`supabase/migrations/004_friends.sql`** - friends + custom friend challenges
+3. **`supabase/migrations/005_friend_challenge_timer.sql`** - optional timed friend challenges
 
-Join our community of developers creating universal apps.
+Verify with `supabase/verify.sql`. See [supabase/README.md](./supabase/README.md) for details.
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+### 4. Download the pose model (native builds)
+
+Required for on-device pose detection in iOS/Android dev builds:
+
+```bash
+mkdir -p assets/models
+curl -L -o assets/models/pose_landmarker_lite.task \
+  "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/latest/pose_landmarker_lite.task"
+```
+
+### 5. Run the app
+
+**Web** (auto rep counting works immediately):
+
+```bash
+npm run web
+```
+
+**Expo Go** (camera preview + manual simulate rep - no native pose):
+
+```bash
+npm start
+```
+
+**Development build** (full native pose detection):
+
+```bash
+# Install EAS CLI once: npm i -g eas-cli
+eas login
+eas build --profile development --platform ios   # or android
+
+# Or build locally:
+npx expo prebuild
+npx expo run:ios    # requires Xcode
+npx expo run:android
+```
+
+## Platform matrix
+
+| Platform | Auth & challenges | Auto rep counting |
+|----------|-------------------|-------------------|
+| Web | Yes | Yes (MediaPipe CDN) |
+| Expo Go | Yes | Manual simulate only |
+| Dev / prod build | Yes | Yes (Vision Camera + MediaPipe) |
+
+## Project structure
+
+```
+src/
+  app/              Expo Router screens
+  components/       UI + camera previews
+  features/         Auth, challenges, profile, pose engines
+  lib/              Supabase, env, MediaPipe web loader
+  services/         Supabase RPC wrappers
+supabase/           SQL migrations and setup
+assets/models/      MediaPipe .task model (native builds)
+```
+
+## Pose detection tuning
+
+Thresholds live in `src/constants/poseDetection.ts`:
+
+- Push-up elbow angles (up / down / hysteresis)
+- Squat knee angles
+- Minimum landmark visibility
+- Hold frames before rep completion
+
+Rep logic is in `src/features/challenges/pose/`.
+
+## EAS Build profiles
+
+| Profile | Purpose |
+|---------|---------|
+| `development` | Dev client with native modules (pose detection) |
+| `preview` | Internal testing |
+| `production` | App Store / Play Store release |
+
+Configure in [eas.json](./eas.json).
+
+## Production checklist
+
+- [ ] Run `supabase/setup.sql` on production Supabase project
+- [ ] Re-enable email confirmation in Supabase Auth settings
+- [ ] Set production env vars in EAS secrets
+- [ ] Test pose detection on real devices (lighting, distance, angles)
+- [ ] Build with `eas build --profile production`
+
+## Scripts
+
+| Command | Description |
+|---------|-------------|
+| `npm start` | Expo dev server |
+| `npm run web` | Web dev server |
+| `npm run ios` | iOS simulator (requires prebuild) |
+| `npm run android` | Android emulator (requires prebuild) |
+| `npm run lint` | ESLint |
+
+## Tech stack
+
+- Expo SDK 57, Expo Router, TypeScript
+- Supabase (auth, Postgres, RLS, RPCs)
+- MediaPipe Pose Landmarker (web CDN + native dev build)
+- react-native-vision-camera (native dev builds)
