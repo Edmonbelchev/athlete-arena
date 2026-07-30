@@ -5,6 +5,7 @@ import { createClient, type SupabaseClientOptions } from '@supabase/supabase-js'
 import { env, getSupabaseConfigError } from '@/lib/env';
 import type { Database } from '@/types/database';
 
+import { applyRealtimeTransport } from './supabaseRealtime';
 import { supabaseStorage } from './supabaseStorage';
 
 const configError = getSupabaseConfigError();
@@ -23,16 +24,7 @@ function getClientOptions(): SupabaseClientOptions<'public'> {
     },
   };
 
-  if (typeof window === 'undefined') {
-    try {
-      // Node SSR (static web export) needs a WebSocket implementation.
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const WebSocket = require('ws');
-      options.realtime = { transport: WebSocket };
-    } catch {
-      // Realtime is client-only; SSR only needs auth/rest.
-    }
-  }
+  applyRealtimeTransport(options);
 
   return options;
 }
