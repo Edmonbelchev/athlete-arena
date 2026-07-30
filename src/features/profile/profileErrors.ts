@@ -21,12 +21,12 @@ export function getProfileErrorMessage(error: unknown): string {
     return 'Profile stats cannot be edited.';
   }
 
-  if (message.includes('Bucket not found') || message.includes('avatars')) {
-    return 'Avatar storage is not set up yet. Run migration 011_avatar_storage.sql in Supabase.';
+  if (message.includes('Not enough coins')) {
+    return 'You do not have enough coins for this item.';
   }
 
-  if (message.includes('Payload too large') || message.includes('maximum allowed size')) {
-    return 'Image must be 5 MB or smaller.';
+  if (message.includes('Item not owned')) {
+    return 'You need to own this item before equipping it.';
   }
 
   return message;

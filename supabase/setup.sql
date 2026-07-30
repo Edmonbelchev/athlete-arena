@@ -171,12 +171,39 @@ create policy "Users can view own challenges"
 -- 3. RPC FUNCTIONS
 -- -----------------------------------------------------------------------------
 
-create or replace function public.calculate_level(p_total_xp integer)
+create or replace function public.xp_required_for_level(p_level integer)
 returns integer
 language sql
 immutable
 as $$
-  select floor(greatest(p_total_xp, 0) / 500.0)::integer + 1;
+  select 500 + greatest(p_level - 1, 0) * 50;
+$$;
+
+create or replace function public.xp_for_level(p_level integer)
+returns integer
+language sql
+immutable
+as $$
+  select case
+    when p_level <= 1 then 0
+    else (p_level - 1) * (500 + 25 * (p_level - 2))
+  end;
+$$;
+
+create or replace function public.calculate_level(p_total_xp integer)
+returns integer
+language plpgsql
+immutable
+as $$
+declare
+  v_level integer := 1;
+begin
+  while public.xp_for_level(v_level + 1) <= greatest(p_total_xp, 0) loop
+    v_level := v_level + 1;
+  end loop;
+
+  return v_level;
+end;
 $$;
 
 create or replace function public.pick_daily_challenge_tier(

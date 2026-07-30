@@ -1,5 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { ProfileAvatar } from '@/components/profile/ProfileAvatar';
 import { Radius, Spacing } from '@/constants/theme';
 import type { FriendSummary } from '@/types/friends';
 import { useTheme } from '@/hooks/use-theme';
@@ -25,15 +26,21 @@ export function FriendListItem({ friend, onPress, onChallenge }: FriendListItemP
           opacity: pressed ? 0.85 : 1,
         },
       ]}>
-      <View style={[styles.avatar, { backgroundColor: theme.primary }]}>
-        <Text style={styles.avatarText}>{displayName.charAt(0).toUpperCase()}</Text>
-      </View>
+      <ProfileAvatar
+        uri={friend.avatarUrl}
+        name={displayName}
+        size={44}
+        shopAvatar={friend.avatar}
+        frame={friend.frame}
+      />
+
       <View style={styles.info}>
         <Text style={[styles.name, { color: theme.text }]}>{displayName}</Text>
         <Text style={[styles.meta, { color: theme.textSecondary }]}>
           @{friend.username} · Lvl {friend.level} · {friend.currentStreak} day streak
         </Text>
       </View>
+
       {onChallenge ? (
         <Pressable
           onPress={onChallenge}
@@ -53,18 +60,6 @@ const styles = StyleSheet.create({
     borderRadius: Radius.lg,
     borderWidth: 1,
     gap: Spacing.three,
-  },
-  avatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarText: {
-    color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: '800',
   },
   info: {
     flex: 1,

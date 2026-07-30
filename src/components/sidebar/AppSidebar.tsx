@@ -1,4 +1,3 @@
-import { Image } from 'expo-image';
 import { Href, router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import {
@@ -15,15 +14,18 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AchievementBadges } from '@/components/sidebar/AchievementBadges';
 import { DailyMotivationCard } from '@/components/sidebar/DailyMotivationCard';
 import { ThemeToggle } from '@/components/sidebar/ThemeToggle';
+import { CoinBadge } from '@/components/shop/CoinBadge';
+import { ProfileAvatar } from '@/components/profile/ProfileAvatar';
 import { AppIcon } from '@/components/ui/AppIcon';
 import { XPProgressBar } from '@/components/ui/XPProgressBar';
-import { getNextAchievements, getUnlockedAchievements } from '@/constants/achievements';
+import { getNextAchievements, getRecentUnlockedAchievements } from '@/features/achievements/achievementUtils';
+import { useAchievements } from '@/features/achievements/useAchievements';
 import type { AppIconName } from '@/constants/icons';
 import { Radius, Spacing } from '@/constants/theme';
 import { getAuthErrorMessage } from '@/features/auth/authErrors';
 import { useAuth } from '@/features/auth';
 import { useProfile } from '@/features/profile/useProfile';
-import { useProfileStats } from '@/features/profile/useProfileStats';
+import { useShop } from '@/features/shop/ShopProvider';
 import { useSidebar } from '@/features/sidebar/SidebarProvider';
 import { useThemePreference } from '@/features/theme/ThemePreferenceProvider';
 import { xpProgressInCurrentLevel } from '@/features/xp/levelUtils';
@@ -38,6 +40,8 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { label: 'Home', icon: 'home', href: '/(tabs)' },
   { label: 'Profile', icon: 'profile', href: '/(tabs)/profile' },
+  { label: 'Shop', icon: 'gift', href: '/profile/shop' },
+  { label: 'Achievements', icon: 'medal', href: '/profile/achievements' },
   { label: 'History', icon: 'history', href: '/profile/history' },
   { label: 'Friends', icon: 'friends', href: '/(tabs)/friends' },
 ];
@@ -50,27 +54,16 @@ export function AppSidebar() {
   const { preference, setPreference } = useThemePreference();
   const { signOut } = useAuth();
   const { profile } = useProfile();
-  const { stats } = useProfileStats();
+  const { summary, equippedAvatar, equippedFrame } = useShop();
+  const { achievements } = useAchievements({ syncOnLoad: false });
   const [logoutError, setLogoutError] = useState<string | null>(null);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const sidebarWidth = Math.min(width * 0.86, 340);
   const displayName = profile?.display_name ?? profile?.username ?? 'Athlete';
   const totalXp = profile?.total_xp ?? 0;
   const xpProgress = xpProgressInCurrentLevel(totalXp);
-  const unlockedAchievements = getUnlockedAchievements({
-    level: xpProgress.level,
-    totalXp,
-    currentStreak: profile?.current_streak ?? 0,
-    longestStreak: profile?.longest_streak ?? 0,
-    stats,
-  });
-  const upcomingAchievements = getNextAchievements({
-    level: xpProgress.level,
-    totalXp,
-    currentStreak: profile?.current_streak ?? 0,
-    longestStreak: profile?.longest_streak ?? 0,
-    stats,
-  });
+  const unlockedAchievements = getRecentUnlockedAchievements(achievements);
+  const upcomingAchievements = getNextAchievements(achievements);
 
   const navigate = useCallback(
     (href: Href) => {
@@ -119,19 +112,20 @@ export function AppSidebar() {
             bounces={false}>
             <View style={styles.header}>
               <View style={styles.profileRow}>
-                {profile?.avatar_url ? (
-                  <Image source={{ uri: profile.avatar_url }} style={styles.avatarImage} />
-                ) : (
-                  <View style={StyleSheet.flatten([styles.avatarFallback, { backgroundColor: theme.primary }])}>
-                    <Text style={styles.avatarText}>{displayName.charAt(0).toUpperCase()}</Text>
-                  </View>
-                )}
+                <ProfileAvatar
+                  uri={profile?.avatar_url}
+                  name={displayName}
+                  size={48}
+                  shopAvatar={equippedAvatar}
+                  frame={equippedFrame}
+                />
 
                 <View style={styles.greetingBlock}>
                   <Text style={StyleSheet.flatten([styles.hello, { color: theme.text }])}>Hello,</Text>
                   <Text style={StyleSheet.flatten([styles.displayName, { color: theme.textSecondary }])}>
                     {displayName}
                   </Text>
+                  <CoinBadge amount={summary.coinBalance} />
                 </View>
               </View>
 
@@ -157,7 +151,11 @@ export function AppSidebar() {
               targetXp={xpProgress.xpToNextLevel}
             />
 
-            <AchievementBadges unlocked={unlockedAchievements} upcoming={upcomingAchievements} />
+            <AchievementBadges
+              unlocked={unlockedAchievements}
+              upcoming={upcomingAchievements}
+              onViewAll={() => navigate('/profile/achievements')}
+            />
 
             <ThemeToggle preference={preference} onChange={setPreference} />
 

@@ -1,16 +1,17 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import { AppIcon } from '@/components/ui/AppIcon';
-import type { Achievement } from '@/constants/achievements';
 import { Radius, Spacing } from '@/constants/theme';
+import type { AchievementRecord } from '@/types/achievements';
 import { useTheme } from '@/hooks/use-theme';
 
 interface AchievementBadgesProps {
-  unlocked: Achievement[];
-  upcoming: Achievement[];
+  unlocked: AchievementRecord[];
+  upcoming: AchievementRecord[];
+  onViewAll?: () => void;
 }
 
-export function AchievementBadges({ unlocked, upcoming }: AchievementBadgesProps) {
+export function AchievementBadges({ unlocked, upcoming, onViewAll }: AchievementBadgesProps) {
   const theme = useTheme();
 
   if (unlocked.length === 0 && upcoming.length === 0) {
@@ -19,7 +20,16 @@ export function AchievementBadges({ unlocked, upcoming }: AchievementBadgesProps
 
   return (
     <View style={styles.container}>
-      <Text style={StyleSheet.flatten([styles.title, { color: theme.textSecondary }])}>ACHIEVEMENTS</Text>
+      <View style={styles.header}>
+        <Text style={StyleSheet.flatten([styles.title, { color: theme.textSecondary }])}>ACHIEVEMENTS</Text>
+        {onViewAll ? (
+          <Text
+            onPress={onViewAll}
+            style={StyleSheet.flatten([styles.viewAll, { color: theme.primary }])}>
+            View all
+          </Text>
+        ) : null}
+      </View>
 
       {unlocked.length > 0 ? (
         <View style={styles.badgeRow}>
@@ -32,7 +42,7 @@ export function AchievementBadges({ unlocked, upcoming }: AchievementBadgesProps
               ])}>
               <AppIcon name={achievement.icon} size={20} color={theme.primary} />
               <Text style={StyleSheet.flatten([styles.badgeLabel, { color: theme.text }])}>
-                {achievement.label}
+                {achievement.title}
               </Text>
             </View>
           ))}
@@ -66,14 +76,22 @@ const styles = StyleSheet.create({
   container: {
     gap: Spacing.two,
   },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
   title: {
     fontSize: 11,
     fontWeight: '700',
     letterSpacing: 1.1,
   },
+  viewAll: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
   badgeRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
     gap: Spacing.two,
   },
   badge: {

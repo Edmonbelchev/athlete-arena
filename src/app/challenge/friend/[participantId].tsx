@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { CameraPreview } from '@/components/CameraPreview';
 import { PoseGuidanceBanner } from '@/components/PoseGuidanceBanner';
+import { EmoteDisplay } from '@/components/shop/EmoteDisplay';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { formatExerciseLabel } from '@/constants/challenges';
 import { formatRaceTime, formatRaceTimeLimit } from '@/constants/friendChallenges';
@@ -14,6 +15,7 @@ import { useRepCounter } from '@/features/challenges/useRepCounter';
 import { useAuth } from '@/features/auth';
 import { useFriendChallenge } from '@/features/friends/useFriendChallenge';
 import { useFriendChallengeRaceTimer } from '@/features/friends/useFriendChallengeRaceTimer';
+import { useShop } from '@/features/shop/ShopProvider';
 import {
   completeFriendChallenge,
   startFriendChallenge,
@@ -37,6 +39,7 @@ export default function FriendChallengeScreen() {
   const { session } = useAuth();
   const { participantId } = useLocalSearchParams<{ participantId: string }>();
   const { challenge, isLoading, error, refresh } = useFriendChallenge(participantId);
+  const { equippedEmote } = useShop();
   const [syncError, setSyncError] = useState<string | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
   const [isTimedOut, setIsTimedOut] = useState(false);
@@ -224,6 +227,7 @@ export default function FriendChallengeScreen() {
           <Text style={[styles.completedTitle, { color: winResult ? theme.success : theme.danger }]}>
             {winResult ? 'YOU WON THE RACE' : 'YOU LOST THE RACE'}
           </Text>
+          {winResult ? <EmoteDisplay emoji={equippedEmote} /> : null}
           <Text style={[styles.completedReward, { color: theme.xp }]}>+{earnedXp} XP earned</Text>
           <Text style={[styles.opponentProgress, { color: theme.textSecondary }]}>
             You {formatRaceTime(myTime)} · {opponentName} {formatRaceTime(opponentTime)}
@@ -247,6 +251,7 @@ export default function FriendChallengeScreen() {
     return (
       <View style={[styles.completedBanner, { backgroundColor: theme.backgroundElement, borderColor: theme.success }]}>
         <Text style={[styles.completedTitle, { color: theme.success }]}>CHALLENGE COMPLETE</Text>
+        <EmoteDisplay emoji={equippedEmote} />
         <Text style={[styles.completedReward, { color: theme.xp }]}>+{earnedXp} XP earned</Text>
         <Text style={[styles.opponentProgress, { color: theme.textSecondary }]}>
           {opponentName}: {challenge.opponentCompletedReps}/{challenge.targetReps} reps
@@ -265,6 +270,14 @@ export default function FriendChallengeScreen() {
           <Text style={StyleSheet.flatten([styles.exercise, { color: theme.textSecondary }])}>
             Speed race vs {opponentName} · {formatExerciseLabel(challenge.exerciseType, true)}
           </Text>
+          {challenge.creatorEmoteEmoji && !challenge.isCreator ? (
+            <View style={styles.creatorEmoteRow}>
+              <Text style={StyleSheet.flatten([styles.creatorEmoteLabel, { color: theme.textSecondary }])}>
+                Challenge emote
+              </Text>
+              <EmoteDisplay emoji={challenge.creatorEmoteEmoji} size="sm" />
+            </View>
+          ) : null}
           <Text style={StyleSheet.flatten([styles.reps, { color: theme.text }])}>
             {repCounter.currentReps} / {challenge.targetReps}
           </Text>
@@ -449,6 +462,16 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
     textAlign: 'center',
+  },
+  creatorEmoteRow: {
+    alignItems: 'center',
+    gap: Spacing.one,
+  },
+  creatorEmoteLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
   },
   error: {
     fontSize: 14,

@@ -14,11 +14,13 @@ import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useDailyChallenge } from '@/features/challenges/useDailyChallenge';
 import { useFriendChallenges } from '@/features/friends/useFriendChallenges';
 import { useProfile } from '@/features/profile/useProfile';
+import { formatUserError } from '@/lib/errors';
+import { useAchievementUnlock } from '@/features/achievements/AchievementUnlockProvider';
+import { useShop } from '@/features/shop/ShopProvider';
 import {
   acceptFriendChallenge,
   declineFriendChallenge,
 } from '@/services/friendChallengeService';
-import { formatUserError } from '@/lib/errors';
 import { xpProgressInCurrentLevel } from '@/features/xp/levelUtils';
 import { useTheme } from '@/hooks/use-theme';
 import { useChallengeNotificationRefresh } from '@/features/notifications/useChallengeNotificationRefresh';
@@ -47,6 +49,8 @@ export default function HomeScreen() {
   } = useFriendChallenges();
   const [busyChallengeId, setBusyChallengeId] = useState<string | null>(null);
   const [friendActionError, setFriendActionError] = useState<string | null>(null);
+  const { syncAndCelebrate } = useAchievementUnlock();
+  const { refresh: refreshShop } = useShop();
 
   const isLoading = isProfileLoading || isChallengeLoading || isFriendChallengesLoading;
   const error = profileError ?? challengeError ?? friendActionError;
@@ -58,7 +62,13 @@ export default function HomeScreen() {
 
   async function handleRefresh() {
     setFriendActionError(null);
-    await Promise.all([refreshProfile(), refreshChallenge(), refreshFriendChallenges()]);
+    await Promise.all([
+      refreshProfile(),
+      refreshChallenge(),
+      refreshFriendChallenges(),
+      syncAndCelebrate().catch(() => []),
+      refreshShop().catch(() => undefined),
+    ]);
   }
 
   useChallengeNotificationRefresh(handleRefresh);

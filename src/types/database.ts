@@ -38,6 +38,8 @@ export interface FriendChallengeRpcRow {
   opponent_started_at: string | null;
   winner_user_id: string | null;
   resolved_at: string | null;
+  creator_emote_id: string | null;
+  creator_emote_emoji: string | null;
 }
 
 export interface Database {
@@ -53,6 +55,7 @@ export interface Database {
           level: number;
           current_streak: number;
           longest_streak: number;
+          coin_balance: number;
           created_at: string;
           updated_at: string;
         };
@@ -65,6 +68,7 @@ export interface Database {
           level?: number;
           current_streak?: number;
           longest_streak?: number;
+          coin_balance?: number;
           created_at?: string;
           updated_at?: string;
         };
@@ -77,8 +81,90 @@ export interface Database {
           level?: number;
           current_streak?: number;
           longest_streak?: number;
+          coin_balance?: number;
           created_at?: string;
           updated_at?: string;
+        };
+        Relationships: [];
+      };
+      shop_items: {
+        Row: {
+          id: string;
+          item_type: string;
+          title: string;
+          description: string;
+          image_url: string | null;
+          price_coins: number;
+          is_active: boolean;
+          sort_order: number;
+          metadata: Json;
+          created_at: string;
+        };
+        Insert: {
+          id: string;
+          item_type: string;
+          title: string;
+          description?: string;
+          image_url?: string | null;
+          price_coins?: number;
+          is_active?: boolean;
+          sort_order?: number;
+          metadata?: Json;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          item_type?: string;
+          title?: string;
+          description?: string;
+          image_url?: string | null;
+          price_coins?: number;
+          is_active?: boolean;
+          sort_order?: number;
+          metadata?: Json;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      user_inventory: {
+        Row: {
+          user_id: string;
+          item_id: string;
+          acquired_at: string;
+          source: string;
+        };
+        Insert: {
+          user_id: string;
+          item_id: string;
+          acquired_at?: string;
+          source?: string;
+        };
+        Update: {
+          user_id?: string;
+          item_id?: string;
+          acquired_at?: string;
+          source?: string;
+        };
+        Relationships: [];
+      };
+      user_equipped_items: {
+        Row: {
+          user_id: string;
+          slot: string;
+          item_id: string;
+          equipped_at: string;
+        };
+        Insert: {
+          user_id: string;
+          slot: string;
+          item_id: string;
+          equipped_at?: string;
+        };
+        Update: {
+          user_id?: string;
+          slot?: string;
+          item_id?: string;
+          equipped_at?: string;
         };
         Relationships: [];
       };
@@ -222,6 +308,63 @@ export interface Database {
         };
         Relationships: [];
       };
+      achievements: {
+        Row: {
+          id: string;
+          title: string;
+          description: string;
+          image_url: string | null;
+          icon: string;
+          requirements: Json;
+          xp_reward: number;
+          sort_order: number;
+          is_active: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id: string;
+          title: string;
+          description: string;
+          image_url?: string | null;
+          icon?: string;
+          requirements: Json;
+          xp_reward?: number;
+          sort_order?: number;
+          is_active?: boolean;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          title?: string;
+          description?: string;
+          image_url?: string | null;
+          icon?: string;
+          requirements?: Json;
+          xp_reward?: number;
+          sort_order?: number;
+          is_active?: boolean;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      user_achievements: {
+        Row: {
+          user_id: string;
+          achievement_id: string;
+          unlocked_at: string;
+        };
+        Insert: {
+          user_id: string;
+          achievement_id: string;
+          unlocked_at?: string;
+        };
+        Update: {
+          user_id?: string;
+          achievement_id?: string;
+          unlocked_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -267,6 +410,28 @@ export interface Database {
           display_name: string | null;
           level: number;
           current_streak: number;
+          avatar_url: string | null;
+          avatar_icon: string | null;
+          avatar_background: string | null;
+          frame_border_color: string | null;
+          frame_border_width: number | null;
+        }[];
+      };
+      get_friend_profile: {
+        Args: { p_user_id: string };
+        Returns: {
+          user_id: string;
+          username: string;
+          display_name: string | null;
+          level: number;
+          total_xp: number;
+          current_streak: number;
+          longest_streak: number;
+          avatar_url: string | null;
+          avatar_icon: string | null;
+          avatar_background: string | null;
+          frame_border_color: string | null;
+          frame_border_width: number | null;
         }[];
       };
       get_incoming_friend_requests: {
@@ -286,8 +451,36 @@ export interface Database {
           p_target_reps: number;
           p_message?: string | null;
           p_time_limit_seconds?: number | null;
+          p_emote_id?: string | null;
         };
         Returns: string;
+      };
+      get_shop_catalog: {
+        Args: { p_item_type?: string | null };
+        Returns: {
+          id: string;
+          item_type: string;
+          title: string;
+          description: string;
+          image_url: string | null;
+          price_coins: number;
+          sort_order: number;
+          metadata: Json;
+          owned: boolean;
+          equipped: boolean;
+        }[];
+      };
+      get_my_shop_summary: {
+        Args: Record<string, never>;
+        Returns: Json;
+      };
+      purchase_shop_item: {
+        Args: { p_item_id: string };
+        Returns: 'purchased' | 'already_owned';
+      };
+      equip_shop_item: {
+        Args: { p_item_id: string };
+        Returns: 'equipped';
       };
       get_my_friend_challenges: {
         Args: Record<string, never>;
@@ -332,6 +525,25 @@ export interface Database {
           opponent_race_seconds: number | null;
           winner_user_id: string | null;
           xp_earned: number | null;
+        }[];
+      };
+      sync_user_achievements: {
+        Args: { p_user_id?: string };
+        Returns: number;
+      };
+      get_my_achievements: {
+        Args: Record<string, never>;
+        Returns: {
+          id: string;
+          title: string;
+          description: string;
+          image_url: string | null;
+          icon: string;
+          requirements: Json;
+          xp_reward: number;
+          sort_order: number;
+          unlocked: boolean;
+          unlocked_at: string | null;
         }[];
       };
     };

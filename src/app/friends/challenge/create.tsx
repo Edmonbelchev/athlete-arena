@@ -4,6 +4,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AuthTextInput } from '@/components/ui/AuthTextInput';
+import { EmotePicker } from '@/components/shop/EmotePicker';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import {
   EXERCISE_TYPES,
@@ -20,6 +21,8 @@ import {
   getDefaultRepsForExercise,
 } from '@/constants/friendChallenges';
 import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
+import { getOwnedEmotes } from '@/features/shop/shopUtils';
+import { useShop } from '@/features/shop/ShopProvider';
 import { createFriendChallenge } from '@/services/friendChallengeService';
 import { formatUserError } from '@/lib/errors';
 import { useTheme } from '@/hooks/use-theme';
@@ -33,8 +36,11 @@ export default function CreateFriendChallengeScreen() {
   const [customReps, setCustomReps] = useState('');
   const [timeLimitSeconds, setTimeLimitSeconds] = useState<number | null>(null);
   const [message, setMessage] = useState('');
+  const [selectedEmoteId, setSelectedEmoteId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { items } = useShop();
+  const ownedEmotes = useMemo(() => getOwnedEmotes(items), [items]);
 
   const repPresets = FRIEND_CHALLENGE_REP_PRESETS[exerciseType];
   const xpReward = useMemo(() => calculateFriendChallengeXp(targetReps), [targetReps]);
@@ -69,6 +75,7 @@ export default function CreateFriendChallengeScreen() {
         targetReps,
         message.trim() || undefined,
         timeLimitSeconds,
+        selectedEmoteId,
       );
       router.replace('/(tabs)/friends');
     } catch (err) {
@@ -185,6 +192,12 @@ export default function CreateFriendChallengeScreen() {
               );
             })}
           </View>
+
+          <EmotePicker
+            emotes={ownedEmotes}
+            selectedEmoteId={selectedEmoteId}
+            onSelect={setSelectedEmoteId}
+          />
 
           <AuthTextInput
             label="Message (optional)"

@@ -32,6 +32,8 @@ function mapFriendChallenge(row: FriendChallengeRpcRow): FriendChallenge {
     opponentStartedAt: row.opponent_started_at,
     winnerUserId: row.winner_user_id,
     resolvedAt: row.resolved_at,
+    creatorEmoteId: row.creator_emote_id ?? null,
+    creatorEmoteEmoji: row.creator_emote_emoji ?? null,
   };
 }
 
@@ -70,6 +72,7 @@ export async function createFriendChallenge(
   targetReps: number,
   message?: string,
   timeLimitSeconds?: number | null,
+  emoteId?: string | null,
 ): Promise<string> {
   assertSupabaseConfigured();
 
@@ -79,6 +82,7 @@ export async function createFriendChallenge(
     p_target_reps: targetReps,
     p_message: message ?? null,
     p_time_limit_seconds: timeLimitSeconds ?? null,
+    p_emote_id: emoteId ?? null,
   });
 
   if (error) {

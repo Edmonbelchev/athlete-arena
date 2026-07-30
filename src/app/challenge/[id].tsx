@@ -5,12 +5,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { CameraPreview } from '@/components/CameraPreview';
 import { PoseGuidanceBanner } from '@/components/PoseGuidanceBanner';
+import { EmoteDisplay } from '@/components/shop/EmoteDisplay';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { formatExerciseLabel } from '@/constants/challenges';
 import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { useChallenge } from '@/features/challenges/useChallenge';
 import { useExercisePoseDetection } from '@/features/challenges/useExercisePoseDetection';
 import { useRepCounter } from '@/features/challenges/useRepCounter';
+import { useShop } from '@/features/shop/ShopProvider';
 import { completeChallenge } from '@/services/challengeService';
 import { formatUserError } from '@/lib/errors';
 import { supportsNativePoseDetection } from '@/lib/runtime';
@@ -21,6 +23,7 @@ export default function ChallengeScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { challenge, isLoading, error, applyChallenge } = useChallenge(id);
+  const { equippedEmote } = useShop();
   const [syncError, setSyncError] = useState<string | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
   const isSyncingRef = useRef(false);
@@ -154,6 +157,7 @@ export default function ChallengeScreen() {
               <Text style={StyleSheet.flatten([styles.completedTitle, { color: theme.success }])}>
                 CHALLENGE COMPLETE
               </Text>
+              <EmoteDisplay emoji={equippedEmote} />
               <Text style={StyleSheet.flatten([styles.completedReward, { color: theme.xp }])}>
                 +{challenge.xp_reward} XP earned
               </Text>

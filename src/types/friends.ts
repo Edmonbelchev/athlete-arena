@@ -1,5 +1,7 @@
 import type { ExerciseType } from '@/constants/challenges';
 
+import type { ShopAvatarDisplay, ShopFrameDisplay } from '@/types/shop';
+
 export type FriendshipStatus = 'pending' | 'accepted' | 'declined';
 export type ChallengeStatus = 'pending' | 'in_progress' | 'completed' | 'declined' | 'expired';
 
@@ -10,6 +12,22 @@ export interface FriendSummary {
   displayName: string | null;
   level: number;
   currentStreak: number;
+  avatarUrl: string | null;
+  avatar: ShopAvatarDisplay | null;
+  frame: ShopFrameDisplay | null;
+}
+
+export interface FriendPublicProfile {
+  userId: string;
+  username: string;
+  displayName: string | null;
+  level: number;
+  totalXp: number;
+  currentStreak: number;
+  longestStreak: number;
+  avatarUrl: string | null;
+  avatar: ShopAvatarDisplay | null;
+  frame: ShopFrameDisplay | null;
 }
 
 export interface FriendRequest {
@@ -55,6 +73,8 @@ export interface FriendChallenge {
   opponentStartedAt: string | null;
   winnerUserId: string | null;
   resolvedAt: string | null;
+  creatorEmoteId: string | null;
+  creatorEmoteEmoji: string | null;
 }
 
 export function getOpponentDisplayName(challenge: FriendChallenge): string {

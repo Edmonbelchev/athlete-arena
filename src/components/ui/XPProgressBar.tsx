@@ -41,9 +41,8 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
   },
   header: {
-    flexDirection: 'row',
+    flexDirection: 'column',
     justifyContent: 'space-between',
-    alignItems: 'center',
     gap: Spacing.one,
   },
   level: {

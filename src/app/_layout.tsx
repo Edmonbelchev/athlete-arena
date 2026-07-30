@@ -4,7 +4,9 @@ import { useEffect } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
 import { AuthProvider, useAuth } from '@/features/auth';
+import { AchievementUnlockProvider } from '@/features/achievements/AchievementUnlockProvider';
 import { NotificationProvider } from '@/features/notifications/NotificationProvider';
+import { ShopProvider } from '@/features/shop/ShopProvider';
 import { ThemePreferenceProvider, useThemePreference } from '@/features/theme/ThemePreferenceProvider';
 import { ChallengeNotificationBanner } from '@/components/notifications/ChallengeNotificationBanner';
 
@@ -14,9 +16,13 @@ export default function RootLayout() {
   return (
     <ThemePreferenceProvider>
       <AuthProvider>
-        <NotificationProvider>
-          <ThemedRootNavigator />
-        </NotificationProvider>
+        <AchievementUnlockProvider>
+          <ShopProvider>
+            <NotificationProvider>
+              <ThemedRootNavigator />
+            </NotificationProvider>
+          </ShopProvider>
+        </AchievementUnlockProvider>
       </AuthProvider>
     </ThemePreferenceProvider>
   );
@@ -71,6 +77,14 @@ function RootNavigator() {
           }}
         />
         <Stack.Screen
+          name="friends/[userId]"
+          options={{
+            presentation: 'modal',
+            headerShown: true,
+            title: 'Friend Profile',
+          }}
+        />
+        <Stack.Screen
           name="friends/add"
           options={{
             presentation: 'modal',
@@ -100,6 +114,22 @@ function RootNavigator() {
             presentation: 'modal',
             headerShown: true,
             title: 'Edit Profile',
+          }}
+        />
+        <Stack.Screen
+          name="profile/shop"
+          options={{
+            presentation: 'modal',
+            headerShown: true,
+            title: 'Shop',
+          }}
+        />
+        <Stack.Screen
+          name="profile/achievements"
+          options={{
+            presentation: 'modal',
+            headerShown: true,
+            title: 'Achievements',
           }}
         />
       </Stack.Protected>

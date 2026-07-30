@@ -3,6 +3,7 @@ import { useCallback, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { CoinBadge } from '@/components/shop/CoinBadge';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { ProfileAvatar } from '@/components/profile/ProfileAvatar';
 import { StatCard } from '@/components/ui/StatCard';
@@ -13,6 +14,7 @@ import { getAuthErrorMessage } from '@/features/auth/authErrors';
 import { useAuth } from '@/features/auth';
 import { useProfile } from '@/features/profile/useProfile';
 import { useProfileStats } from '@/features/profile/useProfileStats';
+import { useShop } from '@/features/shop/ShopProvider';
 import { xpProgressInCurrentLevel } from '@/features/xp/levelUtils';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -27,6 +29,7 @@ export default function ProfileScreen() {
     error: statsError,
     refresh: refreshStats,
   } = useProfileStats();
+  const { summary, equippedAvatar, equippedFrame, refresh: refreshShop } = useShop();
   const [logoutError, setLogoutError] = useState<string | null>(null);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
@@ -37,7 +40,8 @@ export default function ProfileScreen() {
     useCallback(() => {
       void refreshProfile();
       void refreshStats();
-    }, [refreshProfile, refreshStats]),
+      void refreshShop();
+    }, [refreshProfile, refreshStats, refreshShop]),
   );
 
   const username = profile?.username ?? session?.user.email?.split('@')[0] ?? 'user';
@@ -73,7 +77,15 @@ export default function ProfileScreen() {
       <ScrollView contentContainerStyle={styles.content}>
         <TabScreenHeader title="Profile" />
 
-        <ProfileAvatar uri={profile?.avatar_url} name={displayName} size={96} />
+        <ProfileAvatar
+          uri={profile?.avatar_url}
+          name={displayName}
+          size={96}
+          shopAvatar={equippedAvatar}
+          frame={equippedFrame}
+        />
+
+        <CoinBadge amount={summary.coinBalance} large />
 
         <Text style={StyleSheet.flatten([styles.username, { color: theme.text }])}>@{username}</Text>
         <Text style={StyleSheet.flatten([styles.displayName, { color: theme.textSecondary }])}>
@@ -102,6 +114,18 @@ export default function ProfileScreen() {
           <StatCard label="Push-ups" value={stats.totalPushUps.toLocaleString()} />
           <StatCard label="Squats" value={stats.totalSquats.toLocaleString()} />
         </View>
+
+        <PrimaryButton
+          label="Shop"
+          variant="secondary"
+          onPress={() => router.push('/profile/shop')}
+        />
+
+        <PrimaryButton
+          label="Achievements"
+          variant="secondary"
+          onPress={() => router.push('/profile/achievements')}
+        />
 
         <PrimaryButton
           label="Challenge History"

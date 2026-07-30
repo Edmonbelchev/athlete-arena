@@ -1,5 +1,6 @@
 import { assertSupabaseConfigured, supabase } from '@/lib/supabase';
-import type { FriendRequest, FriendSummary, UserSearchResult } from '@/types/friends';
+import { mapPublicCosmetics } from '@/features/friends/friendCosmeticsUtils';
+import type { FriendPublicProfile, FriendRequest, FriendSummary, UserSearchResult } from '@/types/friends';
 
 function mapFriend(row: {
   friendship_id: string;
@@ -8,7 +9,14 @@ function mapFriend(row: {
   display_name: string | null;
   level: number;
   current_streak: number;
+  avatar_url?: string | null;
+  avatar_icon?: string | null;
+  avatar_background?: string | null;
+  frame_border_color?: string | null;
+  frame_border_width?: number | null;
 }): FriendSummary {
+  const cosmetics = mapPublicCosmetics(row);
+
   return {
     friendshipId: row.friendship_id,
     friendId: row.friend_id,
@@ -16,6 +24,9 @@ function mapFriend(row: {
     displayName: row.display_name,
     level: row.level,
     currentStreak: row.current_streak,
+    avatarUrl: row.avatar_url ?? null,
+    avatar: cosmetics.avatar,
+    frame: cosmetics.frame,
   };
 }
 
@@ -100,4 +111,52 @@ export async function getIncomingFriendRequests(): Promise<FriendRequest[]> {
   }
 
   return (data ?? []).map(mapFriendRequest);
+}
+
+export async function getFriendProfile(userId: string): Promise<FriendPublicProfile | null> {
+  assertSupabaseConfigured();
+
+  const { data, error } = await supabase.rpc('get_friend_profile', {
+    p_user_id: userId,
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  const row = (data ?? [])[0] as
+    | {
+        user_id: string;
+        username: string;
+        display_name: string | null;
+        level: number;
+        total_xp: number;
+        current_streak: number;
+        longest_streak: number;
+        avatar_url: string | null;
+        avatar_icon: string | null;
+        avatar_background: string | null;
+        frame_border_color: string | null;
+        frame_border_width: number | null;
+      }
+    | undefined;
+
+  if (!row) {
+    return null;
+  }
+
+  const cosmetics = mapPublicCosmetics(row);
+
+  return {
+    userId: row.user_id,
+    username: row.username,
+    displayName: row.display_name,
+    level: row.level,
+    totalXp: row.total_xp,
+    currentStreak: row.current_streak,
+    longestStreak: row.longest_streak,
+    avatarUrl: row.avatar_url,
+    avatar: cosmetics.avatar,
+    frame: cosmetics.frame,
+  };
 }

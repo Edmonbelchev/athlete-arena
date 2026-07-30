@@ -11,14 +11,14 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { ProfileAvatarUpload } from '@/components/profile/ProfileAvatarUpload';
+import { ProfileAvatarSelector } from '@/components/profile/ProfileAvatar';
 import { AuthTextInput } from '@/components/ui/AuthTextInput';
 import { AppIcon } from '@/components/ui/AppIcon';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
-import { useAuth } from '@/features/auth';
 import { getProfileErrorMessage } from '@/features/profile/profileErrors';
 import { useProfile } from '@/features/profile/useProfile';
+import { useShop } from '@/features/shop/ShopProvider';
 import { leaveScreen } from '@/lib/navigation';
 import { updateProfile } from '@/services/profileService';
 import { useTheme } from '@/hooks/use-theme';
@@ -26,12 +26,11 @@ import { useTheme } from '@/hooks/use-theme';
 export default function EditProfileScreen() {
   const theme = useTheme();
   const router = useRouter();
-  const { session } = useAuth();
   const { profile, isLoading, refresh } = useProfile();
+  const { getItemsByType, equipItem, isUpdating, refresh: refreshShop } = useShop();
 
   const [username, setUsername] = useState('');
   const [displayName, setDisplayName] = useState('');
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -39,12 +38,11 @@ export default function EditProfileScreen() {
     if (profile) {
       setUsername(profile.username);
       setDisplayName(profile.display_name ?? '');
-      setAvatarUrl(profile.avatar_url);
     }
   }, [profile]);
 
   async function handleSave() {
-    if (!session?.user.id) {
+    if (!profile?.id) {
       return;
     }
 
@@ -52,7 +50,7 @@ export default function EditProfileScreen() {
     setIsSubmitting(true);
 
     try {
-      await updateProfile(session.user.id, {
+      await updateProfile(profile.id, {
         username,
         display_name: displayName,
       });
@@ -62,6 +60,17 @@ export default function EditProfileScreen() {
       setFormError(getProfileErrorMessage(err));
     } finally {
       setIsSubmitting(false);
+    }
+  }
+
+  async function handleSelectAvatar(itemId: string) {
+    setFormError(null);
+
+    try {
+      await equipItem(itemId);
+      await Promise.all([refresh(), refreshShop()]);
+    } catch (err) {
+      setFormError(getProfileErrorMessage(err));
     }
   }
 
@@ -76,6 +85,15 @@ export default function EditProfileScreen() {
   }
 
   const fallbackName = displayName.trim() || username || 'Athlete';
+  const avatarItems = getItemsByType('avatar').map((item) => ({
+    id: item.id,
+    title: item.title,
+    imageUrl: item.imageUrl,
+    icon: item.metadata.icon,
+    backgroundColor: item.metadata.backgroundColor,
+    owned: item.owned,
+    equipped: item.equipped,
+  }));
 
   return (
     <>
@@ -104,17 +122,13 @@ export default function EditProfileScreen() {
           <ScrollView
             contentContainerStyle={styles.content}
             keyboardShouldPersistTaps="handled">
-            {session?.user.id ? (
-              <ProfileAvatarUpload
-                userId={session.user.id}
-                avatarUrl={avatarUrl}
-                displayName={fallbackName}
-                onAvatarChange={(nextUrl) => {
-                  setAvatarUrl(nextUrl);
-                  void refresh();
-                }}
-              />
-            ) : null}
+            <ProfileAvatarSelector
+              avatars={avatarItems}
+              displayName={fallbackName}
+              isUpdating={isUpdating}
+              onSelect={(itemId) => void handleSelectAvatar(itemId)}
+              onOpenShop={() => router.push('/profile/shop')}
+            />
 
             <Text style={StyleSheet.flatten([styles.subtitle, { color: theme.textSecondary }])}>
               Update how you appear in the app. Usernames must be unique.

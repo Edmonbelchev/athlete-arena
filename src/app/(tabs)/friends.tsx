@@ -192,6 +192,12 @@ export default function FriendsScreen() {
               <FriendListItem
                 key={friend.friendId}
                 friend={friend}
+                onPress={() =>
+                  router.push({
+                    pathname: '/friends/[userId]',
+                    params: { userId: friend.friendId, username: friend.username },
+                  })
+                }
                 onChallenge={() =>
                   router.push({
                     pathname: '/friends/challenge/create',
