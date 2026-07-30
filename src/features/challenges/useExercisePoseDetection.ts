@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import type { ExerciseType } from '@/constants/challenges';
+import { getInitialExercisePhase, type ExerciseType } from '@/constants/challenges';
 import type { ExercisePhase } from '@/features/challenges/poseDetection.types';
 
 import { createRepEngine } from './pose/createRepEngine';
@@ -18,11 +18,10 @@ export function useExercisePoseDetection({
   enabled,
   onRepDetected,
 }: UseExercisePoseDetectionOptions) {
+  const initialPhase = getInitialExercisePhase(exerciseType);
   const engineRef = useRef(createRepEngine(exerciseType));
   const qualityGateRef = useRef(new PoseQualityGate(exerciseType));
-  const [phase, setPhase] = useState<ExercisePhase>(
-    exerciseType === 'push_ups' ? 'UP' : 'STANDING',
-  );
+  const [phase, setPhase] = useState<ExercisePhase>(initialPhase);
   const [trackingStatus, setTrackingStatus] = useState<PoseTrackingStatus>('partial');
   const [trackingMessage, setTrackingMessage] = useState<string | null>(
     'Move into frame to start counting',
@@ -32,9 +31,10 @@ export function useExercisePoseDetection({
   onRepDetectedRef.current = onRepDetected;
 
   useEffect(() => {
+    const nextInitialPhase = getInitialExercisePhase(exerciseType);
     engineRef.current = createRepEngine(exerciseType);
     qualityGateRef.current = new PoseQualityGate(exerciseType);
-    setPhase(exerciseType === 'push_ups' ? 'UP' : 'STANDING');
+    setPhase(nextInitialPhase);
     setTrackingStatus('partial');
     setTrackingMessage('Move into frame to start counting');
   }, [exerciseType]);
@@ -43,7 +43,7 @@ export function useExercisePoseDetection({
     if (!enabled) {
       engineRef.current.reset();
       qualityGateRef.current.reset();
-      setPhase(exerciseType === 'push_ups' ? 'UP' : 'STANDING');
+      setPhase(getInitialExercisePhase(exerciseType));
       setTrackingStatus('partial');
       setTrackingMessage(null);
     }
@@ -61,7 +61,7 @@ export function useExercisePoseDetection({
 
       if (quality.shouldResetEngine) {
         engineRef.current.reset();
-        setPhase(exerciseType === 'push_ups' ? 'UP' : 'STANDING');
+        setPhase(getInitialExercisePhase(exerciseType));
       }
 
       if (!quality.canCountReps) {

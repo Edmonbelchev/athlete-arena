@@ -21,6 +21,7 @@ export type AppIconName =
   | 'rocket'
   | 'quiz'
   | 'gift'
+  | 'coin'
   | 'camera'
   | 'chevronBack';
 
@@ -49,6 +50,7 @@ export const APP_ICONS: Record<AppIconName, SymbolViewProps['name']> = {
   rocket: { ios: 'paperplane.fill', android: 'rocket_launch', web: 'rocket_launch' },
   quiz: { ios: 'questionmark.circle.fill', android: 'quiz', web: 'quiz' },
   gift: { ios: 'gift.fill', android: 'redeem', web: 'redeem' },
+  coin: { ios: 'centsign.circle.fill', android: 'monetization_on', web: 'monetization_on' },
   camera: { ios: 'camera.fill', android: 'photo_camera', web: 'photo_camera' },
   chevronBack: { ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' },
 };

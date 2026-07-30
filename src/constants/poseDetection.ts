@@ -27,6 +27,24 @@ export const PUSH_UP_THRESHOLDS = {
   minHoldFrames: 4,
 } as const;
 
+export const PULL_UP_THRESHOLDS = {
+  /** Elbow angle (degrees) - hanging with arms extended. */
+  upAngle: 155,
+  /** Elbow angle (degrees) - chin above bar. */
+  downAngle: 90,
+  hysteresis: 8,
+  minHoldFrames: 4,
+} as const;
+
+export const DIP_THRESHOLDS = {
+  /** Elbow angle (degrees) - arms locked out at top. */
+  upAngle: 150,
+  /** Elbow angle (degrees) - bottom of dip. */
+  downAngle: 95,
+  hysteresis: 8,
+  minHoldFrames: 4,
+} as const;
+
 export const SQUAT_THRESHOLDS = {
   /** Knee angle (degrees) - standing upright. */
   standingAngle: 155,
@@ -37,10 +55,9 @@ export const SQUAT_THRESHOLDS = {
   minHoldFrames: 4,
 } as const;
 
-export const POSE_GUIDANCE: Record<
-  'push_ups' | 'squats',
-  { title: string; tips: readonly string[] }
-> = {
+import type { ExerciseType } from '@/constants/challenges';
+
+export const POSE_GUIDANCE: Record<ExerciseType, { title: string; tips: readonly string[] }> = {
   push_ups: {
     title: 'Push-up setup',
     tips: [
@@ -55,6 +72,22 @@ export const POSE_GUIDANCE: Record<
       'Step back until hips, knees, and ankles stay in frame',
       'Face the camera or stand at a slight angle',
       'Rep counting pauses if your legs leave the frame',
+    ],
+  },
+  pull_ups: {
+    title: 'Pull-up setup',
+    tips: [
+      'Face the camera from the side — keep arms and shoulders in frame',
+      'Hang fully at the bottom, then pull until your elbows bend deeply',
+      'Rep counting pauses if your upper body leaves the frame',
+    ],
+  },
+  dips: {
+    title: 'Dip setup',
+    tips: [
+      'Side view works best — keep shoulders, elbows, and wrists visible',
+      'Lower until your elbows bend, then press back to full extension',
+      'Rep counting pauses if your arms leave the frame',
     ],
   },
 };

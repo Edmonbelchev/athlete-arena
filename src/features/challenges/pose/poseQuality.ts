@@ -1,4 +1,4 @@
-import type { ExerciseType } from '@/constants/challenges';
+import { isElbowBasedExercise, type ExerciseType } from '@/constants/challenges';
 import { POSE_QUALITY, POSE_REP_MIN_VISIBILITY } from '@/constants/poseDetection';
 
 import { PoseLandmarkIndex, type PoseLandmark } from './landmarks';
@@ -49,7 +49,7 @@ function hasCompleteLegChain(landmarks: PoseLandmark[], side: 'left' | 'right'):
 }
 
 function getTrackingIndices(exerciseType: ExerciseType): number[] {
-  if (exerciseType === 'push_ups') {
+  if (isElbowBasedExercise(exerciseType)) {
     return [
       PoseLandmarkIndex.LEFT_SHOULDER,
       PoseLandmarkIndex.RIGHT_SHOULDER,
@@ -81,7 +81,7 @@ function checkRequiredLandmarks(
   const trackingIndices = getTrackingIndices(exerciseType);
   const visibleCount = countVisibleLandmarks(landmarks, trackingIndices);
 
-  if (exerciseType === 'push_ups') {
+  if (isElbowBasedExercise(exerciseType)) {
     const armVisible = hasCompleteArmChain(landmarks, 'left') || hasCompleteArmChain(landmarks, 'right');
 
     if (!armVisible) {

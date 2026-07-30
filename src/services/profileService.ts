@@ -35,13 +35,24 @@ export async function getProfileStats(userId: string): Promise<ProfileStats> {
   let completedChallenges = 0;
   let totalPushUps = 0;
   let totalSquats = 0;
+  let totalPullUps = 0;
+  let totalDips = 0;
 
   for (const row of data ?? []) {
     completedChallenges += 1;
-    if (row.exercise_type === 'push_ups') {
-      totalPushUps += row.completed_reps;
-    } else {
-      totalSquats += row.completed_reps;
+    switch (row.exercise_type) {
+      case 'push_ups':
+        totalPushUps += row.completed_reps;
+        break;
+      case 'squats':
+        totalSquats += row.completed_reps;
+        break;
+      case 'pull_ups':
+        totalPullUps += row.completed_reps;
+        break;
+      case 'dips':
+        totalDips += row.completed_reps;
+        break;
     }
   }
 
@@ -49,6 +60,8 @@ export async function getProfileStats(userId: string): Promise<ProfileStats> {
     completedChallenges,
     totalPushUps,
     totalSquats,
+    totalPullUps,
+    totalDips,
   };
 }
 

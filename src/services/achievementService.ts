@@ -3,7 +3,7 @@ import {
   parseAchievementRequirement,
   resolveAchievementIcon,
 } from '@/features/achievements/achievementUtils';
-import type { AchievementRecord } from '@/types/achievements';
+import type { AchievementRecord, FriendAchievementSummary } from '@/types/achievements';
 
 interface AchievementRpcRow {
   id: string;
@@ -60,4 +60,42 @@ export async function getMyAchievements(): Promise<AchievementRecord[]> {
   return (data ?? [])
     .map((row) => mapAchievement(row as AchievementRpcRow))
     .filter((achievement): achievement is AchievementRecord => achievement !== null);
+}
+
+interface FriendAchievementRpcRow {
+  id: string;
+  title: string;
+  description: string;
+  image_url: string | null;
+  icon: string;
+  xp_reward: number;
+  sort_order: number;
+  unlocked_at: string;
+}
+
+function mapFriendAchievement(row: FriendAchievementRpcRow): FriendAchievementSummary {
+  return {
+    id: row.id,
+    title: row.title,
+    description: row.description,
+    imageUrl: row.image_url,
+    icon: resolveAchievementIcon(row.icon),
+    xpReward: row.xp_reward,
+    sortOrder: row.sort_order,
+    unlockedAt: row.unlocked_at,
+  };
+}
+
+export async function getFriendAchievements(userId: string): Promise<FriendAchievementSummary[]> {
+  assertSupabaseConfigured();
+
+  const { data, error } = await supabase.rpc('get_friend_achievements', {
+    p_user_id: userId,
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  return (data ?? []).map((row) => mapFriendAchievement(row as FriendAchievementRpcRow));
 }

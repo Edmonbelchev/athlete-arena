@@ -260,10 +260,12 @@ const styles = StyleSheet.create({
   },
   exerciseRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: Spacing.two,
   },
   exerciseChip: {
-    flex: 1,
+    flexGrow: 1,
+    flexBasis: '45%',
     paddingVertical: Spacing.two,
     borderRadius: Radius.lg,
     borderWidth: 1,

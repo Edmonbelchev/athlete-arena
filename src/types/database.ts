@@ -6,7 +6,7 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[];
 
-export type ExerciseType = 'push_ups' | 'squats';
+export type ExerciseType = 'push_ups' | 'squats' | 'pull_ups' | 'dips';
 export type ChallengeStatus = 'pending' | 'in_progress' | 'completed' | 'declined' | 'expired';
 export type FriendshipStatus = 'pending' | 'accepted' | 'declined';
 
@@ -432,6 +432,19 @@ export interface Database {
           avatar_background: string | null;
           frame_border_color: string | null;
           frame_border_width: number | null;
+        }[];
+      };
+      get_friend_achievements: {
+        Args: { p_user_id: string };
+        Returns: {
+          id: string;
+          title: string;
+          description: string;
+          image_url: string | null;
+          icon: string;
+          xp_reward: number;
+          sort_order: number;
+          unlocked_at: string;
         }[];
       };
       get_incoming_friend_requests: {

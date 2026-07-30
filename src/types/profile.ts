@@ -2,6 +2,8 @@ export interface ProfileStats {
   completedChallenges: number;
   totalPushUps: number;
   totalSquats: number;
+  totalPullUps: number;
+  totalDips: number;
 }
 
 export interface UpdateProfileInput {

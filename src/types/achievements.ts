@@ -8,6 +8,8 @@ export type AchievementRequirementType =
   | 'longest_streak'
   | 'push_ups_total'
   | 'squats_total'
+  | 'pull_ups_total'
+  | 'dips_total'
   | 'friend_races_won'
   | 'friends_count';
 
@@ -30,3 +32,14 @@ export interface AchievementRecord {
 }
 
 export type AchievementFilter = 'all' | 'unlocked' | 'locked';
+
+export interface FriendAchievementSummary {
+  id: string;
+  title: string;
+  description: string;
+  imageUrl: string | null;
+  icon: AppIconName;
+  xpReward: number;
+  sortOrder: number;
+  unlockedAt: string;
+}

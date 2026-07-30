@@ -1,5 +1,6 @@
 import { DimensionValue, StyleSheet, Text, View } from 'react-native';
 
+import { AppIcon } from '@/components/ui/AppIcon';
 import { FitContentWidth, Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -18,7 +19,7 @@ export function CoinBadge({ amount, large = false }: CoinBadgeProps) {
         large ? styles.badgeLarge : null,
         { backgroundColor: theme.backgroundSelected, borderColor: theme.border },
       ])}>
-      <Text style={styles.coinIcon}>🪙</Text>
+      <AppIcon name="coin" size={large ? 20 : 16} color={theme.accent} weight="semibold" />
       <Text style={StyleSheet.flatten([styles.amount, large ? styles.amountLarge : null, { color: theme.accent }])}>
         {amount.toLocaleString()}
       </Text>
@@ -40,9 +41,6 @@ const styles = StyleSheet.create({
   badgeLarge: {
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,
-  },
-  coinIcon: {
-    fontSize: 14,
   },
   amount: {
     fontSize: 13,

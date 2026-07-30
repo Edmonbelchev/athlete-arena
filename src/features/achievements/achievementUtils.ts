@@ -14,6 +14,8 @@ const REQUIREMENT_LABELS: Record<AchievementRequirementType, string> = {
   longest_streak: 'Longest streak (days)',
   push_ups_total: 'Push-ups completed',
   squats_total: 'Squats completed',
+  pull_ups_total: 'Pull-ups completed',
+  dips_total: 'Dips completed',
   friend_races_won: 'Friend races won',
   friends_count: 'Friends added',
 };
