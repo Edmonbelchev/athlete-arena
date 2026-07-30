@@ -1,6 +1,11 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import { formatExerciseLabel, type ExerciseType } from '@/constants/challenges';
+import {
+  DAILY_CHALLENGE_COIN_REWARD,
+  formatRewardPreview,
+  formatXpAndCoins,
+} from '@/constants/coins';
 import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import type { ChallengeStatus } from '@/types';
@@ -38,7 +43,9 @@ export function ChallengeCard({
       {isCompleted ? (
         <View style={styles.completedBlock}>
           <Text style={[styles.completedBadge, { color: theme.success }]}>COMPLETED</Text>
-          <Text style={[styles.reward, { color: theme.xp }]}>+{xpReward} XP earned</Text>
+          <Text style={[styles.reward, { color: theme.xp }]}>
+            {formatXpAndCoins(xpReward, DAILY_CHALLENGE_COIN_REWARD)} earned
+          </Text>
         </View>
       ) : (
         <>
@@ -47,7 +54,9 @@ export function ChallengeCard({
               Progress: {completedReps} / {targetReps} reps
             </Text>
           ) : null}
-          <Text style={[styles.reward, { color: theme.xp }]}>Reward: +{xpReward} XP</Text>
+          <Text style={[styles.reward, { color: theme.xp }]}>
+            {formatRewardPreview(xpReward, DAILY_CHALLENGE_COIN_REWARD)}
+          </Text>
           <PrimaryButton
             label={isInProgress ? 'CONTINUE CHALLENGE' : 'START CHALLENGE'}
             onPress={onStart}

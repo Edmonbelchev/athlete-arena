@@ -8,6 +8,10 @@ import { PoseGuidanceBanner } from '@/components/PoseGuidanceBanner';
 import { EmoteDisplay } from '@/components/shop/EmoteDisplay';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { formatExerciseLabel } from '@/constants/challenges';
+import {
+  formatXpAndCoins,
+  getFriendChallengeCoinReward,
+} from '@/constants/coins';
 import { formatRaceTime, formatRaceTimeLimit } from '@/constants/friendChallenges';
 import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { useExercisePoseDetection } from '@/features/challenges/useExercisePoseDetection';
@@ -172,6 +176,19 @@ export default function FriendChallengeScreen() {
   const opponentTime = getOpponentRaceSeconds(challenge);
   const winResult = didIWinFriendChallenge(challenge, myUserId);
   const earnedXp = challenge.xpEarned ?? 0;
+  const earnedCoins = getFriendChallengeCoinReward(
+    challenge.resolvedAt,
+    challenge.winnerUserId,
+    myUserId,
+  );
+
+  function formatEarnedRewards(xp: number): string {
+    if (earnedCoins > 0) {
+      return `${formatXpAndCoins(xp, earnedCoins)} earned`;
+    }
+
+    return `+${xp} XP earned`;
+  }
 
   function renderRaceTimer(activeChallenge: FriendChallenge) {
     if (isPending || !raceStarted) {
@@ -228,7 +245,7 @@ export default function FriendChallengeScreen() {
             {winResult ? 'YOU WON THE RACE' : 'YOU LOST THE RACE'}
           </Text>
           {winResult ? <EmoteDisplay emoji={equippedEmote} /> : null}
-          <Text style={[styles.completedReward, { color: theme.xp }]}>+{earnedXp} XP earned</Text>
+          <Text style={[styles.completedReward, { color: theme.xp }]}>{formatEarnedRewards(earnedXp)}</Text>
           <Text style={[styles.opponentProgress, { color: theme.textSecondary }]}>
             You {formatRaceTime(myTime)} · {opponentName} {formatRaceTime(opponentTime)}
           </Text>
@@ -240,7 +257,7 @@ export default function FriendChallengeScreen() {
       return (
         <View style={[styles.completedBanner, { backgroundColor: theme.backgroundElement, borderColor: theme.success }]}>
           <Text style={[styles.completedTitle, { color: theme.success }]}>TIE RACE</Text>
-          <Text style={[styles.completedReward, { color: theme.xp }]}>+{earnedXp} XP earned</Text>
+          <Text style={[styles.completedReward, { color: theme.xp }]}>{formatEarnedRewards(earnedXp)}</Text>
           <Text style={[styles.opponentProgress, { color: theme.textSecondary }]}>
             Both finished in {formatRaceTime(myTime)}
           </Text>

@@ -11,6 +11,7 @@ import {
   EXERCISE_LABELS,
   type ExerciseType,
 } from '@/constants/challenges';
+import { FRIEND_CHALLENGE_WIN_COIN_REWARD, formatCoinAmount } from '@/constants/coins';
 import {
   calculateFriendChallengeXp,
   FRIEND_CHALLENGE_REP_MAX,
@@ -218,7 +219,8 @@ export default function CreateFriendChallengeScreen() {
               {formatRaceTimeLimit(timeLimitSeconds)} · fastest finisher wins
             </Text>
             <Text style={StyleSheet.flatten([styles.summaryXp, { color: theme.xp }])}>
-              Winner +{xpReward} XP · Runner-up +{Math.max(1, Math.floor(xpReward * 0.25))} XP
+              Winner +{xpReward} XP & {formatCoinAmount(FRIEND_CHALLENGE_WIN_COIN_REWARD)} · Runner-up +
+              {Math.max(1, Math.floor(xpReward * 0.25))} XP
             </Text>
           </View>
 

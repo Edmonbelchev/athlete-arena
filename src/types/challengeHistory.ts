@@ -1,5 +1,10 @@
 import type { ExerciseType } from '@/constants/challenges';
 import { formatRaceTime } from '@/constants/friendChallenges';
+import {
+  DAILY_CHALLENGE_COIN_REWARD,
+  formatCoinAmount,
+  getFriendChallengeCoinReward,
+} from '@/constants/coins';
 import type { ChallengeStatus } from '@/types/friends';
 
 export type ChallengeHistoryKind = 'daily' | 'friend';
@@ -33,7 +38,7 @@ export function getHistoryOpponentName(entry: ChallengeHistoryEntry): string | n
 export function getHistoryResultLabel(entry: ChallengeHistoryEntry, myUserId?: string): string {
   if (entry.kind === 'daily') {
     if (entry.status === 'completed') {
-      return `Completed · +${entry.xpReward} XP`;
+      return `Completed · +${entry.xpReward} XP · ${formatCoinAmount(DAILY_CHALLENGE_COIN_REWARD)}`;
     }
     return 'Missed';
   }
@@ -50,15 +55,21 @@ export function getHistoryResultLabel(entry: ChallengeHistoryEntry, myUserId?: s
     const earned = entry.xpEarned ?? entry.xpReward;
 
     if (entry.winnerUserId && myUserId) {
+      const coins = getFriendChallengeCoinReward(entry.resultAt, entry.winnerUserId, myUserId);
+      const coinSuffix = coins > 0 ? ` · ${formatCoinAmount(coins)}` : '';
+
       if (entry.winnerUserId === myUserId) {
-        return `Won the race · +${earned} XP`;
+        return `Won the race · +${earned} XP${coinSuffix}`;
       }
       return `Lost the race · +${earned} XP`;
     }
 
     if (entry.raceSeconds !== null && entry.opponentRaceSeconds !== null) {
       if (entry.raceSeconds === entry.opponentRaceSeconds) {
-        return `Tie race · +${earned} XP`;
+        const coinSuffix = myUserId
+          ? ` · ${formatCoinAmount(getFriendChallengeCoinReward(entry.resultAt, null, myUserId))}`
+          : '';
+        return `Tie race · +${earned} XP${coinSuffix}`;
       }
     }
 

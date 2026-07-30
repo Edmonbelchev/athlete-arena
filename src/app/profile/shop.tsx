@@ -13,6 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { CoinBadge } from '@/components/shop/CoinBadge';
+import { CoinEarnInfo } from '@/components/rewards/CoinEarnInfo';
 import { ShopItemCard } from '@/components/shop/ShopItemCard';
 import { AppIcon } from '@/components/ui/AppIcon';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
@@ -115,6 +116,8 @@ export default function ShopScreen() {
             </View>
             <CoinBadge amount={summary.coinBalance} large />
           </View>
+
+          <CoinEarnInfo />
 
           <View style={styles.filters}>
             {CATEGORY_FILTERS.map((item) => {
