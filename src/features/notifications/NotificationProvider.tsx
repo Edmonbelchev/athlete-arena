@@ -44,6 +44,35 @@ const POLL_INTERVAL_MS = 5000;
 
 type ParticipantChangePayload = { eventType: string; new: unknown; old: unknown };
 
+function mergeSyncedNotifications(
+  current: ChallengeNotification[],
+  synced: ChallengeNotification[],
+): ChallengeNotification[] {
+  const readById = new Map(current.map((notification) => [notification.id, notification.read]));
+
+  return synced.map((notification) => ({
+    ...notification,
+    read: readById.get(notification.id) ?? notification.read,
+  }));
+}
+
+function notificationsMatch(a: ChallengeNotification[], b: ChallengeNotification[]): boolean {
+  if (a.length !== b.length) {
+    return false;
+  }
+
+  return a.every((notification, index) => {
+    const other = b[index];
+    return (
+      other &&
+      notification.id === other.id &&
+      notification.read === other.read &&
+      notification.title === other.title &&
+      notification.message === other.message
+    );
+  });
+}
+
 export function NotificationProvider({ children }: { children: ReactNode }) {
   const { session } = useAuth();
   const userId = session?.user.id;
@@ -92,13 +121,17 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     try {
       const { syncChallengeNotifications } = await import('@/services/challengeNotificationService');
       const synced = await syncChallengeNotifications(notificationsRef.current);
-      const currentIds = new Set(notificationsRef.current.map((notification) => notification.id));
-      const hasNewItems = synced.some((notification) => !currentIds.has(notification.id));
 
-      if (hasNewItems) {
-        setNotifications(synced);
-        persistInbox(synced);
-      }
+      setNotifications((current) => {
+        const merged = mergeSyncedNotifications(current, synced);
+
+        if (notificationsMatch(current, merged)) {
+          return current;
+        }
+
+        persistInbox(merged);
+        return merged;
+      });
     } finally {
       isSyncingRef.current = false;
     }
@@ -125,13 +158,14 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       if (env.isSupabaseConfigured) {
         const { syncChallengeNotifications } = await import('@/services/challengeNotificationService');
         next = await syncChallengeNotifications(stored);
-        if (!cancelled && next !== stored) {
-          await saveNotificationInbox(userId, next);
-        }
       }
 
       if (!cancelled) {
-        setNotifications(next);
+        const merged = mergeSyncedNotifications(stored, next);
+        setNotifications(merged);
+        if (!notificationsMatch(stored, merged)) {
+          await saveNotificationInbox(userId, merged);
+        }
         setIsHydrated(true);
       }
     })();
@@ -153,13 +187,25 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     );
   }, [notifications, hiddenBannerIds]);
 
+  const markAsRead = useCallback(
+    (id: string) => {
+      updateNotifications((current) =>
+        current.map((notification) =>
+          notification.id === id ? { ...notification, read: true } : notification,
+        ),
+      );
+    },
+    [updateNotifications],
+  );
+
   const dismissBanner = useCallback(() => {
     if (!bannerNotification) {
       return;
     }
 
+    markAsRead(bannerNotification.id);
     setHiddenBannerIds((current) => new Set(current).add(bannerNotification.id));
-  }, [bannerNotification]);
+  }, [bannerNotification, markAsRead]);
 
   useEffect(() => {
     if (!bannerNotification) {
@@ -172,17 +218,6 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
 
     return () => clearTimeout(timeout);
   }, [bannerNotification, dismissBanner]);
-
-  const markAsRead = useCallback(
-    (id: string) => {
-      updateNotifications((current) =>
-        current.map((notification) =>
-          notification.id === id ? { ...notification, read: true } : notification,
-        ),
-      );
-    },
-    [updateNotifications],
-  );
 
   const markAllAsRead = useCallback(() => {
     updateNotifications((current) => current.map((notification) => ({ ...notification, read: true })));

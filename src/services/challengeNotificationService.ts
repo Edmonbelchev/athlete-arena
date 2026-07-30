@@ -220,13 +220,27 @@ function getSyncNotificationTypes(challenge: FriendChallenge): ChallengeNotifica
   return types;
 }
 
+function getActiveNotificationIds(challenges: FriendChallenge[]): Set<string> {
+  const activeIds = new Set<string>();
+
+  for (const challenge of challenges) {
+    for (const type of getSyncNotificationTypes(challenge)) {
+      activeIds.add(challengeNotificationId(type, challenge.challengeId));
+    }
+  }
+
+  return activeIds;
+}
+
 export async function syncChallengeNotifications(
   existing: ChallengeNotification[],
 ): Promise<ChallengeNotification[]> {
   try {
     const challenges = await getMyFriendChallenges();
-    const knownIds = new Set(existing.map((notification) => notification.id));
-    const merged = [...existing];
+    const activeIds = getActiveNotificationIds(challenges);
+    const keptExisting = existing.filter((notification) => activeIds.has(notification.id) || notification.read);
+    const knownIds = new Set(keptExisting.map((notification) => notification.id));
+    const merged = [...keptExisting];
 
     for (const challenge of challenges) {
       for (const type of getSyncNotificationTypes(challenge)) {
