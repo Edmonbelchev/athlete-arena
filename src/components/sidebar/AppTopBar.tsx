@@ -13,7 +13,7 @@ export function AppTopBar() {
   const insets = useSafeAreaInsets();
   const { profile } = useProfile();
 
-  const displayName = profile?.display_name ?? profile?.username ?? 'Challenger';
+  const displayName = profile?.display_name ?? profile?.username ?? 'Athlete';
 
   return (
     <View

@@ -54,7 +54,7 @@ export function AppSidebar() {
   const [logoutError, setLogoutError] = useState<string | null>(null);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const sidebarWidth = Math.min(width * 0.86, 340);
-  const displayName = profile?.display_name ?? profile?.username ?? 'Challenger';
+  const displayName = profile?.display_name ?? profile?.username ?? 'Athlete';
   const totalXp = profile?.total_xp ?? 0;
   const xpProgress = xpProgressInCurrentLevel(totalXp);
   const unlockedAchievements = getUnlockedAchievements({

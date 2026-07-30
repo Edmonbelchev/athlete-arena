@@ -3,7 +3,7 @@ import { Platform } from 'react-native';
 
 import type { SupportedStorage } from '@supabase/supabase-js';
 
-const STORAGE_KEY_PREFIX = 'exercise-challenger.auth.';
+const STORAGE_KEY_PREFIX = 'athlete-arena.auth.';
 
 /**
  * Supabase auth storage adapter.

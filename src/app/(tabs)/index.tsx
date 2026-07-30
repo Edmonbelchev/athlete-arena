@@ -51,7 +51,7 @@ export default function HomeScreen() {
   const isLoading = isProfileLoading || isChallengeLoading || isFriendChallengesLoading;
   const error = profileError ?? challengeError ?? friendActionError;
 
-  const displayName = profile?.display_name ?? profile?.username ?? 'Challenger';
+  const displayName = profile?.display_name ?? profile?.username ?? 'Athlete';
   const totalXp = profile?.total_xp ?? 0;
   const currentStreak = profile?.current_streak ?? 0;
   const xpProgress = xpProgressInCurrentLevel(totalXp);

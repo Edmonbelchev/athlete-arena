@@ -75,7 +75,7 @@ export default function LoginScreen() {
           keyboardShouldPersistTaps="handled">
           <View style={styles.container}>
             <Text style={StyleSheet.flatten([styles.brand, { color: theme.primary }])}>
-              Exercise Challenger
+              Athlete Arena
             </Text>
             <Text style={StyleSheet.flatten([styles.title, { color: theme.text }])}>Welcome back</Text>
             <Text style={StyleSheet.flatten([styles.subtitle, { color: theme.textSecondary }])}>

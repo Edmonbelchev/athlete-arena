@@ -1,5 +1,5 @@
 -- =============================================================================
--- Exercise Challenger - full database setup
+-- Athlete Arena - full database setup
 -- Run once in Supabase Dashboard → SQL Editor → New query → Run
 -- Safe to re-run: uses IF NOT EXISTS / CREATE OR REPLACE where possible
 -- =============================================================================

@@ -1,21 +1,21 @@
 {
   "expo": {
-    "name": "exercise-challenger",
-    "slug": "exercise-challenger",
+    "name": "Athlete Arena",
+    "slug": "athlete-arena",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "exercisechallenger",
+    "scheme": "athletearena",
     "userInterfaceStyle": "automatic",
     "ios": {
       "icon": "./assets/expo.icon",
-      "bundleIdentifier": "com.exercisechallenger.app",
+      "bundleIdentifier": "com.athletearena.app",
       "infoPlist": {
-        "NSCameraUsageDescription": "Exercise Challenger uses the camera to see you during workouts and count repetitions."
+        "NSCameraUsageDescription": "Athlete Arena uses the camera to see you during workouts and count repetitions."
       }
     },
     "android": {
-      "package": "com.exercisechallenger.app",
+      "package": "com.athletearena.app",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -45,20 +45,20 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Exercise Challenger needs access to your photos so you can set a profile picture."
+          "photosPermission": "Athlete Arena needs access to your photos so you can set a profile picture."
         }
       ],
       [
         "expo-camera",
         {
-          "cameraPermission": "Exercise Challenger uses the camera to see you during workouts and count repetitions.",
+          "cameraPermission": "Athlete Arena uses the camera to see you during workouts and count repetitions.",
           "recordAudioAndroid": false
         }
       ],
       [
         "react-native-vision-camera",
         {
-          "cameraPermissionText": "Exercise Challenger uses the camera to see you during workouts and count repetitions.",
+          "cameraPermissionText": "Athlete Arena uses the camera to see you during workouts and count repetitions.",
           "enableMicrophonePermission": false
         }
       ],

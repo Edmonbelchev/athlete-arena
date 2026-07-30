@@ -1,4 +1,4 @@
-# Exercise Challenger
+# Athlete Arena
 
 Daily fitness challenges with pose-based rep counting, XP, streaks, and profiles. Built with Expo (SDK 57), React Native, and Supabase.
 
@@ -15,7 +15,6 @@ Daily fitness challenges with pose-based rep counting, XP, streaks, and profiles
 ### 1. Install dependencies
 
 ```bash
-cd exercise-challenger
 npm install
 ```
 

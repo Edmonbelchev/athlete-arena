@@ -75,7 +75,7 @@ export default function EditProfileScreen() {
     );
   }
 
-  const fallbackName = displayName.trim() || username || 'Challenger';
+  const fallbackName = displayName.trim() || username || 'Athlete';
 
   return (
     <>

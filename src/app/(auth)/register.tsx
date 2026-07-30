@@ -120,7 +120,7 @@ export default function RegisterScreen() {
           keyboardShouldPersistTaps="handled">
           <View style={styles.container}>
             <Text style={StyleSheet.flatten([styles.brand, { color: theme.primary }])}>
-              Exercise Challenger
+              Athlete Arena
             </Text>
             <Text style={StyleSheet.flatten([styles.title, { color: theme.text }])}>Create account</Text>
             <Text style={StyleSheet.flatten([styles.subtitle, { color: theme.textSecondary }])}>

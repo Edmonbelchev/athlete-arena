@@ -1,7 +1,7 @@
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 
-const STORAGE_KEY_PREFIX = 'exercise-challenger.app.';
+const STORAGE_KEY_PREFIX = 'athlete-arena.app.';
 
 export async function getAppStorageItem(key: string): Promise<string | null> {
   const storageKey = `${STORAGE_KEY_PREFIX}${key}`;

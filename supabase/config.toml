@@ -1,7 +1,7 @@
 # Supabase local development config (optional - for CLI workflow)
 # See: https://supabase.com/docs/guides/cli
 
-project_id = "exercise-challenger"
+project_id = "athlete-arena"
 
 [api]
 enabled = true
