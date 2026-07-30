@@ -1,6 +1,6 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
-import { ActivityIndicator, Platform, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { CameraPreview } from '@/components/CameraPreview';
@@ -108,7 +108,11 @@ export default function ChallengeScreen() {
       <SafeAreaView
         style={StyleSheet.flatten([styles.safeArea, { backgroundColor: theme.background }])}
         edges={['bottom']}>
-        <View style={styles.container}>
+        <ScrollView
+          style={styles.scroll}
+          contentContainerStyle={styles.content}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled">
           <Text style={StyleSheet.flatten([styles.exercise, { color: theme.textSecondary }])}>
             {formatExerciseLabel(challenge.exercise_type, true)}
           </Text>
@@ -116,13 +120,15 @@ export default function ChallengeScreen() {
             {repCounter.currentReps} / {challenge.target_reps}
           </Text>
 
-          <CameraPreview
-            active={!isCompleted}
-            onCameraReady={() => {
-              repCounter.start();
-            }}
-            onLandmarksDetected={processLandmarks}
-          />
+          <View style={styles.cameraFrame}>
+            <CameraPreview
+              active={!isCompleted}
+              onCameraReady={() => {
+                repCounter.start();
+              }}
+              onLandmarksDetected={processLandmarks}
+            />
+          </View>
 
           {!isCompleted ? <PoseGuidanceBanner exerciseType={challenge.exercise_type} /> : null}
 
@@ -182,7 +188,7 @@ export default function ChallengeScreen() {
             variant="secondary"
             onPress={() => router.back()}
           />
-        </View>
+        </ScrollView>
       </SafeAreaView>
     </>
   );
@@ -196,6 +202,21 @@ const styles = StyleSheet.create({
   },
   safeArea: {
     flex: 1,
+  },
+  scroll: {
+    flex: 1,
+  },
+  content: {
+    padding: Spacing.four,
+    gap: Spacing.four,
+    maxWidth: MaxContentWidth,
+    alignSelf: 'center',
+    width: '100%',
+    paddingBottom: Spacing.six,
+  },
+  cameraFrame: {
+    width: '100%',
+    height: 320,
   },
   container: {
     flex: 1,

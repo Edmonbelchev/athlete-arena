@@ -9,6 +9,7 @@ import { NotificationProvider } from '@/features/notifications/NotificationProvi
 import { ShopProvider } from '@/features/shop/ShopProvider';
 import { ThemePreferenceProvider, useThemePreference } from '@/features/theme/ThemePreferenceProvider';
 import { ChallengeNotificationBanner } from '@/components/notifications/ChallengeNotificationBanner';
+import { ModalCloseButton } from '@/components/ui/ModalCloseButton';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -66,6 +67,7 @@ function RootNavigator() {
             presentation: 'modal',
             headerShown: true,
             title: 'Challenge',
+            headerRight: () => <ModalCloseButton />,
           }}
         />
         <Stack.Screen
@@ -74,6 +76,7 @@ function RootNavigator() {
             presentation: 'modal',
             headerShown: true,
             title: 'Friend Challenge',
+            headerRight: () => <ModalCloseButton />,
           }}
         />
         <Stack.Screen
