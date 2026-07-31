@@ -18,7 +18,10 @@ import {
 } from '@/features/notifications/notificationStorage';
 import {
   challengeNotificationId,
+  friendNotificationId,
   getChallengeNotificationTypeFromChange,
+  getFriendNotificationTypeFromChange,
+  isFriendshipRow,
   isParticipantRow,
   type ChallengeNotification,
 } from '@/features/notifications/types';
@@ -43,6 +46,7 @@ const MAX_INBOX = 50;
 const POLL_INTERVAL_MS = 5000;
 
 type ParticipantChangePayload = { eventType: string; new: unknown; old: unknown };
+type FriendshipChangePayload = { eventType: string; new: unknown; old: unknown };
 
 function mergeSyncedNotifications(
   current: ChallengeNotification[],
@@ -80,10 +84,12 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   const [hiddenBannerIds, setHiddenBannerIds] = useState<Set<string>>(() => new Set());
   const [isHydrated, setIsHydrated] = useState(false);
   const [realtimeKey, setRealtimeKey] = useState(0);
+  const [friendRealtimeKey, setFriendRealtimeKey] = useState(0);
   const listenersRef = useRef(new Set<() => void>());
   const recentKeysRef = useRef(new Set<string>());
   const notificationsRef = useRef(notifications);
   const pendingEventsRef = useRef<ParticipantChangePayload[]>([]);
+  const pendingFriendEventsRef = useRef<FriendshipChangePayload[]>([]);
   const isHydratedRef = useRef(false);
   const isSyncingRef = useRef(false);
   notificationsRef.current = notifications;
@@ -119,8 +125,8 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     isSyncingRef.current = true;
 
     try {
-      const { syncChallengeNotifications } = await import('@/services/challengeNotificationService');
-      const synced = await syncChallengeNotifications(notificationsRef.current);
+      const { syncAllNotifications } = await import('@/services/notificationSyncService');
+      const synced = await syncAllNotifications(notificationsRef.current, userId);
 
       setNotifications((current) => {
         const merged = mergeSyncedNotifications(current, synced);
@@ -143,6 +149,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       setHiddenBannerIds(new Set());
       setIsHydrated(false);
       pendingEventsRef.current = [];
+      pendingFriendEventsRef.current = [];
       return;
     }
 
@@ -156,8 +163,8 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
 
       let next = stored;
       if (env.isSupabaseConfigured) {
-        const { syncChallengeNotifications } = await import('@/services/challengeNotificationService');
-        next = await syncChallengeNotifications(stored);
+        const { syncAllNotifications } = await import('@/services/notificationSyncService');
+        next = await syncAllNotifications(stored, userId);
       }
 
       if (!cancelled) {
@@ -297,6 +304,66 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
         id: stableId,
         type,
         participantId: copy.participantId,
+        friendshipId: null,
+        title: copy.title,
+        message: copy.message,
+        createdAt: Date.now(),
+        read: false,
+      });
+
+      notifyChallengeUpdate();
+    },
+    [userId, addNotification, notifyChallengeUpdate, refreshInbox],
+  );
+
+  const processFriendshipChange = useCallback(
+    async (payload: FriendshipChangePayload) => {
+      if (!userId || !isFriendshipRow(payload.new)) {
+        return;
+      }
+
+      const oldRow = isFriendshipRow(payload.old) ? payload.old : null;
+      const type = getFriendNotificationTypeFromChange(payload.eventType, payload.new, oldRow, userId);
+
+      if (!type) {
+        notifyChallengeUpdate();
+        return;
+      }
+
+      const dedupeKey = `${type}:${payload.new.id}`;
+      if (recentKeysRef.current.has(dedupeKey)) {
+        return;
+      }
+
+      recentKeysRef.current.add(dedupeKey);
+      setTimeout(() => {
+        recentKeysRef.current.delete(dedupeKey);
+      }, 3000);
+
+      const stableId = friendNotificationId(type, payload.new.id);
+      if (notificationsRef.current.some((notification) => notification.id === stableId)) {
+        notifyChallengeUpdate();
+        return;
+      }
+
+      const { buildFriendNotificationCopy } = await import('@/services/friendNotificationService');
+      const copy = await buildFriendNotificationCopy(type, {
+        friendshipId: payload.new.id,
+        requesterId: payload.new.requester_id,
+        addresseeId: payload.new.addressee_id,
+      });
+
+      if (!copy) {
+        void refreshInbox();
+        notifyChallengeUpdate();
+        return;
+      }
+
+      addNotification({
+        id: stableId,
+        type,
+        participantId: null,
+        friendshipId: copy.friendshipId,
         title: copy.title,
         message: copy.message,
         createdAt: Date.now(),
@@ -320,6 +387,18 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     [processParticipantChange],
   );
 
+  const handleFriendshipChange = useCallback(
+    (payload: FriendshipChangePayload) => {
+      if (!isHydratedRef.current) {
+        pendingFriendEventsRef.current.push(payload);
+        return;
+      }
+
+      void processFriendshipChange(payload);
+    },
+    [processFriendshipChange],
+  );
+
   useEffect(() => {
     if (!isHydrated) {
       return;
@@ -329,7 +408,12 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     queued.forEach((payload) => {
       void processParticipantChange(payload);
     });
-  }, [isHydrated, processParticipantChange]);
+
+    const queuedFriendEvents = pendingFriendEventsRef.current.splice(0);
+    queuedFriendEvents.forEach((payload) => {
+      void processFriendshipChange(payload);
+    });
+  }, [isHydrated, processParticipantChange, processFriendshipChange]);
 
   const openNotification = useCallback(
     (notification: ChallengeNotification) => {
@@ -433,6 +517,76 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       void removeChannel?.();
     };
   }, [userId, realtimeKey, handleParticipantChange, refreshInbox]);
+
+  useEffect(() => {
+    const isWebSSR = Platform.OS === 'web' && typeof window === 'undefined';
+    if (!userId || !env.isSupabaseConfigured || isWebSSR) {
+      return;
+    }
+
+    let cancelled = false;
+    let removeChannel: (() => Promise<void>) | undefined;
+
+    void (async () => {
+      const { supabase } = await import('@/lib/supabase');
+      if (cancelled) {
+        return;
+      }
+
+      const channel = supabase
+        .channel(`friend-request-notifications:${userId}:${friendRealtimeKey}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'friendships',
+            filter: `addressee_id=eq.${userId}`,
+          },
+          (payload) => {
+            handleFriendshipChange(payload);
+          },
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'friendships',
+            filter: `requester_id=eq.${userId}`,
+          },
+          (payload) => {
+            handleFriendshipChange(payload);
+          },
+        )
+        .subscribe((status) => {
+          if (__DEV__) {
+            console.log('[notifications] friend realtime status:', status);
+          }
+
+          if (status === 'SUBSCRIBED') {
+            void refreshInbox();
+          }
+
+          if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+            setTimeout(() => {
+              if (!cancelled) {
+                setFriendRealtimeKey((current) => current + 1);
+              }
+            }, 2000);
+          }
+        });
+
+      removeChannel = async () => {
+        await supabase.removeChannel(channel);
+      };
+    })();
+
+    return () => {
+      cancelled = true;
+      void removeChannel?.();
+    };
+  }, [userId, friendRealtimeKey, handleFriendshipChange, refreshInbox]);
 
   const value = useMemo(
     () => ({

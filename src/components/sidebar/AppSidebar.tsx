@@ -40,10 +40,11 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { label: 'Home', icon: 'home', href: '/(tabs)' },
   { label: 'Profile', icon: 'profile', href: '/(tabs)/profile' },
-  { label: 'Shop', icon: 'gift', href: '/profile/shop' },
+  { label: 'Shop', icon: 'gift', href: '/(tabs)/shop' },
   { label: 'Achievements', icon: 'medal', href: '/profile/achievements' },
   { label: 'History', icon: 'history', href: '/profile/history' },
   { label: 'Friends', icon: 'friends', href: '/(tabs)/friends' },
+  { label: 'Challenges', icon: 'target', href: '/friends/challenges' },
 ];
 
 export function AppSidebar() {

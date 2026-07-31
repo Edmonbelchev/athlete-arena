@@ -1,8 +1,9 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { ProfileAvatar } from '@/components/profile/ProfileAvatar';
 import { AuthTextInput } from '@/components/ui/AuthTextInput';
 import { EmotePicker } from '@/components/shop/EmotePicker';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
@@ -22,6 +23,7 @@ import {
   getDefaultRepsForExercise,
 } from '@/constants/friendChallenges';
 import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
+import { useFriends } from '@/features/friends/useFriends';
 import { getOwnedEmotes } from '@/features/shop/shopUtils';
 import { useShop } from '@/features/shop/ShopProvider';
 import { createFriendChallenge } from '@/services/friendChallengeService';
@@ -31,7 +33,12 @@ import { useTheme } from '@/hooks/use-theme';
 export default function CreateFriendChallengeScreen() {
   const theme = useTheme();
   const router = useRouter();
-  const { friendId, username } = useLocalSearchParams<{ friendId: string; username?: string }>();
+  const { friendId: initialFriendId, username: initialUsername } = useLocalSearchParams<{
+    friendId?: string;
+    username?: string;
+  }>();
+  const { friends, isLoading: isFriendsLoading } = useFriends();
+  const [selectedFriendId, setSelectedFriendId] = useState<string | null>(initialFriendId ?? null);
   const [exerciseType, setExerciseType] = useState<ExerciseType>('push_ups');
   const [targetReps, setTargetReps] = useState(getDefaultRepsForExercise('push_ups'));
   const [customReps, setCustomReps] = useState('');
@@ -42,6 +49,17 @@ export default function CreateFriendChallengeScreen() {
   const [error, setError] = useState<string | null>(null);
   const { items } = useShop();
   const ownedEmotes = useMemo(() => getOwnedEmotes(items), [items]);
+  const selectedFriend = useMemo(
+    () => friends.find((friend) => friend.friendId === selectedFriendId) ?? null,
+    [friends, selectedFriendId],
+  );
+  const selectedUsername = selectedFriend?.username ?? initialUsername;
+
+  useEffect(() => {
+    if (initialFriendId) {
+      setSelectedFriendId(initialFriendId);
+    }
+  }, [initialFriendId]);
 
   const repPresets = FRIEND_CHALLENGE_REP_PRESETS[exerciseType];
   const xpReward = useMemo(() => calculateFriendChallengeXp(targetReps), [targetReps]);
@@ -61,8 +79,8 @@ export default function CreateFriendChallengeScreen() {
   }
 
   async function handleSubmit() {
-    if (!friendId) {
-      setError('Friend not found');
+    if (!selectedFriendId) {
+      setError('Select a friend to challenge');
       return;
     }
 
@@ -71,7 +89,7 @@ export default function CreateFriendChallengeScreen() {
 
     try {
       await createFriendChallenge(
-        friendId,
+        selectedFriendId,
         exerciseType,
         targetReps,
         message.trim() || undefined,
@@ -94,8 +112,55 @@ export default function CreateFriendChallengeScreen() {
         edges={['bottom']}>
         <ScrollView contentContainerStyle={styles.content}>
           <Text style={StyleSheet.flatten([styles.subtitle, { color: theme.textSecondary }])}>
-            Create a custom challenge{username ? ` for @${username}` : ''}
+            Create a custom challenge{selectedUsername ? ` for @${selectedUsername}` : ''}
           </Text>
+
+          <Text style={StyleSheet.flatten([styles.label, { color: theme.textSecondary }])}>FRIEND</Text>
+          {isFriendsLoading ? (
+            <ActivityIndicator color={theme.primary} />
+          ) : friends.length === 0 ? (
+            <Text style={StyleSheet.flatten([styles.help, { color: theme.textSecondary }])}>
+              Add a friend first before sending a challenge.
+            </Text>
+          ) : (
+            <View style={styles.friendList}>
+              {friends.map((friend) => {
+                const selected = selectedFriendId === friend.friendId;
+                const displayName = friend.displayName ?? friend.username;
+
+                return (
+                  <Pressable
+                    key={friend.friendId}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected }}
+                    onPress={() => setSelectedFriendId(friend.friendId)}
+                    style={StyleSheet.flatten([
+                      styles.friendRow,
+                      {
+                        backgroundColor: selected ? theme.backgroundSelected : theme.backgroundElement,
+                        borderColor: selected ? theme.primary : theme.border,
+                      },
+                    ])}>
+                    <ProfileAvatar
+                      uri={friend.avatarUrl}
+                      name={displayName}
+                      size={40}
+                      shopAvatar={friend.avatar}
+                      frame={friend.frame}
+                    />
+                    <View style={styles.friendInfo}>
+                      <Text style={StyleSheet.flatten([styles.friendName, { color: theme.text }])}>
+                        {displayName}
+                      </Text>
+                      <Text style={StyleSheet.flatten([styles.friendMeta, { color: theme.textSecondary }])}>
+                        @{friend.username}
+                      </Text>
+                    </View>
+                  </Pressable>
+                );
+              })}
+            </View>
+          )}
 
           <Text style={StyleSheet.flatten([styles.label, { color: theme.textSecondary }])}>EXERCISE</Text>
           <View style={styles.exerciseRow}>
@@ -228,7 +293,12 @@ export default function CreateFriendChallengeScreen() {
             <Text style={StyleSheet.flatten([styles.error, { color: theme.danger }])}>{error}</Text>
           ) : null}
 
-          <PrimaryButton label="Send Challenge" loading={isSubmitting} onPress={() => void handleSubmit()} />
+          <PrimaryButton
+            label="Send Challenge"
+            loading={isSubmitting}
+            disabled={!selectedFriendId}
+            onPress={() => void handleSubmit()}
+          />
         </ScrollView>
       </SafeAreaView>
     </>
@@ -254,6 +324,29 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 18,
     marginTop: -Spacing.one,
+  },
+  friendList: {
+    gap: Spacing.two,
+  },
+  friendRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.three,
+    padding: Spacing.three,
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+  },
+  friendInfo: {
+    flex: 1,
+    gap: Spacing.half,
+  },
+  friendName: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  friendMeta: {
+    fontSize: 13,
+    fontWeight: '600',
   },
   label: {
     fontSize: 12,

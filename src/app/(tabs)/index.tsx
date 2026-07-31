@@ -1,5 +1,5 @@
 import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -12,6 +12,7 @@ import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { TabScreenHeader } from '@/components/sidebar/TabScreenHeader';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useDailyChallenge } from '@/features/challenges/useDailyChallenge';
+import { isActiveFriendChallenge } from '@/features/friends/friendChallengeGroups';
 import { useFriendChallenges } from '@/features/friends/useFriendChallenges';
 import { useProfile } from '@/features/profile/useProfile';
 import { formatUserError } from '@/lib/errors';
@@ -59,6 +60,10 @@ export default function HomeScreen() {
   const totalXp = profile?.total_xp ?? 0;
   const currentStreak = profile?.current_streak ?? 0;
   const xpProgress = xpProgressInCurrentLevel(totalXp);
+  const activeFriendChallenges = useMemo(
+    () => friendChallenges.filter(isActiveFriendChallenge),
+    [friendChallenges],
+  );
 
   async function handleRefresh() {
     setFriendActionError(null);
@@ -166,10 +171,12 @@ export default function HomeScreen() {
 
         <HomeSection
           title="Friend Races"
-          subtitle="Swipe through active speed races"
-          badge={friendChallenges.length > 0 ? friendChallenges.length : undefined}>
+          subtitle="View active speed races by friend"
+          badge={activeFriendChallenges.length > 0 ? activeFriendChallenges.length : undefined}
+          actionLabel="View all"
+          onAction={() => router.push('/friends/challenges')}>
           <FriendChallengesCarousel
-            challenges={friendChallenges}
+            challenges={activeFriendChallenges}
             busyChallengeId={busyChallengeId}
             onAccept={(participantId) => void handleAcceptFriendChallenge(participantId)}
             onDecline={(participantId) => void handleDeclineFriendChallenge(participantId)}

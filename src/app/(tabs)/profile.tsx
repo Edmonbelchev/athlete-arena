@@ -70,7 +70,7 @@ export default function ProfileScreen() {
 
   const quickActions = useMemo(
     () => [
-      { id: 'shop', label: 'Shop', icon: 'gift' as const, onPress: () => router.push('/profile/shop') },
+      { id: 'shop', label: 'Shop', icon: 'gift' as const, onPress: () => router.push('/(tabs)/shop') },
       {
         id: 'achievements',
         label: 'Achievements',

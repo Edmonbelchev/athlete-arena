@@ -5,6 +5,7 @@ import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
 import { AuthProvider, useAuth } from '@/features/auth';
 import { AchievementUnlockProvider } from '@/features/achievements/AchievementUnlockProvider';
+import { FriendsProvider } from '@/features/friends/FriendsProvider';
 import { NotificationProvider } from '@/features/notifications/NotificationProvider';
 import { ShopProvider } from '@/features/shop/ShopProvider';
 import { ThemePreferenceProvider, useThemePreference } from '@/features/theme/ThemePreferenceProvider';
@@ -19,9 +20,11 @@ export default function RootLayout() {
       <AuthProvider>
         <AchievementUnlockProvider>
           <ShopProvider>
-            <NotificationProvider>
-              <ThemedRootNavigator />
-            </NotificationProvider>
+            <FriendsProvider>
+              <NotificationProvider>
+                <ThemedRootNavigator />
+              </NotificationProvider>
+            </FriendsProvider>
           </ShopProvider>
         </AchievementUnlockProvider>
       </AuthProvider>
@@ -93,6 +96,13 @@ function RootNavigator() {
             presentation: 'modal',
             headerShown: true,
             title: 'Add Friend',
+          }}
+        />
+        <Stack.Screen
+          name="friends/challenges"
+          options={{
+            headerShown: true,
+            title: 'Challenges',
           }}
         />
         <Stack.Screen

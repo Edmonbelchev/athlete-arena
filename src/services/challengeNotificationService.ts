@@ -236,11 +236,25 @@ export async function syncChallengeNotifications(
   existing: ChallengeNotification[],
 ): Promise<ChallengeNotification[]> {
   try {
+    const challengeExisting = existing.filter((notification) =>
+      notification.type === 'challenge_received' ||
+      notification.type === 'challenge_accepted' ||
+      notification.type === 'challenge_declined',
+    );
+    const otherExisting = existing.filter(
+      (notification) =>
+        notification.type !== 'challenge_received' &&
+        notification.type !== 'challenge_accepted' &&
+        notification.type !== 'challenge_declined',
+    );
+
     const challenges = await getMyFriendChallenges();
     const activeIds = getActiveNotificationIds(challenges);
-    const keptExisting = existing.filter((notification) => activeIds.has(notification.id) || notification.read);
+    const keptExisting = challengeExisting.filter(
+      (notification) => activeIds.has(notification.id) || notification.read,
+    );
     const knownIds = new Set(keptExisting.map((notification) => notification.id));
-    const merged = [...keptExisting];
+    const mergedChallenge = [...keptExisting];
 
     for (const challenge of challenges) {
       for (const type of getSyncNotificationTypes(challenge)) {
@@ -250,10 +264,11 @@ export async function syncChallengeNotifications(
         }
 
         const copy = buildCopyFromChallenge(type, challenge);
-        merged.push({
+        mergedChallenge.push({
           id: stableId,
           type,
           participantId: challenge.participantId,
+          friendshipId: null,
           title: copy.title,
           message: copy.message,
           createdAt: challenge.createdAt ? new Date(challenge.createdAt).getTime() : Date.now(),
@@ -263,7 +278,9 @@ export async function syncChallengeNotifications(
       }
     }
 
-    return merged.sort((a, b) => b.createdAt - a.createdAt).slice(0, 50);
+    return [...otherExisting, ...mergedChallenge]
+      .sort((a, b) => b.createdAt - a.createdAt)
+      .slice(0, 50);
   } catch {
     return existing;
   }

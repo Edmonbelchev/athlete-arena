@@ -1,5 +1,5 @@
 import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   ScrollView,
@@ -13,29 +13,25 @@ import { FriendListItem } from '@/components/ui/FriendListItem';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { TabScreenHeader } from '@/components/sidebar/TabScreenHeader';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { isActiveFriendChallenge } from '@/features/friends/friendChallengeGroups';
 import { useFriendChallenges } from '@/features/friends/useFriendChallenges';
 import { useFriends } from '@/features/friends/useFriends';
-import {
-  acceptFriendChallenge,
-  declineFriendChallenge,
-} from '@/services/friendChallengeService';
+import { useChallengeNotificationRefresh } from '@/features/notifications/useChallengeNotificationRefresh';
 import { respondFriendRequest } from '@/services/friendsService';
-import { FriendChallengeCard } from '@/components/ui/FriendChallengeCard';
 import { formatUserError } from '@/lib/errors';
 import { useTheme } from '@/hooks/use-theme';
-import { useChallengeNotificationRefresh } from '@/features/notifications/useChallengeNotificationRefresh';
 
 export default function FriendsScreen() {
   const theme = useTheme();
   const { friends, requests, isLoading, error, refresh } = useFriends();
-  const {
-    challenges,
-    isLoading: isChallengesLoading,
-    error: challengesError,
-    refresh: refreshChallenges,
-  } = useFriendChallenges();
+  const { challenges, refresh: refreshChallenges } = useFriendChallenges();
   const [actionError, setActionError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+
+  const activeChallengeCount = useMemo(
+    () => challenges.filter(isActiveFriendChallenge).length,
+    [challenges],
+  );
 
   const handleRefresh = useCallback(async () => {
     setActionError(null);
@@ -55,7 +51,7 @@ export default function FriendsScreen() {
     setActionError(null);
     try {
       await respondFriendRequest(friendshipId, accept);
-      await refresh();
+      await refresh({ silent: true });
     } catch (err) {
       setActionError(formatUserError(err, 'Failed to respond to request'));
     } finally {
@@ -63,36 +59,7 @@ export default function FriendsScreen() {
     }
   }
 
-  async function handleAcceptChallenge(participantId: string) {
-    setBusyId(participantId);
-    setActionError(null);
-    try {
-      await acceptFriendChallenge(participantId);
-      await refreshChallenges();
-    } catch (err) {
-      setActionError(formatUserError(err, 'Failed to accept challenge'));
-    } finally {
-      setBusyId(null);
-    }
-  }
-
-  async function handleDeclineChallenge(participantId: string) {
-    setBusyId(participantId);
-    setActionError(null);
-    try {
-      await declineFriendChallenge(participantId);
-      await refreshChallenges();
-    } catch (err) {
-      setActionError(formatUserError(err, 'Failed to decline challenge'));
-    } finally {
-      setBusyId(null);
-    }
-  }
-
-  const loading = isLoading || isChallengesLoading;
-  const displayError = error ?? challengesError ?? actionError;
-
-  if (loading) {
+  if (isLoading) {
     return (
       <View style={StyleSheet.flatten([styles.loading, { backgroundColor: theme.background }])}>
         <ActivityIndicator size="large" color={theme.primary} />
@@ -105,19 +72,23 @@ export default function FriendsScreen() {
       edges={['left', 'right', 'bottom']}
       style={StyleSheet.flatten([styles.safeArea, { backgroundColor: theme.background }])}>
       <ScrollView contentContainerStyle={styles.content}>
-        <TabScreenHeader
-          title="Friends"
-          rightSlot={
-            <PrimaryButton
-              label="Add Friend"
-              variant="secondary"
-              onPress={() => router.push('/friends/add')}
-            />
-          }
-        />
+        <TabScreenHeader title="Friends" />
 
-        {displayError ? (
-          <Text style={StyleSheet.flatten([styles.error, { color: theme.danger }])}>{displayError}</Text>
+        <View style={styles.headerActions}>
+          <PrimaryButton
+            label={
+              activeChallengeCount > 0 ? `Challenges (${activeChallengeCount})` : 'Challenges'
+            }
+            variant="secondary"
+            onPress={() => router.push('/friends/challenges')}
+          />
+          <PrimaryButton label="Add Friend" onPress={() => router.push('/friends/add')} />
+        </View>
+
+        {error ?? actionError ? (
+          <Text style={StyleSheet.flatten([styles.error, { color: theme.danger }])}>
+            {error ?? actionError}
+          </Text>
         ) : null}
 
         {requests.length > 0 ? (
@@ -152,29 +123,6 @@ export default function FriendsScreen() {
                   />
                 </View>
               </View>
-            ))}
-          </View>
-        ) : null}
-
-        {challenges.length > 0 ? (
-          <View style={styles.section}>
-            <Text style={StyleSheet.flatten([styles.sectionTitle, { color: theme.textSecondary }])}>
-              ACTIVE CHALLENGES
-            </Text>
-            {challenges.map((challenge) => (
-              <FriendChallengeCard
-                key={challenge.participantId}
-                challenge={challenge}
-                loading={busyId === challenge.participantId}
-                onAccept={() => void handleAcceptChallenge(challenge.participantId)}
-                onDecline={() => void handleDeclineChallenge(challenge.participantId)}
-                onStart={() =>
-                  router.push({
-                    pathname: '/challenge/friend/[participantId]',
-                    params: { participantId: challenge.participantId },
-                  })
-                }
-              />
             ))}
           </View>
         ) : null}
@@ -228,6 +176,10 @@ const styles = StyleSheet.create({
     maxWidth: MaxContentWidth,
     alignSelf: 'center',
     width: '100%',
+  },
+  headerActions: {
+    flexDirection: 'row',
+    gap: Spacing.two,
   },
   section: {
     gap: Spacing.three,

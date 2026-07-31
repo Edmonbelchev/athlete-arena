@@ -47,7 +47,7 @@ export function NotificationInboxList({ showMarkAll = true, scrollable = true }:
 
       {notifications.length === 0 ? (
         <Text style={StyleSheet.flatten([styles.empty, { color: theme.textSecondary }])}>
-          No notifications yet. Challenge updates will show up here.
+          No notifications yet. Friend requests and challenge updates will show up here.
         </Text>
       ) : scrollable ? (
         <ScrollView contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>

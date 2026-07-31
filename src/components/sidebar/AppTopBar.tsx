@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { NotificationBellButton } from '@/components/notifications/NotificationBellButton';
 import { ProfileAvatar } from '@/components/profile/ProfileAvatar';
 import { SidebarToggleButton } from '@/components/sidebar/SidebarToggleButton';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
@@ -30,19 +31,23 @@ export function AppTopBar() {
       <View style={styles.inner}>
         <SidebarToggleButton />
 
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Open profile"
-          onPress={() => router.push('/(tabs)/profile')}
-          style={styles.avatarButton}>
-          <ProfileAvatar
-            uri={profile?.avatar_url}
-            name={displayName}
-            size={40}
-            shopAvatar={equippedAvatar}
-            frame={equippedFrame}
-          />
-        </Pressable>
+        <View style={styles.trailing}>
+          <NotificationBellButton />
+
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Open profile"
+            onPress={() => router.push('/(tabs)/profile')}
+            style={styles.avatarButton}>
+            <ProfileAvatar
+              uri={profile?.avatar_url}
+              name={displayName}
+              size={40}
+              shopAvatar={equippedAvatar}
+              frame={equippedFrame}
+            />
+          </Pressable>
+        </View>
       </View>
     </View>
   );
@@ -61,6 +66,11 @@ const styles = StyleSheet.create({
     maxWidth: MaxContentWidth,
     alignSelf: 'center',
     width: '100%',
+  },
+  trailing: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
   },
   avatarButton: {
     borderRadius: 20,

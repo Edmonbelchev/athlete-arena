@@ -28,7 +28,13 @@ export async function loadNotificationInbox(userId: string): Promise<ChallengeNo
           typeof item.createdAt === 'number',
       )
       .map((item) => ({
-        ...item,
+        id: item.id,
+        type: item.type,
+        participantId: typeof item.participantId === 'string' ? item.participantId : null,
+        friendshipId: typeof item.friendshipId === 'string' ? item.friendshipId : null,
+        title: item.title,
+        message: item.message,
+        createdAt: item.createdAt,
         read: Boolean(item.read),
       }))
       .sort((a, b) => b.createdAt - a.createdAt)

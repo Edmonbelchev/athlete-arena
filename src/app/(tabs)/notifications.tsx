@@ -15,7 +15,7 @@ export default function NotificationsScreen() {
   const subtitle =
     unreadCount > 0
       ? `${unreadCount} unread`
-      : 'Challenge invites and updates';
+      : 'Friend requests, challenge invites, and updates';
 
   useFocusEffect(
     useCallback(() => {
