@@ -141,7 +141,9 @@ export default function HomeScreen() {
           />
         </HomeSection>
 
-        <HomeSection title="Today's Challenge" subtitle="Complete your daily workout for XP and coins">
+        <HomeSection
+          title="Today's Challenge"
+          subtitle="Same workout for everyone today — complete it for XP and coins">
           {challenge ? (
             <ChallengeCard
               exerciseType={challenge.exercise_type}
