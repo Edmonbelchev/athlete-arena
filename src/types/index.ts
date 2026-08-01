@@ -2,6 +2,8 @@ import type { ExerciseType } from '@/constants/challenges';
 
 export type ChallengeStatus = 'pending' | 'in_progress' | 'completed' | 'declined' | 'expired';
 
+import type { Json } from '@/types/database';
+
 export interface Profile {
   id: string;
   username: string;
@@ -11,6 +13,7 @@ export interface Profile {
   level: number;
   current_streak: number;
   longest_streak: number;
+  preferences: Json;
   created_at: string;
   updated_at: string;
 }

@@ -2,7 +2,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { AppIcon } from '@/components/ui/AppIcon';
 import { Radius, Spacing } from '@/constants/theme';
-import type { ThemePreference } from '@/features/theme/ThemePreferenceProvider';
+import type { ThemePreference } from '@/features/settings/themeTypes';
 import { useTheme } from '@/hooks/use-theme';
 
 interface ThemeToggleProps {

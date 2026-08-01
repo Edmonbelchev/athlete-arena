@@ -11,6 +11,7 @@ import type { PoseLandmark } from '@/features/challenges/pose/landmarks';
 import { createWebPoseLandmarker, type WebPoseLandmarker } from '@/lib/mediapipeWeb';
 import { POSE_QUALITY } from '@/constants/poseDetection';
 import { Radius, Spacing } from '@/constants/theme';
+import { useUserSettings } from '@/features/settings/UserSettingsProvider';
 import { useTheme } from '@/hooks/use-theme';
 
 function mapLandmarks(
@@ -33,6 +34,8 @@ export function CameraPreview({
   onLandmarksDetected,
 }: CameraPreviewProps) {
   const theme = useTheme();
+  const { preferences } = useUserSettings();
+  const showPoseSkeleton = preferences.showPoseSkeleton;
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const landmarkerRef = useRef<WebPoseLandmarker | null>(null);
@@ -40,6 +43,7 @@ export function CameraPreview({
   const onLandmarksRef = useRef(onLandmarksDetected);
   const onCameraReadyRef = useRef(onCameraReady);
   const themeRef = useRef(theme);
+  const showSkeletonRef = useRef(showPoseSkeleton);
   const [facing, setFacing] = useState<CameraFacing>('front');
   const [status, setStatus] = useState<'loading' | 'ready' | 'error' | 'permission_denied'>('loading');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -48,6 +52,7 @@ export function CameraPreview({
   onLandmarksRef.current = onLandmarksDetected;
   onCameraReadyRef.current = onCameraReady;
   themeRef.current = theme;
+  showSkeletonRef.current = showPoseSkeleton;
 
   useEffect(() => {
     if (!active) {
@@ -118,13 +123,17 @@ export function CameraPreview({
 
               if (landmarks && canvas.width > 0 && canvas.height > 0) {
                 const mapped = mapLandmarks(landmarks);
-                drawPoseSkeleton(ctx, mapped, canvas.width, canvas.height, {
-                  lineColor: themeRef.current.primary,
-                  lineWidth: 3,
-                  jointColor: '#FFFFFF',
-                  jointRadius: 4,
-                  minVisibility: POSE_QUALITY.skeletonMinVisibility,
-                });
+                if (showSkeletonRef.current) {
+                  drawPoseSkeleton(ctx, mapped, canvas.width, canvas.height, {
+                    lineColor: themeRef.current.primary,
+                    lineWidth: 3,
+                    jointColor: '#FFFFFF',
+                    jointRadius: 4,
+                    minVisibility: POSE_QUALITY.skeletonMinVisibility,
+                  });
+                } else {
+                  clearPoseSkeleton(ctx, canvas.width, canvas.height);
+                }
                 onLandmarksRef.current?.(mapped);
                 setTrackingBody(true);
                 if (trackingTimeout) {

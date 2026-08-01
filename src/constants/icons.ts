@@ -23,7 +23,8 @@ export type AppIconName =
   | 'gift'
   | 'coin'
   | 'camera'
-  | 'chevronBack';
+  | 'chevronBack'
+  | 'settings';
 
 export const APP_ICONS: Record<AppIconName, SymbolViewProps['name']> = {
   home: { ios: 'house.fill', android: 'home', web: 'home' },
@@ -53,4 +54,5 @@ export const APP_ICONS: Record<AppIconName, SymbolViewProps['name']> = {
   coin: { ios: 'centsign.circle.fill', android: 'monetization_on', web: 'monetization_on' },
   camera: { ios: 'camera.fill', android: 'photo_camera', web: 'photo_camera' },
   chevronBack: { ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' },
+  settings: { ios: 'gearshape.fill', android: 'settings', web: 'settings' },
 };
