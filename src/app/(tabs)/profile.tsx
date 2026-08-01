@@ -84,6 +84,12 @@ export default function ProfileScreen() {
         onPress: () => router.push('/profile/history'),
       },
       {
+        id: 'settings',
+        label: 'Settings',
+        icon: 'settings' as const,
+        onPress: () => router.push('/profile/settings'),
+      },
+      {
         id: 'edit',
         label: 'Edit Profile',
         icon: 'profile' as const,

@@ -12,7 +12,7 @@ import {
   formatXpAndCoins,
   getFriendChallengeCoinReward,
 } from '@/constants/coins';
-import { formatRaceTime, formatRaceTimeLimit } from '@/constants/friendChallenges';
+import { formatRaceTime, formatRaceTimeLimit, FRIEND_RACE_TIMER_START_HINT } from '@/constants/friendChallenges';
 import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { useExercisePoseDetection } from '@/features/challenges/useExercisePoseDetection';
 import { useRepCounter } from '@/features/challenges/useRepCounter';
@@ -22,7 +22,6 @@ import { useFriendChallengeRaceTimer } from '@/features/friends/useFriendChallen
 import { useShop } from '@/features/shop/ShopProvider';
 import {
   completeFriendChallenge,
-  startFriendChallenge,
 } from '@/services/friendChallengeService';
 import {
   didIWinFriendChallenge,
@@ -47,7 +46,6 @@ export default function FriendChallengeScreen() {
   const [syncError, setSyncError] = useState<string | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
   const [isTimedOut, setIsTimedOut] = useState(false);
-  const [hasStartedAttempt, setHasStartedAttempt] = useState(false);
   const isSyncingRef = useRef(false);
   const challengeRef = useRef(challenge);
 
@@ -113,7 +111,7 @@ export default function FriendChallengeScreen() {
   const repCounter = useRepCounter({
     targetReps,
     initialReps: challenge?.completedReps ?? 0,
-    enabled: canAttempt && raceStarted,
+    enabled: canAttempt,
     onRepDetected: (repCount) => {
       void handleRepDetected(repCount);
     },
@@ -121,7 +119,7 @@ export default function FriendChallengeScreen() {
 
   const { phase: posePhase, trackingMessage, processLandmarks } = useExercisePoseDetection({
     exerciseType: challenge?.exerciseType ?? 'push_ups',
-    enabled: canAttempt && raceStarted,
+    enabled: canAttempt,
     onRepDetected: () => {
       repCounter.simulateRep();
     },
@@ -129,25 +127,10 @@ export default function FriendChallengeScreen() {
 
   const progress = targetReps > 0 ? Math.min(repCounter.currentReps / targetReps, 1) : 0;
   const autoRepCounting = Platform.OS === 'web' || supportsNativePoseDetection();
-  const showSimulateButton = canAttempt && raceStarted && !autoRepCounting;
+  const showSimulateButton = canAttempt && !autoRepCounting;
 
-  async function handleCameraReady() {
-    if (!participantId || hasStartedAttempt) {
-      repCounter.start();
-      return;
-    }
-
-    setHasStartedAttempt(true);
-    setSyncError(null);
-
-    try {
-      await startFriendChallenge(participantId);
-      await refresh({ silent: true });
-      repCounter.start();
-    } catch (err) {
-      setSyncError(formatUserError(err, 'Failed to start challenge timer'));
-      setHasStartedAttempt(false);
-    }
+  function handleCameraReady() {
+    repCounter.start();
   }
 
   if (isLoading) {
@@ -191,7 +174,25 @@ export default function FriendChallengeScreen() {
   }
 
   function renderRaceTimer(activeChallenge: FriendChallenge) {
-    if (isPending || !raceStarted) {
+    if (isPending) {
+      return null;
+    }
+
+    if (!raceStarted && canAttempt) {
+      return (
+        <View
+          style={[
+            styles.timerHintBanner,
+            { backgroundColor: theme.backgroundElement, borderColor: theme.border },
+          ]}>
+          <Text style={[styles.timerHintText, { color: theme.textSecondary }]}>
+            {FRIEND_RACE_TIMER_START_HINT}
+          </Text>
+        </View>
+      );
+    }
+
+    if (!raceStarted) {
       return null;
     }
 
@@ -320,18 +321,10 @@ export default function FriendChallengeScreen() {
               <View style={styles.cameraFrame}>
                 <CameraPreview
                   active={canAttempt}
-                  onCameraReady={() => {
-                    void handleCameraReady();
-                  }}
+                  onCameraReady={handleCameraReady}
                   onLandmarksDetected={processLandmarks}
                 />
               </View>
-
-              {!raceStarted ? (
-                <Text style={StyleSheet.flatten([styles.pending, { color: theme.textSecondary }])}>
-                  Camera ready — your race timer starts now.
-                </Text>
-              ) : null}
 
               <PoseGuidanceBanner exerciseType={challenge.exerciseType} />
 
@@ -435,6 +428,18 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     alignItems: 'center',
     gap: Spacing.one,
+  },
+  timerHintBanner: {
+    paddingVertical: Spacing.two,
+    paddingHorizontal: Spacing.three,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    alignItems: 'center',
+  },
+  timerHintText: {
+    fontSize: 12,
+    fontWeight: '600',
+    textAlign: 'center',
   },
   timerLabel: {
     fontSize: 11,

@@ -2,6 +2,8 @@ import type { ExerciseType } from '@/constants/challenges';
 
 export type ChallengeStatus = 'pending' | 'in_progress' | 'completed' | 'declined' | 'expired';
 
+import type { Json } from '@/types/database';
+
 export interface Profile {
   id: string;
   username: string;
@@ -11,6 +13,7 @@ export interface Profile {
   level: number;
   current_streak: number;
   longest_streak: number;
+  preferences: Json;
   created_at: string;
   updated_at: string;
 }
@@ -26,4 +29,18 @@ export interface DailyChallenge {
   status: ChallengeStatus;
   completed_at: string | null;
   created_at: string;
+}
+
+/** Global daily workout plus optional per-user progress for the home screen. */
+export interface DailyChallengeHome {
+  templateId: string;
+  challengeDate: string;
+  exerciseType: ExerciseType;
+  targetReps: number;
+  xpReward: number;
+  catalogSlot: number;
+  userChallengeId: string | null;
+  status: ChallengeStatus | 'not_started';
+  completedReps: number;
+  completedAt: string | null;
 }

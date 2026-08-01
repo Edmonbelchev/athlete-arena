@@ -17,6 +17,7 @@ create table if not exists public.profiles (
   level integer not null default 1 check (level >= 1),
   current_streak integer not null default 0 check (current_streak >= 0),
   longest_streak integer not null default 0 check (longest_streak >= 0),
+  preferences jsonb not null default '{}'::jsonb,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   constraint profiles_username_length check (char_length(username) >= 3),
