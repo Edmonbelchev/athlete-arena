@@ -9,10 +9,8 @@ import {
 } from 'react-native-mediapipe-posedetection';
 import { useCameraPermission } from 'react-native-vision-camera';
 
-import { PoseSkeletonOverlay } from '@/components/settings/PoseSkeletonOverlay';
 import type { CameraPreviewProps } from '@/components/CameraPreview.types';
 import type { PoseLandmark } from '@/features/challenges/pose/landmarks';
-import { useUserSettings } from '@/features/settings/UserSettingsProvider';
 import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -36,15 +34,12 @@ export function VisionCameraPreview({
   onLandmarksDetected,
 }: CameraPreviewProps) {
   const theme = useTheme();
-  const { preferences } = useUserSettings();
-  const showPoseSkeleton = preferences.showPoseSkeleton;
   const { hasPermission, requestPermission } = useCameraPermission();
   const onLandmarksRef = useRef(onLandmarksDetected);
   const onCameraReadyRef = useRef(onCameraReady);
   const cameraReadyRef = useRef(false);
   const [trackingBody, setTrackingBody] = useState(false);
   const [detectionError, setDetectionError] = useState<string | null>(null);
-  const [latestLandmarks, setLatestLandmarks] = useState<PoseLandmark[] | null>(null);
 
   onLandmarksRef.current = onLandmarksDetected;
   onCameraReadyRef.current = onCameraReady;
@@ -58,7 +53,6 @@ export function VisionCameraPreview({
 
   const handleResults = useCallback((landmarks: PoseLandmark[]) => {
     onLandmarksRef.current?.(landmarks);
-    setLatestLandmarks(landmarks);
     setTrackingBody(true);
   }, []);
 
@@ -136,11 +130,6 @@ export function VisionCameraPreview({
         { borderColor: theme.border },
       ])}>
       <MediapipeCamera style={styles.camera} solution={poseDetection} activeCamera="front" />
-
-      <PoseSkeletonOverlay
-        landmarks={latestLandmarks}
-        visible={showPoseSkeleton}
-      />
 
       <View style={styles.overlay}>
         <Text style={styles.overlayText}>

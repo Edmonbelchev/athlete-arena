@@ -8,8 +8,7 @@ import { AchievementUnlockProvider } from '@/features/achievements/AchievementUn
 import { FriendsProvider } from '@/features/friends/FriendsProvider';
 import { NotificationProvider } from '@/features/notifications/NotificationProvider';
 import { ShopProvider } from '@/features/shop/ShopProvider';
-import { UserSettingsProvider } from '@/features/settings/UserSettingsProvider';
-import { useThemePreference } from '@/features/theme/ThemePreferenceProvider';
+import { ThemePreferenceProvider, useThemePreference } from '@/features/theme/ThemePreferenceProvider';
 import { ChallengeNotificationBanner } from '@/components/notifications/ChallengeNotificationBanner';
 import { ModalCloseButton } from '@/components/ui/ModalCloseButton';
 
@@ -17,8 +16,8 @@ SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   return (
-    <AuthProvider>
-      <UserSettingsProvider>
+    <ThemePreferenceProvider>
+      <AuthProvider>
         <AchievementUnlockProvider>
           <ShopProvider>
             <FriendsProvider>
@@ -28,8 +27,8 @@ export default function RootLayout() {
             </FriendsProvider>
           </ShopProvider>
         </AchievementUnlockProvider>
-      </UserSettingsProvider>
-    </AuthProvider>
+      </AuthProvider>
+    </ThemePreferenceProvider>
   );
 }
 
@@ -144,14 +143,6 @@ function RootNavigator() {
             presentation: 'modal',
             headerShown: true,
             title: 'Achievements',
-          }}
-        />
-        <Stack.Screen
-          name="profile/settings"
-          options={{
-            presentation: 'modal',
-            headerShown: true,
-            title: 'Settings',
           }}
         />
       </Stack.Protected>

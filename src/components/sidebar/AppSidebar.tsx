@@ -13,6 +13,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AchievementBadges } from '@/components/sidebar/AchievementBadges';
 import { DailyMotivationCard } from '@/components/sidebar/DailyMotivationCard';
+import { ThemeToggle } from '@/components/sidebar/ThemeToggle';
 import { CoinBadge } from '@/components/shop/CoinBadge';
 import { ProfileAvatar } from '@/components/profile/ProfileAvatar';
 import { AppIcon } from '@/components/ui/AppIcon';
@@ -26,6 +27,7 @@ import { useAuth } from '@/features/auth';
 import { useProfile } from '@/features/profile/useProfile';
 import { useShop } from '@/features/shop/ShopProvider';
 import { useSidebar } from '@/features/sidebar/SidebarProvider';
+import { useThemePreference } from '@/features/theme/ThemePreferenceProvider';
 import { xpProgressInCurrentLevel } from '@/features/xp/levelUtils';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -41,7 +43,6 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Shop', icon: 'gift', href: '/(tabs)/shop' },
   { label: 'Achievements', icon: 'medal', href: '/profile/achievements' },
   { label: 'History', icon: 'history', href: '/profile/history' },
-  { label: 'Settings', icon: 'settings', href: '/profile/settings' },
   { label: 'Friends', icon: 'friends', href: '/(tabs)/friends' },
   { label: 'Challenges', icon: 'target', href: '/friends/challenges' },
 ];
@@ -51,6 +52,7 @@ export function AppSidebar() {
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const { isOpen, close } = useSidebar();
+  const { preference, setPreference } = useThemePreference();
   const { signOut } = useAuth();
   const { profile } = useProfile();
   const { summary, equippedAvatar, equippedFrame } = useShop();
@@ -155,6 +157,8 @@ export function AppSidebar() {
               upcoming={upcomingAchievements}
               onViewAll={() => navigate('/profile/achievements')}
             />
+
+            <ThemeToggle preference={preference} onChange={setPreference} />
 
             <DailyMotivationCard />
 
