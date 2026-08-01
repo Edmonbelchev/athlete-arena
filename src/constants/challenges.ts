@@ -17,9 +17,6 @@ export interface ChallengeTier {
   xp: number;
 }
 
-/** Number of predefined daily challenges in the global rotation (see migration 024). */
-export const DAILY_CHALLENGE_ROTATION_SIZE = 30;
-
 export const CHALLENGE_CONFIG: Record<ExerciseType, readonly ChallengeTier[]> = {
   push_ups: [
     { reps: 5, xp: 50 },

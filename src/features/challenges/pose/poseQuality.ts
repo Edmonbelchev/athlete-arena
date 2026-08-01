@@ -1,9 +1,7 @@
-import type { ExerciseType } from '@/constants/challenges';
+import { isElbowBasedExercise, type ExerciseType } from '@/constants/challenges';
 import { POSE_QUALITY, POSE_REP_MIN_VISIBILITY } from '@/constants/poseDetection';
 
 import { PoseLandmarkIndex, type PoseLandmark } from './landmarks';
-import { getPullUpSetupMessage, hasPullUpTrackingLandmarks } from './pullUpPosture';
-import { getPushUpSetupMessage, hasPushUpTrackingLandmarks } from './pushUpPosture';
 
 export type PoseTrackingStatus = 'ready' | 'stabilizing' | 'partial';
 
@@ -51,33 +49,7 @@ function hasCompleteLegChain(landmarks: PoseLandmark[], side: 'left' | 'right'):
 }
 
 function getTrackingIndices(exerciseType: ExerciseType): number[] {
-  if (exerciseType === 'pull_ups') {
-    return [
-      PoseLandmarkIndex.LEFT_SHOULDER,
-      PoseLandmarkIndex.RIGHT_SHOULDER,
-      PoseLandmarkIndex.LEFT_ELBOW,
-      PoseLandmarkIndex.RIGHT_ELBOW,
-      PoseLandmarkIndex.LEFT_WRIST,
-      PoseLandmarkIndex.RIGHT_WRIST,
-      PoseLandmarkIndex.LEFT_HIP,
-      PoseLandmarkIndex.RIGHT_HIP,
-    ];
-  }
-
-  if (exerciseType === 'push_ups') {
-    return [
-      PoseLandmarkIndex.LEFT_SHOULDER,
-      PoseLandmarkIndex.RIGHT_SHOULDER,
-      PoseLandmarkIndex.LEFT_ELBOW,
-      PoseLandmarkIndex.RIGHT_ELBOW,
-      PoseLandmarkIndex.LEFT_WRIST,
-      PoseLandmarkIndex.RIGHT_WRIST,
-      PoseLandmarkIndex.LEFT_HIP,
-      PoseLandmarkIndex.RIGHT_HIP,
-    ];
-  }
-
-  if (exerciseType === 'dips') {
+  if (isElbowBasedExercise(exerciseType)) {
     return [
       PoseLandmarkIndex.LEFT_SHOULDER,
       PoseLandmarkIndex.RIGHT_SHOULDER,
@@ -109,51 +81,7 @@ function checkRequiredLandmarks(
   const trackingIndices = getTrackingIndices(exerciseType);
   const visibleCount = countVisibleLandmarks(landmarks, trackingIndices);
 
-  if (exerciseType === 'pull_ups') {
-    if (!hasPullUpTrackingLandmarks(landmarks)) {
-      return {
-        ok: false,
-        message: 'Step back — keep shoulders, arms, and hips in frame',
-      };
-    }
-
-    const setupMessage = getPullUpSetupMessage(landmarks);
-    if (setupMessage) {
-      return {
-        ok: false,
-        message: setupMessage,
-      };
-    }
-
-    if (visibleCount < POSE_QUALITY.minVisibleTrackingPoints + 1) {
-      return {
-        ok: false,
-        message: 'Step back — keep shoulders, arms, and hips in frame',
-      };
-    }
-
-    return { ok: true, message: null };
-  }
-
-  if (exerciseType === 'push_ups') {
-    if (!hasPushUpTrackingLandmarks(landmarks)) {
-      return {
-        ok: false,
-        message: getPushUpSetupMessage(landmarks) ?? 'Keep shoulders, elbows, and wrists in frame',
-      };
-    }
-
-    if (visibleCount < POSE_QUALITY.minVisibleTrackingPoints) {
-      return {
-        ok: false,
-        message: 'Move back — keep your upper body in frame',
-      };
-    }
-
-    return { ok: true, message: null };
-  }
-
-  if (exerciseType === 'dips') {
+  if (isElbowBasedExercise(exerciseType)) {
     const armVisible = hasCompleteArmChain(landmarks, 'left') || hasCompleteArmChain(landmarks, 'right');
 
     if (!armVisible) {

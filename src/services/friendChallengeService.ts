@@ -93,22 +93,7 @@ export async function createFriendChallenge(
     throw new Error('Failed to create friend challenge');
   }
 
-  const challengeId = data as string;
-  const { data: challenges, error: listError } = await supabase.rpc('get_my_friend_challenges');
-
-  if (listError) {
-    throw listError;
-  }
-
-  const created = (challenges ?? []).find(
-    (row) => row.challenge_id === challengeId && row.is_creator,
-  );
-
-  if (!created?.participant_id) {
-    throw new Error('Failed to open created challenge');
-  }
-
-  return created.participant_id;
+  return data as string;
 }
 
 export async function acceptFriendChallenge(participantId: string): Promise<void> {

@@ -19,7 +19,6 @@ import {
   FRIEND_CHALLENGE_REP_MIN,
   FRIEND_CHALLENGE_REP_PRESETS,
   FRIEND_CHALLENGE_TIME_PRESETS,
-  FRIEND_RACE_TIMER_START_HINT,
   formatRaceTimeLimit,
   getDefaultRepsForExercise,
 } from '@/constants/friendChallenges';
@@ -89,7 +88,7 @@ export default function CreateFriendChallengeScreen() {
     setError(null);
 
     try {
-      const participantId = await createFriendChallenge(
+      await createFriendChallenge(
         selectedFriendId,
         exerciseType,
         targetReps,
@@ -97,10 +96,7 @@ export default function CreateFriendChallengeScreen() {
         timeLimitSeconds,
         selectedEmoteId,
       );
-      router.replace({
-        pathname: '/challenge/friend/[participantId]',
-        params: { participantId },
-      });
+      router.replace('/(tabs)/friends');
     } catch (err) {
       setError(formatUserError(err, 'Failed to send challenge'));
     } finally {
@@ -235,7 +231,7 @@ export default function CreateFriendChallengeScreen() {
             TIME CAP (OPTIONAL)
           </Text>
           <Text style={StyleSheet.flatten([styles.help, { color: theme.textSecondary }])}>
-            Speed race — fastest to complete the reps wins. {FRIEND_RACE_TIMER_START_HINT.toLowerCase()}.
+            Speed race — fastest to complete the reps wins. Your timer starts when you begin the attempt.
           </Text>
           <View style={styles.repRow}>
             {FRIEND_CHALLENGE_TIME_PRESETS.map((preset) => {

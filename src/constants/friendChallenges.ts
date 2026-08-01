@@ -27,9 +27,6 @@ export const FRIEND_CHALLENGE_TIME_PRESETS: readonly { label: string; seconds: n
 export const FRIEND_CHALLENGE_TIME_MIN_SECONDS = 60;
 export const FRIEND_CHALLENGE_TIME_MAX_SECONDS = 5400;
 
-/** Shown before the race clock starts (first rep starts the timer). */
-export const FRIEND_RACE_TIMER_START_HINT = 'Timer starts on your first rep';
-
 export function calculateFriendChallengeXp(targetReps: number): number {
   return Math.max(25, Math.min(200, targetReps * 5));
 }

@@ -5,7 +5,7 @@ Daily fitness challenges with pose-based rep counting, XP, streaks, and profiles
 ## Features
 
 - Register / login with persistent sessions
-- One shared daily challenge for all players (30-workout rotation)
+- One random daily challenge (push-ups or squats)
 - Automatic rep counting via MediaPipe pose detection
 - XP, levels, and streak tracking
 - Profile stats and editable display name

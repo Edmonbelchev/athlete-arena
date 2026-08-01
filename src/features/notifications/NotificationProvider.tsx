@@ -21,7 +21,6 @@ import {
   friendNotificationId,
   getChallengeNotificationTypeFromChange,
   getFriendNotificationTypeFromChange,
-  isChallengeNotificationType,
   isFriendshipRow,
   isParticipantRow,
   type ChallengeNotification,
@@ -420,15 +419,6 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     (notification: ChallengeNotification) => {
       markAsRead(notification.id);
       setHiddenBannerIds((current) => new Set(current).add(notification.id));
-
-      if (isChallengeNotificationType(notification.type) && notification.participantId) {
-        router.push({
-          pathname: '/challenge/friend/[participantId]',
-          params: { participantId: notification.participantId },
-        });
-        return;
-      }
-
       router.push('/(tabs)/friends');
     },
     [markAsRead],

@@ -168,57 +168,6 @@ export interface Database {
         };
         Relationships: [];
       };
-      daily_challenge_catalog: {
-        Row: {
-          slot: number;
-          exercise_type: ExerciseType;
-          target_reps: number;
-          xp_reward: number;
-        };
-        Insert: {
-          slot: number;
-          exercise_type: ExerciseType;
-          target_reps: number;
-          xp_reward: number;
-        };
-        Update: {
-          slot?: number;
-          exercise_type?: ExerciseType;
-          target_reps?: number;
-          xp_reward?: number;
-        };
-        Relationships: [];
-      };
-      daily_challenge_templates: {
-        Row: {
-          id: string;
-          challenge_date: string;
-          exercise_type: ExerciseType;
-          target_reps: number;
-          xp_reward: number;
-          catalog_slot: number | null;
-          created_at: string;
-        };
-        Insert: {
-          id?: string;
-          challenge_date: string;
-          exercise_type: ExerciseType;
-          target_reps: number;
-          xp_reward: number;
-          catalog_slot?: number | null;
-          created_at?: string;
-        };
-        Update: {
-          id?: string;
-          challenge_date?: string;
-          exercise_type?: ExerciseType;
-          target_reps?: number;
-          xp_reward?: number;
-          catalog_slot?: number | null;
-          created_at?: string;
-        };
-        Relationships: [];
-      };
       daily_challenges: {
         Row: {
           id: string;
@@ -419,21 +368,6 @@ export interface Database {
     };
     Views: Record<string, never>;
     Functions: {
-      get_daily_challenge_home: {
-        Args: Record<string, never>;
-        Returns: {
-          template_id: string;
-          challenge_date: string;
-          exercise_type: ExerciseType;
-          target_reps: number;
-          xp_reward: number;
-          catalog_slot: number;
-          user_challenge_id: string | null;
-          user_status: ChallengeStatus | null;
-          completed_reps: number;
-          completed_at: string | null;
-        }[];
-      };
       get_or_create_daily_challenge: {
         Args: Record<string, never>;
         Returns: Database['public']['Tables']['daily_challenges']['Row'];
