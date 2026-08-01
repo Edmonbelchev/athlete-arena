@@ -6,11 +6,13 @@ import {
   RunningMode,
   usePoseDetection,
   type Landmark,
+  type ViewCoordinator,
 } from 'react-native-mediapipe-posedetection';
 import { useCameraPermission } from 'react-native-vision-camera';
 
 import { PoseSkeletonOverlay } from '@/components/settings/PoseSkeletonOverlay';
 import type { CameraPreviewProps } from '@/components/CameraPreview.types';
+import { mapLandmarksToViewNormalized } from '@/features/challenges/pose/mapLandmarksToView';
 import type { PoseLandmark } from '@/features/challenges/pose/landmarks';
 import { useUserSettings } from '@/features/settings/UserSettingsProvider';
 import { Radius, Spacing } from '@/constants/theme';
@@ -41,6 +43,7 @@ export function VisionCameraPreview({
   const { hasPermission, requestPermission } = useCameraPermission();
   const onLandmarksRef = useRef(onLandmarksDetected);
   const onCameraReadyRef = useRef(onCameraReady);
+  const viewDimensionsRef = useRef({ width: 1, height: 1 });
   const cameraReadyRef = useRef(false);
   const [trackingBody, setTrackingBody] = useState(false);
   const [detectionError, setDetectionError] = useState<string | null>(null);
@@ -56,18 +59,32 @@ export function VisionCameraPreview({
     void requestPermission();
   }, [active, hasPermission, requestPermission]);
 
-  const handleResults = useCallback((landmarks: PoseLandmark[]) => {
-    onLandmarksRef.current?.(landmarks);
-    setLatestLandmarks(landmarks);
-    setTrackingBody(true);
-  }, []);
+  const handleResults = useCallback(
+    (
+      landmarks: Landmark[],
+      frameInfo: { inputImageWidth: number; inputImageHeight: number },
+      viewCoordinator: ViewCoordinator,
+    ) => {
+      const repLandmarks = mapNativeLandmarks(landmarks);
+      onLandmarksRef.current?.(repLandmarks);
+      setTrackingBody(true);
+
+      const { width, height } = viewDimensionsRef.current;
+      if (width > 0 && height > 0) {
+        setLatestLandmarks(
+          mapLandmarksToViewNormalized(landmarks, frameInfo, viewCoordinator, width, height),
+        );
+      }
+    },
+    [],
+  );
 
   const poseDetection = usePoseDetection(
     {
-      onResults: (result) => {
+      onResults: (result, viewCoordinator) => {
         const firstPose = result.results[0]?.landmarks[0];
         if (firstPose?.length >= 33) {
-          handleResults(mapNativeLandmarks(firstPose));
+          handleResults(firstPose, result, viewCoordinator);
         }
       },
       onError: (error) => {
@@ -85,6 +102,8 @@ export function VisionCameraPreview({
       mirrorMode: 'mirror-front-only',
     },
   );
+
+  viewDimensionsRef.current = poseDetection.cameraViewDimensions;
 
   useEffect(() => {
     if (!active) {
