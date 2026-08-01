@@ -6,7 +6,7 @@ import {
   FRIEND_CHALLENGE_WIN_COIN_REWARD,
   formatCoinAmount,
 } from '@/constants/coins';
-import { formatRaceTime, formatRaceTimeLimit } from '@/constants/friendChallenges';
+import { formatRaceTime, formatRaceTimeLimit, FRIEND_RACE_TIMER_START_HINT } from '@/constants/friendChallenges';
 import { Radius, Spacing } from '@/constants/theme';
 import { useFriendChallengeRaceTimer } from '@/features/friends/useFriendChallengeRaceTimer';
 import {
@@ -69,7 +69,8 @@ export function FriendChallengeCard({
     if (!raceStarted) {
       return (
         <Text style={[styles.timer, { color: theme.textSecondary }]}>
-          Speed race · {formatRaceTimeLimit(challenge.timeLimitSeconds)}
+          Speed race · {formatRaceTimeLimit(challenge.timeLimitSeconds)} ·{' '}
+          {FRIEND_RACE_TIMER_START_HINT.toLowerCase()}
         </Text>
       );
     }

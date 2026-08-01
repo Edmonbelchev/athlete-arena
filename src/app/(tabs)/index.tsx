@@ -22,6 +22,7 @@ import {
   acceptFriendChallenge,
   declineFriendChallenge,
 } from '@/services/friendChallengeService';
+import { getOrCreateDailyChallenge } from '@/services/challengeService';
 import { xpProgressInCurrentLevel } from '@/features/xp/levelUtils';
 import { useTheme } from '@/hooks/use-theme';
 import { useChallengeNotificationRefresh } from '@/features/notifications/useChallengeNotificationRefresh';
@@ -49,6 +50,7 @@ export default function HomeScreen() {
     refresh: refreshFriendChallenges,
   } = useFriendChallenges();
   const [busyChallengeId, setBusyChallengeId] = useState<string | null>(null);
+  const [isStartingDailyChallenge, setIsStartingDailyChallenge] = useState(false);
   const [friendActionError, setFriendActionError] = useState<string | null>(null);
   const { syncAndCelebrate } = useAchievementUnlock();
   const { refresh: refreshShop } = useShop();
@@ -77,6 +79,36 @@ export default function HomeScreen() {
   }
 
   useChallengeNotificationRefresh(handleRefresh);
+
+  async function handleStartDailyChallenge() {
+    if (!challenge || isStartingDailyChallenge) {
+      return;
+    }
+
+    setIsStartingDailyChallenge(true);
+    setFriendActionError(null);
+
+    try {
+      const userChallenge =
+        challenge.userChallengeId === null
+          ? await getOrCreateDailyChallenge()
+          : null;
+      const challengeId = userChallenge?.id ?? challenge.userChallengeId;
+
+      if (!challengeId) {
+        throw new Error('Failed to start daily challenge');
+      }
+
+      router.push({
+        pathname: '/challenge/[id]',
+        params: { id: challengeId },
+      });
+    } catch (err) {
+      setFriendActionError(formatUserError(err, 'Failed to start daily challenge'));
+    } finally {
+      setIsStartingDailyChallenge(false);
+    }
+  }
 
   async function handleAcceptFriendChallenge(participantId: string) {
     setBusyChallengeId(participantId);
@@ -146,17 +178,13 @@ export default function HomeScreen() {
           subtitle="Same workout for everyone today — complete it for XP and coins">
           {challenge ? (
             <ChallengeCard
-              exerciseType={challenge.exercise_type}
-              targetReps={challenge.target_reps}
-              xpReward={challenge.xp_reward}
-              status={challenge.status}
-              completedReps={challenge.completed_reps}
-              onStart={() =>
-                router.push({
-                  pathname: '/challenge/[id]',
-                  params: { id: challenge.id },
-                })
-              }
+              exerciseType={challenge.exerciseType}
+              targetReps={challenge.targetReps}
+              xpReward={challenge.xpReward}
+              status={challenge.status === 'not_started' ? 'pending' : challenge.status}
+              completedReps={challenge.completedReps}
+              loading={isStartingDailyChallenge}
+              onStart={() => void handleStartDailyChallenge()}
             />
           ) : (
             <View

@@ -83,7 +83,10 @@ Run after `004_friends.sql` to add optional time limits:
 
 | Function | Purpose |
 |----------|---------|
-| `get_or_create_daily_challenge()` | Idempotent daily challenge generation |
+| `get_daily_challenge_home()` | Resolve today's global workout + read user progress (no user row created) |
+| `get_or_create_daily_challenge()` | Create today's user progress row when starting a challenge |
+| `ensure_daily_challenge_template(date?)` | Resolve/create the shared daily template from the 30-challenge catalog |
+| `seed_upcoming_daily_challenge_templates(days?)` | Pre-generate templates (service role / cron) |
 | `start_challenge(uuid)` | Mark challenge as in progress |
 | `complete_challenge(uuid, int)` | Sync reps, award XP once, update streak |
 
@@ -141,8 +144,9 @@ If you prefer running migrations separately:
 1. `supabase/migrations/001_profiles.sql`
 2. `supabase/migrations/002_daily_challenges.sql`
 3. `supabase/migrations/003_functions.sql`
+4. …through `024_daily_challenge_catalog.sql` for the global 30-challenge rotation
 
-`setup.sql` is equivalent to all three plus a backfill for existing auth users.
+`setup.sql` is equivalent to the early migrations plus a backfill for existing auth users. For production, apply the full migration chain (or `supabase db push`).
 
 ## Supabase CLI (optional)
 

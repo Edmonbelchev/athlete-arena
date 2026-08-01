@@ -2,11 +2,11 @@ import { useCallback, useEffect, useState } from 'react';
 
 import { useAuth } from '@/features/auth';
 import { formatUserError } from '@/lib/errors';
-import { getOrCreateDailyChallenge } from '@/services/challengeService';
-import type { DailyChallenge } from '@/types';
+import { getDailyChallengeHome } from '@/services/challengeService';
+import type { DailyChallengeHome } from '@/types';
 
 interface UseDailyChallengeResult {
-  challenge: DailyChallenge | null;
+  challenge: DailyChallengeHome | null;
   isLoading: boolean;
   error: string | null;
   refresh: () => Promise<void>;
@@ -14,7 +14,7 @@ interface UseDailyChallengeResult {
 
 export function useDailyChallenge(): UseDailyChallengeResult {
   const { session } = useAuth();
-  const [challenge, setChallenge] = useState<DailyChallenge | null>(null);
+  const [challenge, setChallenge] = useState<DailyChallengeHome | null>(null);
   const [isLoading, setIsLoading] = useState(Boolean(session));
   const [error, setError] = useState<string | null>(null);
 
@@ -30,7 +30,7 @@ export function useDailyChallenge(): UseDailyChallengeResult {
     setError(null);
 
     try {
-      const nextChallenge = await getOrCreateDailyChallenge();
+      const nextChallenge = await getDailyChallengeHome();
       setChallenge(nextChallenge);
     } catch (err) {
       setChallenge(null);

@@ -18,6 +18,7 @@ interface ChallengeCardProps {
   xpReward: number;
   status: ChallengeStatus;
   completedReps?: number;
+  loading?: boolean;
   onStart?: () => void;
 }
 
@@ -27,6 +28,7 @@ export function ChallengeCard({
   xpReward,
   status,
   completedReps = 0,
+  loading = false,
   onStart,
 }: ChallengeCardProps) {
   const theme = useTheme();
@@ -59,6 +61,7 @@ export function ChallengeCard({
           </Text>
           <PrimaryButton
             label={isInProgress ? 'CONTINUE CHALLENGE' : 'START CHALLENGE'}
+            loading={loading}
             onPress={onStart}
           />
         </>
