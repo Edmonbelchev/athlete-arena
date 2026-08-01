@@ -29,11 +29,41 @@ export const PUSH_UP_THRESHOLDS = {
 
 export const PULL_UP_THRESHOLDS = {
   /** Elbow angle (degrees) - hanging with arms extended. */
-  upAngle: 155,
-  /** Elbow angle (degrees) - chin above bar. */
+  upAngle: 160,
+  /** Elbow angle (degrees) - bent enough at the top of a rep. */
   downAngle: 90,
   hysteresis: 8,
   minHoldFrames: 4,
+} as const;
+
+/** Posture checks for overhead bar hang (side/back view; y grows downward). */
+export const PULL_UP_POSTURE = {
+  /** Wrists must sit above shoulders at dead hang. */
+  hangWristAboveShoulderMargin: 0.035,
+  /** Hips must sit below shoulders when hanging. */
+  hangHipBelowShoulderMargin: 0.07,
+  /** Minimum shoulder-to-hip vertical span while hanging. */
+  minTorsoSpan: 0.14,
+  /** Chin (lower face) must reach this far above the bar line at the top (front/side). */
+  chinOverBarMargin: -0.012,
+  /** Ear height may sit slightly below the bar line when viewed from behind. */
+  earOverBarMargin: 0.018,
+  /** Shoulder-at-bar fallback when no face/ears are visible (rear camera). */
+  shoulderNearBarMargin: 0.028,
+  /** Extra shoulder rise required for the shoulder-only top path. */
+  minShoulderPullElevationBackOnly: 0.055,
+  /** Shoulders must rise at least this much from hang to the top. */
+  minShoulderPullElevation: 0.045,
+  /** Wrists stay near the bar line at the top of the rep. */
+  topWristNearBarMargin: 0.04,
+  /** Upper arm within this many degrees of vertical at dead hang. */
+  maxUpperArmFromVertical: 40,
+  /** Feet on the ground when ankles are visible. */
+  standingAnkleBelowHipMin: 0.18,
+  standingAnkleBelowHipMax: 0.55,
+  standingAnkleHipXMax: 0.08,
+  /** Frames in a valid hang before rep counting begins. */
+  hangStableFrames: 4,
 } as const;
 
 export const DIP_THRESHOLDS = {
@@ -77,9 +107,10 @@ export const POSE_GUIDANCE: Record<ExerciseType, { title: string; tips: readonly
   pull_ups: {
     title: 'Pull-up setup',
     tips: [
-      'Face the camera from the side — keep arms and shoulders in frame',
-      'Hang fully at the bottom, then pull until your elbows bend deeply',
-      'Rep counting pauses if your upper body leaves the frame',
+      'Mount the phone side-on or behind you and use a pull-up bar — reps need an overhead hang',
+      'Hang with arms extended, then pull until your chin clears the bar',
+      'Keep your head or upper back in frame when filming from behind',
+      'Standing arm curls will not count — wrists must stay above your shoulders',
     ],
   },
   dips: {
