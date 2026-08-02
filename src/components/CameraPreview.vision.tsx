@@ -100,7 +100,7 @@ export function VisionCameraPreview({
       minPosePresenceConfidence: 0.45,
       minTrackingConfidence: 0.45,
       delegate: Delegate.GPU,
-      mirrorMode: 'mirror-front-only',
+      mirrorMode: 'no-mirror',
     },
   );
 
