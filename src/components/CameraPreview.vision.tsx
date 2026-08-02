@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import {
   Delegate,
   MediapipeCamera,
@@ -11,7 +11,7 @@ import {
 import { useCameraPermission } from 'react-native-vision-camera';
 
 import { PoseSkeletonOverlay } from '@/components/settings/PoseSkeletonOverlay';
-import type { CameraPreviewProps } from '@/components/CameraPreview.types';
+import type { CameraFacing, CameraPreviewProps } from '@/components/CameraPreview.types';
 import { mapLandmarksToViewNormalized } from '@/features/challenges/pose/mapLandmarksToView';
 import type { PoseLandmark } from '@/features/challenges/pose/landmarks';
 import { useUserSettings } from '@/features/settings/UserSettingsProvider';
@@ -45,6 +45,7 @@ export function VisionCameraPreview({
   const onCameraReadyRef = useRef(onCameraReady);
   const viewDimensionsRef = useRef({ width: 1, height: 1 });
   const cameraReadyRef = useRef(false);
+  const [facing, setFacing] = useState<CameraFacing>('front');
   const [trackingBody, setTrackingBody] = useState(false);
   const [detectionError, setDetectionError] = useState<string | null>(null);
   const [latestLandmarks, setLatestLandmarks] = useState<PoseLandmark[] | null>(null);
@@ -117,6 +118,15 @@ export function VisionCameraPreview({
     }
   }, [active, hasPermission]);
 
+  useEffect(() => {
+    setLatestLandmarks(null);
+    setTrackingBody(false);
+  }, [facing]);
+
+  function handleFlipCamera() {
+    setFacing((current) => (current === 'front' ? 'back' : 'front'));
+  }
+
   if (!active) {
     return (
       <View
@@ -154,12 +164,22 @@ export function VisionCameraPreview({
         styles.cameraContainer,
         { borderColor: theme.border },
       ])}>
-      <MediapipeCamera style={styles.camera} solution={poseDetection} activeCamera="front" />
+      <MediapipeCamera style={styles.camera} solution={poseDetection} activeCamera={facing} />
 
       <PoseSkeletonOverlay
         landmarks={latestLandmarks}
         visible={showPoseSkeleton}
       />
+
+      <View style={styles.topOverlay}>
+        <Pressable
+          accessibilityLabel="Flip camera"
+          accessibilityRole="button"
+          style={styles.flipButton}
+          onPress={handleFlipCamera}>
+          <Text style={styles.flipButtonText}>Flip</Text>
+        </Pressable>
+      </View>
 
       <View style={styles.overlay}>
         <Text style={styles.overlayText}>
@@ -205,6 +225,22 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
     textAlign: 'center',
+  },
+  topOverlay: {
+    position: 'absolute',
+    top: Spacing.three,
+    right: Spacing.three,
+  },
+  flipButton: {
+    paddingVertical: Spacing.one,
+    paddingHorizontal: Spacing.two,
+    borderRadius: Radius.sm,
+    backgroundColor: 'rgba(0, 0, 0, 0.55)',
+  },
+  flipButtonText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '700',
   },
   overlay: {
     position: 'absolute',
