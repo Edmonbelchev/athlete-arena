@@ -36,34 +36,18 @@ export const PULL_UP_THRESHOLDS = {
   minHoldFrames: 4,
 } as const;
 
-/** Posture checks for overhead bar hang (side/back view; y grows downward). */
+/** Pull-up rep validation — arms ROM + chin/head over bar (no leg/knee checks). */
 export const PULL_UP_POSTURE = {
-  /** Wrists must sit above shoulders at dead hang. */
-  hangWristAboveShoulderMargin: 0.035,
-  /** Hips must sit below shoulders when hanging. */
-  hangHipBelowShoulderMargin: 0.07,
-  /** Minimum shoulder-to-hip vertical span while hanging. */
-  minTorsoSpan: 0.14,
-  /** Chin (lower face) must reach this far above the bar line at the top (front/side). */
-  chinOverBarMargin: -0.012,
-  /** Ear height may sit slightly below the bar line when viewed from behind. */
-  earOverBarMargin: 0.018,
-  /** Shoulder-at-bar fallback when no face/ears are visible (rear camera). */
-  shoulderNearBarMargin: 0.028,
-  /** Extra shoulder rise required for the shoulder-only top path. */
-  minShoulderPullElevationBackOnly: 0.055,
-  /** Shoulders must rise at least this much from hang to the top. */
-  minShoulderPullElevation: 0.045,
-  /** Wrists stay near the bar line at the top of the rep. */
-  topWristNearBarMargin: 0.04,
-  /** Upper arm within this many degrees of vertical at dead hang. */
-  maxUpperArmFromVertical: 40,
-  /** Feet on the ground when ankles are visible. */
-  standingAnkleBelowHipMin: 0.18,
-  standingAnkleBelowHipMax: 0.55,
-  standingAnkleHipXMax: 0.08,
-  /** Frames in a valid hang before rep counting begins. */
-  hangStableFrames: 4,
+  /** Chin (lower face) at or above the bar line (y grows downward). */
+  chinOverBarMargin: 0.015,
+  /** Ear height proxy when filming from behind. */
+  earOverBarMargin: 0.03,
+  /** Shoulder-at-bar fallback when no face/ears are visible. */
+  shoulderNearBarMargin: 0.04,
+  /** Wrists stay near the captured bar line through the rep. */
+  topWristNearBarMargin: 0.08,
+  /** Frames with arms extended before counting begins. */
+  readyFramesRequired: 3,
 } as const;
 
 export const DIP_THRESHOLDS = {
@@ -107,10 +91,10 @@ export const POSE_GUIDANCE: Record<ExerciseType, { title: string; tips: readonly
   pull_ups: {
     title: 'Pull-up setup',
     tips: [
-      'Mount the phone side-on or behind you and use a pull-up bar — reps need an overhead hang',
-      'Hang with arms extended, then pull until your chin clears the bar',
-      'Keep your head or upper back in frame when filming from behind',
-      'Standing arm curls will not count — wrists must stay above your shoulders',
+      'Keep your head and arms in frame — legs/knees do not matter',
+      'Hang with arms fully extended, then pull until your chin clears the bar',
+      'Lower back to a full hang — the rep counts when your arms are extended again',
+      'Front or back camera angles both work',
     ],
   },
   dips: {

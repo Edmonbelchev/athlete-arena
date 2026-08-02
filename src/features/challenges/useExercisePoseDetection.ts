@@ -5,6 +5,7 @@ import type { ExercisePhase } from '@/features/challenges/poseDetection.types';
 
 import { createRepEngine } from './pose/createRepEngine';
 import type { PoseLandmark } from './pose/landmarks';
+import { PullUpRepEngine } from './pose/pullUpRepEngine';
 import { PoseQualityGate, type PoseTrackingStatus } from './pose/poseQuality';
 
 interface UseExercisePoseDetectionOptions {
@@ -70,6 +71,17 @@ export function useExercisePoseDetection({
 
       const repCompleted = engineRef.current.update(landmarks);
       setPhase(engineRef.current.phase);
+
+      if (exerciseType === 'pull_ups') {
+        const pullUpEngine = engineRef.current as PullUpRepEngine;
+        if (!pullUpEngine.armed) {
+          setTrackingMessage(pullUpEngine.getHangHint(landmarks));
+        } else if (quality.message) {
+          setTrackingMessage(quality.message);
+        } else {
+          setTrackingMessage(null);
+        }
+      }
 
       if (repCompleted) {
         onRepDetectedRef.current();

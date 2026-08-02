@@ -3,9 +3,9 @@ import { PULL_UP_POSTURE, PULL_UP_THRESHOLDS } from '@/constants/poseDetection';
 
 import { pushUpElbowAngle, type PoseLandmark } from './landmarks';
 import {
-  getAverageShoulderY,
   getBarLineY,
-  isPullUpHangPosture,
+  getPullUpHangHint,
+  isArmsExtended,
   isPullUpTopPosture,
 } from './pullUpPosture';
 import type { AngleThresholdConfig } from './repEngineUtils';
@@ -25,10 +25,21 @@ export class PullUpRepEngine {
   private readonly thresholds = toPullUpThresholds();
   private holdFrames = 0;
   private reachedTop = false;
-  private hangStableFrames = 0;
+  private readyFrames = 0;
   private isArmed = false;
-  private hangShoulderY: number | null = null;
   private barLineY: number | null = null;
+
+  get armed(): boolean {
+    return this.isArmed;
+  }
+
+  getHangHint(landmarks: PoseLandmark[]): string | null {
+    if (this.isArmed) {
+      return null;
+    }
+
+    return getPullUpHangHint(landmarks) ?? 'Hang with arms fully extended to start counting';
+  }
 
   update(landmarks: PoseLandmark[]): boolean {
     const elbowAngle = pushUpElbowAngle(landmarks);
@@ -36,51 +47,42 @@ export class PullUpRepEngine {
       return false;
     }
 
-    const hangPosture = isPullUpHangPosture(landmarks, this.thresholds);
+    const armsExtended = isArmsExtended(landmarks, this.thresholds);
 
-    if (hangPosture) {
-      this.hangShoulderY = getAverageShoulderY(landmarks);
+    if (armsExtended) {
       this.barLineY = getBarLineY(landmarks);
-      this.hangStableFrames += 1;
+      this.readyFrames += 1;
 
-      if (!this.isArmed && this.hangStableFrames >= PULL_UP_POSTURE.hangStableFrames) {
+      if (!this.isArmed && this.readyFrames >= PULL_UP_POSTURE.readyFramesRequired) {
         this.isArmed = true;
         this.phase = 'UP';
         this.holdFrames = 0;
         this.reachedTop = false;
       }
     } else if (!this.isArmed) {
-      this.hangStableFrames = 0;
+      this.readyFrames = 0;
     }
 
-    if (!this.isArmed) {
+    if (!this.isArmed || this.barLineY === null) {
       return false;
     }
 
-    const topPosture = isPullUpTopPosture(
-      landmarks,
-      this.thresholds,
-      this.hangShoulderY,
-      this.barLineY,
-    );
+    const topPosture = isPullUpTopPosture(landmarks, this.thresholds, this.barLineY);
 
     let repCompleted = false;
 
     if (isInHighZone(elbowAngle, this.thresholds)) {
-      if (this.phase === 'ASCENDING' && this.reachedTop && hangPosture) {
+      if (this.phase === 'ASCENDING' && this.reachedTop && armsExtended) {
         repCompleted = true;
       }
 
-      if (hangPosture) {
+      if (armsExtended) {
         this.phase = 'UP';
         this.holdFrames = 0;
         this.reachedTop = false;
+        this.barLineY = getBarLineY(landmarks);
       }
     } else if (isInLowZone(elbowAngle, this.thresholds)) {
-      if (!this.hangShoulderY || !this.barLineY) {
-        return false;
-      }
-
       if (this.phase === 'DESCENDING' && topPosture) {
         this.phase = 'DOWN';
       } else if (this.phase === 'ASCENDING' && topPosture) {
@@ -101,7 +103,7 @@ export class PullUpRepEngine {
         }
       }
     } else if (isInMidZone(elbowAngle, this.thresholds)) {
-      if (this.phase === 'UP' && this.hangShoulderY !== null) {
+      if (this.phase === 'UP') {
         this.phase = 'DESCENDING';
       } else if (this.phase === 'DOWN' || this.phase === 'ASCENDING') {
         this.phase = 'ASCENDING';
@@ -115,9 +117,8 @@ export class PullUpRepEngine {
     this.phase = 'UP';
     this.holdFrames = 0;
     this.reachedTop = false;
-    this.hangStableFrames = 0;
+    this.readyFrames = 0;
     this.isArmed = false;
-    this.hangShoulderY = null;
     this.barLineY = null;
   }
 }

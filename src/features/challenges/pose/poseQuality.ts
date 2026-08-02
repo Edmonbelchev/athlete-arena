@@ -2,7 +2,7 @@ import type { ExerciseType } from '@/constants/challenges';
 import { POSE_QUALITY, POSE_REP_MIN_VISIBILITY } from '@/constants/poseDetection';
 
 import { PoseLandmarkIndex, type PoseLandmark } from './landmarks';
-import { getPullUpSetupMessage, hasPullUpTrackingLandmarks } from './pullUpPosture';
+import { hasPullUpTrackingLandmarks } from './pullUpPosture';
 
 export type PoseTrackingStatus = 'ready' | 'stabilizing' | 'partial';
 
@@ -55,14 +55,14 @@ function getTrackingIndices(exerciseType: ExerciseType): number[] {
       PoseLandmarkIndex.NOSE,
       PoseLandmarkIndex.LEFT_EAR,
       PoseLandmarkIndex.RIGHT_EAR,
+      PoseLandmarkIndex.MOUTH_LEFT,
+      PoseLandmarkIndex.MOUTH_RIGHT,
       PoseLandmarkIndex.LEFT_SHOULDER,
       PoseLandmarkIndex.RIGHT_SHOULDER,
       PoseLandmarkIndex.LEFT_ELBOW,
       PoseLandmarkIndex.RIGHT_ELBOW,
       PoseLandmarkIndex.LEFT_WRIST,
       PoseLandmarkIndex.RIGHT_WRIST,
-      PoseLandmarkIndex.LEFT_HIP,
-      PoseLandmarkIndex.RIGHT_HIP,
     ];
   }
 
@@ -102,22 +102,14 @@ function checkRequiredLandmarks(
     if (!hasPullUpTrackingLandmarks(landmarks)) {
       return {
         ok: false,
-        message: 'Step back — keep your head or upper back, arms, and hips in frame',
+        message: 'Keep your head and at least one full arm (shoulder, elbow, wrist) in frame',
       };
     }
 
-    const setupMessage = getPullUpSetupMessage(landmarks);
-    if (setupMessage) {
+    if (visibleCount < POSE_QUALITY.minVisibleTrackingPoints) {
       return {
         ok: false,
-        message: setupMessage,
-      };
-    }
-
-    if (visibleCount < POSE_QUALITY.minVisibleTrackingPoints + 1) {
-      return {
-        ok: false,
-        message: 'Step back — keep your head or upper back, arms, and hips in frame',
+        message: 'Keep your head and at least one full arm (shoulder, elbow, wrist) in frame',
       };
     }
 
