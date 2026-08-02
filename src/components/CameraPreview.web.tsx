@@ -5,6 +5,7 @@ import type { CameraFacing, CameraPreviewProps } from '@/components/CameraPrevie
 import {
   clearPoseSkeleton,
   drawPoseSkeleton,
+  drawPullUpBarLine,
   syncCanvasToVideo,
 } from '@/features/challenges/pose/drawPoseSkeleton';
 import type { PoseLandmark } from '@/features/challenges/pose/landmarks';
@@ -32,6 +33,7 @@ export function CameraPreview({
   active = true,
   onCameraReady,
   onLandmarksDetected,
+  pullUpBarLineY = null,
 }: CameraPreviewProps) {
   const theme = useTheme();
   const { preferences } = useUserSettings();
@@ -44,6 +46,7 @@ export function CameraPreview({
   const onCameraReadyRef = useRef(onCameraReady);
   const themeRef = useRef(theme);
   const showSkeletonRef = useRef(showPoseSkeleton);
+  const pullUpBarLineYRef = useRef(pullUpBarLineY);
   const [facing, setFacing] = useState<CameraFacing>('front');
   const [status, setStatus] = useState<'loading' | 'ready' | 'error' | 'permission_denied'>('loading');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -53,6 +56,7 @@ export function CameraPreview({
   onCameraReadyRef.current = onCameraReady;
   themeRef.current = theme;
   showSkeletonRef.current = showPoseSkeleton;
+  pullUpBarLineYRef.current = pullUpBarLineY;
 
   useEffect(() => {
     if (!active) {
@@ -133,6 +137,11 @@ export function CameraPreview({
                   });
                 } else {
                   clearPoseSkeleton(ctx, canvas.width, canvas.height);
+                }
+
+                const barLineY = pullUpBarLineYRef.current;
+                if (barLineY !== null) {
+                  drawPullUpBarLine(ctx, barLineY, canvas.width, canvas.height);
                 }
                 onLandmarksRef.current?.(mapped);
                 setTrackingBody(true);

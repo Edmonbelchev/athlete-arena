@@ -117,7 +117,7 @@ export default function FriendChallengeScreen() {
     },
   });
 
-  const { phase: posePhase, trackingMessage, processLandmarks } = useExercisePoseDetection({
+  const { phase: posePhase, trackingMessage, pullUpBarLineY, processLandmarks } = useExercisePoseDetection({
     exerciseType: challenge?.exerciseType ?? 'push_ups',
     enabled: canAttempt,
     onRepDetected: () => {
@@ -321,6 +321,7 @@ export default function FriendChallengeScreen() {
               <View style={styles.cameraFrame}>
                 <CameraPreview
                   active={canAttempt}
+                  pullUpBarLineY={challenge.exerciseType === 'pull_ups' ? pullUpBarLineY : null}
                   onCameraReady={handleCameraReady}
                   onLandmarksDetected={processLandmarks}
                 />

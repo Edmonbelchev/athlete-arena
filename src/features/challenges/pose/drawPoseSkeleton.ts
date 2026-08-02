@@ -124,3 +124,34 @@ export function drawPoseSkeleton(
 export function clearPoseSkeleton(ctx: CanvasRenderingContext2D, width: number, height: number): void {
   ctx.clearRect(0, 0, width, height);
 }
+
+const PULL_UP_BAR_COLOR = '#FBBF24';
+
+/** Draw the captured pull-up bar reference line on the canvas overlay. */
+export function drawPullUpBarLine(
+  ctx: CanvasRenderingContext2D,
+  barLineY: number,
+  width: number,
+  height: number,
+): void {
+  const y = barLineY * height;
+
+  ctx.save();
+  ctx.strokeStyle = PULL_UP_BAR_COLOR;
+  ctx.lineWidth = 3;
+  ctx.setLineDash([10, 6]);
+  ctx.lineCap = 'round';
+
+  ctx.beginPath();
+  ctx.moveTo(0, y);
+  ctx.lineTo(width, y);
+  ctx.stroke();
+
+  ctx.setLineDash([]);
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
+  ctx.fillRect(10, Math.max(y - 22, 8), 42, 18);
+  ctx.fillStyle = PULL_UP_BAR_COLOR;
+  ctx.font = 'bold 11px system-ui, sans-serif';
+  ctx.fillText('BAR', 16, Math.max(y - 22, 8) + 13);
+  ctx.restore();
+}

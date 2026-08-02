@@ -11,8 +11,12 @@ import {
 import { useCameraPermission } from 'react-native-vision-camera';
 
 import { PoseSkeletonOverlay } from '@/components/settings/PoseSkeletonOverlay';
+import { PullUpBarLineOverlay } from '@/components/settings/PullUpBarLineOverlay';
 import type { CameraFacing, CameraPreviewProps } from '@/components/CameraPreview.types';
-import { mapLandmarksToViewNormalized } from '@/features/challenges/pose/mapLandmarksToView';
+import {
+  mapDetectionYToViewNormalized,
+  mapLandmarksToViewNormalized,
+} from '@/features/challenges/pose/mapLandmarksToView';
 import type { PoseLandmark } from '@/features/challenges/pose/landmarks';
 import { useUserSettings } from '@/features/settings/UserSettingsProvider';
 import { Radius, Spacing } from '@/constants/theme';
@@ -36,6 +40,7 @@ export function VisionCameraPreview({
   active = true,
   onCameraReady,
   onLandmarksDetected,
+  pullUpBarLineY = null,
 }: CameraPreviewProps) {
   const theme = useTheme();
   const { preferences } = useUserSettings();
@@ -49,6 +54,10 @@ export function VisionCameraPreview({
   const [trackingBody, setTrackingBody] = useState(false);
   const [detectionError, setDetectionError] = useState<string | null>(null);
   const [latestLandmarks, setLatestLandmarks] = useState<PoseLandmark[] | null>(null);
+  const [viewBarLineY, setViewBarLineY] = useState<number | null>(null);
+  const pullUpBarLineYRef = useRef(pullUpBarLineY);
+
+  pullUpBarLineYRef.current = pullUpBarLineY;
 
   onLandmarksRef.current = onLandmarksDetected;
   onCameraReadyRef.current = onCameraReady;
@@ -75,6 +84,21 @@ export function VisionCameraPreview({
         setLatestLandmarks(
           mapLandmarksToViewNormalized(landmarks, frameInfo, viewCoordinator, width, height),
         );
+
+        const detectionBarY = pullUpBarLineYRef.current;
+        if (detectionBarY !== null) {
+          setViewBarLineY(
+            mapDetectionYToViewNormalized(
+              detectionBarY,
+              frameInfo,
+              viewCoordinator,
+              width,
+              height,
+            ),
+          );
+        } else {
+          setViewBarLineY(null);
+        }
       }
     },
     [],
@@ -120,6 +144,7 @@ export function VisionCameraPreview({
 
   useEffect(() => {
     setLatestLandmarks(null);
+    setViewBarLineY(null);
     setTrackingBody(false);
   }, [facing]);
 
@@ -170,6 +195,8 @@ export function VisionCameraPreview({
         landmarks={latestLandmarks}
         visible={showPoseSkeleton}
       />
+
+      <PullUpBarLineOverlay barLineY={viewBarLineY} visible={viewBarLineY !== null} />
 
       <View style={styles.topOverlay}>
         <Pressable

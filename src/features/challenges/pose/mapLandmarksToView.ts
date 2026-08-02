@@ -7,6 +7,28 @@ export interface PoseFrameInfo {
   inputImageHeight: number;
 }
 
+/** Map a detection-space y coordinate into view-normalized overlay coordinates. */
+export function mapDetectionYToViewNormalized(
+  y: number,
+  frameInfo: PoseFrameInfo,
+  viewCoordinator: ViewCoordinator,
+  viewWidth: number,
+  viewHeight: number,
+): number | null {
+  if (viewWidth <= 0 || viewHeight <= 0) {
+    return null;
+  }
+
+  const frame = viewCoordinator.getFrameDims({
+    inputImageWidth: frameInfo.inputImageWidth,
+    inputImageHeight: frameInfo.inputImageHeight,
+    inferenceTime: 0,
+  });
+  const point = viewCoordinator.convertPoint(frame, { x: 0.5, y });
+
+  return point.y / viewHeight;
+}
+
 /** Map detector landmarks into view-normalized coordinates for skeleton overlay. */
 export function mapLandmarksToViewNormalized(
   landmarks: Landmark[],

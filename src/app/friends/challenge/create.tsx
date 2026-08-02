@@ -88,7 +88,7 @@ export default function CreateFriendChallengeScreen() {
     setError(null);
 
     try {
-      await createFriendChallenge(
+      const participantId = await createFriendChallenge(
         selectedFriendId,
         exerciseType,
         targetReps,
@@ -96,7 +96,10 @@ export default function CreateFriendChallengeScreen() {
         timeLimitSeconds,
         selectedEmoteId,
       );
-      router.replace('/(tabs)/friends');
+      router.replace({
+        pathname: '/challenge/friend/[participantId]',
+        params: { participantId },
+      });
     } catch (err) {
       setError(formatUserError(err, 'Failed to send challenge'));
     } finally {

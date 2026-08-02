@@ -115,7 +115,10 @@ export default function HomeScreen() {
     setFriendActionError(null);
     try {
       await acceptFriendChallenge(participantId);
-      await refreshFriendChallenges();
+      router.push({
+        pathname: '/challenge/friend/[participantId]',
+        params: { participantId },
+      });
     } catch (err) {
       setFriendActionError(formatUserError(err, 'Failed to accept challenge'));
     } finally {

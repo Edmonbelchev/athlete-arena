@@ -68,7 +68,7 @@ export default function ChallengeScreen() {
     },
   });
 
-  const { phase: posePhase, trackingMessage, processLandmarks } = useExercisePoseDetection({
+  const { phase: posePhase, trackingMessage, pullUpBarLineY, processLandmarks } = useExercisePoseDetection({
     exerciseType: challenge?.exercise_type ?? 'push_ups',
     enabled: Boolean(challenge) && !isCompleted,
     onRepDetected: () => {
@@ -123,6 +123,7 @@ export default function ChallengeScreen() {
           <View style={styles.cameraFrame}>
             <CameraPreview
               active={!isCompleted}
+              pullUpBarLineY={challenge.exercise_type === 'pull_ups' ? pullUpBarLineY : null}
               onCameraReady={() => {
                 repCounter.start();
               }}

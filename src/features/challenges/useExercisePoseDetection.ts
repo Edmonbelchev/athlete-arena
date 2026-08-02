@@ -27,6 +27,7 @@ export function useExercisePoseDetection({
   const [trackingMessage, setTrackingMessage] = useState<string | null>(
     'Move into frame to start counting',
   );
+  const [pullUpBarLineY, setPullUpBarLineY] = useState<number | null>(null);
   const onRepDetectedRef = useRef(onRepDetected);
 
   onRepDetectedRef.current = onRepDetected;
@@ -38,6 +39,7 @@ export function useExercisePoseDetection({
     setPhase(nextInitialPhase);
     setTrackingStatus('partial');
     setTrackingMessage('Move into frame to start counting');
+    setPullUpBarLineY(null);
   }, [exerciseType]);
 
   useEffect(() => {
@@ -47,6 +49,7 @@ export function useExercisePoseDetection({
       setPhase(getInitialExercisePhase(exerciseType));
       setTrackingStatus('partial');
       setTrackingMessage(null);
+      setPullUpBarLineY(null);
     }
   }, [enabled, exerciseType]);
 
@@ -63,6 +66,9 @@ export function useExercisePoseDetection({
       if (quality.shouldResetEngine) {
         engineRef.current.reset();
         setPhase(getInitialExercisePhase(exerciseType));
+        if (exerciseType === 'pull_ups') {
+          setPullUpBarLineY(null);
+        }
       }
 
       if (!quality.canCountReps) {
@@ -74,6 +80,7 @@ export function useExercisePoseDetection({
 
       if (exerciseType === 'pull_ups') {
         const pullUpEngine = engineRef.current as PullUpRepEngine;
+        setPullUpBarLineY(pullUpEngine.barLineY);
         if (!pullUpEngine.armed) {
           setTrackingMessage(pullUpEngine.getHangHint(landmarks));
         } else if (quality.message) {
@@ -94,6 +101,7 @@ export function useExercisePoseDetection({
     phase,
     trackingStatus,
     trackingMessage,
+    pullUpBarLineY: exerciseType === 'pull_ups' ? pullUpBarLineY : null,
     processLandmarks,
   };
 }

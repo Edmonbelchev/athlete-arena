@@ -1,4 +1,4 @@
-import { Stack, useFocusEffect } from 'expo-router';
+import { Stack, useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -28,6 +28,7 @@ import { useTheme } from '@/hooks/use-theme';
 
 export default function FriendChallengesScreen() {
   const theme = useTheme();
+  const router = useRouter();
   const {
     challenges,
     isLoading,
@@ -67,7 +68,10 @@ export default function FriendChallengesScreen() {
     setActionError(null);
     try {
       await acceptFriendChallenge(participantId);
-      await refreshChallenges();
+      router.push({
+        pathname: '/challenge/friend/[participantId]',
+        params: { participantId },
+      });
     } catch (err) {
       setActionError(formatUserError(err, 'Failed to accept challenge'));
     } finally {

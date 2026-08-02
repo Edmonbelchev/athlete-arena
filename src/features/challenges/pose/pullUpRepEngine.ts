@@ -27,10 +27,15 @@ export class PullUpRepEngine {
   private reachedTop = false;
   private readyFrames = 0;
   private isArmed = false;
-  private barLineY: number | null = null;
+  private capturedBarLineY: number | null = null;
 
   get armed(): boolean {
     return this.isArmed;
+  }
+
+  /** Captured bar height (normalized y, 0 = top) from wrists at dead hang. */
+  get barLineY(): number | null {
+    return this.capturedBarLineY;
   }
 
   getHangHint(landmarks: PoseLandmark[]): string | null {
@@ -50,7 +55,7 @@ export class PullUpRepEngine {
     const armsExtended = isArmsExtended(landmarks, this.thresholds);
 
     if (armsExtended) {
-      this.barLineY = getBarLineY(landmarks);
+      this.capturedBarLineY = getBarLineY(landmarks);
       this.readyFrames += 1;
 
       if (!this.isArmed && this.readyFrames >= PULL_UP_POSTURE.readyFramesRequired) {
@@ -63,11 +68,11 @@ export class PullUpRepEngine {
       this.readyFrames = 0;
     }
 
-    if (!this.isArmed || this.barLineY === null) {
+    if (!this.isArmed || this.capturedBarLineY === null) {
       return false;
     }
 
-    const topPosture = isPullUpTopPosture(landmarks, this.thresholds, this.barLineY);
+    const topPosture = isPullUpTopPosture(landmarks, this.thresholds, this.capturedBarLineY);
 
     let repCompleted = false;
 
@@ -80,7 +85,7 @@ export class PullUpRepEngine {
         this.phase = 'UP';
         this.holdFrames = 0;
         this.reachedTop = false;
-        this.barLineY = getBarLineY(landmarks);
+        this.capturedBarLineY = getBarLineY(landmarks);
       }
     } else if (isInLowZone(elbowAngle, this.thresholds)) {
       if (this.phase === 'DESCENDING' && topPosture) {
@@ -119,6 +124,6 @@ export class PullUpRepEngine {
     this.reachedTop = false;
     this.readyFrames = 0;
     this.isArmed = false;
-    this.barLineY = null;
+    this.capturedBarLineY = null;
   }
 }
