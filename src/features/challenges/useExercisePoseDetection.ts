@@ -5,7 +5,7 @@ import type { ExercisePhase } from '@/features/challenges/poseDetection.types';
 
 import { createRepEngine } from './pose/createRepEngine';
 import type { PoseLandmark } from './pose/landmarks';
-import { PullUpRepEngine } from './pose/pullUpRepEngine';
+import { PullUpRepEngine, type PullUpDebugSnapshot } from './pose/pullUpRepEngine';
 import { PoseQualityGate, type PoseTrackingStatus } from './pose/poseQuality';
 
 interface UseExercisePoseDetectionOptions {
@@ -28,6 +28,7 @@ export function useExercisePoseDetection({
     'Move into frame to start counting',
   );
   const [pullUpBarLineY, setPullUpBarLineY] = useState<number | null>(null);
+  const [pullUpDebug, setPullUpDebug] = useState<PullUpDebugSnapshot | null>(null);
   const onRepDetectedRef = useRef(onRepDetected);
 
   onRepDetectedRef.current = onRepDetected;
@@ -40,6 +41,7 @@ export function useExercisePoseDetection({
     setTrackingStatus('partial');
     setTrackingMessage('Move into frame to start counting');
     setPullUpBarLineY(null);
+    setPullUpDebug(null);
   }, [exerciseType]);
 
   useEffect(() => {
@@ -50,6 +52,7 @@ export function useExercisePoseDetection({
       setTrackingStatus('partial');
       setTrackingMessage(null);
       setPullUpBarLineY(null);
+      setPullUpDebug(null);
     }
   }, [enabled, exerciseType]);
 
@@ -68,6 +71,7 @@ export function useExercisePoseDetection({
         setPhase(getInitialExercisePhase(exerciseType));
         if (exerciseType === 'pull_ups') {
           setPullUpBarLineY(null);
+          setPullUpDebug(null);
         }
       }
 
@@ -81,6 +85,7 @@ export function useExercisePoseDetection({
       if (exerciseType === 'pull_ups') {
         const pullUpEngine = engineRef.current as PullUpRepEngine;
         setPullUpBarLineY(pullUpEngine.barLineY);
+        setPullUpDebug(pullUpEngine.debugSnapshot);
         if (!pullUpEngine.armed) {
           setTrackingMessage(pullUpEngine.getHangHint(landmarks));
         } else if (quality.message) {
@@ -102,6 +107,7 @@ export function useExercisePoseDetection({
     trackingStatus,
     trackingMessage,
     pullUpBarLineY: exerciseType === 'pull_ups' ? pullUpBarLineY : null,
+    pullUpDebug: exerciseType === 'pull_ups' ? pullUpDebug : null,
     processLandmarks,
   };
 }

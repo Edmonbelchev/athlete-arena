@@ -29,7 +29,7 @@ export const PUSH_UP_THRESHOLDS = {
 
 export const PULL_UP_THRESHOLDS = {
   /** Elbow angle (degrees) - hanging with arms extended. */
-  upAngle: 160,
+  upAngle: 170,
   /** Elbow angle (degrees) - bent enough at the top of a rep. */
   downAngle: 90,
   hysteresis: 8,
@@ -39,11 +39,11 @@ export const PULL_UP_THRESHOLDS = {
 /** Pull-up rep validation — arms ROM + chin/head over bar (no leg/knee checks). */
 export const PULL_UP_POSTURE = {
   /** Chin (lower face) at or above the bar line (y grows downward). */
-  chinOverBarMargin: 0.015,
+  chinOverBarMargin: 0.010,
   /** Ear height proxy when filming from behind. */
   earOverBarMargin: 0.03,
   /** Shoulder-at-bar fallback when no face/ears are visible. */
-  shoulderNearBarMargin: 0.04,
+  shoulderNearBarMargin: 0.15,
   /** Wrists stay near the captured bar line through the rep. */
   topWristNearBarMargin: 0.08,
   /** Frames with arms extended before counting begins. */

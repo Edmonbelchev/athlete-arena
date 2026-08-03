@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { CameraFacing, CameraPreviewProps } from '@/components/CameraPreview.types';
+import { PoseAngleOverlay } from '@/components/settings/PoseAngleOverlay';
 import {
   clearPoseSkeleton,
   drawPoseSkeleton,
@@ -9,11 +10,14 @@ import {
   syncCanvasToVideo,
 } from '@/features/challenges/pose/drawPoseSkeleton';
 import type { PoseLandmark } from '@/features/challenges/pose/landmarks';
+import { usePoseDebugOverlay } from '@/features/challenges/pose/usePoseDebugOverlay';
 import { createWebPoseLandmarker, type WebPoseLandmarker } from '@/lib/mediapipeWeb';
 import { POSE_QUALITY } from '@/constants/poseDetection';
 import { Radius, Spacing } from '@/constants/theme';
 import { useUserSettings } from '@/features/settings/UserSettingsProvider';
 import { useTheme } from '@/hooks/use-theme';
+
+const ANGLE_HUD_MIN_INTERVAL_MS = 100;
 
 function mapLandmarks(
   landmarks: { x: number; y: number; z?: number; visibility?: number }[],
@@ -34,10 +38,12 @@ export function CameraPreview({
   onCameraReady,
   onLandmarksDetected,
   pullUpBarLineY = null,
+  pullUpDebug = null,
 }: CameraPreviewProps) {
   const theme = useTheme();
   const { preferences } = useUserSettings();
   const showPoseSkeleton = preferences.showPoseSkeleton;
+  const showPoseDebugOverlay = usePoseDebugOverlay();
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const landmarkerRef = useRef<WebPoseLandmarker | null>(null);
@@ -46,17 +52,27 @@ export function CameraPreview({
   const onCameraReadyRef = useRef(onCameraReady);
   const themeRef = useRef(theme);
   const showSkeletonRef = useRef(showPoseSkeleton);
+  const showPoseDebugOverlayRef = useRef(showPoseDebugOverlay);
   const pullUpBarLineYRef = useRef(pullUpBarLineY);
+  const lastAngleHudAtRef = useRef(0);
   const [facing, setFacing] = useState<CameraFacing>('front');
   const [status, setStatus] = useState<'loading' | 'ready' | 'error' | 'permission_denied'>('loading');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [trackingBody, setTrackingBody] = useState(false);
+  const [latestLandmarks, setLatestLandmarks] = useState<PoseLandmark[] | null>(null);
 
   onLandmarksRef.current = onLandmarksDetected;
   onCameraReadyRef.current = onCameraReady;
   themeRef.current = theme;
   showSkeletonRef.current = showPoseSkeleton;
+  showPoseDebugOverlayRef.current = showPoseDebugOverlay;
   pullUpBarLineYRef.current = pullUpBarLineY;
+
+  useEffect(() => {
+    if (!showPoseSkeleton || !showPoseDebugOverlay) {
+      setLatestLandmarks(null);
+    }
+  }, [showPoseSkeleton, showPoseDebugOverlay]);
 
   useEffect(() => {
     if (!active) {
@@ -71,6 +87,7 @@ export function CameraPreview({
       try {
         setStatus('loading');
         setTrackingBody(false);
+        setLatestLandmarks(null);
 
         const landmarker = await createWebPoseLandmarker();
 
@@ -135,6 +152,15 @@ export function CameraPreview({
                     jointRadius: 4,
                     minVisibility: POSE_QUALITY.skeletonMinVisibility,
                   });
+
+                  const now = performance.now();
+                  if (
+                    showPoseDebugOverlayRef.current &&
+                    now - lastAngleHudAtRef.current >= ANGLE_HUD_MIN_INTERVAL_MS
+                  ) {
+                    lastAngleHudAtRef.current = now;
+                    setLatestLandmarks(mapped);
+                  }
                 } else {
                   clearPoseSkeleton(ctx, canvas.width, canvas.height);
                 }
@@ -266,6 +292,13 @@ export function CameraPreview({
           <Text style={styles.overlayText}>Starting camera…</Text>
         </View>
       ) : null}
+
+      <PoseAngleOverlay
+        landmarks={latestLandmarks}
+        visible={showPoseSkeleton && showPoseDebugOverlay}
+        pullUpBarLineY={pullUpBarLineY}
+        pullUpDebug={pullUpDebug}
+      />
 
       <View style={styles.topOverlay}>
         <Pressable

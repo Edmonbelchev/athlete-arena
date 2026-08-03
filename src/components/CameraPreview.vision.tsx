@@ -10,6 +10,7 @@ import {
 } from 'react-native-mediapipe-posedetection';
 import { useCameraPermission } from 'react-native-vision-camera';
 
+import { PoseAngleOverlay } from '@/components/settings/PoseAngleOverlay';
 import { PoseSkeletonOverlay } from '@/components/settings/PoseSkeletonOverlay';
 import { PullUpBarLineOverlay } from '@/components/settings/PullUpBarLineOverlay';
 import type { CameraFacing, CameraPreviewProps } from '@/components/CameraPreview.types';
@@ -18,6 +19,7 @@ import {
   mapLandmarksToViewNormalized,
 } from '@/features/challenges/pose/mapLandmarksToView';
 import type { PoseLandmark } from '@/features/challenges/pose/landmarks';
+import { usePoseDebugOverlay } from '@/features/challenges/pose/usePoseDebugOverlay';
 import { useUserSettings } from '@/features/settings/UserSettingsProvider';
 import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -41,10 +43,12 @@ export function VisionCameraPreview({
   onCameraReady,
   onLandmarksDetected,
   pullUpBarLineY = null,
+  pullUpDebug = null,
 }: CameraPreviewProps) {
   const theme = useTheme();
   const { preferences } = useUserSettings();
   const showPoseSkeleton = preferences.showPoseSkeleton;
+  const showPoseDebugOverlay = usePoseDebugOverlay();
   const { hasPermission, requestPermission } = useCameraPermission();
   const onLandmarksRef = useRef(onLandmarksDetected);
   const onCameraReadyRef = useRef(onCameraReady);
@@ -54,10 +58,13 @@ export function VisionCameraPreview({
   const [trackingBody, setTrackingBody] = useState(false);
   const [detectionError, setDetectionError] = useState<string | null>(null);
   const [latestLandmarks, setLatestLandmarks] = useState<PoseLandmark[] | null>(null);
+  const [detectionLandmarks, setDetectionLandmarks] = useState<PoseLandmark[] | null>(null);
   const [viewBarLineY, setViewBarLineY] = useState<number | null>(null);
   const pullUpBarLineYRef = useRef(pullUpBarLineY);
+  const showPoseDebugOverlayRef = useRef(showPoseDebugOverlay);
 
   pullUpBarLineYRef.current = pullUpBarLineY;
+  showPoseDebugOverlayRef.current = showPoseDebugOverlay;
 
   onLandmarksRef.current = onLandmarksDetected;
   onCameraReadyRef.current = onCameraReady;
@@ -77,6 +84,9 @@ export function VisionCameraPreview({
     ) => {
       const repLandmarks = mapNativeLandmarks(landmarks);
       onLandmarksRef.current?.(repLandmarks);
+      if (showPoseDebugOverlayRef.current) {
+        setDetectionLandmarks(repLandmarks);
+      }
       setTrackingBody(true);
 
       const { width, height } = viewDimensionsRef.current;
@@ -143,7 +153,14 @@ export function VisionCameraPreview({
   }, [active, hasPermission]);
 
   useEffect(() => {
+    if (!showPoseDebugOverlay) {
+      setDetectionLandmarks(null);
+    }
+  }, [showPoseDebugOverlay]);
+
+  useEffect(() => {
     setLatestLandmarks(null);
+    setDetectionLandmarks(null);
     setViewBarLineY(null);
     setTrackingBody(false);
   }, [facing]);
@@ -194,6 +211,13 @@ export function VisionCameraPreview({
       <PoseSkeletonOverlay
         landmarks={latestLandmarks}
         visible={showPoseSkeleton}
+      />
+
+      <PoseAngleOverlay
+        landmarks={detectionLandmarks}
+        visible={showPoseSkeleton && showPoseDebugOverlay}
+        pullUpBarLineY={pullUpBarLineY}
+        pullUpDebug={pullUpDebug}
       />
 
       <PullUpBarLineOverlay barLineY={viewBarLineY} visible={viewBarLineY !== null} />
