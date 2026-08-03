@@ -62,7 +62,12 @@ export function useExercisePoseDetection({
         return;
       }
 
-      const quality = qualityGateRef.current.evaluate(landmarks);
+      const pullUpArmed =
+        exerciseType === 'pull_ups' && (engineRef.current as PullUpRepEngine).armed;
+
+      const quality = qualityGateRef.current.evaluate(landmarks, {
+        pullUpArmed: exerciseType === 'pull_ups' ? pullUpArmed : undefined,
+      });
       setTrackingStatus(quality.status);
       setTrackingMessage(quality.message);
 

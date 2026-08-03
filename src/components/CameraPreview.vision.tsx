@@ -14,10 +14,7 @@ import { PoseAngleOverlay } from '@/components/settings/PoseAngleOverlay';
 import { PoseSkeletonOverlay } from '@/components/settings/PoseSkeletonOverlay';
 import { PullUpBarLineOverlay } from '@/components/settings/PullUpBarLineOverlay';
 import type { CameraFacing, CameraPreviewProps } from '@/components/CameraPreview.types';
-import {
-  mapDetectionYToViewNormalized,
-  mapLandmarksToViewNormalized,
-} from '@/features/challenges/pose/mapLandmarksToView';
+import { mapLandmarksToViewNormalized } from '@/features/challenges/pose/mapLandmarksToView';
 import type { PoseLandmark } from '@/features/challenges/pose/landmarks';
 import { usePoseDebugOverlay } from '@/features/challenges/pose/usePoseDebugOverlay';
 import { useUserSettings } from '@/features/settings/UserSettingsProvider';
@@ -25,15 +22,6 @@ import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 const POSE_MODEL = 'pose_landmarker_lite.task';
-
-function mapNativeLandmarks(landmarks: Landmark[]): PoseLandmark[] {
-  return landmarks.map((landmark) => ({
-    x: landmark.x,
-    y: landmark.y,
-    z: landmark.z,
-    visibility: landmark.visibility ?? landmark.presence,
-  }));
-}
 
 /**
  * Development-build camera with on-device MediaPipe pose detection.
@@ -82,34 +70,26 @@ export function VisionCameraPreview({
       frameInfo: { inputImageWidth: number; inputImageHeight: number },
       viewCoordinator: ViewCoordinator,
     ) => {
-      const repLandmarks = mapNativeLandmarks(landmarks);
-      onLandmarksRef.current?.(repLandmarks);
-      if (showPoseDebugOverlayRef.current) {
-        setDetectionLandmarks(repLandmarks);
-      }
-      setTrackingBody(true);
-
       const { width, height } = viewDimensionsRef.current;
-      if (width > 0 && height > 0) {
-        setLatestLandmarks(
-          mapLandmarksToViewNormalized(landmarks, frameInfo, viewCoordinator, width, height),
-        );
-
-        const detectionBarY = pullUpBarLineYRef.current;
-        if (detectionBarY !== null) {
-          setViewBarLineY(
-            mapDetectionYToViewNormalized(
-              detectionBarY,
-              frameInfo,
-              viewCoordinator,
-              width,
-              height,
-            ),
-          );
-        } else {
-          setViewBarLineY(null);
-        }
+      if (width <= 0 || height <= 0) {
+        return;
       }
+
+      const viewLandmarks = mapLandmarksToViewNormalized(
+        landmarks,
+        frameInfo,
+        viewCoordinator,
+        width,
+        height,
+      );
+
+      onLandmarksRef.current?.(viewLandmarks);
+      if (showPoseDebugOverlayRef.current) {
+        setDetectionLandmarks(viewLandmarks);
+      }
+      setLatestLandmarks(viewLandmarks);
+      setViewBarLineY(pullUpBarLineYRef.current);
+      setTrackingBody(true);
     },
     [],
   );
@@ -134,7 +114,7 @@ export function VisionCameraPreview({
       minPosePresenceConfidence: 0.45,
       minTrackingConfidence: 0.45,
       delegate: Delegate.GPU,
-      mirrorMode: 'no-mirror',
+      mirrorMode: 'mirror-front-only',
     },
   );
 
