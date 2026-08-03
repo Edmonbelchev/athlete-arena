@@ -6,7 +6,7 @@ import {
   type PoseLandmark,
 } from './landmarks';
 import type { AngleThresholdConfig } from './repEngineUtils';
-import { isInHighZone, isInLowZone } from './repEngineUtils';
+import { isInHighZone } from './repEngineUtils';
 
 function isVisible(landmark: PoseLandmark | undefined): landmark is PoseLandmark {
   return Boolean(landmark && (landmark.visibility ?? 1) >= POSE_REP_MIN_VISIBILITY);
@@ -197,7 +197,7 @@ export function isPullUpTopPosture(
     wristY === null ||
     elbowAngle === null ||
     barLineY === null ||
-    !isInLowZone(elbowAngle, elbowThresholds)
+    isInHighZone(elbowAngle, elbowThresholds)
   ) {
     return false;
   }

@@ -29,7 +29,7 @@ export const PUSH_UP_THRESHOLDS = {
 
 export const PULL_UP_THRESHOLDS = {
   /** Elbow angle (degrees) - hanging with arms extended. */
-  upAngle: 170,
+  upAngle: 165,
   /** Elbow angle (degrees) - bent enough at the top of a rep. */
   downAngle: 90,
   hysteresis: 8,

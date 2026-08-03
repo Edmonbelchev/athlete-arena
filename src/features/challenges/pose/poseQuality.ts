@@ -13,6 +13,11 @@ export interface PoseQualityResult {
   shouldResetEngine: boolean;
 }
 
+export interface PoseQualityOptions {
+  /** Pull-up engine is armed — only arms need to stay visible (head may leave frame mid-rep). */
+  pullUpArmed?: boolean;
+}
+
 function isRepLandmarkVisible(landmark: PoseLandmark | undefined): landmark is PoseLandmark {
   return Boolean(landmark && (landmark.visibility ?? 1) >= POSE_REP_MIN_VISIBILITY);
 }
@@ -94,9 +99,24 @@ function countVisibleLandmarks(landmarks: PoseLandmark[], indices: number[]): nu
 function checkRequiredLandmarks(
   landmarks: PoseLandmark[],
   exerciseType: ExerciseType,
+  options?: PoseQualityOptions,
 ): { ok: boolean; message: string | null } {
   const trackingIndices = getTrackingIndices(exerciseType);
   const visibleCount = countVisibleLandmarks(landmarks, trackingIndices);
+
+  if (exerciseType === 'pull_ups' && options?.pullUpArmed) {
+    const armVisible =
+      hasCompleteArmChain(landmarks, 'left') || hasCompleteArmChain(landmarks, 'right');
+
+    if (!armVisible) {
+      return {
+        ok: false,
+        message: 'Keep at least one full arm (shoulder, elbow, wrist) in frame',
+      };
+    }
+
+    return { ok: true, message: null };
+  }
 
   if (exerciseType === 'pull_ups') {
     if (!hasPullUpTrackingLandmarks(landmarks)) {
@@ -161,8 +181,8 @@ export class PoseQualityGate {
 
   constructor(private readonly exerciseType: ExerciseType) {}
 
-  evaluate(landmarks: PoseLandmark[]): PoseQualityResult {
-    const required = checkRequiredLandmarks(landmarks, this.exerciseType);
+  evaluate(landmarks: PoseLandmark[], options?: PoseQualityOptions): PoseQualityResult {
+    const required = checkRequiredLandmarks(landmarks, this.exerciseType, options);
 
     if (!required.ok) {
       this.stableFrames = 0;
