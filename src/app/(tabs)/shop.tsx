@@ -24,7 +24,7 @@ export default function ShopTabScreen() {
       edges={['left', 'right', 'bottom']}
       style={StyleSheet.flatten([styles.safeArea, { backgroundColor: theme.background }])}>
       <View style={styles.header}>
-        <TabScreenHeader title="Shop" subtitle="Spend your coins" />
+        <TabScreenHeader title="Shop" subtitle="Buy emotes with your coins" />
       </View>
       <ShopScreenContent showHeader={false} />
     </SafeAreaView>

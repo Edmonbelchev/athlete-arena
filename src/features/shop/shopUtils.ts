@@ -142,5 +142,7 @@ export function resolveShopEmote(item: ShopItemRecord | null): string | null {
 }
 
 export function getOwnedEmotes(items: ShopItemRecord[]): ShopItemRecord[] {
-  return items.filter((item) => item.itemType === 'emote' && item.owned);
+  return items.filter(
+    (item) => item.itemType === 'emote' && item.owned && item.id !== 'emote_trophy',
+  );
 }

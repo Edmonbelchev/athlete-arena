@@ -154,6 +154,22 @@ function RootNavigator() {
             title: 'Settings',
           }}
         />
+        <Stack.Screen
+          name="profile/support/index"
+          options={{
+            presentation: 'modal',
+            headerShown: true,
+            title: 'Support',
+          }}
+        />
+        <Stack.Screen
+          name="profile/support/create"
+          options={{
+            presentation: 'modal',
+            headerShown: true,
+            title: 'New Ticket',
+          }}
+        />
       </Stack.Protected>
 
       <Stack.Protected guard={!session}>

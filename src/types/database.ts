@@ -564,6 +564,38 @@ export interface Database {
         Args: { p_item_id: string };
         Returns: 'equipped';
       };
+      create_support_ticket: {
+        Args: {
+          p_category: 'bug_report' | 'feedback';
+          p_subject: string;
+          p_message: string;
+          p_app_version?: string | null;
+        };
+        Returns: {
+          id: string;
+          user_id: string;
+          category: 'bug_report' | 'feedback';
+          subject: string;
+          message: string;
+          status: 'open' | 'in_progress' | 'resolved' | 'closed';
+          app_version: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+      };
+      get_my_support_tickets: {
+        Args: Record<string, never>;
+        Returns: {
+          id: string;
+          category: 'bug_report' | 'feedback';
+          subject: string;
+          message: string;
+          status: 'open' | 'in_progress' | 'resolved' | 'closed';
+          app_version: string | null;
+          created_at: string;
+          updated_at: string;
+        }[];
+      };
       get_my_friend_challenges: {
         Args: Record<string, never>;
         Returns: FriendChallengeRpcRow[];

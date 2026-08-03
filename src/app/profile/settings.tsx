@@ -5,7 +5,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { SettingsToggleRow } from '@/components/settings/SettingsToggleRow';
 import { ThemeToggle } from '@/components/sidebar/ThemeToggle';
+import { BetaBadge } from '@/components/ui/BetaBadge';
 import { AppIcon } from '@/components/ui/AppIcon';
+import { PrimaryButton } from '@/components/ui/PrimaryButton';
+import { APP_VERSION_LABEL } from '@/constants/app';
 import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { useUserSettings } from '@/features/settings/UserSettingsProvider';
 import { leaveScreen } from '@/lib/navigation';
@@ -101,6 +104,19 @@ export default function SettingsScreen() {
           {saveError ? (
             <Text style={StyleSheet.flatten([styles.error, { color: theme.danger }])}>{saveError}</Text>
           ) : null}
+
+          <View style={styles.section}>
+            <Text style={StyleSheet.flatten([styles.sectionTitle, { color: theme.text }])}>Support</Text>
+            <Text style={StyleSheet.flatten([styles.supportCopy, { color: theme.textSecondary }])}>
+              Running {APP_VERSION_LABEL}. Report bugs or send feedback through a support ticket.
+            </Text>
+            <BetaBadge showVersion />
+            <PrimaryButton
+              label="Open Support"
+              variant="secondary"
+              onPress={() => router.push('/profile/support')}
+            />
+          </View>
         </ScrollView>
       </SafeAreaView>
     </>
@@ -145,6 +161,11 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: '800',
+  },
+  supportCopy: {
+    fontSize: 14,
+    lineHeight: 20,
+    fontWeight: '600',
   },
   error: {
     fontSize: 14,

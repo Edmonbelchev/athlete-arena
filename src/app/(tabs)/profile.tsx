@@ -90,6 +90,12 @@ export default function ProfileScreen() {
         onPress: () => router.push('/profile/settings'),
       },
       {
+        id: 'support',
+        label: 'Support',
+        icon: 'support' as const,
+        onPress: () => router.push('/profile/support'),
+      },
+      {
         id: 'edit',
         label: 'Edit Profile',
         icon: 'profile' as const,

@@ -10,24 +10,18 @@ import {
   View,
 } from 'react-native';
 
+import { ComingSoonBlock } from '@/components/home/ComingSoonBlock';
 import { CoinBadge } from '@/components/shop/CoinBadge';
 import { CoinEarnInfo } from '@/components/rewards/CoinEarnInfo';
 import { ShopItemCard } from '@/components/shop/ShopItemCard';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { useShop } from '@/features/shop/ShopProvider';
-import type { ShopCategoryFilter, ShopOwnershipFilter } from '@/types/shop';
+import type { ShopOwnershipFilter } from '@/types/shop';
 import { useTheme } from '@/hooks/use-theme';
 
-const CATEGORY_FILTERS: { id: ShopCategoryFilter; label: string }[] = [
-  { id: 'all', label: 'All' },
-  { id: 'avatar', label: 'Avatars' },
-  { id: 'frame', label: 'Frames' },
-  { id: 'emote', label: 'Emotes' },
-];
-
 const OWNERSHIP_FILTERS: { id: ShopOwnershipFilter; label: string }[] = [
-  { id: 'all', label: 'All items' },
+  { id: 'all', label: 'All emotes' },
   { id: 'owned', label: 'Owned' },
   { id: 'unowned', label: 'Unowned' },
 ];
@@ -38,34 +32,41 @@ interface ShopScreenContentProps {
 
 export function ShopScreenContent({ showHeader = true }: ShopScreenContentProps) {
   const theme = useTheme();
-  const [categoryFilter, setCategoryFilter] = useState<ShopCategoryFilter>('all');
   const [ownershipFilter, setOwnershipFilter] = useState<ShopOwnershipFilter>('all');
   const { items, summary, isLoading, isUpdating, error, refresh, purchaseItem, equipItem } = useShop();
 
-  const filteredItems = useMemo(() => {
-    return items.filter((item) => {
-      const matchesCategory = categoryFilter === 'all' || item.itemType === categoryFilter;
-      const matchesOwnership =
-        ownershipFilter === 'all' ||
-        (ownershipFilter === 'owned' ? item.owned : !item.owned);
+  const shopEmotes = useMemo(
+    () => items.filter((item) => item.itemType === 'emote' && item.id !== 'emote_trophy'),
+    [items],
+  );
 
-      return matchesCategory && matchesOwnership;
+  const filteredItems = useMemo(() => {
+    return shopEmotes.filter((item) => {
+      if (ownershipFilter === 'owned') {
+        return item.owned;
+      }
+
+      if (ownershipFilter === 'unowned') {
+        return !item.owned;
+      }
+
+      return true;
     });
-  }, [categoryFilter, ownershipFilter, items]);
+  }, [ownershipFilter, shopEmotes]);
 
   const emptyMessage = useMemo(() => {
     if (ownershipFilter === 'owned') {
-      return 'You do not own any items in this view yet.';
+      return 'You do not own any emotes yet.';
     }
 
     if (ownershipFilter === 'unowned') {
-      return 'You already own everything in this view.';
+      return 'You already own every emote in the shop.';
     }
 
-    return 'No items in this category yet.';
+    return 'No emotes available right now.';
   }, [ownershipFilter]);
 
-  if (isLoading && items.length === 0) {
+  if (isLoading && shopEmotes.length === 0) {
     return (
       <View style={StyleSheet.flatten([styles.loading, { backgroundColor: theme.background }])}>
         <ActivityIndicator size="large" color={theme.primary} />
@@ -86,9 +87,9 @@ export function ShopScreenContent({ showHeader = true }: ShopScreenContentProps)
             { backgroundColor: theme.backgroundElement, borderColor: theme.border },
           ])}>
           <View style={styles.summaryTextBlock}>
-            <Text style={StyleSheet.flatten([styles.summaryTitle, { color: theme.text }])}>Arena Shop</Text>
+            <Text style={StyleSheet.flatten([styles.summaryTitle, { color: theme.text }])}>Emote Shop</Text>
             <Text style={StyleSheet.flatten([styles.summaryCopy, { color: theme.textSecondary }])}>
-              Spend coins on avatars, profile frames, and challenge emotes.
+              Spend coins on challenge emotes to celebrate wins and hype up friend races.
             </Text>
           </View>
           <CoinBadge amount={summary.coinBalance} large />
@@ -96,32 +97,6 @@ export function ShopScreenContent({ showHeader = true }: ShopScreenContentProps)
       ) : null}
 
       <CoinEarnInfo />
-
-      <View style={styles.filters}>
-        {CATEGORY_FILTERS.map((item) => {
-          const active = categoryFilter === item.id;
-          return (
-            <Pressable
-              key={item.id}
-              onPress={() => setCategoryFilter(item.id)}
-              style={StyleSheet.flatten([
-                styles.filterChip,
-                {
-                  backgroundColor: active ? theme.primary : theme.backgroundElement,
-                  borderColor: active ? theme.primary : theme.border,
-                },
-              ])}>
-              <Text
-                style={StyleSheet.flatten([
-                  styles.filterLabel,
-                  { color: active ? '#FFFFFF' : theme.textSecondary },
-                ])}>
-                {item.label}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
 
       <View style={styles.filters}>
         {OWNERSHIP_FILTERS.map((item) => {
@@ -172,6 +147,17 @@ export function ShopScreenContent({ showHeader = true }: ShopScreenContentProps)
       {!error && filteredItems.length === 0 ? (
         <Text style={StyleSheet.flatten([styles.empty, { color: theme.textSecondary }])}>{emptyMessage}</Text>
       ) : null}
+
+      <ComingSoonBlock
+        title="More cosmetics"
+        description="Avatar styles, profile frames, and other arena cosmetics are coming soon."
+        icon="profile"
+      />
+      <ComingSoonBlock
+        title="More emotes"
+        description="New celebration emotes and seasonal items will land in the shop over time."
+        icon="gift"
+      />
     </ScrollView>
   );
 }

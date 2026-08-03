@@ -15,6 +15,7 @@ import { AchievementBadges } from '@/components/sidebar/AchievementBadges';
 import { DailyMotivationCard } from '@/components/sidebar/DailyMotivationCard';
 import { CoinBadge } from '@/components/shop/CoinBadge';
 import { ProfileAvatar } from '@/components/profile/ProfileAvatar';
+import { BetaBadge } from '@/components/ui/BetaBadge';
 import { AppIcon } from '@/components/ui/AppIcon';
 import { XPProgressBar } from '@/components/ui/XPProgressBar';
 import { getNextAchievements, getRecentUnlockedAchievements } from '@/features/achievements/achievementUtils';
@@ -42,6 +43,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Achievements', icon: 'medal', href: '/profile/achievements' },
   { label: 'History', icon: 'history', href: '/profile/history' },
   { label: 'Settings', icon: 'settings', href: '/profile/settings' },
+  { label: 'Support', icon: 'support', href: '/profile/support' },
   { label: 'Friends', icon: 'friends', href: '/(tabs)/friends' },
   { label: 'Challenges', icon: 'target', href: '/friends/challenges' },
 ];
@@ -125,6 +127,7 @@ export function AppSidebar() {
                     {displayName}
                   </Text>
                   <CoinBadge amount={summary.coinBalance} />
+                  <BetaBadge showVersion />
                 </View>
               </View>
 

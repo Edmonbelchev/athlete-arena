@@ -127,7 +127,6 @@ export default function EditProfileScreen() {
               displayName={fallbackName}
               isUpdating={isUpdating}
               onSelect={(itemId) => void handleSelectAvatar(itemId)}
-              onOpenShop={() => router.push('/(tabs)/shop')}
             />
 
             <Text style={StyleSheet.flatten([styles.subtitle, { color: theme.textSecondary }])}>
