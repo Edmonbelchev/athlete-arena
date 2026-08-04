@@ -29,6 +29,7 @@ interface UserSettingsContextValue {
   resolvedScheme: ThemePreference;
   setTheme: (theme: ThemePreference) => void;
   setShowPoseSkeleton: (show: boolean) => void;
+  completeOnboarding: () => Promise<void>;
   isReady: boolean;
   isSaving: boolean;
   saveError: string | null;
@@ -149,17 +150,22 @@ export function UserSettingsProvider({ children }: { children: React.ReactNode }
     [persistToAccount],
   );
 
+  const completeOnboarding = useCallback(async () => {
+    await persistToAccount({ hasCompletedOnboarding: true });
+  }, [persistToAccount]);
+
   const value = useMemo(
     () => ({
       preferences,
       resolvedScheme: preferences.theme,
       setTheme,
       setShowPoseSkeleton,
+      completeOnboarding,
       isReady,
       isSaving,
       saveError,
     }),
-    [preferences, setTheme, setShowPoseSkeleton, isReady, isSaving, saveError],
+    [preferences, setTheme, setShowPoseSkeleton, completeOnboarding, isReady, isSaving, saveError],
   );
 
   return <UserSettingsContext.Provider value={value}>{children}</UserSettingsContext.Provider>;

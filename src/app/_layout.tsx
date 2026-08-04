@@ -11,6 +11,7 @@ import { ShopProvider } from '@/features/shop/ShopProvider';
 import { UserSettingsProvider } from '@/features/settings/UserSettingsProvider';
 import { useThemePreference } from '@/features/theme/ThemePreferenceProvider';
 import { ChallengeNotificationBanner } from '@/components/notifications/ChallengeNotificationBanner';
+import { OnboardingGate } from '@/components/onboarding/OnboardingGate';
 import { ModalCloseButton } from '@/components/ui/ModalCloseButton';
 
 SplashScreen.preventAutoHideAsync();
@@ -38,7 +39,9 @@ function ThemedRootNavigator() {
 
   return (
     <ThemeProvider value={resolvedScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <RootNavigator />
+      <OnboardingGate>
+        <RootNavigator />
+      </OnboardingGate>
       <ChallengeNotificationBanner />
     </ThemeProvider>
   );
@@ -64,6 +67,7 @@ function RootNavigator() {
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Protected guard={Boolean(session)}>
+        <Stack.Screen name="onboarding" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" />
         <Stack.Screen
           name="challenge/[id]"

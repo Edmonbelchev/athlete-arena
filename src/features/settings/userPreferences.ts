@@ -6,6 +6,7 @@ export interface UserPreferences {
   theme: ThemePreference;
   /** Draw MediaPipe pose skeleton over the camera preview during challenges. */
   showPoseSkeleton: boolean;
+  hasCompletedOnboarding: boolean;
 }
 
 export const USER_PREFERENCES_STORAGE_KEY = 'user-preferences';
@@ -14,6 +15,7 @@ export function getDefaultUserPreferences(systemDark = false): UserPreferences {
   return {
     theme: systemDark ? 'dark' : 'light',
     showPoseSkeleton: Platform.OS === 'web',
+    hasCompletedOnboarding: false,
   };
 }
 
@@ -34,6 +36,12 @@ export function parseUserPreferences(
       typeof record.showPoseSkeleton === 'boolean'
         ? record.showPoseSkeleton
         : fallback.showPoseSkeleton,
+    hasCompletedOnboarding:
+      typeof record.hasCompletedOnboarding === 'boolean'
+        ? record.hasCompletedOnboarding
+        : Object.keys(record).length > 0
+          ? true
+          : fallback.hasCompletedOnboarding,
   };
 }
 
@@ -44,5 +52,6 @@ export function mergeUserPreferences(
   return {
     theme: patch.theme ?? current.theme,
     showPoseSkeleton: patch.showPoseSkeleton ?? current.showPoseSkeleton,
+    hasCompletedOnboarding: patch.hasCompletedOnboarding ?? current.hasCompletedOnboarding,
   };
 }

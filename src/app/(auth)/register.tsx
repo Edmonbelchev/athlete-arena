@@ -1,4 +1,4 @@
-import { Link, router } from 'expo-router';
+import { Link } from 'expo-router';
 import { useState } from 'react';
 import {
   KeyboardAvoidingView,
@@ -98,7 +98,6 @@ export default function RegisterScreen() {
       });
 
       if (session) {
-        router.replace('/(tabs)');
         return;
       }
 
