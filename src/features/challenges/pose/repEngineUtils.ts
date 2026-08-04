@@ -2,7 +2,6 @@ export interface AngleThresholdConfig {
   high: number;
   low: number;
   hysteresis: number;
-  minHoldFrames: number;
 }
 
 /** Returns true when angle is clearly in the "high" (extended/standing) zone. */

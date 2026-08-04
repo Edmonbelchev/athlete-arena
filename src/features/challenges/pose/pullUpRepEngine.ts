@@ -16,7 +16,6 @@ function toPullUpThresholds(): AngleThresholdConfig {
     high: PULL_UP_THRESHOLDS.upAngle,
     low: PULL_UP_THRESHOLDS.downAngle,
     hysteresis: PULL_UP_THRESHOLDS.hysteresis,
-    minHoldFrames: PULL_UP_THRESHOLDS.minHoldFrames,
   };
 }
 
@@ -32,13 +31,11 @@ export interface PullUpDebugSnapshot {
 export class PullUpRepEngine {
   phase: PushUpPhase = 'UP';
   private readonly thresholds = toPullUpThresholds();
-  private holdFrames = 0;
-  private reachedTop = false;
   private readyFrames = 0;
   private isArmed = false;
   private capturedBarLineY: number | null = null;
   private lastTopPosture = false;
-  /** After a rep, wait for a dead hang before counting top hold again. */
+  /** After a rep, wait for a dead hang before counting the next top. */
   private blockedUntilHang = false;
 
   get armed(): boolean {
@@ -54,8 +51,8 @@ export class PullUpRepEngine {
     return {
       phase: this.phase,
       armed: this.isArmed,
-      reachedTop: this.reachedTop,
-      holdFrames: this.holdFrames,
+      reachedTop: this.lastTopPosture,
+      holdFrames: 0,
       readyFrames: this.readyFrames,
       topPosture: this.lastTopPosture,
     };
@@ -85,8 +82,6 @@ export class PullUpRepEngine {
       if (!this.isArmed && this.readyFrames >= PULL_UP_POSTURE.readyFramesRequired) {
         this.isArmed = true;
         this.phase = 'UP';
-        this.holdFrames = 0;
-        this.reachedTop = false;
       }
     } else if (!this.isArmed) {
       this.readyFrames = 0;
@@ -103,37 +98,19 @@ export class PullUpRepEngine {
     let repCompleted = false;
 
     if (topPosture && !this.blockedUntilHang) {
-      if (this.phase !== 'DOWN') {
-        if (this.phase === 'ASCENDING' && !this.reachedTop) {
-          this.holdFrames = 0;
-        }
-        this.phase = 'DOWN';
-      }
-
-      this.holdFrames += 1;
-      if (this.holdFrames >= this.thresholds.minHoldFrames) {
-        this.reachedTop = true;
-        repCompleted = true;
-        this.holdFrames = 0;
-        this.blockedUntilHang = true;
-      }
+      this.phase = 'DOWN';
+      repCompleted = true;
+      this.blockedUntilHang = true;
     } else if (isInHighZone(elbowAngle, this.thresholds)) {
       if (armsExtended) {
         this.phase = 'UP';
-        this.holdFrames = 0;
-        this.reachedTop = false;
         this.blockedUntilHang = false;
         this.capturedBarLineY = getBarLineY(landmarks);
-      }
-    } else if (this.phase === 'DOWN' && !topPosture) {
-      this.holdFrames = Math.max(0, this.holdFrames - PULL_UP_POSTURE.topHoldDecayPerMiss);
-      if (this.holdFrames === 0) {
-        this.reachedTop = false;
       }
     } else if (isInMidZone(elbowAngle, this.thresholds)) {
       if (this.phase === 'UP') {
         this.phase = 'DESCENDING';
-      } else if (this.phase === 'DOWN' || this.phase === 'ASCENDING') {
+      } else if (this.phase === 'DOWN') {
         this.phase = 'ASCENDING';
       }
     } else if (this.phase === 'UP') {
@@ -145,8 +122,6 @@ export class PullUpRepEngine {
 
   reset(): void {
     this.phase = 'UP';
-    this.holdFrames = 0;
-    this.reachedTop = false;
     this.readyFrames = 0;
     this.isArmed = false;
     this.capturedBarLineY = null;

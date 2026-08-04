@@ -18,13 +18,11 @@ function toElbowThresholds(thresholds: {
   upAngle: number;
   downAngle: number;
   hysteresis: number;
-  minHoldFrames: number;
 }): AngleThresholdConfig {
   return {
     high: thresholds.upAngle,
     low: thresholds.downAngle,
     hysteresis: thresholds.hysteresis,
-    minHoldFrames: thresholds.minHoldFrames,
   };
 }
 

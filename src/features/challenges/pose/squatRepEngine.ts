@@ -6,7 +6,6 @@ import { isInHighZone, isInLowZone, isInMidZone } from './repEngineUtils';
 
 export class SquatRepEngine {
   phase: SquatPhase = 'STANDING';
-  private holdFrames = 0;
   private reachedBottom = false;
 
   update(landmarks: PoseLandmark[]): boolean {
@@ -16,35 +15,28 @@ export class SquatRepEngine {
     }
 
     let repCompleted = false;
-    const config = SQUAT_THRESHOLDS;
     const zones = {
-      high: config.standingAngle,
-      low: config.bottomAngle,
-      hysteresis: config.hysteresis,
-      minHoldFrames: config.minHoldFrames,
+      high: SQUAT_THRESHOLDS.standingAngle,
+      low: SQUAT_THRESHOLDS.bottomAngle,
+      hysteresis: SQUAT_THRESHOLDS.hysteresis,
     };
 
     if (isInHighZone(kneeAngle, zones)) {
-      if (this.phase === 'ASCENDING' && this.reachedBottom) {
+      if (this.reachedBottom && (this.phase === 'ASCENDING' || this.phase === 'BOTTOM')) {
         repCompleted = true;
       }
       this.phase = 'STANDING';
-      this.holdFrames = 0;
       this.reachedBottom = false;
     } else if (isInLowZone(kneeAngle, zones)) {
-      if (this.phase === 'DESCENDING') {
+      if (this.phase === 'STANDING' || this.phase === 'DESCENDING') {
         this.phase = 'BOTTOM';
       } else if (this.phase === 'ASCENDING') {
         this.phase = 'BOTTOM';
-        this.holdFrames = 0;
         this.reachedBottom = false;
       }
 
       if (this.phase === 'BOTTOM') {
-        this.holdFrames += 1;
-        if (this.holdFrames >= config.minHoldFrames) {
-          this.reachedBottom = true;
-        }
+        this.reachedBottom = true;
       }
     } else if (isInMidZone(kneeAngle, zones)) {
       if (this.phase === 'STANDING') {
@@ -59,7 +51,6 @@ export class SquatRepEngine {
 
   reset(): void {
     this.phase = 'STANDING';
-    this.holdFrames = 0;
     this.reachedBottom = false;
   }
 }

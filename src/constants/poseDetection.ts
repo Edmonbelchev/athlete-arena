@@ -34,8 +34,6 @@ export const PUSH_UP_THRESHOLDS = {
   downAngle: 95,
   /** Degrees of slack between phases to reduce jitter. */
   hysteresis: isNativeMobile ? 12 : 8,
-  /** Consecutive frames at bottom before a rep can complete. */
-  minHoldFrames: isNativeMobile ? 3 : 4,
 } as const;
 
 export const PULL_UP_THRESHOLDS = {
@@ -44,7 +42,6 @@ export const PULL_UP_THRESHOLDS = {
   /** Elbow angle (degrees) - bent enough at the top of a rep. */
   downAngle: 90,
   hysteresis: isNativeMobile ? 14 : 8,
-  minHoldFrames: isNativeMobile ? 3 : 4,
 } as const;
 
 /** Pull-up rep validation — arms ROM + chin/head over bar (no leg/knee checks). */
@@ -59,8 +56,6 @@ export const PULL_UP_POSTURE = {
   topWristNearBarMargin: isNativeMobile ? 0.14 : 0.08,
   /** Frames with arms extended before counting begins. */
   readyFramesRequired: isNativeMobile ? 2 : 3,
-  /** Hold progress lost slowly on brief posture flicker (native ~15fps). */
-  topHoldDecayPerMiss: 1,
 } as const;
 
 export const DIP_THRESHOLDS = {
@@ -69,7 +64,6 @@ export const DIP_THRESHOLDS = {
   /** Elbow angle (degrees) - bottom of dip. */
   downAngle: 95,
   hysteresis: isNativeMobile ? 12 : 8,
-  minHoldFrames: isNativeMobile ? 3 : 4,
 } as const;
 
 export const SQUAT_THRESHOLDS = {
@@ -78,12 +72,10 @@ export const SQUAT_THRESHOLDS = {
   /** Knee angle (degrees) - bottom of squat. */
   bottomAngle: 100,
   hysteresis: isNativeMobile ? 12 : 8,
-  /** Consecutive frames at bottom before a rep can complete. */
-  minHoldFrames: isNativeMobile ? 3 : 4,
 } as const;
 
 /** EMA smoothing for native camera landmarks (0 = frozen, 1 = raw). */
-export const POSE_LANDMARK_SMOOTH_ALPHA = isNativeMobile ? 0.38 : 1;
+export const POSE_LANDMARK_SMOOTH_ALPHA = isNativeMobile ? 0.52 : 1;
 
 export const POSE_GUIDANCE: Record<ExerciseType, { title: string; tips: readonly string[] }> = {
   push_ups: {
@@ -107,7 +99,7 @@ export const POSE_GUIDANCE: Record<ExerciseType, { title: string; tips: readonly
     tips: [
       'Keep your head and arms in frame — legs/knees do not matter',
       'Hang with arms fully extended, then pull until your chin clears the bar',
-      'Lower back to a full hang — the rep counts when your arms are extended again',
+      'Rep counts as soon as your chin clears the bar with good form',
       'Front or back camera angles both work',
     ],
   },

@@ -243,7 +243,6 @@ function toHintThresholds(): AngleThresholdConfig {
     high: PULL_UP_THRESHOLDS.upAngle,
     low: PULL_UP_THRESHOLDS.downAngle,
     hysteresis: PULL_UP_THRESHOLDS.hysteresis,
-    minHoldFrames: PULL_UP_THRESHOLDS.minHoldFrames,
   };
 }
 
