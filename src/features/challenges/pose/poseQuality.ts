@@ -1,5 +1,9 @@
 import type { ExerciseType } from '@/constants/challenges';
-import { POSE_QUALITY, POSE_REP_MIN_VISIBILITY } from '@/constants/poseDetection';
+import {
+  POSE_QUALITY,
+  POSE_REP_MIN_VISIBILITY,
+  POSE_REP_MIN_VISIBILITY_ARMED,
+} from '@/constants/poseDetection';
 
 import { PoseLandmarkIndex, type PoseLandmark } from './landmarks';
 import { hasPullUpTrackingLandmarks } from './pullUpPosture';
@@ -18,23 +22,58 @@ export interface PoseQualityOptions {
   pullUpArmed?: boolean;
 }
 
-function isRepLandmarkVisible(landmark: PoseLandmark | undefined): landmark is PoseLandmark {
-  return Boolean(landmark && (landmark.visibility ?? 1) >= POSE_REP_MIN_VISIBILITY);
+function isRepLandmarkVisible(
+  landmark: PoseLandmark | undefined,
+  minVisibility: number = POSE_REP_MIN_VISIBILITY,
+): landmark is PoseLandmark {
+  return Boolean(landmark && (landmark.visibility ?? 1) >= minVisibility);
 }
 
-function hasCompleteArmChain(landmarks: PoseLandmark[], side: 'left' | 'right'): boolean {
+function hasCompleteArmChain(
+  landmarks: PoseLandmark[],
+  side: 'left' | 'right',
+  minVisibility: number = POSE_REP_MIN_VISIBILITY,
+): boolean {
   if (side === 'left') {
     return (
-      isRepLandmarkVisible(landmarks[PoseLandmarkIndex.LEFT_SHOULDER]) &&
-      isRepLandmarkVisible(landmarks[PoseLandmarkIndex.LEFT_ELBOW]) &&
-      isRepLandmarkVisible(landmarks[PoseLandmarkIndex.LEFT_WRIST])
+      isRepLandmarkVisible(landmarks[PoseLandmarkIndex.LEFT_SHOULDER], minVisibility) &&
+      isRepLandmarkVisible(landmarks[PoseLandmarkIndex.LEFT_ELBOW], minVisibility) &&
+      isRepLandmarkVisible(landmarks[PoseLandmarkIndex.LEFT_WRIST], minVisibility)
     );
   }
 
   return (
-    isRepLandmarkVisible(landmarks[PoseLandmarkIndex.RIGHT_SHOULDER]) &&
-    isRepLandmarkVisible(landmarks[PoseLandmarkIndex.RIGHT_ELBOW]) &&
-    isRepLandmarkVisible(landmarks[PoseLandmarkIndex.RIGHT_WRIST])
+    isRepLandmarkVisible(landmarks[PoseLandmarkIndex.RIGHT_SHOULDER], minVisibility) &&
+    isRepLandmarkVisible(landmarks[PoseLandmarkIndex.RIGHT_ELBOW], minVisibility) &&
+    isRepLandmarkVisible(landmarks[PoseLandmarkIndex.RIGHT_WRIST], minVisibility)
+  );
+}
+
+/** Shoulder + elbow — wrists often drop out when the phone is farther away. */
+function hasMinimalArmChain(
+  landmarks: PoseLandmark[],
+  side: 'left' | 'right',
+  minVisibility: number,
+): boolean {
+  if (side === 'left') {
+    return (
+      isRepLandmarkVisible(landmarks[PoseLandmarkIndex.LEFT_SHOULDER], minVisibility) &&
+      isRepLandmarkVisible(landmarks[PoseLandmarkIndex.LEFT_ELBOW], minVisibility)
+    );
+  }
+
+  return (
+    isRepLandmarkVisible(landmarks[PoseLandmarkIndex.RIGHT_SHOULDER], minVisibility) &&
+    isRepLandmarkVisible(landmarks[PoseLandmarkIndex.RIGHT_ELBOW], minVisibility)
+  );
+}
+
+function hasUsablePullUpArm(landmarks: PoseLandmark[], minVisibility: number): boolean {
+  return (
+    hasCompleteArmChain(landmarks, 'left', minVisibility) ||
+    hasCompleteArmChain(landmarks, 'right', minVisibility) ||
+    hasMinimalArmChain(landmarks, 'left', minVisibility) ||
+    hasMinimalArmChain(landmarks, 'right', minVisibility)
   );
 }
 
@@ -105,13 +144,10 @@ function checkRequiredLandmarks(
   const visibleCount = countVisibleLandmarks(landmarks, trackingIndices);
 
   if (exerciseType === 'pull_ups' && options?.pullUpArmed) {
-    const armVisible =
-      hasCompleteArmChain(landmarks, 'left') || hasCompleteArmChain(landmarks, 'right');
-
-    if (!armVisible) {
+    if (!hasUsablePullUpArm(landmarks, POSE_REP_MIN_VISIBILITY_ARMED)) {
       return {
         ok: false,
-        message: 'Keep at least one full arm (shoulder, elbow, wrist) in frame',
+        message: 'Keep at least one arm (shoulder and elbow) in frame',
       };
     }
 
@@ -188,11 +224,16 @@ export class PoseQualityGate {
       this.stableFrames = 0;
       this.partialFrames += 1;
 
+      const resetThreshold =
+        options?.pullUpArmed === true
+          ? POSE_QUALITY.partialFramesBeforeResetArmed
+          : POSE_QUALITY.partialFramesBeforeReset;
+
       return {
         status: 'partial',
         canCountReps: false,
         message: required.message,
-        shouldResetEngine: this.partialFrames >= POSE_QUALITY.partialFramesBeforeReset,
+        shouldResetEngine: this.partialFrames >= resetThreshold,
       };
     }
 

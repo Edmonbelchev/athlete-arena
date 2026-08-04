@@ -80,7 +80,12 @@ export function useExercisePoseDetection({
         }
       }
 
-      if (!quality.canCountReps) {
+      const keepUpdatingWhileArmed =
+        exerciseType === 'pull_ups' &&
+        pullUpArmed &&
+        !quality.shouldResetEngine;
+
+      if (!quality.canCountReps && !keepUpdatingWhileArmed) {
         return;
       }
 

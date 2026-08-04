@@ -126,8 +126,10 @@ export class PullUpRepEngine {
         this.capturedBarLineY = getBarLineY(landmarks);
       }
     } else if (this.phase === 'DOWN' && !topPosture) {
-      this.holdFrames = 0;
-      this.reachedTop = false;
+      this.holdFrames = Math.max(0, this.holdFrames - PULL_UP_POSTURE.topHoldDecayPerMiss);
+      if (this.holdFrames === 0) {
+        this.reachedTop = false;
+      }
     } else if (isInMidZone(elbowAngle, this.thresholds)) {
       if (this.phase === 'UP') {
         this.phase = 'DESCENDING';

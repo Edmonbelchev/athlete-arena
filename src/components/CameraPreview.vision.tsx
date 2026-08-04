@@ -16,6 +16,7 @@ import { PullUpBarLineOverlay } from '@/components/settings/PullUpBarLineOverlay
 import type { CameraFacing, CameraPreviewProps } from '@/components/CameraPreview.types';
 import { mapLandmarksToViewNormalized } from '@/features/challenges/pose/mapLandmarksToView';
 import type { PoseLandmark } from '@/features/challenges/pose/landmarks';
+import { PoseLandmarkSmoother } from '@/features/challenges/pose/smoothPoseLandmarks';
 import { usePoseDebugOverlay } from '@/features/challenges/pose/usePoseDebugOverlay';
 import { useUserSettings } from '@/features/settings/UserSettingsProvider';
 import { Radius, Spacing } from '@/constants/theme';
@@ -50,6 +51,7 @@ export function VisionCameraPreview({
   const [viewBarLineY, setViewBarLineY] = useState<number | null>(null);
   const pullUpBarLineYRef = useRef(pullUpBarLineY);
   const showPoseDebugOverlayRef = useRef(showPoseDebugOverlay);
+  const landmarkSmootherRef = useRef(new PoseLandmarkSmoother());
 
   pullUpBarLineYRef.current = pullUpBarLineY;
   showPoseDebugOverlayRef.current = showPoseDebugOverlay;
@@ -75,12 +77,14 @@ export function VisionCameraPreview({
         return;
       }
 
-      const viewLandmarks = mapLandmarksToViewNormalized(
-        landmarks,
-        frameInfo,
-        viewCoordinator,
-        width,
-        height,
+      const viewLandmarks = landmarkSmootherRef.current.smooth(
+        mapLandmarksToViewNormalized(
+          landmarks,
+          frameInfo,
+          viewCoordinator,
+          width,
+          height,
+        ),
       );
 
       onLandmarksRef.current?.(viewLandmarks);
@@ -139,6 +143,7 @@ export function VisionCameraPreview({
   }, [showPoseDebugOverlay]);
 
   useEffect(() => {
+    landmarkSmootherRef.current.reset();
     setLatestLandmarks(null);
     setDetectionLandmarks(null);
     setViewBarLineY(null);
