@@ -14,13 +14,6 @@ function toPushUpThresholds(): AngleThresholdConfig {
   };
 }
 
-export interface PushUpDebugSnapshot {
-  phase: PushUpPhase;
-  armed: boolean;
-  inPlank: boolean;
-  readyFrames: number;
-}
-
 export class PushUpRepEngine {
   private readonly elbowEngine = new ElbowRepEngine(toPushUpThresholds());
   private readyFrames = 0;
@@ -33,15 +26,6 @@ export class PushUpRepEngine {
 
   get armed(): boolean {
     return this.isArmed;
-  }
-
-  get debugSnapshot(): PushUpDebugSnapshot {
-    return {
-      phase: this.elbowEngine.phase,
-      armed: this.isArmed,
-      inPlank: this.lastInPlank,
-      readyFrames: this.readyFrames,
-    };
   }
 
   getPlankHint(landmarks: PoseLandmark[]): string | null {

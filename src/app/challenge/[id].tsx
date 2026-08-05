@@ -17,6 +17,7 @@ import { useShop } from '@/features/shop/ShopProvider';
 import { completeChallenge } from '@/services/challengeService';
 import { formatUserError } from '@/lib/errors';
 import { supportsNativePoseDetection } from '@/lib/runtime';
+import { useDrainNativeCameraOnLeave } from '@/hooks/use-drain-native-camera-on-leave';
 import { useTheme } from '@/hooks/use-theme';
 
 export default function ChallengeScreen() {
@@ -27,6 +28,7 @@ export default function ChallengeScreen() {
   const { equippedEmote } = useShop();
   const [syncError, setSyncError] = useState<string | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
+  const cameraActive = useDrainNativeCameraOnLeave();
   const isSyncingRef = useRef(false);
   const challengeRef = useRef(challenge);
 
@@ -73,11 +75,10 @@ export default function ChallengeScreen() {
     trackingStatus,
     trackingMessage,
     pullUpBarLineY,
-    pullUpDebug,
     processLandmarks,
   } = useExercisePoseDetection({
     exerciseType: challenge?.exercise_type ?? 'push_ups',
-    enabled: Boolean(challenge) && !isCompleted,
+    enabled: Boolean(challenge) && !isCompleted && cameraActive,
     onRepDetected: () => {
       repCounter.simulateRep();
     },
@@ -129,9 +130,8 @@ export default function ChallengeScreen() {
 
           <View style={styles.cameraFrame}>
             <CameraPreview
-              active={!isCompleted}
+              active={cameraActive && !isCompleted}
               pullUpBarLineY={challenge.exercise_type === 'pull_ups' ? pullUpBarLineY : null}
-              pullUpDebug={challenge.exercise_type === 'pull_ups' ? pullUpDebug : null}
               exerciseType={challenge.exercise_type}
               repPhase={posePhase}
               repTrackingReady={trackingStatus === 'ready'}

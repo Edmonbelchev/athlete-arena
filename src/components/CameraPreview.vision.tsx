@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import {
   Delegate,
@@ -11,7 +11,6 @@ import {
 import { useCameraPermission } from 'react-native-vision-camera';
 
 import { RepCycleProgressBar } from '@/components/challenges/RepCycleProgressBar';
-import { PoseAngleOverlay } from '@/components/settings/PoseAngleOverlay';
 import { PoseSkeletonOverlay } from '@/components/settings/PoseSkeletonOverlay';
 import { PullUpBarLineOverlay } from '@/components/settings/PullUpBarLineOverlay';
 import type { CameraFacing, CameraPreviewProps } from '@/components/CameraPreview.types';
@@ -23,7 +22,7 @@ import {
 import { mapLandmarksToViewNormalized } from '@/features/challenges/pose/mapLandmarksToView';
 import type { PoseLandmark } from '@/features/challenges/pose/landmarks';
 import { PoseLandmarkSmoother } from '@/features/challenges/pose/smoothPoseLandmarks';
-import { usePoseDebugOverlay } from '@/features/challenges/pose/usePoseDebugOverlay';
+import { POSE_DETECTOR_RELEASE_DELAY_MS } from '@/lib/mediapipe/delayedPoseDetectorRelease';
 import { useUserSettings } from '@/features/settings/UserSettingsProvider';
 import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -33,53 +32,75 @@ const POSE_MODEL = 'pose_landmarker_lite.task';
 /** CPU is more stable on iOS; GPU can stall or crash under camera + inference load. */
 const POSE_DELEGATE = Platform.OS === 'ios' ? Delegate.CPU : Delegate.GPU;
 
+const POSE_DETECTION_OPTIONS = {
+  numPoses: 1,
+  minPoseDetectionConfidence: 0.45,
+  minPosePresenceConfidence: 0.45,
+  minTrackingConfidence: 0.45,
+  delegate: POSE_DELEGATE,
+  mirrorMode: 'mirror-front-only' as const,
+};
+
+type ActiveVisionCameraProps = Omit<CameraPreviewProps, 'active'> & {
+  facing: CameraFacing;
+  cameraLive: boolean;
+  onFlipCamera: () => void;
+};
+
 /**
- * Development-build camera with on-device MediaPipe pose detection.
+ * Holds MediaPipe + Vision Camera hooks. Stop `cameraLive` before unmounting so
+ * frame delivery ends while native inference drains.
  */
-export function VisionCameraPreview({
-  active = true,
+function VisionCameraPreviewActive({
   onCameraReady,
   onLandmarksDetected,
   pullUpBarLineY = null,
-  pullUpDebug = null,
   exerciseType = 'push_ups',
   repPhase = 'UP',
   repTrackingReady = false,
-}: CameraPreviewProps) {
+  facing,
+  cameraLive,
+  onFlipCamera,
+}: ActiveVisionCameraProps) {
   const theme = useTheme();
   const { preferences } = useUserSettings();
   const showPoseSkeleton = preferences.showPoseSkeleton;
   const showRepProgressBar = preferences.showRepProgressBar;
-  const showPoseDebugOverlay = usePoseDebugOverlay();
-  const { hasPermission, requestPermission } = useCameraPermission();
   const onLandmarksRef = useRef(onLandmarksDetected);
   const onCameraReadyRef = useRef(onCameraReady);
   const viewDimensionsRef = useRef({ width: 1, height: 1 });
   const cameraReadyRef = useRef(false);
-  const [facing, setFacing] = useState<CameraFacing>('front');
+  const isActiveRef = useRef(true);
   const [trackingBody, setTrackingBody] = useState(false);
   const [detectionError, setDetectionError] = useState<string | null>(null);
   const [latestLandmarks, setLatestLandmarks] = useState<PoseLandmark[] | null>(null);
-  const [detectionLandmarks, setDetectionLandmarks] = useState<PoseLandmark[] | null>(null);
   const [viewBarLineY, setViewBarLineY] = useState<number | null>(null);
   const pullUpBarLineYRef = useRef(pullUpBarLineY);
-  const showPoseDebugOverlayRef = useRef(showPoseDebugOverlay);
   const landmarkSmootherRef = useRef(new PoseLandmarkSmoother());
   const lastDisplayFrameAtRef = useRef(0);
   const lastBarLineYRef = useRef<number | null>(null);
 
   pullUpBarLineYRef.current = pullUpBarLineY;
-  showPoseDebugOverlayRef.current = showPoseDebugOverlay;
-
   onLandmarksRef.current = onLandmarksDetected;
   onCameraReadyRef.current = onCameraReady;
+  isActiveRef.current = cameraLive;
 
   useEffect(() => {
-    if (!active || hasPermission) {
-      return;
+    if (!cameraLive) {
+      setLatestLandmarks(null);
+      setViewBarLineY(null);
+      setTrackingBody(false);
+      lastDisplayFrameAtRef.current = 0;
     }
-    void requestPermission();
-  }, [active, hasPermission, requestPermission]);
+  }, [cameraLive]);
+
+  useEffect(() => {
+    isActiveRef.current = true;
+    return () => {
+      isActiveRef.current = false;
+      onLandmarksRef.current = undefined;
+    };
+  }, []);
 
   const handleResults = useCallback(
     (
@@ -87,6 +108,10 @@ export function VisionCameraPreview({
       frameInfo: { inputImageWidth: number; inputImageHeight: number },
       viewCoordinator: ViewCoordinator,
     ) => {
+      if (!isActiveRef.current) {
+        return;
+      }
+
       const { width, height } = viewDimensionsRef.current;
       if (width <= 0 || height <= 0) {
         return;
@@ -110,10 +135,6 @@ export function VisionCameraPreview({
         setLatestLandmarks(viewLandmarks);
         setTrackingBody(true);
 
-        if (showPoseDebugOverlayRef.current) {
-          setDetectionLandmarks(viewLandmarks);
-        }
-
         const nextBarLineY = pullUpBarLineYRef.current;
         if (nextBarLineY !== lastBarLineYRef.current) {
           lastBarLineYRef.current = nextBarLineY;
@@ -124,82 +145,173 @@ export function VisionCameraPreview({
     [],
   );
 
-  const poseDetection = usePoseDetection(
-    {
-      onResults: (result, viewCoordinator) => {
-        const firstPose = result.results[0]?.landmarks[0];
-        if (firstPose?.length >= 33) {
-          handleResults(firstPose, result, viewCoordinator);
-        }
-      },
-      onError: (error) => {
-        setDetectionError(error.message);
-      },
+  const onPoseResults = useCallback(
+    (
+      result: { results: { landmarks: Landmark[][] }[]; inputImageWidth: number; inputImageHeight: number },
+      viewCoordinator: ViewCoordinator,
+    ) => {
+      if (!isActiveRef.current) {
+        return;
+      }
+
+      const firstPose = result.results[0]?.landmarks[0];
+      if (firstPose?.length >= 33) {
+        handleResults(firstPose, result, viewCoordinator);
+      }
     },
-    RunningMode.LIVE_STREAM,
-    POSE_MODEL,
-    {
-      numPoses: 1,
-      minPoseDetectionConfidence: 0.45,
-      minPosePresenceConfidence: 0.45,
-      minTrackingConfidence: 0.45,
-      delegate: POSE_DELEGATE,
-      mirrorMode: 'mirror-front-only',
-    },
+    [handleResults],
   );
 
-  useEffect(() => {
-    if (!active) {
+  const onPoseError = useCallback((error: { message: string }) => {
+    if (!isActiveRef.current) {
       return;
     }
 
+    setDetectionError(error.message);
+  }, []);
+
+  const poseCallbacks = useMemo(
+    () => ({
+      onResults: onPoseResults,
+      onError: onPoseError,
+    }),
+    [onPoseError, onPoseResults],
+  );
+
+  const poseDetection = usePoseDetection(
+    poseCallbacks,
+    RunningMode.LIVE_STREAM,
+    POSE_MODEL,
+    POSE_DETECTION_OPTIONS,
+  );
+
+  useEffect(() => {
     const interval = setInterval(() => {
+      if (!isActiveRef.current) {
+        return;
+      }
+
       if (isDisplayFrameStale(lastDisplayFrameAtRef.current)) {
         setLatestLandmarks(null);
-        setDetectionLandmarks(null);
         setTrackingBody(false);
         lastDisplayFrameAtRef.current = 0;
       }
     }, POSE_DISPLAY_STALE_MS / 2);
 
     return () => clearInterval(interval);
-  }, [active]);
+  }, []);
 
   viewDimensionsRef.current = poseDetection.cameraViewDimensions;
 
   useEffect(() => {
-    if (!active) {
-      cameraReadyRef.current = false;
-      return;
-    }
-
-    if (hasPermission && !cameraReadyRef.current) {
+    if (!cameraReadyRef.current) {
       cameraReadyRef.current = true;
       onCameraReadyRef.current?.();
     }
-  }, [active, hasPermission]);
-
-  useEffect(() => {
-    if (!showPoseDebugOverlay) {
-      setDetectionLandmarks(null);
-    }
-  }, [showPoseDebugOverlay]);
+  }, []);
 
   useEffect(() => {
     landmarkSmootherRef.current.reset();
     setLatestLandmarks(null);
-    setDetectionLandmarks(null);
     setViewBarLineY(null);
     setTrackingBody(false);
     lastDisplayFrameAtRef.current = 0;
     lastBarLineYRef.current = null;
+    cameraReadyRef.current = false;
   }, [facing]);
 
-  function handleFlipCamera() {
-    setFacing((current) => (current === 'front' ? 'back' : 'front'));
-  }
+  return (
+    <View
+      style={StyleSheet.flatten([
+        styles.container,
+        styles.cameraContainer,
+        { borderColor: theme.border },
+      ])}>
+      {cameraLive ? (
+        <MediapipeCamera style={styles.camera} solution={poseDetection} activeCamera={facing} />
+      ) : (
+        <View style={styles.camera} />
+      )}
 
-  if (!active) {
+      <PoseSkeletonOverlay landmarks={latestLandmarks} visible={showPoseSkeleton && cameraLive} />
+
+      <PullUpBarLineOverlay barLineY={viewBarLineY} visible={cameraLive && viewBarLineY !== null} />
+
+      <View style={styles.topOverlay}>
+        <Pressable
+          accessibilityLabel="Flip camera"
+          accessibilityRole="button"
+          style={styles.flipButton}
+          onPress={onFlipCamera}
+          disabled={!cameraLive}>
+          <Text style={styles.flipButtonText}>Flip</Text>
+        </Pressable>
+      </View>
+
+      <View style={styles.bottomOverlay}>
+        <RepCycleProgressBar
+          exerciseType={exerciseType}
+          phase={repPhase}
+          visible={showRepProgressBar && cameraLive}
+          trackingReady={repTrackingReady}
+        />
+        <View style={styles.overlay}>
+          <Text style={styles.overlayText}>
+            {!cameraLive
+              ? 'Closing camera…'
+              : detectionError
+                ? 'Pose detection error - check dev build setup'
+                : trackingBody
+                  ? 'Tracking - keep your body in frame'
+                  : 'Move into frame to start counting'}
+          </Text>
+        </View>
+      </View>
+    </View>
+  );
+}
+
+/**
+ * Development-build camera with on-device MediaPipe pose detection.
+ */
+export function VisionCameraPreview({
+  active = true,
+  onCameraReady,
+  onLandmarksDetected,
+  pullUpBarLineY = null,
+  exerciseType = 'push_ups',
+  repPhase = 'UP',
+  repTrackingReady = false,
+}: CameraPreviewProps) {
+  const theme = useTheme();
+  const { hasPermission, requestPermission } = useCameraPermission();
+  const [facing, setFacing] = useState<CameraFacing>('front');
+  const [sessionMounted, setSessionMounted] = useState(active);
+  const [cameraLive, setCameraLive] = useState(active);
+
+  useEffect(() => {
+    if (active) {
+      setSessionMounted(true);
+      setCameraLive(true);
+      return;
+    }
+
+    setCameraLive(false);
+    const timer = setTimeout(() => {
+      setSessionMounted(false);
+    }, POSE_DETECTOR_RELEASE_DELAY_MS);
+
+    return () => clearTimeout(timer);
+  }, [active]);
+
+  useEffect(() => {
+    if (!active || hasPermission) {
+      return;
+    }
+    void requestPermission();
+  }, [active, hasPermission, requestPermission]);
+
+  if (!sessionMounted) {
     return (
       <View
         style={StyleSheet.flatten([
@@ -230,56 +342,18 @@ export function VisionCameraPreview({
   }
 
   return (
-    <View
-      style={StyleSheet.flatten([
-        styles.container,
-        styles.cameraContainer,
-        { borderColor: theme.border },
-      ])}>
-      <MediapipeCamera style={styles.camera} solution={poseDetection} activeCamera={facing} />
-
-      <PoseSkeletonOverlay
-        landmarks={latestLandmarks}
-        visible={showPoseSkeleton}
-      />
-
-      <PoseAngleOverlay
-        landmarks={detectionLandmarks}
-        visible={showPoseSkeleton && showPoseDebugOverlay}
-        pullUpBarLineY={pullUpBarLineY}
-        pullUpDebug={pullUpDebug}
-      />
-
-      <PullUpBarLineOverlay barLineY={viewBarLineY} visible={viewBarLineY !== null} />
-
-      <View style={styles.topOverlay}>
-        <Pressable
-          accessibilityLabel="Flip camera"
-          accessibilityRole="button"
-          style={styles.flipButton}
-          onPress={handleFlipCamera}>
-          <Text style={styles.flipButtonText}>Flip</Text>
-        </Pressable>
-      </View>
-
-      <View style={styles.bottomOverlay}>
-        <RepCycleProgressBar
-          exerciseType={exerciseType}
-          phase={repPhase}
-          visible={showRepProgressBar}
-          trackingReady={repTrackingReady}
-        />
-        <View style={styles.overlay}>
-          <Text style={styles.overlayText}>
-            {detectionError
-              ? 'Pose detection error - check dev build setup'
-              : trackingBody
-                ? 'Tracking - keep your body in frame'
-                : 'Move into frame to start counting'}
-          </Text>
-        </View>
-      </View>
-    </View>
+    <VisionCameraPreviewActive
+      key={facing}
+      facing={facing}
+      cameraLive={cameraLive}
+      onFlipCamera={() => setFacing((current) => (current === 'front' ? 'back' : 'front'))}
+      onCameraReady={onCameraReady}
+      onLandmarksDetected={onLandmarksDetected}
+      pullUpBarLineY={pullUpBarLineY}
+      exerciseType={exerciseType}
+      repPhase={repPhase}
+      repTrackingReady={repTrackingReady}
+    />
   );
 }
 

@@ -34,6 +34,7 @@ import {
 } from '@/types/friends';
 import { formatUserError } from '@/lib/errors';
 import { supportsNativePoseDetection } from '@/lib/runtime';
+import { useDrainNativeCameraOnLeave } from '@/hooks/use-drain-native-camera-on-leave';
 import { useTheme } from '@/hooks/use-theme';
 
 export default function FriendChallengeScreen() {
@@ -46,6 +47,7 @@ export default function FriendChallengeScreen() {
   const [syncError, setSyncError] = useState<string | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
   const [isTimedOut, setIsTimedOut] = useState(false);
+  const cameraActive = useDrainNativeCameraOnLeave();
   const isSyncingRef = useRef(false);
   const challengeRef = useRef(challenge);
 
@@ -122,11 +124,10 @@ export default function FriendChallengeScreen() {
     trackingStatus,
     trackingMessage,
     pullUpBarLineY,
-    pullUpDebug,
     processLandmarks,
   } = useExercisePoseDetection({
     exerciseType: challenge?.exerciseType ?? 'push_ups',
-    enabled: canAttempt,
+    enabled: canAttempt && cameraActive,
     onRepDetected: () => {
       repCounter.simulateRep();
     },
@@ -327,9 +328,8 @@ export default function FriendChallengeScreen() {
             <>
               <View style={styles.cameraFrame}>
                 <CameraPreview
-                  active={canAttempt}
+                  active={cameraActive && canAttempt}
                   pullUpBarLineY={challenge.exerciseType === 'pull_ups' ? pullUpBarLineY : null}
-                  pullUpDebug={challenge.exerciseType === 'pull_ups' ? pullUpDebug : null}
                   exerciseType={challenge.exerciseType}
                   repPhase={posePhase}
                   repTrackingReady={trackingStatus === 'ready'}

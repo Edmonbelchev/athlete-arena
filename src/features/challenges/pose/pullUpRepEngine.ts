@@ -19,15 +19,6 @@ function toPullUpThresholds(): AngleThresholdConfig {
   };
 }
 
-export interface PullUpDebugSnapshot {
-  phase: PushUpPhase;
-  armed: boolean;
-  reachedTop: boolean;
-  holdFrames: number;
-  readyFrames: number;
-  topPosture: boolean;
-}
-
 export class PullUpRepEngine {
   phase: PushUpPhase = 'UP';
   private readonly thresholds = toPullUpThresholds();
@@ -47,17 +38,6 @@ export class PullUpRepEngine {
   /** Captured bar height (normalized y, 0 = top) from wrists at dead hang. */
   get barLineY(): number | null {
     return this.capturedBarLineY;
-  }
-
-  get debugSnapshot(): PullUpDebugSnapshot {
-    return {
-      phase: this.phase,
-      armed: this.isArmed,
-      reachedTop: this.lastTopPosture,
-      holdFrames: this.topPostureHoldFrames,
-      readyFrames: this.readyFrames,
-      topPosture: this.lastTopPosture,
-    };
   }
 
   getHangHint(landmarks: PoseLandmark[]): string | null {

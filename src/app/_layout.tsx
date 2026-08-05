@@ -1,3 +1,4 @@
+import '@/lib/mediapipe/delayedPoseDetectorRelease';
 import { DarkTheme, DefaultTheme, ThemeProvider, Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
