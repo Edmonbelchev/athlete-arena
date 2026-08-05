@@ -56,7 +56,7 @@ export const PULL_UP_THRESHOLDS = {
   hysteresis: isNativeMobile ? 14 : 8,
 } as const;
 
-/** Pull-up rep validation — arms ROM + chin/head over bar (no leg/knee checks). */
+/** Pull-up rep validation — dead hang on bar + chin/head over bar at top. */
 export const PULL_UP_POSTURE = {
   /** Chin (lower face) at or above the bar line (y grows downward). */
   chinOverBarMargin: isNativeMobile ? 0.03 : 0.01,
@@ -66,8 +66,16 @@ export const PULL_UP_POSTURE = {
   shoulderNearBarMargin: isNativeMobile ? 0.18 : 0.15,
   /** Wrists stay near the captured bar line through the rep. */
   topWristNearBarMargin: isNativeMobile ? 0.14 : 0.08,
-  /** Frames with arms extended before counting begins. */
-  readyFramesRequired: isNativeMobile ? 2 : 3,
+  /** Wrist Y must be at or above shoulders (negative = wrists higher on screen). */
+  maxWristShoulderYDelta: isNativeMobile ? -0.01 : -0.015,
+  /** Wrist → elbow → shoulder chain when reaching up to the bar. */
+  armRaisedChainMargin: isNativeMobile ? 0.045 : 0.035,
+  /** Head/chin must sit below the bar line on a dead hang. */
+  minHeadBelowBar: isNativeMobile ? 0.015 : 0.02,
+  /** Frames in a valid dead hang before counting begins. */
+  readyFramesRequired: isNativeMobile ? 3 : 4,
+  /** Consecutive top-posture frames before a rep registers. */
+  topPostureHoldFrames: isNativeMobile ? 2 : 3,
 } as const;
 
 export const DIP_THRESHOLDS = {
@@ -109,10 +117,10 @@ export const POSE_GUIDANCE: Record<ExerciseType, { title: string; tips: readonly
   pull_ups: {
     title: 'Pull-up setup',
     tips: [
-      'Keep your head and arms in frame — legs/knees do not matter',
-      'Hang with arms fully extended, then pull until your chin clears the bar',
-      'Rep counts as soon as your chin clears the bar with good form',
-      'Front or back camera angles both work',
+      'Reach up and hang from the bar with arms fully extended',
+      'Keep your head and arms in frame — the bar line sets from your hands at the hang',
+      'Rep counting starts only in a dead hang; standing or flailing will not count',
+      'Pull until your chin clears the bar, then lower back to a full hang',
     ],
   },
   dips: {

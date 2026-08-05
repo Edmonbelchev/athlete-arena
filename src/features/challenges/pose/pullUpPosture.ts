@@ -50,9 +50,54 @@ export function getAverageWristY(landmarks: PoseLandmark[]): number | null {
   );
 }
 
+export function getAverageElbowY(landmarks: PoseLandmark[]): number | null {
+  return averageVisibleY(
+    landmarks,
+    PoseLandmarkIndex.LEFT_ELBOW,
+    PoseLandmarkIndex.RIGHT_ELBOW,
+  );
+}
+
 /** Approximate bar height from visible wrists (y grows downward). */
 export function getBarLineY(landmarks: PoseLandmark[]): number | null {
   return getAverageWristY(landmarks);
+}
+
+/** Wrists at or above shoulder height — hands reaching up, not resting at sides. */
+export function areWristsAboveShoulders(landmarks: PoseLandmark[]): boolean {
+  const wristY = getAverageWristY(landmarks);
+  const shoulderY = getAverageShoulderY(landmarks);
+
+  if (wristY === null || shoulderY === null) {
+    return false;
+  }
+
+  return wristY - shoulderY <= PULL_UP_POSTURE.maxWristShoulderYDelta;
+}
+
+/** Wrist → elbow → shoulder ordering for arms raised toward an overhead bar. */
+export function areArmsRaisedTowardBar(landmarks: PoseLandmark[]): boolean {
+  const wristY = getAverageWristY(landmarks);
+  const elbowY = getAverageElbowY(landmarks);
+  const shoulderY = getAverageShoulderY(landmarks);
+  const margin = PULL_UP_POSTURE.armRaisedChainMargin;
+
+  if (wristY === null || elbowY === null || shoulderY === null) {
+    return false;
+  }
+
+  return wristY <= elbowY + margin && elbowY <= shoulderY + margin;
+}
+
+/** Head/chin sits below the bar on a dead hang (y grows downward). */
+export function isHeadBelowBar(landmarks: PoseLandmark[], barLineY: number | null): boolean {
+  const chinY = getChinY(landmarks);
+
+  if (chinY === null || barLineY === null) {
+    return false;
+  }
+
+  return chinY >= barLineY + PULL_UP_POSTURE.minHeadBelowBar;
 }
 
 /**
@@ -182,6 +227,26 @@ export function isArmsExtended(
 }
 
 /**
+ * Valid dead hang on a bar — extended arms reaching up, hands above shoulders,
+ * head below the bar. Rejects standing with arms down or casual arm swings.
+ */
+export function isPullUpDeadHangPosture(
+  landmarks: PoseLandmark[],
+  elbowThresholds: AngleThresholdConfig,
+): boolean {
+  if (!isArmsExtended(landmarks, elbowThresholds)) {
+    return false;
+  }
+
+  if (!areArmsRaisedTowardBar(landmarks) || !areWristsAboveShoulders(landmarks)) {
+    return false;
+  }
+
+  const barLineY = getBarLineY(landmarks);
+  return barLineY !== null && isHeadBelowBar(landmarks, barLineY);
+}
+
+/**
  * Top of rep: bent arms + chin/head over bar + hands still on the bar.
  * Leg/knee position is intentionally ignored — bar height varies.
  */
@@ -229,10 +294,20 @@ export function getPullUpHangHint(landmarks: PoseLandmark[]): string | null {
     return 'Keep your head and at least one full arm (shoulder, elbow, wrist) in frame';
   }
 
-  const elbowAngle = pushUpElbowAngle(landmarks);
+  if (!areArmsRaisedTowardBar(landmarks) || !areWristsAboveShoulders(landmarks)) {
+    return 'Reach up and grab the bar — arms must be stretched overhead';
+  }
 
-  if (elbowAngle === null || !isInHighZone(elbowAngle, toHintThresholds())) {
+  const elbowAngle = pushUpElbowAngle(landmarks);
+  const thresholds = toHintThresholds();
+
+  if (elbowAngle === null || !isInHighZone(elbowAngle, thresholds)) {
     return 'Hang with arms fully extended to start counting';
+  }
+
+  const barLineY = getBarLineY(landmarks);
+  if (barLineY !== null && !isHeadBelowBar(landmarks, barLineY)) {
+    return 'Hang below the bar with your head under your hands';
   }
 
   return null;

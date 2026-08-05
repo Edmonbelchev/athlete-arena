@@ -5,11 +5,11 @@ import { pushUpElbowAngle, type PoseLandmark } from './landmarks';
 import {
   getBarLineY,
   getPullUpHangHint,
-  isArmsExtended,
+  isPullUpDeadHangPosture,
   isPullUpTopPosture,
 } from './pullUpPosture';
 import type { AngleThresholdConfig } from './repEngineUtils';
-import { isInHighZone, isInMidZone } from './repEngineUtils';
+import { isInHighZone, isInLowZone, isInMidZone } from './repEngineUtils';
 
 function toPullUpThresholds(): AngleThresholdConfig {
   return {
@@ -35,6 +35,8 @@ export class PullUpRepEngine {
   private isArmed = false;
   private capturedBarLineY: number | null = null;
   private lastTopPosture = false;
+  private topPostureHoldFrames = 0;
+  private hasPulledThisRep = false;
   /** After a rep, wait for a dead hang before counting the next top. */
   private blockedUntilHang = false;
 
@@ -52,7 +54,7 @@ export class PullUpRepEngine {
       phase: this.phase,
       armed: this.isArmed,
       reachedTop: this.lastTopPosture,
-      holdFrames: 0,
+      holdFrames: this.topPostureHoldFrames,
       readyFrames: this.readyFrames,
       topPosture: this.lastTopPosture,
     };
@@ -63,19 +65,20 @@ export class PullUpRepEngine {
       return null;
     }
 
-    return getPullUpHangHint(landmarks) ?? 'Hang with arms fully extended to start counting';
+    return getPullUpHangHint(landmarks) ?? 'Hang from the bar with arms fully extended to start counting';
   }
 
   update(landmarks: PoseLandmark[]): boolean {
     const elbowAngle = pushUpElbowAngle(landmarks);
     if (elbowAngle === null) {
       this.lastTopPosture = false;
+      this.topPostureHoldFrames = 0;
       return false;
     }
 
-    const armsExtended = isArmsExtended(landmarks, this.thresholds);
+    const inDeadHang = isPullUpDeadHangPosture(landmarks, this.thresholds);
 
-    if (armsExtended) {
+    if (inDeadHang) {
       this.capturedBarLineY = getBarLineY(landmarks);
       this.readyFrames += 1;
 
@@ -85,35 +88,63 @@ export class PullUpRepEngine {
       }
     } else if (!this.isArmed) {
       this.readyFrames = 0;
+      this.capturedBarLineY = null;
     }
 
     if (!this.isArmed || this.capturedBarLineY === null) {
       this.lastTopPosture = false;
+      this.topPostureHoldFrames = 0;
       return false;
     }
 
     const topPosture = isPullUpTopPosture(landmarks, this.thresholds, this.capturedBarLineY);
     this.lastTopPosture = topPosture;
 
+    if (topPosture) {
+      this.topPostureHoldFrames += 1;
+    } else {
+      this.topPostureHoldFrames = 0;
+    }
+
+    if (!isInHighZone(elbowAngle, this.thresholds)) {
+      this.hasPulledThisRep = true;
+    }
+
+    if (!inDeadHang && !topPosture) {
+      this.hasPulledThisRep = false;
+      this.topPostureHoldFrames = 0;
+      if (this.phase !== 'UP') {
+        this.phase = 'UP';
+      }
+    }
+
     let repCompleted = false;
 
-    if (topPosture && !this.blockedUntilHang) {
+    if (
+      topPosture &&
+      this.topPostureHoldFrames >= PULL_UP_POSTURE.topPostureHoldFrames &&
+      this.hasPulledThisRep &&
+      !this.blockedUntilHang
+    ) {
       this.phase = 'DOWN';
       repCompleted = true;
       this.blockedUntilHang = true;
-    } else if (isInHighZone(elbowAngle, this.thresholds)) {
-      if (armsExtended) {
-        this.phase = 'UP';
-        this.blockedUntilHang = false;
-        this.capturedBarLineY = getBarLineY(landmarks);
-      }
+      this.hasPulledThisRep = false;
+      this.topPostureHoldFrames = 0;
+    } else if (inDeadHang && isInHighZone(elbowAngle, this.thresholds)) {
+      this.phase = 'UP';
+      this.blockedUntilHang = false;
+      this.hasPulledThisRep = false;
+      this.capturedBarLineY = getBarLineY(landmarks);
     } else if (isInMidZone(elbowAngle, this.thresholds)) {
       if (this.phase === 'UP') {
         this.phase = 'DESCENDING';
       } else if (this.phase === 'DOWN') {
         this.phase = 'ASCENDING';
       }
-    } else if (this.phase === 'UP') {
+    } else if (isInLowZone(elbowAngle, this.thresholds) && this.phase === 'UP') {
+      this.phase = 'DESCENDING';
+    } else if (this.phase === 'UP' && !isInHighZone(elbowAngle, this.thresholds)) {
       this.phase = 'DESCENDING';
     }
 
@@ -126,6 +157,8 @@ export class PullUpRepEngine {
     this.isArmed = false;
     this.capturedBarLineY = null;
     this.lastTopPosture = false;
+    this.topPostureHoldFrames = 0;
+    this.hasPulledThisRep = false;
     this.blockedUntilHang = false;
   }
 }
