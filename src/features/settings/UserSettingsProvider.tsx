@@ -11,6 +11,7 @@ import { useColorScheme as useSystemColorScheme } from 'react-native';
 
 import {
   getDefaultUserPreferences,
+  getUserPreferencesStorageKey,
   mergeUserPreferences,
   parseUserPreferences,
   USER_PREFERENCES_STORAGE_KEY,
@@ -38,6 +39,23 @@ interface UserSettingsContextValue {
 
 const UserSettingsContext = createContext<UserSettingsContextValue | null>(null);
 
+async function readStoredPreferences(
+  storageKey: string,
+  fallback: UserPreferences,
+  options?: { treatMissingOnboardingAsCompleted?: boolean },
+): Promise<UserPreferences | null> {
+  const stored = await getAppStorageItem(storageKey);
+  if (!stored) {
+    return null;
+  }
+
+  try {
+    return parseUserPreferences(JSON.parse(stored), fallback, options);
+  } catch {
+    return null;
+  }
+}
+
 export function UserSettingsProvider({ children }: { children: React.ReactNode }) {
   const systemScheme = useSystemColorScheme();
   const { session } = useAuth();
@@ -53,17 +71,18 @@ export function UserSettingsProvider({ children }: { children: React.ReactNode }
   const preferencesRef = useRef(preferences);
   preferencesRef.current = preferences;
 
-  const persistLocally = useCallback(async (next: UserPreferences) => {
-    await setAppStorageItem(USER_PREFERENCES_STORAGE_KEY, JSON.stringify(next));
+  const persistLocally = useCallback(async (next: UserPreferences, accountId: string | null) => {
+    const storageKey = getUserPreferencesStorageKey(accountId);
+    await setAppStorageItem(storageKey, JSON.stringify(next));
   }, []);
 
   const persistToAccount = useCallback(
-    async (patch: Partial<UserPreferences>) => {
+    async (patch: Partial<UserPreferences>, options?: { keepLocalOnFailure?: boolean }) => {
       const previous = preferencesRef.current;
       const optimistic = mergeUserPreferences(previous, patch);
 
       setPreferencesState(optimistic);
-      await persistLocally(optimistic);
+      await persistLocally(optimistic, userId);
 
       if (!userId) {
         return;
@@ -75,11 +94,13 @@ export function UserSettingsProvider({ children }: { children: React.ReactNode }
       try {
         const saved = await updateUserPreferences(userId, previous, patch);
         setPreferencesState(saved);
-        await persistLocally(saved);
+        await persistLocally(saved, userId);
       } catch (error) {
         setSaveError(error instanceof Error ? error.message : 'Failed to save settings');
-        setPreferencesState(previous);
-        await persistLocally(previous);
+        if (!options?.keepLocalOnFailure) {
+          setPreferencesState(previous);
+          await persistLocally(previous, userId);
+        }
       } finally {
         setIsSaving(false);
       }
@@ -93,19 +114,26 @@ export function UserSettingsProvider({ children }: { children: React.ReactNode }
     void (async () => {
       setIsReady(false);
 
-      const stored = await getAppStorageItem(USER_PREFERENCES_STORAGE_KEY);
-      let localPreferences = defaults;
-
-      if (stored) {
-        try {
-          localPreferences = parseUserPreferences(JSON.parse(stored), defaults);
-        } catch {
-          localPreferences = defaults;
+      if (!userId) {
+        if (!cancelled) {
+          setPreferencesState(defaults);
+          setIsReady(true);
         }
-      } else {
-        const legacyTheme = await getAppStorageItem('theme-preference');
-        if (legacyTheme === 'light' || legacyTheme === 'dark') {
-          localPreferences = { ...defaults, theme: legacyTheme };
+        return;
+      }
+
+      const accountStorageKey = getUserPreferencesStorageKey(userId);
+      const storedPreferences = await readStoredPreferences(accountStorageKey, defaults);
+      let localPreferences = storedPreferences ?? defaults;
+
+      // One-time migration from the old shared preferences key.
+      if (storedPreferences === null) {
+        const legacyStored = await readStoredPreferences(USER_PREFERENCES_STORAGE_KEY, defaults, {
+          treatMissingOnboardingAsCompleted: true,
+        });
+        if (legacyStored) {
+          localPreferences = legacyStored;
+          await persistLocally(localPreferences, userId);
         }
       }
 
@@ -115,16 +143,14 @@ export function UserSettingsProvider({ children }: { children: React.ReactNode }
 
       setPreferencesState(localPreferences);
 
-      if (userId) {
-        try {
-          const remote = await getUserPreferences(userId);
-          if (!cancelled && remote) {
-            setPreferencesState(remote);
-            await persistLocally(remote);
-          }
-        } catch {
-          // Keep local preferences when the account sync fails offline.
+      try {
+        const remote = await getUserPreferences(userId);
+        if (!cancelled && remote) {
+          setPreferencesState(remote);
+          await persistLocally(remote, userId);
         }
+      } catch {
+        // Keep per-account local preferences when the account sync fails offline.
       }
 
       if (!cancelled) {
@@ -159,7 +185,7 @@ export function UserSettingsProvider({ children }: { children: React.ReactNode }
   );
 
   const completeOnboarding = useCallback(async () => {
-    await persistToAccount({ hasCompletedOnboarding: true });
+    await persistToAccount({ hasCompletedOnboarding: true }, { keepLocalOnFailure: true });
   }, [persistToAccount]);
 
   const value = useMemo(
