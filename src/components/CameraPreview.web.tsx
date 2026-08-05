@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { CameraFacing, CameraPreviewProps } from '@/components/CameraPreview.types';
+import { RepCycleProgressBar } from '@/components/challenges/RepCycleProgressBar';
 import { PoseAngleOverlay } from '@/components/settings/PoseAngleOverlay';
 import {
   clearPoseSkeleton,
@@ -9,6 +10,11 @@ import {
   drawPullUpBarLine,
   syncCanvasToVideo,
 } from '@/features/challenges/pose/drawPoseSkeleton';
+import {
+  isDisplayFrameStale,
+  POSE_DISPLAY_STALE_MS,
+  shouldEmitDisplayFrame,
+} from '@/features/challenges/pose/displayFrameThrottle';
 import type { PoseLandmark } from '@/features/challenges/pose/landmarks';
 import { usePoseDebugOverlay } from '@/features/challenges/pose/usePoseDebugOverlay';
 import { createWebPoseLandmarker, type WebPoseLandmarker } from '@/lib/mediapipeWeb';
@@ -39,10 +45,14 @@ export function CameraPreview({
   onLandmarksDetected,
   pullUpBarLineY = null,
   pullUpDebug = null,
+  exerciseType = 'push_ups',
+  repPhase = 'UP',
+  repTrackingReady = false,
 }: CameraPreviewProps) {
   const theme = useTheme();
   const { preferences } = useUserSettings();
   const showPoseSkeleton = preferences.showPoseSkeleton;
+  const showRepProgressBar = preferences.showRepProgressBar;
   const showPoseDebugOverlay = usePoseDebugOverlay();
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -55,6 +65,9 @@ export function CameraPreview({
   const showPoseDebugOverlayRef = useRef(showPoseDebugOverlay);
   const pullUpBarLineYRef = useRef(pullUpBarLineY);
   const lastAngleHudAtRef = useRef(0);
+  const lastDisplayFrameAtRef = useRef(0);
+  const lastDrawAtRef = useRef(0);
+  const isDetectingRef = useRef(false);
   const [facing, setFacing] = useState<CameraFacing>('front');
   const [status, setStatus] = useState<'loading' | 'ready' | 'error' | 'permission_denied'>('loading');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -129,57 +142,84 @@ export function CameraPreview({
             return;
           }
 
+          if (isDetectingRef.current) {
+            animationFrame = requestAnimationFrame(detect);
+            return;
+          }
+
           const canvas = canvasRef.current;
           const ctx = canvas?.getContext('2d');
+          const now = performance.now();
 
-          if (videoRef.current.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
-            const result = landmarkerRef.current.detectForVideo(
-              videoRef.current,
-              performance.now(),
-            );
-            const landmarks = result.landmarks[0];
+          if (isDisplayFrameStale(lastDisplayFrameAtRef.current, now)) {
+            if (canvas && ctx && canvas.width > 0 && canvas.height > 0) {
+              clearPoseSkeleton(ctx, canvas.width, canvas.height);
+            }
+            setTrackingBody(false);
+            lastDisplayFrameAtRef.current = 0;
+          }
 
-            if (canvas && ctx) {
-              syncCanvasToVideo(canvas, videoRef.current);
+          if (
+            videoRef.current.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA &&
+            shouldEmitDisplayFrame(lastDrawAtRef.current, now)
+          ) {
+            isDetectingRef.current = true;
 
-              if (landmarks && canvas.width > 0 && canvas.height > 0) {
-                const mapped = mapLandmarks(landmarks);
-                if (showSkeletonRef.current) {
-                  drawPoseSkeleton(ctx, mapped, canvas.width, canvas.height, {
-                    lineColor: themeRef.current.primary,
-                    lineWidth: 3,
-                    jointColor: '#FFFFFF',
-                    jointRadius: 4,
-                    minVisibility: POSE_QUALITY.skeletonMinVisibility,
-                  });
+            try {
+              const result = landmarkerRef.current.detectForVideo(
+                videoRef.current,
+                now,
+              );
+              const landmarks = result.landmarks[0];
 
-                  const now = performance.now();
-                  if (
-                    showPoseDebugOverlayRef.current &&
-                    now - lastAngleHudAtRef.current >= ANGLE_HUD_MIN_INTERVAL_MS
-                  ) {
-                    lastAngleHudAtRef.current = now;
-                    setLatestLandmarks(mapped);
+              if (canvas && ctx) {
+                syncCanvasToVideo(canvas, videoRef.current);
+
+                if (landmarks && canvas.width > 0 && canvas.height > 0) {
+                  lastDrawAtRef.current = now;
+                  lastDisplayFrameAtRef.current = now;
+                  const mapped = mapLandmarks(landmarks);
+
+                  if (showSkeletonRef.current) {
+                    drawPoseSkeleton(ctx, mapped, canvas.width, canvas.height, {
+                      lineColor: themeRef.current.primary,
+                      lineWidth: 3,
+                      jointColor: '#FFFFFF',
+                      jointRadius: 4,
+                      minVisibility: POSE_QUALITY.skeletonMinVisibility,
+                    });
+
+                    if (
+                      showPoseDebugOverlayRef.current &&
+                      now - lastAngleHudAtRef.current >= ANGLE_HUD_MIN_INTERVAL_MS
+                    ) {
+                      lastAngleHudAtRef.current = now;
+                      setLatestLandmarks(mapped);
+                    }
+                  } else {
+                    clearPoseSkeleton(ctx, canvas.width, canvas.height);
                   }
+
+                  const barLineY = pullUpBarLineYRef.current;
+                  if (barLineY !== null) {
+                    drawPullUpBarLine(ctx, barLineY, canvas.width, canvas.height);
+                  }
+
+                  onLandmarksRef.current?.(mapped);
+                  setTrackingBody(true);
+                  if (trackingTimeout) {
+                    clearTimeout(trackingTimeout);
+                  }
+                  trackingTimeout = setTimeout(() => setTrackingBody(false), POSE_DISPLAY_STALE_MS);
                 } else {
                   clearPoseSkeleton(ctx, canvas.width, canvas.height);
                 }
-
-                const barLineY = pullUpBarLineYRef.current;
-                if (barLineY !== null) {
-                  drawPullUpBarLine(ctx, barLineY, canvas.width, canvas.height);
-                }
-                onLandmarksRef.current?.(mapped);
-                setTrackingBody(true);
-                if (trackingTimeout) {
-                  clearTimeout(trackingTimeout);
-                }
-                trackingTimeout = setTimeout(() => setTrackingBody(false), 800);
-              } else {
-                clearPoseSkeleton(ctx, canvas.width, canvas.height);
+              } else if (landmarks) {
+                lastDisplayFrameAtRef.current = now;
+                onLandmarksRef.current?.(mapLandmarks(landmarks));
               }
-            } else if (landmarks) {
-              onLandmarksRef.current?.(mapLandmarks(landmarks));
+            } finally {
+              isDetectingRef.current = false;
             }
           }
 
@@ -308,10 +348,18 @@ export function CameraPreview({
         </Pressable>
       </View>
 
-      <View style={styles.overlay}>
-        <Text style={styles.overlayText}>
-          {trackingBody ? 'Tracking - keep your body in frame' : 'Move into frame to start counting'}
-        </Text>
+      <View style={styles.bottomOverlay}>
+        <RepCycleProgressBar
+          exerciseType={exerciseType}
+          phase={repPhase}
+          visible={showRepProgressBar}
+          trackingReady={repTrackingReady}
+        />
+        <View style={styles.overlay}>
+          <Text style={styles.overlayText}>
+            {trackingBody ? 'Tracking - keep your body in frame' : 'Move into frame to start counting'}
+          </Text>
+        </View>
       </View>
     </View>
   );
@@ -401,14 +449,18 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   overlay: {
-    position: 'absolute',
-    bottom: Spacing.three,
-    left: Spacing.three,
-    right: Spacing.three,
+    marginHorizontal: Spacing.three,
     paddingVertical: Spacing.one,
     paddingHorizontal: Spacing.two,
     borderRadius: Radius.sm,
     backgroundColor: 'rgba(0, 0, 0, 0.45)',
+  },
+  bottomOverlay: {
+    position: 'absolute',
+    bottom: Spacing.three,
+    left: 0,
+    right: 0,
+    gap: Spacing.one,
   },
   overlayText: {
     color: '#FFFFFF',

@@ -29,6 +29,7 @@ interface UserSettingsContextValue {
   resolvedScheme: ThemePreference;
   setTheme: (theme: ThemePreference) => void;
   setShowPoseSkeleton: (show: boolean) => void;
+  setShowRepProgressBar: (show: boolean) => void;
   completeOnboarding: () => Promise<void>;
   isReady: boolean;
   isSaving: boolean;
@@ -150,6 +151,13 @@ export function UserSettingsProvider({ children }: { children: React.ReactNode }
     [persistToAccount],
   );
 
+  const setShowRepProgressBar = useCallback(
+    (showRepProgressBar: boolean) => {
+      void persistToAccount({ showRepProgressBar });
+    },
+    [persistToAccount],
+  );
+
   const completeOnboarding = useCallback(async () => {
     await persistToAccount({ hasCompletedOnboarding: true });
   }, [persistToAccount]);
@@ -160,12 +168,22 @@ export function UserSettingsProvider({ children }: { children: React.ReactNode }
       resolvedScheme: preferences.theme,
       setTheme,
       setShowPoseSkeleton,
+      setShowRepProgressBar,
       completeOnboarding,
       isReady,
       isSaving,
       saveError,
     }),
-    [preferences, setTheme, setShowPoseSkeleton, completeOnboarding, isReady, isSaving, saveError],
+    [
+      preferences,
+      setTheme,
+      setShowPoseSkeleton,
+      setShowRepProgressBar,
+      completeOnboarding,
+      isReady,
+      isSaving,
+      saveError,
+    ],
   );
 
   return <UserSettingsContext.Provider value={value}>{children}</UserSettingsContext.Provider>;

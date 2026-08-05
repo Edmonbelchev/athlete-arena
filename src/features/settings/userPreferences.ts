@@ -6,6 +6,8 @@ export interface UserPreferences {
   theme: ThemePreference;
   /** Draw MediaPipe pose skeleton over the camera preview during challenges. */
   showPoseSkeleton: boolean;
+  /** Red → green bar showing progress through each rep on the camera preview. */
+  showRepProgressBar: boolean;
   hasCompletedOnboarding: boolean;
 }
 
@@ -15,6 +17,7 @@ export function getDefaultUserPreferences(systemDark = false): UserPreferences {
   return {
     theme: systemDark ? 'dark' : 'light',
     showPoseSkeleton: Platform.OS === 'web',
+    showRepProgressBar: true,
     hasCompletedOnboarding: false,
   };
 }
@@ -36,6 +39,10 @@ export function parseUserPreferences(
       typeof record.showPoseSkeleton === 'boolean'
         ? record.showPoseSkeleton
         : fallback.showPoseSkeleton,
+    showRepProgressBar:
+      typeof record.showRepProgressBar === 'boolean'
+        ? record.showRepProgressBar
+        : fallback.showRepProgressBar,
     hasCompletedOnboarding:
       typeof record.hasCompletedOnboarding === 'boolean'
         ? record.hasCompletedOnboarding
@@ -52,6 +59,7 @@ export function mergeUserPreferences(
   return {
     theme: patch.theme ?? current.theme,
     showPoseSkeleton: patch.showPoseSkeleton ?? current.showPoseSkeleton,
+    showRepProgressBar: patch.showRepProgressBar ?? current.showRepProgressBar,
     hasCompletedOnboarding: patch.hasCompletedOnboarding ?? current.hasCompletedOnboarding,
   };
 }

@@ -70,6 +70,7 @@ export default function ChallengeScreen() {
 
   const {
     phase: posePhase,
+    trackingStatus,
     trackingMessage,
     pullUpBarLineY,
     pullUpDebug,
@@ -131,6 +132,9 @@ export default function ChallengeScreen() {
               active={!isCompleted}
               pullUpBarLineY={challenge.exercise_type === 'pull_ups' ? pullUpBarLineY : null}
               pullUpDebug={challenge.exercise_type === 'pull_ups' ? pullUpDebug : null}
+              exerciseType={challenge.exercise_type}
+              repPhase={posePhase}
+              repTrackingReady={trackingStatus === 'ready'}
               onCameraReady={() => {
                 repCounter.start();
               }}

@@ -3,16 +3,26 @@ import { useEffect } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import type { CameraPreviewProps } from '@/components/CameraPreview.types';
+import { RepCycleProgressBar } from '@/components/challenges/RepCycleProgressBar';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { Radius, Spacing } from '@/constants/theme';
+import { useUserSettings } from '@/features/settings/UserSettingsProvider';
 import { useTheme } from '@/hooks/use-theme';
 
 /**
  * Expo Go fallback - camera preview without native pose detection.
  * Install a development build for automatic rep counting on device.
  */
-export function ExpoGoCameraPreview({ active = true, onCameraReady }: CameraPreviewProps) {
+export function ExpoGoCameraPreview({
+  active = true,
+  onCameraReady,
+  exerciseType = 'push_ups',
+  repPhase = 'UP',
+  repTrackingReady = false,
+}: CameraPreviewProps) {
   const theme = useTheme();
+  const { preferences } = useUserSettings();
+  const showRepProgressBar = preferences.showRepProgressBar;
   const [permission, requestPermission] = useCameraPermissions();
 
   useEffect(() => {
@@ -84,9 +94,17 @@ export function ExpoGoCameraPreview({ active = true, onCameraReady }: CameraPrev
         { borderColor: theme.border },
       ])}>
       <CameraView style={styles.camera} facing="front" onCameraReady={onCameraReady} />
-      <View style={styles.overlay}>
-        <Text style={styles.overlayText}>Position yourself in frame</Text>
-        <Text style={styles.overlaySubtext}>Expo Go - use + Simulate Rep or install a dev build</Text>
+      <View style={styles.bottomOverlay}>
+        <RepCycleProgressBar
+          exerciseType={exerciseType}
+          phase={repPhase}
+          visible={showRepProgressBar}
+          trackingReady={repTrackingReady}
+        />
+        <View style={styles.overlay}>
+          <Text style={styles.overlayText}>Position yourself in frame</Text>
+          <Text style={styles.overlaySubtext}>Expo Go - use + Simulate Rep or install a dev build</Text>
+        </View>
       </View>
     </View>
   );
@@ -124,14 +142,18 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   overlay: {
-    position: 'absolute',
-    bottom: Spacing.three,
-    left: Spacing.three,
-    right: Spacing.three,
+    marginHorizontal: Spacing.three,
     paddingVertical: Spacing.two,
     paddingHorizontal: Spacing.two,
     borderRadius: Radius.sm,
     backgroundColor: 'rgba(0, 0, 0, 0.45)',
+    gap: Spacing.one,
+  },
+  bottomOverlay: {
+    position: 'absolute',
+    bottom: Spacing.three,
+    left: 0,
+    right: 0,
     gap: Spacing.one,
   },
   overlayText: {

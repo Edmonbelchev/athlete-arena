@@ -24,7 +24,8 @@ export function OnboardingCameraTry({ onContinue }: OnboardingCameraTryProps) {
     enabled: true,
   });
 
-  const { processLandmarks, pullUpBarLineY, pullUpDebug } = useExercisePoseDetection({
+  const { processLandmarks, phase, trackingStatus, pullUpBarLineY, pullUpDebug } =
+    useExercisePoseDetection({
     exerciseType,
     enabled: true,
     onRepDetected: () => {
@@ -53,6 +54,9 @@ export function OnboardingCameraTry({ onContinue }: OnboardingCameraTryProps) {
           onLandmarksDetected={processLandmarks}
           pullUpBarLineY={pullUpBarLineY}
           pullUpDebug={pullUpDebug}
+          exerciseType={exerciseType}
+          repPhase={phase}
+          repTrackingReady={trackingStatus === 'ready'}
         />
       </View>
 

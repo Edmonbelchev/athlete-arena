@@ -119,6 +119,7 @@ export default function FriendChallengeScreen() {
 
   const {
     phase: posePhase,
+    trackingStatus,
     trackingMessage,
     pullUpBarLineY,
     pullUpDebug,
@@ -329,6 +330,9 @@ export default function FriendChallengeScreen() {
                   active={canAttempt}
                   pullUpBarLineY={challenge.exerciseType === 'pull_ups' ? pullUpBarLineY : null}
                   pullUpDebug={challenge.exerciseType === 'pull_ups' ? pullUpDebug : null}
+                  exerciseType={challenge.exerciseType}
+                  repPhase={posePhase}
+                  repTrackingReady={trackingStatus === 'ready'}
                   onCameraReady={handleCameraReady}
                   onLandmarksDetected={processLandmarks}
                 />

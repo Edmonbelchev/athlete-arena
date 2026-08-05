@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { memo, useState } from 'react';
 import { LayoutChangeEvent, StyleSheet, View } from 'react-native';
 import Svg, { Circle, Line } from 'react-native-svg';
 
@@ -19,7 +19,10 @@ function isVisible(landmark: PoseLandmark | undefined, minVisibility: number): l
   return Boolean(landmark && (landmark.visibility ?? 1) >= minVisibility);
 }
 
-export function PoseSkeletonOverlay({ landmarks, visible }: PoseSkeletonOverlayProps) {
+export const PoseSkeletonOverlay = memo(function PoseSkeletonOverlay({
+  landmarks,
+  visible,
+}: PoseSkeletonOverlayProps) {
   const theme = useTheme();
   const [layout, setLayout] = useState({ width: 0, height: 0 });
 
@@ -88,7 +91,7 @@ export function PoseSkeletonOverlay({ landmarks, visible }: PoseSkeletonOverlayP
       </Svg>
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   overlay: {

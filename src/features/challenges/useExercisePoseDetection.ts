@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 
 import { getInitialExercisePhase, type ExerciseType } from '@/constants/challenges';
 import type { ExercisePhase } from '@/features/challenges/poseDetection.types';
+import { useStableState } from '@/hooks/use-stable-state';
 
 import { createRepEngine } from './pose/createRepEngine';
 import type { PoseLandmark } from './pose/landmarks';
@@ -23,14 +24,14 @@ export function useExercisePoseDetection({
   const initialPhase = getInitialExercisePhase(exerciseType);
   const engineRef = useRef(createRepEngine(exerciseType));
   const qualityGateRef = useRef(new PoseQualityGate(exerciseType));
-  const [phase, setPhase] = useState<ExercisePhase>(initialPhase);
-  const [trackingStatus, setTrackingStatus] = useState<PoseTrackingStatus>('partial');
-  const [trackingMessage, setTrackingMessage] = useState<string | null>(
+  const [phase, setPhase] = useStableState<ExercisePhase>(initialPhase);
+  const [trackingStatus, setTrackingStatus] = useStableState<PoseTrackingStatus>('partial');
+  const [trackingMessage, setTrackingMessage] = useStableState<string | null>(
     'Move into frame to start counting',
   );
-  const [pullUpBarLineY, setPullUpBarLineY] = useState<number | null>(null);
-  const [pullUpDebug, setPullUpDebug] = useState<PullUpDebugSnapshot | null>(null);
-  const [pushUpDebug, setPushUpDebug] = useState<PushUpDebugSnapshot | null>(null);
+  const [pullUpBarLineY, setPullUpBarLineY] = useStableState<number | null>(null);
+  const [pullUpDebug, setPullUpDebug] = useStableState<PullUpDebugSnapshot | null>(null);
+  const [pushUpDebug, setPushUpDebug] = useStableState<PushUpDebugSnapshot | null>(null);
   const onRepDetectedRef = useRef(onRepDetected);
 
   onRepDetectedRef.current = onRepDetected;

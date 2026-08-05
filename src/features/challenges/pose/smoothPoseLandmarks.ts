@@ -15,6 +15,8 @@ const SMOOTH_INDICES = [
   PoseLandmarkIndex.RIGHT_ELBOW,
   PoseLandmarkIndex.LEFT_WRIST,
   PoseLandmarkIndex.RIGHT_WRIST,
+  PoseLandmarkIndex.LEFT_HIP,
+  PoseLandmarkIndex.RIGHT_HIP,
 ] as const;
 
 const SMOOTH_INDEX_SET = new Set<number>(SMOOTH_INDICES);

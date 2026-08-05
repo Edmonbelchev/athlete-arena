@@ -28,6 +28,7 @@ export default function SettingsScreen() {
     preferences,
     setTheme,
     setShowPoseSkeleton,
+    setShowRepProgressBar,
     isSaving,
     saveError,
   } = useUserSettings();
@@ -96,6 +97,13 @@ export default function SettingsScreen() {
                 description="Overlay body tracking lines on the camera preview while you work out."
                 value={preferences.showPoseSkeleton}
                 onValueChange={setShowPoseSkeleton}
+                disabled={isSaving}
+              />
+              <SettingsToggleRow
+                label="Show rep progress bar"
+                description="Red-to-green bar on the camera preview while you move through each rep."
+                value={preferences.showRepProgressBar}
+                onValueChange={setShowRepProgressBar}
                 disabled={isSaving}
               />
             </View>

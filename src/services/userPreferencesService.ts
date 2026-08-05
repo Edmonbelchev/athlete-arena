@@ -26,6 +26,7 @@ export async function getUserPreferences(userId: string): Promise<UserPreference
   return parseUserPreferences(data.preferences, {
     theme: 'light',
     showPoseSkeleton: false,
+    showRepProgressBar: true,
     hasCompletedOnboarding: true,
   });
 }

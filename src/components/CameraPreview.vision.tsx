@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import {
   Delegate,
   MediapipeCamera,
@@ -10,10 +10,16 @@ import {
 } from 'react-native-mediapipe-posedetection';
 import { useCameraPermission } from 'react-native-vision-camera';
 
+import { RepCycleProgressBar } from '@/components/challenges/RepCycleProgressBar';
 import { PoseAngleOverlay } from '@/components/settings/PoseAngleOverlay';
 import { PoseSkeletonOverlay } from '@/components/settings/PoseSkeletonOverlay';
 import { PullUpBarLineOverlay } from '@/components/settings/PullUpBarLineOverlay';
 import type { CameraFacing, CameraPreviewProps } from '@/components/CameraPreview.types';
+import {
+  isDisplayFrameStale,
+  POSE_DISPLAY_STALE_MS,
+  shouldEmitDisplayFrame,
+} from '@/features/challenges/pose/displayFrameThrottle';
 import { mapLandmarksToViewNormalized } from '@/features/challenges/pose/mapLandmarksToView';
 import type { PoseLandmark } from '@/features/challenges/pose/landmarks';
 import { PoseLandmarkSmoother } from '@/features/challenges/pose/smoothPoseLandmarks';
@@ -24,6 +30,9 @@ import { useTheme } from '@/hooks/use-theme';
 
 const POSE_MODEL = 'pose_landmarker_lite.task';
 
+/** CPU is more stable on iOS; GPU can stall or crash under camera + inference load. */
+const POSE_DELEGATE = Platform.OS === 'ios' ? Delegate.CPU : Delegate.GPU;
+
 /**
  * Development-build camera with on-device MediaPipe pose detection.
  */
@@ -33,10 +42,14 @@ export function VisionCameraPreview({
   onLandmarksDetected,
   pullUpBarLineY = null,
   pullUpDebug = null,
+  exerciseType = 'push_ups',
+  repPhase = 'UP',
+  repTrackingReady = false,
 }: CameraPreviewProps) {
   const theme = useTheme();
   const { preferences } = useUserSettings();
   const showPoseSkeleton = preferences.showPoseSkeleton;
+  const showRepProgressBar = preferences.showRepProgressBar;
   const showPoseDebugOverlay = usePoseDebugOverlay();
   const { hasPermission, requestPermission } = useCameraPermission();
   const onLandmarksRef = useRef(onLandmarksDetected);
@@ -52,6 +65,8 @@ export function VisionCameraPreview({
   const pullUpBarLineYRef = useRef(pullUpBarLineY);
   const showPoseDebugOverlayRef = useRef(showPoseDebugOverlay);
   const landmarkSmootherRef = useRef(new PoseLandmarkSmoother());
+  const lastDisplayFrameAtRef = useRef(0);
+  const lastBarLineYRef = useRef<number | null>(null);
 
   pullUpBarLineYRef.current = pullUpBarLineY;
   showPoseDebugOverlayRef.current = showPoseDebugOverlay;
@@ -88,12 +103,23 @@ export function VisionCameraPreview({
       );
 
       onLandmarksRef.current?.(viewLandmarks);
-      if (showPoseDebugOverlayRef.current) {
-        setDetectionLandmarks(viewLandmarks);
+
+      const now = performance.now();
+      if (shouldEmitDisplayFrame(lastDisplayFrameAtRef.current, now)) {
+        lastDisplayFrameAtRef.current = now;
+        setLatestLandmarks(viewLandmarks);
+        setTrackingBody(true);
+
+        if (showPoseDebugOverlayRef.current) {
+          setDetectionLandmarks(viewLandmarks);
+        }
+
+        const nextBarLineY = pullUpBarLineYRef.current;
+        if (nextBarLineY !== lastBarLineYRef.current) {
+          lastBarLineYRef.current = nextBarLineY;
+          setViewBarLineY(nextBarLineY);
+        }
       }
-      setLatestLandmarks(viewLandmarks);
-      setViewBarLineY(pullUpBarLineYRef.current);
-      setTrackingBody(true);
     },
     [],
   );
@@ -117,10 +143,27 @@ export function VisionCameraPreview({
       minPoseDetectionConfidence: 0.45,
       minPosePresenceConfidence: 0.45,
       minTrackingConfidence: 0.45,
-      delegate: Delegate.GPU,
+      delegate: POSE_DELEGATE,
       mirrorMode: 'mirror-front-only',
     },
   );
+
+  useEffect(() => {
+    if (!active) {
+      return;
+    }
+
+    const interval = setInterval(() => {
+      if (isDisplayFrameStale(lastDisplayFrameAtRef.current)) {
+        setLatestLandmarks(null);
+        setDetectionLandmarks(null);
+        setTrackingBody(false);
+        lastDisplayFrameAtRef.current = 0;
+      }
+    }, POSE_DISPLAY_STALE_MS / 2);
+
+    return () => clearInterval(interval);
+  }, [active]);
 
   viewDimensionsRef.current = poseDetection.cameraViewDimensions;
 
@@ -148,6 +191,8 @@ export function VisionCameraPreview({
     setDetectionLandmarks(null);
     setViewBarLineY(null);
     setTrackingBody(false);
+    lastDisplayFrameAtRef.current = 0;
+    lastBarLineYRef.current = null;
   }, [facing]);
 
   function handleFlipCamera() {
@@ -217,14 +262,22 @@ export function VisionCameraPreview({
         </Pressable>
       </View>
 
-      <View style={styles.overlay}>
-        <Text style={styles.overlayText}>
-          {detectionError
-            ? 'Pose detection error - check dev build setup'
-            : trackingBody
-              ? 'Tracking - keep your body in frame'
-              : 'Move into frame to start counting'}
-        </Text>
+      <View style={styles.bottomOverlay}>
+        <RepCycleProgressBar
+          exerciseType={exerciseType}
+          phase={repPhase}
+          visible={showRepProgressBar}
+          trackingReady={repTrackingReady}
+        />
+        <View style={styles.overlay}>
+          <Text style={styles.overlayText}>
+            {detectionError
+              ? 'Pose detection error - check dev build setup'
+              : trackingBody
+                ? 'Tracking - keep your body in frame'
+                : 'Move into frame to start counting'}
+          </Text>
+        </View>
       </View>
     </View>
   );
@@ -279,14 +332,18 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   overlay: {
-    position: 'absolute',
-    bottom: Spacing.three,
-    left: Spacing.three,
-    right: Spacing.three,
+    marginHorizontal: Spacing.three,
     paddingVertical: Spacing.one,
     paddingHorizontal: Spacing.two,
     borderRadius: Radius.sm,
     backgroundColor: 'rgba(0, 0, 0, 0.45)',
+  },
+  bottomOverlay: {
+    position: 'absolute',
+    bottom: Spacing.three,
+    left: 0,
+    right: 0,
+    gap: Spacing.one,
   },
   overlayText: {
     color: '#FFFFFF',
