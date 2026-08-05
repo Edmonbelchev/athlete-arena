@@ -6,6 +6,7 @@ import type { ExercisePhase } from '@/features/challenges/poseDetection.types';
 import { createRepEngine } from './pose/createRepEngine';
 import type { PoseLandmark } from './pose/landmarks';
 import { PullUpRepEngine, type PullUpDebugSnapshot } from './pose/pullUpRepEngine';
+import { PushUpRepEngine, type PushUpDebugSnapshot } from './pose/pushUpRepEngine';
 import { PoseQualityGate, type PoseTrackingStatus } from './pose/poseQuality';
 
 interface UseExercisePoseDetectionOptions {
@@ -29,6 +30,7 @@ export function useExercisePoseDetection({
   );
   const [pullUpBarLineY, setPullUpBarLineY] = useState<number | null>(null);
   const [pullUpDebug, setPullUpDebug] = useState<PullUpDebugSnapshot | null>(null);
+  const [pushUpDebug, setPushUpDebug] = useState<PushUpDebugSnapshot | null>(null);
   const onRepDetectedRef = useRef(onRepDetected);
 
   onRepDetectedRef.current = onRepDetected;
@@ -42,6 +44,7 @@ export function useExercisePoseDetection({
     setTrackingMessage('Move into frame to start counting');
     setPullUpBarLineY(null);
     setPullUpDebug(null);
+    setPushUpDebug(null);
   }, [exerciseType]);
 
   useEffect(() => {
@@ -53,6 +56,7 @@ export function useExercisePoseDetection({
       setTrackingMessage(null);
       setPullUpBarLineY(null);
       setPullUpDebug(null);
+      setPushUpDebug(null);
     }
   }, [enabled, exerciseType]);
 
@@ -78,12 +82,18 @@ export function useExercisePoseDetection({
           setPullUpBarLineY(null);
           setPullUpDebug(null);
         }
+        if (exerciseType === 'push_ups') {
+          setPushUpDebug(null);
+        }
       }
 
       const keepUpdatingWhileArmed =
-        exerciseType === 'pull_ups' &&
-        pullUpArmed &&
-        !quality.shouldResetEngine;
+        (exerciseType === 'pull_ups' &&
+          pullUpArmed &&
+          !quality.shouldResetEngine) ||
+        (exerciseType === 'push_ups' &&
+          (engineRef.current as PushUpRepEngine).armed &&
+          !quality.shouldResetEngine);
 
       if (!quality.canCountReps && !keepUpdatingWhileArmed) {
         return;
@@ -105,6 +115,18 @@ export function useExercisePoseDetection({
         }
       }
 
+      if (exerciseType === 'push_ups') {
+        const pushUpEngine = engineRef.current as PushUpRepEngine;
+        setPushUpDebug(pushUpEngine.debugSnapshot);
+        if (!pushUpEngine.armed) {
+          setTrackingMessage(pushUpEngine.getPlankHint(landmarks));
+        } else if (quality.message) {
+          setTrackingMessage(quality.message);
+        } else {
+          setTrackingMessage(null);
+        }
+      }
+
       if (repCompleted) {
         onRepDetectedRef.current();
       }
@@ -118,6 +140,7 @@ export function useExercisePoseDetection({
     trackingMessage,
     pullUpBarLineY: exerciseType === 'pull_ups' ? pullUpBarLineY : null,
     pullUpDebug: exerciseType === 'pull_ups' ? pullUpDebug : null,
+    pushUpDebug: exerciseType === 'push_ups' ? pushUpDebug : null,
     processLandmarks,
   };
 }

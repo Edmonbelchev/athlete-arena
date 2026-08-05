@@ -36,6 +36,18 @@ export const PUSH_UP_THRESHOLDS = {
   hysteresis: isNativeMobile ? 12 : 8,
 } as const;
 
+/** Push-up rep validation — horizontal plank with hands on the floor. */
+export const PUSH_UP_POSTURE = {
+  /** Shoulder and hip stay near the same height in a side-view plank. */
+  maxShoulderHipYDelta: isNativeMobile ? 0.1 : 0.08,
+  /** Reject upright torsos (standing and mimicking arm motion). */
+  maxTorsoFromHorizontal: isNativeMobile ? 40 : 35,
+  /** Wrists must sit at or below shoulder height (hands on the ground). */
+  minWristBelowShoulder: isNativeMobile ? 0.02 : 0.025,
+  /** Frames in a valid plank before rep counting begins. */
+  readyFramesRequired: isNativeMobile ? 3 : 4,
+} as const;
+
 export const PULL_UP_THRESHOLDS = {
   /** Elbow angle (degrees) - hanging with arms extended. */
   upAngle: 165,
@@ -81,9 +93,9 @@ export const POSE_GUIDANCE: Record<ExerciseType, { title: string; tips: readonly
   push_ups: {
     title: 'Push-up setup',
     tips: [
-      'Keep shoulders, elbows, and wrists in frame',
-      'Side view works best — go all the way down, then fully extend',
-      'Rep counting pauses if your arms leave the frame',
+      'Get into a plank on the floor — side view works best',
+      'Keep shoulders, hips, elbows, and wrists in frame',
+      'Rep counting starts only once you hold a plank; standing arm motion will not count',
     ],
   },
   squats: {

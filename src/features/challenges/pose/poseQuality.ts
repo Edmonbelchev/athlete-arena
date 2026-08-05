@@ -7,6 +7,7 @@ import {
 
 import { PoseLandmarkIndex, type PoseLandmark } from './landmarks';
 import { hasPullUpTrackingLandmarks } from './pullUpPosture';
+import { hasPushUpTrackingLandmarks } from './pushUpPosture';
 
 export type PoseTrackingStatus = 'ready' | 'stabilizing' | 'partial';
 
@@ -110,7 +111,20 @@ function getTrackingIndices(exerciseType: ExerciseType): number[] {
     ];
   }
 
-  if (exerciseType === 'push_ups' || exerciseType === 'dips') {
+  if (exerciseType === 'push_ups') {
+    return [
+      PoseLandmarkIndex.LEFT_SHOULDER,
+      PoseLandmarkIndex.RIGHT_SHOULDER,
+      PoseLandmarkIndex.LEFT_ELBOW,
+      PoseLandmarkIndex.RIGHT_ELBOW,
+      PoseLandmarkIndex.LEFT_WRIST,
+      PoseLandmarkIndex.RIGHT_WRIST,
+      PoseLandmarkIndex.LEFT_HIP,
+      PoseLandmarkIndex.RIGHT_HIP,
+    ];
+  }
+
+  if (exerciseType === 'dips') {
     return [
       PoseLandmarkIndex.LEFT_SHOULDER,
       PoseLandmarkIndex.RIGHT_SHOULDER,
@@ -172,7 +186,25 @@ function checkRequiredLandmarks(
     return { ok: true, message: null };
   }
 
-  if (exerciseType === 'push_ups' || exerciseType === 'dips') {
+  if (exerciseType === 'push_ups') {
+    if (!hasPushUpTrackingLandmarks(landmarks)) {
+      return {
+        ok: false,
+        message: 'Keep at least one full arm and your hips in frame',
+      };
+    }
+
+    if (visibleCount < POSE_QUALITY.minVisibleTrackingPoints) {
+      return {
+        ok: false,
+        message: 'Move back — keep your upper body and hips in frame',
+      };
+    }
+
+    return { ok: true, message: null };
+  }
+
+  if (exerciseType === 'dips') {
     const armVisible = hasCompleteArmChain(landmarks, 'left') || hasCompleteArmChain(landmarks, 'right');
 
     if (!armVisible) {
