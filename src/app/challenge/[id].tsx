@@ -1,9 +1,10 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import { useCallback, useRef, useState } from 'react';
 import { ActivityIndicator, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { CameraPreview } from '@/components/CameraPreview';
+import { ChallengeCameraPanel } from '@/components/challenges/ChallengeCameraPanel';
 import { PoseGuidanceBanner } from '@/components/PoseGuidanceBanner';
 import { EmoteDisplay } from '@/components/shop/EmoteDisplay';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
@@ -27,6 +28,7 @@ export default function ChallengeScreen() {
   const { equippedEmote } = useShop();
   const [syncError, setSyncError] = useState<string | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [cameraFullscreen, setCameraFullscreen] = useState(false);
   const isSyncingRef = useRef(false);
   const challengeRef = useRef(challenge);
 
@@ -87,6 +89,30 @@ export default function ChallengeScreen() {
   const autoRepCounting =
     Platform.OS === 'web' || supportsNativePoseDetection();
   const showSimulateButton = !isCompleted && !autoRepCounting;
+  const exerciseLabel = formatExerciseLabel(challenge?.exercise_type ?? 'push_ups', true);
+
+  const cameraPanelProps = {
+    fullscreen: cameraFullscreen,
+    onFullscreenChange: setCameraFullscreen,
+    exerciseLabel,
+    currentReps: repCounter.currentReps,
+    targetReps: challenge?.target_reps ?? 0,
+    progress,
+    trackingMessage,
+    showFullscreenControl: !isCompleted,
+    cameraProps: {
+      active: !isCompleted,
+      pullUpBarLineY: challenge?.exercise_type === 'pull_ups' ? pullUpBarLineY : null,
+      pullUpDebug: challenge?.exercise_type === 'pull_ups' ? pullUpDebug : null,
+      exerciseType: challenge?.exercise_type ?? 'push_ups',
+      repPhase: posePhase,
+      repTrackingReady: trackingStatus === 'ready',
+      onCameraReady: () => {
+        repCounter.start();
+      },
+      onLandmarksDetected: processLandmarks,
+    },
+  } as const;
 
   if (isLoading) {
     return (
@@ -111,96 +137,94 @@ export default function ChallengeScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ title: 'Challenge', headerShown: true }} />
+      <Stack.Screen options={{ title: 'Challenge', headerShown: !cameraFullscreen }} />
+      <StatusBar hidden={cameraFullscreen} />
       <SafeAreaView
         style={StyleSheet.flatten([styles.safeArea, { backgroundColor: theme.background }])}
-        edges={['bottom']}>
-        <ScrollView
-          style={styles.scroll}
-          contentContainerStyle={styles.content}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled">
-          <Text style={StyleSheet.flatten([styles.exercise, { color: theme.textSecondary }])}>
-            {formatExerciseLabel(challenge.exercise_type, true)}
-          </Text>
-          <Text style={StyleSheet.flatten([styles.reps, { color: theme.text }])}>
-            {repCounter.currentReps} / {challenge.target_reps}
-          </Text>
-
-          <View style={styles.cameraFrame}>
-            <CameraPreview
-              active={!isCompleted}
-              pullUpBarLineY={challenge.exercise_type === 'pull_ups' ? pullUpBarLineY : null}
-              pullUpDebug={challenge.exercise_type === 'pull_ups' ? pullUpDebug : null}
-              exerciseType={challenge.exercise_type}
-              repPhase={posePhase}
-              repTrackingReady={trackingStatus === 'ready'}
-              onCameraReady={() => {
-                repCounter.start();
-              }}
-              onLandmarksDetected={processLandmarks}
-            />
+        edges={cameraFullscreen ? [] : ['bottom']}>
+        {!cameraFullscreen ? (
+          <View style={styles.headerBlock}>
+            <Text style={StyleSheet.flatten([styles.exercise, { color: theme.textSecondary }])}>
+              {exerciseLabel}
+            </Text>
+            <Text style={StyleSheet.flatten([styles.reps, { color: theme.text }])}>
+              {repCounter.currentReps} / {challenge.target_reps}
+            </Text>
           </View>
+        ) : null}
 
-          {!isCompleted ? <PoseGuidanceBanner exerciseType={challenge.exercise_type} /> : null}
+        <ChallengeCameraPanel {...cameraPanelProps} />
 
-          {!isCompleted && autoRepCounting ? (
-            <>
-              <Text style={StyleSheet.flatten([styles.phaseLabel, { color: theme.textSecondary }])}>
-                Phase: {posePhase}
-                {trackingMessage ? '' : ' · counting'}
-              </Text>
-              {trackingMessage ? (
-                <Text style={StyleSheet.flatten([styles.trackingMessage, { color: theme.streak }])}>
-                  {trackingMessage}
+        {!cameraFullscreen ? (
+          <ScrollView
+            style={styles.scroll}
+            contentContainerStyle={styles.content}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled">
+            {!isCompleted ? <PoseGuidanceBanner exerciseType={challenge.exercise_type} /> : null}
+
+            {!isCompleted && autoRepCounting ? (
+              <>
+                <Text style={StyleSheet.flatten([styles.phaseLabel, { color: theme.textSecondary }])}>
+                  Phase: {posePhase}
+                  {trackingMessage ? '' : ' · counting'}
                 </Text>
-              ) : null}
-            </>
-          ) : null}
+                {trackingMessage ? (
+                  <Text style={StyleSheet.flatten([styles.trackingMessage, { color: theme.streak }])}>
+                    {trackingMessage}
+                  </Text>
+                ) : null}
+              </>
+            ) : null}
 
-          <View style={StyleSheet.flatten([styles.progressTrack, { backgroundColor: theme.backgroundSelected }])}>
             <View
               style={StyleSheet.flatten([
-                styles.progressFill,
-                { backgroundColor: theme.primary, width: `${progress * 100}%` },
-              ])}
-            />
-          </View>
-
-          {isCompleted ? (
-            <View
-              style={StyleSheet.flatten([
-                styles.completedBanner,
-                { backgroundColor: theme.backgroundElement, borderColor: theme.success },
+                styles.progressTrack,
+                { backgroundColor: theme.backgroundSelected },
               ])}>
-              <Text style={StyleSheet.flatten([styles.completedTitle, { color: theme.success }])}>
-                CHALLENGE COMPLETE
-              </Text>
-              <EmoteDisplay emoji={equippedEmote} />
-              <Text style={StyleSheet.flatten([styles.completedReward, { color: theme.xp }])}>
-                {formatXpAndCoins(challenge.xp_reward, DAILY_CHALLENGE_COIN_REWARD)} earned
-              </Text>
+              <View
+                style={StyleSheet.flatten([
+                  styles.progressFill,
+                  { backgroundColor: theme.primary, width: `${progress * 100}%` },
+                ])}
+              />
             </View>
-          ) : showSimulateButton ? (
+
+            {isCompleted ? (
+              <View
+                style={StyleSheet.flatten([
+                  styles.completedBanner,
+                  { backgroundColor: theme.backgroundElement, borderColor: theme.success },
+                ])}>
+                <Text style={StyleSheet.flatten([styles.completedTitle, { color: theme.success }])}>
+                  CHALLENGE COMPLETE
+                </Text>
+                <EmoteDisplay emoji={equippedEmote} />
+                <Text style={StyleSheet.flatten([styles.completedReward, { color: theme.xp }])}>
+                  {formatXpAndCoins(challenge.xp_reward, DAILY_CHALLENGE_COIN_REWARD)} earned
+                </Text>
+              </View>
+            ) : showSimulateButton ? (
+              <PrimaryButton
+                label="+ Simulate Rep"
+                variant="secondary"
+                disabled={repCounter.isComplete || isSyncing}
+                loading={isSyncing}
+                onPress={repCounter.simulateRep}
+              />
+            ) : null}
+
+            {syncError ? (
+              <Text style={StyleSheet.flatten([styles.error, { color: theme.danger }])}>{syncError}</Text>
+            ) : null}
+
             <PrimaryButton
-              label="+ Simulate Rep"
+              label={isCompleted ? 'Done' : 'Cancel'}
               variant="secondary"
-              disabled={repCounter.isComplete || isSyncing}
-              loading={isSyncing}
-              onPress={repCounter.simulateRep}
+              onPress={() => router.back()}
             />
-          ) : null}
-
-          {syncError ? (
-            <Text style={StyleSheet.flatten([styles.error, { color: theme.danger }])}>{syncError}</Text>
-          ) : null}
-
-          <PrimaryButton
-            label={isCompleted ? 'Done' : 'Cancel'}
-            variant="secondary"
-            onPress={() => router.back()}
-          />
-        </ScrollView>
+          </ScrollView>
+        ) : null}
       </SafeAreaView>
     </>
   );
@@ -215,6 +239,14 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
   },
+  headerBlock: {
+    paddingHorizontal: Spacing.four,
+    paddingTop: Spacing.two,
+    gap: Spacing.one,
+    maxWidth: MaxContentWidth,
+    alignSelf: 'center',
+    width: '100%',
+  },
   scroll: {
     flex: 1,
   },
@@ -225,10 +257,6 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     width: '100%',
     paddingBottom: Spacing.six,
-  },
-  cameraFrame: {
-    width: '100%',
-    height: 320,
   },
   container: {
     flex: 1,
