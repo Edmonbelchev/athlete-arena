@@ -10,23 +10,17 @@ export function OnboardingGate({ children }: { children: React.ReactNode }) {
   const { session } = useAuth();
   const { preferences, isReady } = useUserSettings();
 
-  const isOnboardingRoute = segments[0] === 'onboarding';
-  const hasCompletedOnboarding = preferences.hasCompletedOnboarding;
-
   useEffect(() => {
-    if (!session || !isReady) {
+    if (!session || !isReady || preferences.hasCompletedOnboarding) {
       return;
     }
 
-    if (hasCompletedOnboarding && isOnboardingRoute) {
-      router.replace('/(tabs)');
+    if (segments[0] === 'onboarding') {
       return;
     }
 
-    if (!hasCompletedOnboarding && !isOnboardingRoute) {
-      router.replace('/onboarding');
-    }
-  }, [session, isReady, hasCompletedOnboarding, isOnboardingRoute, router]);
+    router.replace('/onboarding');
+  }, [session, isReady, preferences.hasCompletedOnboarding, router, segments]);
 
   return children;
 }

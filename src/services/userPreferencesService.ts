@@ -23,16 +23,12 @@ export async function getUserPreferences(userId: string): Promise<UserPreference
     return null;
   }
 
-  return parseUserPreferences(
-    data.preferences,
-    {
-      theme: 'light',
-      showPoseSkeleton: false,
-      showRepProgressBar: true,
-      hasCompletedOnboarding: false,
-    },
-    { treatMissingOnboardingAsCompleted: true },
-  );
+  return parseUserPreferences(data.preferences, {
+    theme: 'light',
+    showPoseSkeleton: false,
+    showRepProgressBar: true,
+    hasCompletedOnboarding: true,
+  });
 }
 
 export async function updateUserPreferences(
@@ -55,7 +51,5 @@ export async function updateUserPreferences(
     throw error;
   }
 
-  return parseUserPreferences(data.preferences, next, {
-    treatMissingOnboardingAsCompleted: true,
-  });
+  return parseUserPreferences(data.preferences, next);
 }
