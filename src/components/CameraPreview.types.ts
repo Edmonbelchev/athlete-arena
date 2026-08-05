@@ -20,6 +20,4 @@ export interface CameraPreviewProps {
   repPhase?: ExercisePhase;
   /** Whether pose tracking is ready to count reps. */
   repTrackingReady?: boolean;
-  /** Fill available height (fullscreen challenge camera). */
-  expanded?: boolean;
 }

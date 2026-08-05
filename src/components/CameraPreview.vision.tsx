@@ -45,7 +45,6 @@ export function VisionCameraPreview({
   exerciseType = 'push_ups',
   repPhase = 'UP',
   repTrackingReady = false,
-  expanded = false,
 }: CameraPreviewProps) {
   const theme = useTheme();
   const { preferences } = useUserSettings();
@@ -236,13 +235,8 @@ export function VisionCameraPreview({
         styles.container,
         styles.cameraContainer,
         { borderColor: theme.border },
-        expanded && styles.containerExpanded,
       ])}>
-      <MediapipeCamera
-        style={StyleSheet.flatten([styles.camera, expanded && styles.cameraExpanded])}
-        solution={poseDetection}
-        activeCamera={facing}
-      />
+      <MediapipeCamera style={styles.camera} solution={poseDetection} activeCamera={facing} />
 
       <PoseSkeletonOverlay
         landmarks={latestLandmarks}
@@ -304,14 +298,6 @@ const styles = StyleSheet.create({
   camera: {
     flex: 1,
     minHeight: 280,
-  },
-  cameraExpanded: {
-    minHeight: 0,
-  },
-  containerExpanded: {
-    minHeight: 0,
-    borderRadius: 0,
-    borderWidth: 0,
   },
   centered: {
     alignItems: 'center',

@@ -1,10 +1,9 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
 import { useCallback, useRef, useState } from 'react';
 import { ActivityIndicator, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { ChallengeCameraPanel } from '@/components/challenges/ChallengeCameraPanel';
+import { CameraPreview } from '@/components/CameraPreview';
 import { PoseGuidanceBanner } from '@/components/PoseGuidanceBanner';
 import { EmoteDisplay } from '@/components/shop/EmoteDisplay';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
@@ -47,7 +46,6 @@ export default function FriendChallengeScreen() {
   const [syncError, setSyncError] = useState<string | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
   const [isTimedOut, setIsTimedOut] = useState(false);
-  const [cameraFullscreen, setCameraFullscreen] = useState(false);
   const isSyncingRef = useRef(false);
   const challengeRef = useRef(challenge);
 
@@ -137,7 +135,6 @@ export default function FriendChallengeScreen() {
   const progress = targetReps > 0 ? Math.min(repCounter.currentReps / targetReps, 1) : 0;
   const autoRepCounting = Platform.OS === 'web' || supportsNativePoseDetection();
   const showSimulateButton = canAttempt && !autoRepCounting;
-  const showCamera = canAttempt && !waitingOnOpponent && !isCompleted;
 
   function handleCameraReady() {
     repCounter.start();
@@ -174,28 +171,6 @@ export default function FriendChallengeScreen() {
     challenge.winnerUserId,
     myUserId,
   );
-  const exerciseLabel = formatExerciseLabel(challenge.exerciseType, true);
-
-  const cameraPanelProps = {
-    fullscreen: cameraFullscreen,
-    onFullscreenChange: setCameraFullscreen,
-    exerciseLabel,
-    currentReps: repCounter.currentReps,
-    targetReps: challenge.targetReps,
-    progress,
-    trackingMessage,
-    showFullscreenControl: showCamera,
-    cameraProps: {
-      active: canAttempt,
-      pullUpBarLineY: challenge.exerciseType === 'pull_ups' ? pullUpBarLineY : null,
-      pullUpDebug: challenge.exerciseType === 'pull_ups' ? pullUpDebug : null,
-      exerciseType: challenge.exerciseType,
-      repPhase: posePhase,
-      repTrackingReady: trackingStatus === 'ready',
-      onCameraReady: handleCameraReady,
-      onLandmarksDetected: processLandmarks,
-    },
-  } as const;
 
   function formatEarnedRewards(xp: number): string {
     if (earnedCoins > 0) {
@@ -312,99 +287,104 @@ export default function FriendChallengeScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ title: 'Friend Challenge', headerShown: !cameraFullscreen }} />
-      <StatusBar hidden={cameraFullscreen} />
+      <Stack.Screen options={{ title: 'Friend Challenge', headerShown: true }} />
       <SafeAreaView
         style={StyleSheet.flatten([styles.safeArea, { backgroundColor: theme.background }])}
-        edges={cameraFullscreen ? [] : ['bottom']}>
-        {!cameraFullscreen ? (
-          <View style={styles.headerBlock}>
-            <Text style={StyleSheet.flatten([styles.exercise, { color: theme.textSecondary }])}>
-              Speed race vs {opponentName} · {exerciseLabel}
-            </Text>
-            {challenge.creatorEmoteEmoji && !challenge.isCreator ? (
-              <View style={styles.creatorEmoteRow}>
-                <Text style={StyleSheet.flatten([styles.creatorEmoteLabel, { color: theme.textSecondary }])}>
-                  Challenge emote
-                </Text>
-                <EmoteDisplay emoji={challenge.creatorEmoteEmoji} size="sm" />
-              </View>
-            ) : null}
-            <Text style={StyleSheet.flatten([styles.reps, { color: theme.text }])}>
-              {repCounter.currentReps} / {challenge.targetReps}
-            </Text>
-            {renderRaceTimer(challenge)}
-          </View>
-        ) : null}
-
-        {showCamera ? <ChallengeCameraPanel {...cameraPanelProps} /> : null}
-
-        {!cameraFullscreen ? (
-          <ScrollView
-            style={styles.scroll}
-            contentContainerStyle={styles.content}
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled">
-            {isPending ? (
-              <Text style={StyleSheet.flatten([styles.pending, { color: theme.textSecondary }])}>
-                Accept this challenge from the Friends tab before starting.
+        edges={['bottom']}>
+        <ScrollView
+          style={styles.scroll}
+          contentContainerStyle={styles.content}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled">
+          <Text style={StyleSheet.flatten([styles.exercise, { color: theme.textSecondary }])}>
+            Speed race vs {opponentName} · {formatExerciseLabel(challenge.exerciseType, true)}
+          </Text>
+          {challenge.creatorEmoteEmoji && !challenge.isCreator ? (
+            <View style={styles.creatorEmoteRow}>
+              <Text style={StyleSheet.flatten([styles.creatorEmoteLabel, { color: theme.textSecondary }])}>
+                Challenge emote
               </Text>
-            ) : isExpired ? (
-              <Text style={StyleSheet.flatten([styles.pending, { color: theme.danger }])}>
-                You hit the time cap before finishing. Head back and try again.
-              </Text>
-            ) : waitingOnOpponent || isCompleted ? (
-              renderCompletionBanner()
-            ) : showCamera ? (
-              <>
-                <PoseGuidanceBanner exerciseType={challenge.exerciseType} />
-
-                {autoRepCounting ? (
-                  <>
-                    <Text style={StyleSheet.flatten([styles.phaseLabel, { color: theme.textSecondary }])}>
-                      Phase: {posePhase}
-                      {trackingMessage ? '' : ' · counting'}
-                    </Text>
-                    {trackingMessage ? (
-                      <Text style={StyleSheet.flatten([styles.trackingMessage, { color: theme.streak }])}>
-                        {trackingMessage}
-                      </Text>
-                    ) : null}
-                  </>
-                ) : null}
-              </>
-            ) : null}
-
-            <View style={StyleSheet.flatten([styles.progressTrack, { backgroundColor: theme.backgroundSelected }])}>
-              <View
-                style={StyleSheet.flatten([
-                  styles.progressFill,
-                  { backgroundColor: theme.primary, width: `${progress * 100}%` },
-                ])}
-              />
+              <EmoteDisplay emoji={challenge.creatorEmoteEmoji} size="sm" />
             </View>
+          ) : null}
+          <Text style={StyleSheet.flatten([styles.reps, { color: theme.text }])}>
+            {repCounter.currentReps} / {challenge.targetReps}
+          </Text>
 
-            {showSimulateButton ? (
-              <PrimaryButton
-                label="+ Simulate Rep"
-                variant="secondary"
-                disabled={repCounter.isComplete || isSyncing}
-                loading={isSyncing}
-                onPress={repCounter.simulateRep}
-              />
-            ) : null}
+          {renderRaceTimer(challenge)}
 
-            {syncError ? (
-              <Text style={StyleSheet.flatten([styles.error, { color: theme.danger }])}>{syncError}</Text>
-            ) : null}
+          {isPending ? (
+            <Text style={StyleSheet.flatten([styles.pending, { color: theme.textSecondary }])}>
+              Accept this challenge from the Friends tab before starting.
+            </Text>
+          ) : isExpired ? (
+            <Text style={StyleSheet.flatten([styles.pending, { color: theme.danger }])}>
+              You hit the time cap before finishing. Head back and try again.
+            </Text>
+          ) : waitingOnOpponent || isCompleted ? (
+            renderCompletionBanner()
+          ) : (
+            <>
+              <View style={styles.cameraFrame}>
+                <CameraPreview
+                  active={canAttempt}
+                  pullUpBarLineY={challenge.exerciseType === 'pull_ups' ? pullUpBarLineY : null}
+                  pullUpDebug={challenge.exerciseType === 'pull_ups' ? pullUpDebug : null}
+                  exerciseType={challenge.exerciseType}
+                  repPhase={posePhase}
+                  repTrackingReady={trackingStatus === 'ready'}
+                  onCameraReady={handleCameraReady}
+                  onLandmarksDetected={processLandmarks}
+                />
+              </View>
 
-            <PrimaryButton
-              label={isCompleted || waitingOnOpponent ? 'Done' : 'Cancel'}
-              variant="secondary"
-              onPress={() => router.back()}
+              <PoseGuidanceBanner exerciseType={challenge.exerciseType} />
+
+              {autoRepCounting ? (
+                <>
+                  <Text style={StyleSheet.flatten([styles.phaseLabel, { color: theme.textSecondary }])}>
+                    Phase: {posePhase}
+                    {trackingMessage ? '' : ' · counting'}
+                  </Text>
+                  {trackingMessage ? (
+                    <Text style={StyleSheet.flatten([styles.trackingMessage, { color: theme.streak }])}>
+                      {trackingMessage}
+                    </Text>
+                  ) : null}
+                </>
+              ) : null}
+            </>
+          )}
+
+          <View style={StyleSheet.flatten([styles.progressTrack, { backgroundColor: theme.backgroundSelected }])}>
+            <View
+              style={StyleSheet.flatten([
+                styles.progressFill,
+                { backgroundColor: theme.primary, width: `${progress * 100}%` },
+              ])}
             />
-          </ScrollView>
-        ) : null}
+          </View>
+
+          {showSimulateButton ? (
+            <PrimaryButton
+              label="+ Simulate Rep"
+              variant="secondary"
+              disabled={repCounter.isComplete || isSyncing}
+              loading={isSyncing}
+              onPress={repCounter.simulateRep}
+            />
+          ) : null}
+
+          {syncError ? (
+            <Text style={StyleSheet.flatten([styles.error, { color: theme.danger }])}>{syncError}</Text>
+          ) : null}
+
+          <PrimaryButton
+            label={isCompleted || waitingOnOpponent ? 'Done' : 'Cancel'}
+            variant="secondary"
+            onPress={() => router.back()}
+          />
+        </ScrollView>
       </SafeAreaView>
     </>
   );
@@ -419,14 +399,6 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
   },
-  headerBlock: {
-    paddingHorizontal: Spacing.four,
-    paddingTop: Spacing.two,
-    gap: Spacing.two,
-    maxWidth: MaxContentWidth,
-    alignSelf: 'center',
-    width: '100%',
-  },
   scroll: {
     flex: 1,
   },
@@ -437,6 +409,10 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     width: '100%',
     paddingBottom: Spacing.six,
+  },
+  cameraFrame: {
+    width: '100%',
+    height: 320,
   },
   container: {
     flex: 1,

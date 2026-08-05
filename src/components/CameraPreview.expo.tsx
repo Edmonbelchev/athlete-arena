@@ -19,7 +19,6 @@ export function ExpoGoCameraPreview({
   exerciseType = 'push_ups',
   repPhase = 'UP',
   repTrackingReady = false,
-  expanded = false,
 }: CameraPreviewProps) {
   const theme = useTheme();
   const { preferences } = useUserSettings();
@@ -93,13 +92,8 @@ export function ExpoGoCameraPreview({
         styles.container,
         styles.cameraContainer,
         { borderColor: theme.border },
-        expanded && styles.containerExpanded,
       ])}>
-      <CameraView
-        style={StyleSheet.flatten([styles.camera, expanded && styles.cameraExpanded])}
-        facing="front"
-        onCameraReady={onCameraReady}
-      />
+      <CameraView style={styles.camera} facing="front" onCameraReady={onCameraReady} />
       <View style={styles.bottomOverlay}>
         <RepCycleProgressBar
           exerciseType={exerciseType}
@@ -130,14 +124,6 @@ const styles = StyleSheet.create({
   camera: {
     flex: 1,
     minHeight: 280,
-  },
-  cameraExpanded: {
-    minHeight: 0,
-  },
-  containerExpanded: {
-    minHeight: 0,
-    borderRadius: 0,
-    borderWidth: 0,
   },
   permissionContainer: {
     alignItems: 'center',

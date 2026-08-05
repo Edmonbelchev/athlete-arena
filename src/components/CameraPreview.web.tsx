@@ -48,7 +48,6 @@ export function CameraPreview({
   exerciseType = 'push_ups',
   repPhase = 'UP',
   repTrackingReady = false,
-  expanded = false,
 }: CameraPreviewProps) {
   const theme = useTheme();
   const { preferences } = useUserSettings();
@@ -320,11 +319,10 @@ export function CameraPreview({
         styles.container,
         styles.cameraContainer,
         { borderColor: theme.border },
-        expanded && styles.containerExpanded,
       ])}>
-      <div style={facing === 'front' ? mirrorStageStyle(expanded) : stageStyle(expanded)}>
+      <div style={facing === 'front' ? mirrorStageStyle : stageStyle}>
         {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
-        <video ref={videoRef} playsInline muted style={videoStyle(expanded)} />
+        <video ref={videoRef} playsInline muted style={videoStyle} />
         <canvas ref={canvasRef} style={canvasStyle} />
       </div>
 
@@ -367,24 +365,24 @@ export function CameraPreview({
   );
 }
 
-const stageStyle = (expanded: boolean): React.CSSProperties => ({
+const stageStyle: React.CSSProperties = {
   flex: 1,
-  minHeight: expanded ? 0 : 280,
+  minHeight: 280,
   position: 'relative',
-});
+};
 
-const mirrorStageStyle = (expanded: boolean): React.CSSProperties => ({
-  ...stageStyle(expanded),
+const mirrorStageStyle: React.CSSProperties = {
+  ...stageStyle,
   transform: 'scaleX(-1)',
-});
+};
 
-const videoStyle = (expanded: boolean): React.CSSProperties => ({
+const videoStyle: React.CSSProperties = {
   width: '100%',
   height: '100%',
-  minHeight: expanded ? 0 : 280,
+  minHeight: 280,
   objectFit: 'cover',
   backgroundColor: '#000',
-});
+};
 
 const canvasStyle: React.CSSProperties = {
   position: 'absolute',
@@ -406,11 +404,6 @@ const styles = StyleSheet.create({
   cameraContainer: {
     backgroundColor: '#000000',
     position: 'relative',
-  },
-  containerExpanded: {
-    minHeight: 0,
-    borderRadius: 0,
-    borderWidth: 0,
   },
   centered: {
     alignItems: 'center',
