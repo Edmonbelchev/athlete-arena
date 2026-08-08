@@ -178,7 +178,6 @@ export default function ProfileScreen() {
             <StatCard label="Push-ups" value={stats.totalPushUps.toLocaleString()} />
             <StatCard label="Squats" value={stats.totalSquats.toLocaleString()} />
             <StatCard label="Pull-ups" value={stats.totalPullUps.toLocaleString()} />
-            <StatCard label="Dips" value={stats.totalDips.toLocaleString()} />
           </View>
         </HomeSection>
 

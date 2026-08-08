@@ -64,11 +64,6 @@ export const ONBOARDING_EXERCISE_BENEFITS: OnboardingBenefit[] = [
     muscles: 'Back (lats), biceps, and grip',
     note: 'A demanding pulling movement — progress takes time; use assisted variations if needed.',
   },
-  {
-    exercise: 'Dips',
-    muscles: 'Triceps, chest, and shoulders',
-    note: 'Compound pushing exercise; keep shoulders stable and avoid swinging.',
-  },
 ];
 
 export const ONBOARDING_GENERAL_NOTE =

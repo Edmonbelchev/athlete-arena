@@ -4,6 +4,7 @@ import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-nat
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ComingSoonBlock } from '@/components/home/ComingSoonBlock';
+import { EarlyAccessNotice } from '@/components/home/EarlyAccessNotice';
 import { FriendChallengesCarousel } from '@/components/home/FriendChallengesCarousel';
 import { HomeProgressBlock } from '@/components/home/HomeProgressBlock';
 import { HomeSection } from '@/components/home/HomeSection';
@@ -160,6 +161,8 @@ export default function HomeScreen() {
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <TabScreenHeader subtitle={getGreeting()} title={displayName} />
 
+        <EarlyAccessNotice />
+
         {error ? (
           <View style={styles.errorBlock}>
             <Text style={StyleSheet.flatten([styles.error, { color: theme.danger }])}>{error}</Text>
@@ -219,6 +222,12 @@ export default function HomeScreen() {
         <HomeSection title="More Ways to Play" subtitle="New features landing soon">
           <View style={styles.comingSoonList}>
             <ComingSoonBlock
+              title="Shop"
+              description="Spend coins on emotes, avatars, and profile frames."
+              icon="gift"
+              accentColor={theme.primary}
+            />
+            <ComingSoonBlock
               title="Weekly Quiz"
               description="Test your fitness knowledge and earn bonus XP every week."
               icon="quiz"
@@ -227,7 +236,7 @@ export default function HomeScreen() {
             <ComingSoonBlock
               title="Prize Wheel"
               description="Spin for random rewards, streak boosts, and surprise bonuses."
-              icon="gift"
+              icon="crown"
               accentColor={theme.success}
             />
           </View>

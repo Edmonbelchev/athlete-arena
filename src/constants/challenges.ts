@@ -1,8 +1,14 @@
-export const EXERCISE_TYPES = ['push_ups', 'squats', 'pull_ups', 'dips'] as const;
+export const EXERCISE_TYPES = ['push_ups', 'squats', 'pull_ups'] as const;
 
 export type ExerciseType = (typeof EXERCISE_TYPES)[number];
 
-export const ELBOW_EXERCISE_TYPES = ['push_ups', 'pull_ups', 'dips'] as const satisfies readonly ExerciseType[];
+export const LEGACY_EXERCISE_TYPES = ['dips'] as const;
+
+export type LegacyExerciseType = (typeof LEGACY_EXERCISE_TYPES)[number];
+
+export type DisplayExerciseType = ExerciseType | LegacyExerciseType;
+
+export const ELBOW_EXERCISE_TYPES = ['push_ups', 'pull_ups'] as const satisfies readonly ExerciseType[];
 
 export function isElbowBasedExercise(exerciseType: ExerciseType): boolean {
   return exerciseType !== 'squats';
@@ -36,22 +42,16 @@ export const CHALLENGE_CONFIG: Record<ExerciseType, readonly ChallengeTier[]> = 
     { reps: 8, xp: 100 },
     { reps: 10, xp: 150 },
   ],
-  dips: [
-    { reps: 5, xp: 50 },
-    { reps: 8, xp: 75 },
-    { reps: 10, xp: 100 },
-    { reps: 15, xp: 150 },
-  ],
 } as const;
 
-export const EXERCISE_LABELS: Record<ExerciseType, string> = {
+export const EXERCISE_LABELS: Record<DisplayExerciseType, string> = {
   push_ups: 'Push-ups',
   squats: 'Squats',
   pull_ups: 'Pull-ups',
   dips: 'Dips',
 };
 
-export function formatExerciseLabel(exerciseType: ExerciseType, uppercase = false): string {
-  const label = EXERCISE_LABELS[exerciseType];
+export function formatExerciseLabel(exerciseType: DisplayExerciseType | string, uppercase = false): string {
+  const label = EXERCISE_LABELS[exerciseType as DisplayExerciseType] ?? String(exerciseType);
   return uppercase ? label.toUpperCase() : label;
 }

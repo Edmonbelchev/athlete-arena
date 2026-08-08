@@ -78,14 +78,6 @@ export const PULL_UP_POSTURE = {
   topPostureHoldFrames: isNativeMobile ? 2 : 3,
 } as const;
 
-export const DIP_THRESHOLDS = {
-  /** Elbow angle (degrees) - arms locked out at top. */
-  upAngle: 150,
-  /** Elbow angle (degrees) - bottom of dip. */
-  downAngle: 95,
-  hysteresis: isNativeMobile ? 12 : 8,
-} as const;
-
 export const SQUAT_THRESHOLDS = {
   /** Knee angle (degrees) - standing upright. */
   standingAngle: 155,
@@ -121,14 +113,6 @@ export const POSE_GUIDANCE: Record<ExerciseType, { title: string; tips: readonly
       'Keep your head and arms in frame — the bar line sets from your hands at the hang',
       'Rep counting starts only in a dead hang; standing or flailing will not count',
       'Pull until your chin clears the bar, then lower back to a full hang',
-    ],
-  },
-  dips: {
-    title: 'Dip setup',
-    tips: [
-      'Side view works best — keep shoulders, elbows, and wrists visible',
-      'Lower until your elbows bend, then press back to full extension',
-      'Rep counting pauses if your arms leave the frame',
     ],
   },
 };

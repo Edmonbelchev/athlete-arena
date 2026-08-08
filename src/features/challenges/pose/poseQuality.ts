@@ -124,17 +124,6 @@ function getTrackingIndices(exerciseType: ExerciseType): number[] {
     ];
   }
 
-  if (exerciseType === 'dips') {
-    return [
-      PoseLandmarkIndex.LEFT_SHOULDER,
-      PoseLandmarkIndex.RIGHT_SHOULDER,
-      PoseLandmarkIndex.LEFT_ELBOW,
-      PoseLandmarkIndex.RIGHT_ELBOW,
-      PoseLandmarkIndex.LEFT_WRIST,
-      PoseLandmarkIndex.RIGHT_WRIST,
-    ];
-  }
-
   return [
     PoseLandmarkIndex.LEFT_HIP,
     PoseLandmarkIndex.RIGHT_HIP,
@@ -198,26 +187,6 @@ function checkRequiredLandmarks(
       return {
         ok: false,
         message: 'Move back — keep your upper body and hips in frame',
-      };
-    }
-
-    return { ok: true, message: null };
-  }
-
-  if (exerciseType === 'dips') {
-    const armVisible = hasCompleteArmChain(landmarks, 'left') || hasCompleteArmChain(landmarks, 'right');
-
-    if (!armVisible) {
-      return {
-        ok: false,
-        message: 'Keep at least one full arm (shoulder, elbow, wrist) in frame',
-      };
-    }
-
-    if (visibleCount < POSE_QUALITY.minVisibleTrackingPoints) {
-      return {
-        ok: false,
-        message: 'Move back — keep your upper body in frame',
       };
     }
 
