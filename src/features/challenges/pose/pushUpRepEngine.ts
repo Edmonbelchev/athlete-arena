@@ -3,7 +3,12 @@ import type { PushUpPhase } from '@/features/challenges/poseDetection.types';
 
 import { ElbowRepEngine } from './elbowRepEngine';
 import type { PoseLandmark } from './landmarks';
-import { getPushUpPlankHint, isPushUpPlankPosture } from './pushUpPosture';
+import {
+  detectPushUpViewMode,
+  getPushUpPlankHint,
+  isPushUpPlankPosture,
+  type PushUpViewMode,
+} from './pushUpPosture';
 import type { AngleThresholdConfig } from './repEngineUtils';
 
 function toPushUpThresholds(): AngleThresholdConfig {
@@ -18,7 +23,7 @@ export class PushUpRepEngine {
   private readonly elbowEngine = new ElbowRepEngine(toPushUpThresholds());
   private readyFrames = 0;
   private isArmed = false;
-  private lastInPlank = false;
+  private viewMode: PushUpViewMode | null = null;
 
   get phase(): PushUpPhase {
     return this.elbowEngine.phase;
@@ -37,14 +42,15 @@ export class PushUpRepEngine {
   }
 
   update(landmarks: PoseLandmark[]): boolean {
-    const inPlank = isPushUpPlankPosture(landmarks);
-    this.lastInPlank = inPlank;
+    const detectedViewMode = detectPushUpViewMode(landmarks);
+    const inPlank = isPushUpPlankPosture(landmarks, this.viewMode ?? detectedViewMode);
 
     if (inPlank) {
       this.readyFrames += 1;
 
       if (!this.isArmed && this.readyFrames >= PUSH_UP_POSTURE.readyFramesRequired) {
         this.isArmed = true;
+        this.viewMode = detectedViewMode;
       }
     } else if (!this.isArmed) {
       this.readyFrames = 0;
@@ -67,6 +73,6 @@ export class PushUpRepEngine {
     this.elbowEngine.reset();
     this.readyFrames = 0;
     this.isArmed = false;
-    this.lastInPlank = false;
+    this.viewMode = null;
   }
 }

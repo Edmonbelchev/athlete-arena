@@ -46,6 +46,18 @@ export const PUSH_UP_POSTURE = {
   minWristBelowShoulder: isNativeMobile ? 0.02 : 0.025,
   /** Frames in a valid plank before rep counting begins. */
   readyFramesRequired: isNativeMobile ? 3 : 4,
+  /** Both shoulders visible across the frame when facing the camera. */
+  minShoulderWidthFront: isNativeMobile ? 0.12 : 0.14,
+  /** Shoulders sit above hips when facing the camera. */
+  minShoulderAboveHipFront: isNativeMobile ? 0.04 : 0.05,
+  /** Wrists extend past the hip line relative to torso length (hands on floor). */
+  minArmDropToTorsoRatioFront: isNativeMobile ? 1.05 : 1.1,
+  /** Wrists stay near floor level while a front-view set is active. */
+  maxWristAboveHipWhenActive: isNativeMobile ? 0.05 : 0.04,
+  /** Minimum wrist drop from shoulders while a front-view set is active. */
+  minWristBelowShoulderActive: isNativeMobile ? 0.008 : 0.01,
+  /** Wrists at hip height while upright - standing, not a floor push-up. */
+  maxStandingWristAboveHip: isNativeMobile ? 0.03 : 0.025,
 } as const;
 
 export const PULL_UP_THRESHOLDS = {
@@ -93,9 +105,9 @@ export const POSE_GUIDANCE: Record<ExerciseType, { title: string; tips: readonly
   push_ups: {
     title: 'Push-up setup',
     tips: [
-      'Get into a plank on the floor - side view works best',
+      'Face the camera or use a side view - both work',
       'Keep shoulders, hips, elbows, and wrists in frame',
-      'Rep counting starts only once you hold a plank; standing arm motion will not count',
+      'Rep counting starts once you hold a plank with hands on the floor',
     ],
   },
   squats: {

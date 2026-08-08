@@ -3,6 +3,8 @@ import { POSE_REP_MIN_VISIBILITY, PUSH_UP_POSTURE } from '@/constants/poseDetect
 import { PoseLandmarkIndex, type PoseLandmark } from './landmarks';
 import { getAverageShoulderY, getAverageWristY } from './pullUpPosture';
 
+export type PushUpViewMode = 'side' | 'front';
+
 function isVisible(landmark: PoseLandmark | undefined): landmark is PoseLandmark {
   return Boolean(landmark && (landmark.visibility ?? 1) >= POSE_REP_MIN_VISIBILITY);
 }
@@ -59,6 +61,17 @@ export function getAverageHipY(landmarks: PoseLandmark[]): number | null {
   );
 }
 
+export function getShoulderWidth(landmarks: PoseLandmark[]): number | null {
+  const left = landmarks[PoseLandmarkIndex.LEFT_SHOULDER];
+  const right = landmarks[PoseLandmarkIndex.RIGHT_SHOULDER];
+
+  if (!isVisible(left) || !isVisible(right)) {
+    return null;
+  }
+
+  return Math.abs(left.x - right.x);
+}
+
 /** Degrees the shoulder→hip line deviates from horizontal (0 = plank, 90 = standing). */
 export function getTorsoAngleFromHorizontal(landmarks: PoseLandmark[]): number | null {
   const shoulderY = getAverageShoulderY(landmarks);
@@ -107,11 +120,30 @@ export function areWristsBelowShoulders(landmarks: PoseLandmark[]): boolean {
   return wristY - shoulderY >= PUSH_UP_POSTURE.minWristBelowShoulder;
 }
 
-/**
- * True when the body is in a floor push-up plank - horizontal torso with hands down.
- * Rejects standing users mimicking elbow flexion.
- */
-export function isPushUpPlankPosture(landmarks: PoseLandmark[]): boolean {
+function isUprightStandingFront(landmarks: PoseLandmark[]): boolean {
+  const shoulderY = getAverageShoulderY(landmarks);
+  const hipY = getAverageHipY(landmarks);
+  const wristY = getAverageWristY(landmarks);
+  const shoulderWidth = getShoulderWidth(landmarks);
+
+  if (shoulderY === null || hipY === null || wristY === null || shoulderWidth === null) {
+    return false;
+  }
+
+  if (shoulderWidth < PUSH_UP_POSTURE.minShoulderWidthFront) {
+    return false;
+  }
+
+  const torsoSpan = hipY - shoulderY;
+  if (torsoSpan < PUSH_UP_POSTURE.minShoulderAboveHipFront) {
+    return false;
+  }
+
+  return wristY <= hipY + PUSH_UP_POSTURE.maxStandingWristAboveHip;
+}
+
+/** Side-view floor plank - shoulders and hips stay near the same height. */
+export function isSideViewPushUpPlank(landmarks: PoseLandmark[]): boolean {
   const torsoAngle = getTorsoAngleFromHorizontal(landmarks);
   const shoulderHipDelta = getShoulderHipYDelta(landmarks);
 
@@ -124,6 +156,90 @@ export function isPushUpPlankPosture(landmarks: PoseLandmark[]): boolean {
     shoulderHipDelta <= PUSH_UP_POSTURE.maxShoulderHipYDelta &&
     areWristsBelowShoulders(landmarks)
   );
+}
+
+/** Front-view floor plank - shoulders stack above hips with hands on the floor. */
+export function isFrontViewPushUpPlank(landmarks: PoseLandmark[]): boolean {
+  if (!areWristsBelowShoulders(landmarks) || isUprightStandingFront(landmarks)) {
+    return false;
+  }
+
+  const shoulderY = getAverageShoulderY(landmarks);
+  const hipY = getAverageHipY(landmarks);
+  const wristY = getAverageWristY(landmarks);
+  const shoulderWidth = getShoulderWidth(landmarks);
+
+  if (shoulderY === null || hipY === null || wristY === null || shoulderWidth === null) {
+    return false;
+  }
+
+  if (shoulderWidth < PUSH_UP_POSTURE.minShoulderWidthFront) {
+    return false;
+  }
+
+  const torsoSpan = hipY - shoulderY;
+  if (torsoSpan < PUSH_UP_POSTURE.minShoulderAboveHipFront) {
+    return false;
+  }
+
+  const armDrop = wristY - shoulderY;
+  if (armDrop / torsoSpan < PUSH_UP_POSTURE.minArmDropToTorsoRatioFront) {
+    return false;
+  }
+
+  return true;
+}
+
+/** Relaxed front-view check while reps are in progress (bottom of rep drops shoulders toward wrists). */
+export function isFrontViewPushUpActive(landmarks: PoseLandmark[]): boolean {
+  if (!hasPushUpTrackingLandmarks(landmarks) || isUprightStandingFront(landmarks)) {
+    return false;
+  }
+
+  const shoulderY = getAverageShoulderY(landmarks);
+  const hipY = getAverageHipY(landmarks);
+  const wristY = getAverageWristY(landmarks);
+
+  if (shoulderY === null || hipY === null || wristY === null) {
+    return false;
+  }
+
+  if (wristY < hipY - PUSH_UP_POSTURE.maxWristAboveHipWhenActive) {
+    return false;
+  }
+
+  return wristY - shoulderY >= PUSH_UP_POSTURE.minWristBelowShoulderActive;
+}
+
+export function detectPushUpViewMode(landmarks: PoseLandmark[]): PushUpViewMode | null {
+  if (isSideViewPushUpPlank(landmarks)) {
+    return 'side';
+  }
+
+  if (isFrontViewPushUpPlank(landmarks)) {
+    return 'front';
+  }
+
+  return null;
+}
+
+/**
+ * True when the body is in a floor push-up plank.
+ * Supports both side profile and facing-the-camera setups.
+ */
+export function isPushUpPlankPosture(
+  landmarks: PoseLandmark[],
+  viewMode: PushUpViewMode | null = null,
+): boolean {
+  if (viewMode === 'side') {
+    return isSideViewPushUpPlank(landmarks);
+  }
+
+  if (viewMode === 'front') {
+    return isFrontViewPushUpActive(landmarks);
+  }
+
+  return isSideViewPushUpPlank(landmarks) || isFrontViewPushUpPlank(landmarks);
 }
 
 export function hasPushUpTrackingLandmarks(landmarks: PoseLandmark[]): boolean {
@@ -151,21 +267,45 @@ export function getPushUpPlankHint(landmarks: PoseLandmark[]): string | null {
     return 'Get into a plank with your hands on the floor';
   }
 
-  const torsoAngle = getTorsoAngleFromHorizontal(landmarks);
-  const shoulderHipDelta = getShoulderHipYDelta(landmarks);
-
-  if (
-    torsoAngle !== null &&
-    torsoAngle > PUSH_UP_POSTURE.maxTorsoFromHorizontal
-  ) {
+  if (isUprightStandingFront(landmarks)) {
     return 'Lower into a plank - standing arm motion will not count';
   }
 
+  const shoulderWidth = getShoulderWidth(landmarks);
+  const shoulderY = getAverageShoulderY(landmarks);
+  const hipY = getAverageHipY(landmarks);
+  const wristY = getAverageWristY(landmarks);
+
   if (
-    shoulderHipDelta !== null &&
-    shoulderHipDelta > PUSH_UP_POSTURE.maxShoulderHipYDelta
+    shoulderWidth !== null &&
+    shoulderWidth >= PUSH_UP_POSTURE.minShoulderWidthFront &&
+    shoulderY !== null &&
+    hipY !== null &&
+    wristY !== null
   ) {
-    return 'Align your shoulders and hips - side view works best';
+    const torsoSpan = hipY - shoulderY;
+    const armDrop = wristY - shoulderY;
+
+    if (torsoSpan < PUSH_UP_POSTURE.minShoulderAboveHipFront) {
+      return 'Keep your shoulders above your hips in the plank';
+    }
+
+    if (armDrop / torsoSpan < PUSH_UP_POSTURE.minArmDropToTorsoRatioFront) {
+      return 'Place your hands on the floor in front of you';
+    }
+
+    return null;
+  }
+
+  const torsoAngle = getTorsoAngleFromHorizontal(landmarks);
+  const shoulderHipDelta = getShoulderHipYDelta(landmarks);
+
+  if (torsoAngle !== null && torsoAngle > PUSH_UP_POSTURE.maxTorsoFromHorizontal) {
+    return 'Lower into a plank - standing arm motion will not count';
+  }
+
+  if (shoulderHipDelta !== null && shoulderHipDelta > PUSH_UP_POSTURE.maxShoulderHipYDelta) {
+    return 'Align your shoulders and hips in a horizontal plank';
   }
 
   return null;
