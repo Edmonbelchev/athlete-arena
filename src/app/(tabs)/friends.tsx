@@ -80,7 +80,7 @@ export default function FriendsScreen() {
               activeChallengeCount > 0 ? `Challenges (${activeChallengeCount})` : 'Challenges'
             }
             variant="secondary"
-            onPress={() => router.push('/friends/challenges')}
+            onPress={() => router.push('/(tabs)/challenges')}
           />
           <PrimaryButton label="Add Friend" onPress={() => router.push('/friends/add')} />
         </View>

@@ -120,12 +120,27 @@ where proname in (
 );
 ```
 
-## Auth settings (MVP)
+## Auth settings
+
+Configure in the Supabase Dashboard (hosted project):
 
 **Authentication → Providers → Email**
 
 - Email provider: enabled
-- **Confirm email**: disable for faster local testing (re-enable before production)
+- **Confirm email**: enabled for production
+
+**Authentication → Email Templates → Confirm signup**
+
+- Custom template and sender (e.g. `support@athlete-arena.app`)
+
+**Authentication → SMTP Settings**
+
+- Custom SMTP for your domain
+
+**Authentication → URL Configuration**
+
+- Site URL: `https://athlete-arena.app`
+- Redirect URLs: add `athletearena://login` (used by the app after email confirmation)
 
 ## Environment variables
 

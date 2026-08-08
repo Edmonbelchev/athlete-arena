@@ -80,10 +80,16 @@ function TabsLayoutContent({ colors }: { colors: (typeof Colors)['light'] }) {
         }}
       />
       <Tabs.Screen
+        name="challenges"
+        options={{
+          title: 'Challenges',
+          tabBarIcon: ({ color }) => <TabIcon name="target" color={color} />,
+        }}
+      />
+      <Tabs.Screen
         name="shop"
         options={{
-          title: 'Shop',
-          tabBarIcon: ({ color }) => <TabIcon name="gift" color={color} />,
+          href: null,
         }}
       />
       <Tabs.Screen

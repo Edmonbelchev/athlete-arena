@@ -123,7 +123,7 @@ Configure in [eas.json](./eas.json).
 ## Production checklist
 
 - [ ] Run `supabase/setup.sql` on production Supabase project
-- [ ] Re-enable email confirmation in Supabase Auth settings
+- [ ] Configure auth email template + SMTP in Supabase Dashboard
 - [ ] Set production env vars in EAS secrets
 - [ ] Test pose detection on real devices (lighting, distance, angles)
 - [ ] Build with `eas build --profile production`

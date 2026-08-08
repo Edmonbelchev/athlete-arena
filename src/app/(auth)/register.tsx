@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AuthTextInput } from '@/components/ui/AuthTextInput';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
+import { SUPPORT_EMAIL } from '@/constants/app';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { getAuthErrorMessage } from '@/features/auth/authErrors';
 import { signUpWithEmail } from '@/features/auth/authService';
@@ -101,7 +102,9 @@ export default function RegisterScreen() {
         return;
       }
 
-      setSuccessMessage('Account created. Check your email to confirm, then sign in.');
+      setSuccessMessage(
+        `Account created. Check your inbox for a confirmation email from ${SUPPORT_EMAIL}, then sign in.`,
+      );
     } catch (error) {
       setFormError(getAuthErrorMessage(error));
     } finally {

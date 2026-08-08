@@ -39,13 +39,12 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { label: 'Home', icon: 'home', href: '/(tabs)' },
   { label: 'Profile', icon: 'profile', href: '/(tabs)/profile' },
-  { label: 'Shop', icon: 'gift', href: '/(tabs)/shop' },
   { label: 'Achievements', icon: 'medal', href: '/profile/achievements' },
   { label: 'History', icon: 'history', href: '/profile/history' },
   { label: 'Settings', icon: 'settings', href: '/profile/settings' },
   { label: 'Support', icon: 'support', href: '/profile/support' },
   { label: 'Friends', icon: 'friends', href: '/(tabs)/friends' },
-  { label: 'Challenges', icon: 'target', href: '/friends/challenges' },
+  { label: 'Challenges', icon: 'target', href: '/(tabs)/challenges' },
 ];
 
 export function AppSidebar() {

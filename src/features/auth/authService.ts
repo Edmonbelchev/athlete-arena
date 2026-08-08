@@ -1,3 +1,4 @@
+import { AUTH_EMAIL_REDIRECT_URL } from '@/constants/app';
 import { assertSupabaseConfigured, supabase } from '@/lib/supabase';
 
 import { normalizeUsername } from './validation';
@@ -36,6 +37,7 @@ export async function signUpWithEmail({ email, password, username }: SignUpParam
         username: normalizedUsername,
         display_name: normalizedUsername,
       },
+      emailRedirectTo: AUTH_EMAIL_REDIRECT_URL,
     },
   });
 

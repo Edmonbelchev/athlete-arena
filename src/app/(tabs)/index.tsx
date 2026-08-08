@@ -207,7 +207,7 @@ export default function HomeScreen() {
           subtitle="View active speed races by friend"
           badge={activeFriendChallenges.length > 0 ? activeFriendChallenges.length : undefined}
           actionLabel="View all"
-          onAction={() => router.push('/friends/challenges')}>
+          onAction={() => router.push('/(tabs)/challenges')}>
           <FriendChallengesCarousel
             challenges={activeFriendChallenges}
             busyChallengeId={busyChallengeId}
