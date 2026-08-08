@@ -6,5 +6,5 @@ export const APP_VERSION_LABEL = `${APP_VERSION} (${APP_STAGE})`;
 
 export const SUPPORT_EMAIL = 'support@athlete-arena.app';
 export const AUTH_EMAIL_REDIRECT_URL = 'athletearena://login';
-export const TERMS_OF_SERVICE_URL = 'https://www.athlete-arena.com/terms';
-export const PRIVACY_POLICY_URL = 'https://www.athlete-arena.com/privacy';
+export const TERMS_OF_SERVICE_URL = 'https://www.athlete-arena.app/terms';
+export const PRIVACY_POLICY_URL = 'https://www.athlete-arena.app/privacy';

@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AuthTextInput } from '@/components/ui/AuthTextInput';
+import { BrandLogo } from '@/components/ui/BrandLogo';
 import { LegalAgreementNotice } from '@/components/legal/LegalLinks';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { SUPPORT_EMAIL } from '@/constants/app';
@@ -122,9 +123,7 @@ export default function RegisterScreen() {
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled">
           <View style={styles.container}>
-            <Text style={StyleSheet.flatten([styles.brand, { color: theme.primary }])}>
-              Athlete Arena
-            </Text>
+            <BrandLogo size={88} style={styles.logo} />
             <Text style={StyleSheet.flatten([styles.title, { color: theme.text }])}>Create account</Text>
             <Text style={StyleSheet.flatten([styles.subtitle, { color: theme.textSecondary }])}>
               Join the daily challenge and start earning XP.
@@ -222,11 +221,8 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     width: '100%',
   },
-  brand: {
-    fontSize: 14,
-    fontWeight: '800',
-    letterSpacing: 1.5,
-    textTransform: 'uppercase',
+  logo: {
+    marginBottom: Spacing.one,
   },
   title: {
     fontSize: 32,

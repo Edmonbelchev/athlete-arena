@@ -1,11 +1,10 @@
 import { Image } from 'expo-image';
 import { StyleSheet, Text, View } from 'react-native';
 
+import { BRAND_LOGO } from '@/components/ui/BrandLogo';
 import { getDailyMotivationalQuote } from '@/constants/motivationalQuotes';
 import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-
-const MOTIVATION_IMAGE = require('@/assets/images/logo-glow.png');
 
 export function DailyMotivationCard() {
   const theme = useTheme();
@@ -17,7 +16,9 @@ export function DailyMotivationCard() {
         styles.container,
         { backgroundColor: theme.backgroundElement, borderColor: theme.border },
       ])}>
-      <Image source={MOTIVATION_IMAGE} style={styles.image} contentFit="cover" />
+      <View style={StyleSheet.flatten([styles.logoWrap, { backgroundColor: theme.backgroundSelected }])}>
+        <Image source={BRAND_LOGO} style={styles.image} contentFit="contain" />
+      </View>
       <View style={styles.quoteBlock}>
         <Text style={StyleSheet.flatten([styles.quoteLabel, { color: theme.textSecondary }])}>
           DAILY MOTIVATION
@@ -37,9 +38,14 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     overflow: 'hidden',
   },
+  logoWrap: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: Spacing.three,
+  },
   image: {
-    width: '100%',
-    height: 120,
+    width: 72,
+    height: 72,
   },
   quoteBlock: {
     padding: Spacing.three,

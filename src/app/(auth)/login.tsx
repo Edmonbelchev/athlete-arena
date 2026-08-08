@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AuthTextInput } from '@/components/ui/AuthTextInput';
+import { BrandLogo } from '@/components/ui/BrandLogo';
 import { LegalLinksFooter } from '@/components/legal/LegalLinks';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
@@ -75,9 +76,7 @@ export default function LoginScreen() {
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled">
           <View style={styles.container}>
-            <Text style={StyleSheet.flatten([styles.brand, { color: theme.primary }])}>
-              Athlete Arena
-            </Text>
+            <BrandLogo size={88} style={styles.logo} />
             <Text style={StyleSheet.flatten([styles.title, { color: theme.text }])}>Welcome back</Text>
             <Text style={StyleSheet.flatten([styles.subtitle, { color: theme.textSecondary }])}>
               Sign in to continue your streak and complete today&apos;s challenge.
@@ -150,11 +149,8 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     width: '100%',
   },
-  brand: {
-    fontSize: 14,
-    fontWeight: '800',
-    letterSpacing: 1.5,
-    textTransform: 'uppercase',
+  logo: {
+    marginBottom: Spacing.one,
   },
   title: {
     fontSize: 32,
