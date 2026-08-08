@@ -98,6 +98,16 @@ export const SQUAT_THRESHOLDS = {
   hysteresis: isNativeMobile ? 12 : 8,
 } as const;
 
+/** Squat rep validation - both feet down and knees move together. */
+export const SQUAT_POSTURE = {
+  /** Left and right ankles stay near the same height when both feet are on the floor. */
+  maxAnkleYDelta: isNativeMobile ? 0.12 : 0.1,
+  /** Both knees bend by a similar amount during a real squat. */
+  maxKneeAngleAsymmetry: isNativeMobile ? 35 : 30,
+  /** Left and right knees stay near the same depth while squatting. */
+  maxKneeYDelta: isNativeMobile ? 0.14 : 0.12,
+} as const;
+
 /** EMA smoothing for native camera landmarks (0 = frozen, 1 = raw). */
 export const POSE_LANDMARK_SMOOTH_ALPHA = isNativeMobile ? 0.52 : 1;
 
@@ -113,9 +123,9 @@ export const POSE_GUIDANCE: Record<ExerciseType, { title: string; tips: readonly
   squats: {
     title: 'Squat setup',
     tips: [
-      'Step back until hips, knees, and ankles stay in frame',
+      'Keep both legs in frame from hips down to ankles',
+      'Squat with both feet on the floor - one-legged moves will not count',
       'Face the camera or stand at a slight angle',
-      'Rep counting pauses if your legs leave the frame',
     ],
   },
   pull_ups: {

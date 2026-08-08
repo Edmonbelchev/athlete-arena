@@ -8,6 +8,7 @@ import { createRepEngine } from './pose/createRepEngine';
 import type { PoseLandmark } from './pose/landmarks';
 import { PullUpRepEngine } from './pose/pullUpRepEngine';
 import { PushUpRepEngine } from './pose/pushUpRepEngine';
+import { getSquatStanceHint } from './pose/squatPosture';
 import { PoseQualityGate, type PoseTrackingStatus } from './pose/poseQuality';
 
 interface UseExercisePoseDetectionOptions {
@@ -109,6 +110,17 @@ export function useExercisePoseDetection({
         const pushUpEngine = engineRef.current as PushUpRepEngine;
         if (!pushUpEngine.armed) {
           setTrackingMessage(pushUpEngine.getPlankHint(landmarks));
+        } else if (quality.message) {
+          setTrackingMessage(quality.message);
+        } else {
+          setTrackingMessage(null);
+        }
+      }
+
+      if (exerciseType === 'squats') {
+        const squatHint = getSquatStanceHint(landmarks);
+        if (squatHint) {
+          setTrackingMessage(squatHint);
         } else if (quality.message) {
           setTrackingMessage(quality.message);
         } else {

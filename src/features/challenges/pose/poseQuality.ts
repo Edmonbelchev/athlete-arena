@@ -8,6 +8,7 @@ import {
 import { PoseLandmarkIndex, type PoseLandmark } from './landmarks';
 import { hasPullUpTrackingLandmarks } from './pullUpPosture';
 import { hasPushUpTrackingLandmarks } from './pushUpPosture';
+import { hasBothSquatLegChains } from './squatPosture';
 
 export type PoseTrackingStatus = 'ready' | 'stabilizing' | 'partial';
 
@@ -187,6 +188,24 @@ function checkRequiredLandmarks(
       return {
         ok: false,
         message: 'Move back - keep your upper body and hips in frame',
+      };
+    }
+
+    return { ok: true, message: null };
+  }
+
+  if (exerciseType === 'squats') {
+    if (!hasBothSquatLegChains(landmarks)) {
+      return {
+        ok: false,
+        message: 'Keep both legs in frame from hips to ankles',
+      };
+    }
+
+    if (visibleCount < POSE_QUALITY.minVisibleTrackingPoints) {
+      return {
+        ok: false,
+        message: 'Step back - keep both legs in frame',
       };
     }
 
