@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AuthTextInput } from '@/components/ui/AuthTextInput';
+import { LegalLinksFooter } from '@/components/legal/LegalLinks';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { getAuthErrorMessage } from '@/features/auth/authErrors';
@@ -122,6 +123,8 @@ export default function LoginScreen() {
                 </Text>
               </Pressable>
             </Link>
+
+            <LegalLinksFooter />
           </View>
         </ScrollView>
       </KeyboardAvoidingView>

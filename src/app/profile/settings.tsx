@@ -4,6 +4,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { SettingsToggleRow } from '@/components/settings/SettingsToggleRow';
+import { LegalLinksSection } from '@/components/legal/LegalLinks';
 import { ThemeToggle } from '@/components/sidebar/ThemeToggle';
 import { BetaBadge } from '@/components/ui/BetaBadge';
 import { AppIcon } from '@/components/ui/AppIcon';
@@ -125,6 +126,8 @@ export default function SettingsScreen() {
               onPress={() => router.push('/profile/support')}
             />
           </View>
+
+          <LegalLinksSection />
         </ScrollView>
       </SafeAreaView>
     </>

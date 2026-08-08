@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AuthTextInput } from '@/components/ui/AuthTextInput';
+import { LegalAgreementNotice } from '@/components/legal/LegalLinks';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { SUPPORT_EMAIL } from '@/constants/app';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
@@ -186,6 +187,8 @@ export default function RegisterScreen() {
               loading={isSubmitting}
               onPress={() => void handleRegister()}
             />
+
+            <LegalAgreementNotice />
 
             <Link href="/(auth)/login" asChild>
               <Pressable style={styles.linkPressable}>
