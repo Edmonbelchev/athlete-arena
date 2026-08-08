@@ -1,4 +1,4 @@
-import { PUSH_UP_POSTURE, POSE_REP_MIN_VISIBILITY } from '@/constants/poseDetection';
+import { POSE_REP_MIN_VISIBILITY, PUSH_UP_POSTURE } from '@/constants/poseDetection';
 
 import { PoseLandmarkIndex, type PoseLandmark } from './landmarks';
 import { getAverageShoulderY, getAverageWristY } from './pullUpPosture';
@@ -95,7 +95,7 @@ export function getShoulderHipYDelta(landmarks: PoseLandmark[]): number | null {
   return Math.abs(shoulderY - hipY);
 }
 
-/** Hands on the floor — wrists sit below the shoulder line (y grows downward). */
+/** Hands on the floor - wrists sit below the shoulder line (y grows downward). */
 export function areWristsBelowShoulders(landmarks: PoseLandmark[]): boolean {
   const shoulderY = getAverageShoulderY(landmarks);
   const wristY = getAverageWristY(landmarks);
@@ -108,7 +108,7 @@ export function areWristsBelowShoulders(landmarks: PoseLandmark[]): boolean {
 }
 
 /**
- * True when the body is in a floor push-up plank — horizontal torso with hands down.
+ * True when the body is in a floor push-up plank - horizontal torso with hands down.
  * Rejects standing users mimicking elbow flexion.
  */
 export function isPushUpPlankPosture(landmarks: PoseLandmark[]): boolean {
@@ -158,14 +158,14 @@ export function getPushUpPlankHint(landmarks: PoseLandmark[]): string | null {
     torsoAngle !== null &&
     torsoAngle > PUSH_UP_POSTURE.maxTorsoFromHorizontal
   ) {
-    return 'Lower into a plank — standing arm motion will not count';
+    return 'Lower into a plank - standing arm motion will not count';
   }
 
   if (
     shoulderHipDelta !== null &&
     shoulderHipDelta > PUSH_UP_POSTURE.maxShoulderHipYDelta
   ) {
-    return 'Align your shoulders and hips — side view works best';
+    return 'Align your shoulders and hips - side view works best';
   }
 
   return null;

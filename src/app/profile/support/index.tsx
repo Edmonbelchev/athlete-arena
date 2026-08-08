@@ -1,27 +1,27 @@
 import { Stack, useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import {
-  ActivityIndicator,
-  Pressable,
-  RefreshControl,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
+    ActivityIndicator,
+    Pressable,
+    RefreshControl,
+    ScrollView,
+    StyleSheet,
+    Text,
+    View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { SupportTicketCard } from '@/components/support/SupportTicketCard';
-import { BetaBadge } from '@/components/ui/BetaBadge';
 import { AppIcon } from '@/components/ui/AppIcon';
+import { BetaBadge } from '@/components/ui/BetaBadge';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { APP_VERSION_LABEL } from '@/constants/app';
 import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 import { formatUserError } from '@/lib/errors';
 import { leaveScreen } from '@/lib/navigation';
 import { getMySupportTickets } from '@/services/supportService';
 import type { SupportTicket } from '@/types/support';
-import { useTheme } from '@/hooks/use-theme';
 
 export default function SupportScreen() {
   const theme = useTheme();
@@ -81,7 +81,7 @@ export default function SupportScreen() {
           </View>
 
           <Text style={StyleSheet.flatten([styles.subtitle, { color: theme.textSecondary }])}>
-            Athlete Arena is in beta ({APP_VERSION_LABEL}). Report bugs or share feedback — we read every ticket.
+            Athlete Arena is in beta ({APP_VERSION_LABEL}). Report bugs or share feedback - we read every ticket.
           </Text>
 
           <PrimaryButton label="New Support Ticket" onPress={() => router.push('/profile/support/create')} />

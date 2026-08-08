@@ -1,8 +1,8 @@
 import type { ExerciseType } from '@/constants/challenges';
 import {
-  POSE_QUALITY,
-  POSE_REP_MIN_VISIBILITY,
-  POSE_REP_MIN_VISIBILITY_ARMED,
+    POSE_QUALITY,
+    POSE_REP_MIN_VISIBILITY,
+    POSE_REP_MIN_VISIBILITY_ARMED,
 } from '@/constants/poseDetection';
 
 import { PoseLandmarkIndex, type PoseLandmark } from './landmarks';
@@ -19,7 +19,7 @@ export interface PoseQualityResult {
 }
 
 export interface PoseQualityOptions {
-  /** Pull-up engine is armed — only arms need to stay visible (head may leave frame mid-rep). */
+  /** Pull-up engine is armed - only arms need to stay visible (head may leave frame mid-rep). */
   pullUpArmed?: boolean;
 }
 
@@ -50,7 +50,7 @@ function hasCompleteArmChain(
   );
 }
 
-/** Shoulder + elbow — wrists often drop out when the phone is farther away. */
+/** Shoulder + elbow - wrists often drop out when the phone is farther away. */
 function hasMinimalArmChain(
   landmarks: PoseLandmark[],
   side: 'left' | 'right',
@@ -186,7 +186,7 @@ function checkRequiredLandmarks(
     if (visibleCount < POSE_QUALITY.minVisibleTrackingPoints) {
       return {
         ok: false,
-        message: 'Move back — keep your upper body and hips in frame',
+        message: 'Move back - keep your upper body and hips in frame',
       };
     }
 
@@ -205,7 +205,7 @@ function checkRequiredLandmarks(
   if (visibleCount < POSE_QUALITY.minVisibleTrackingPoints) {
     return {
       ok: false,
-      message: 'Step back — keep your legs in frame',
+      message: 'Step back - keep your legs in frame',
     };
   }
 

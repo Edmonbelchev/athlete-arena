@@ -1,4 +1,4 @@
-/** Coin rewards — keep in sync with supabase/migrations/019_coin_rewards.sql */
+/** Coin rewards - keep in sync with supabase/migrations/019_coin_rewards.sql */
 
 export const DAILY_CHALLENGE_COIN_REWARD = 50;
 export const FRIEND_CHALLENGE_WIN_COIN_REWARD = 20;

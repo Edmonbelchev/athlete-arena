@@ -15,7 +15,7 @@ export interface OnboardingBenefit {
 export const ONBOARDING_WELCOME = {
   title: 'Welcome to Athlete Arena',
   description:
-    'A fitness challenge app that uses your camera to count reps, track streaks, and compete with friends — no gym equipment required beyond your body.',
+    'A fitness challenge app that uses your camera to count reps, track streaks, and compete with friends - no gym equipment required beyond your body.',
 };
 
 export const ONBOARDING_HOW_IT_WORKS: OnboardingFeature[] = [
@@ -62,7 +62,7 @@ export const ONBOARDING_EXERCISE_BENEFITS: OnboardingBenefit[] = [
   {
     exercise: 'Pull-ups',
     muscles: 'Back (lats), biceps, and grip',
-    note: 'A demanding pulling movement — progress takes time; use assisted variations if needed.',
+    note: 'A demanding pulling movement - progress takes time; use assisted variations if needed.',
   },
 ];
 
@@ -72,7 +72,7 @@ export const ONBOARDING_GENERAL_NOTE =
 export const ONBOARDING_CAMERA = {
   title: 'Try the camera (optional)',
   description:
-    'Grant camera access and do a few push-ups in frame. This is a practice run — nothing is saved to your profile.',
+    'Grant camera access and do a few push-ups in frame. This is a practice run - nothing is saved to your profile.',
   targetReps: 3,
   exerciseType: 'push_ups' as const,
 };

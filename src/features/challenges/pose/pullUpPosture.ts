@@ -1,9 +1,9 @@
-import { PULL_UP_POSTURE, PULL_UP_THRESHOLDS, POSE_REP_MIN_VISIBILITY } from '@/constants/poseDetection';
+import { POSE_REP_MIN_VISIBILITY, PULL_UP_POSTURE, PULL_UP_THRESHOLDS } from '@/constants/poseDetection';
 
 import {
-  PoseLandmarkIndex,
-  pushUpElbowAngle,
-  type PoseLandmark,
+    PoseLandmarkIndex,
+    pushUpElbowAngle,
+    type PoseLandmark,
 } from './landmarks';
 import type { AngleThresholdConfig } from './repEngineUtils';
 import { isInHighZone } from './repEngineUtils';
@@ -63,7 +63,7 @@ export function getBarLineY(landmarks: PoseLandmark[]): number | null {
   return getAverageWristY(landmarks);
 }
 
-/** Wrists at or above shoulder height — hands reaching up, not resting at sides. */
+/** Wrists at or above shoulder height - hands reaching up, not resting at sides. */
 export function areWristsAboveShoulders(landmarks: PoseLandmark[]): boolean {
   const wristY = getAverageWristY(landmarks);
   const shoulderY = getAverageShoulderY(landmarks);
@@ -101,7 +101,7 @@ export function isHeadBelowBar(landmarks: PoseLandmark[], barLineY: number | nul
 }
 
 /**
- * Lower-face y used as chin proxy — the bottom of the visible nose/mouth region.
+ * Lower-face y used as chin proxy - the bottom of the visible nose/mouth region.
  * Smaller y means higher on screen.
  */
 export function getChinY(landmarks: PoseLandmark[]): number | null {
@@ -129,7 +129,7 @@ export function getChinY(landmarks: PoseLandmark[]): number | null {
   return Math.max(...candidates);
 }
 
-/** Highest visible ear y — rear-camera proxy for chin-over-bar. */
+/** Highest visible ear y - rear-camera proxy for chin-over-bar. */
 export function getEarY(landmarks: PoseLandmark[]): number | null {
   const candidates: number[] = [];
   const leftEar = landmarks[PoseLandmarkIndex.LEFT_EAR];
@@ -176,7 +176,7 @@ export function isChinOverBar(landmarks: PoseLandmark[], barLineY: number | null
   return chinY <= barLineY + PULL_UP_POSTURE.chinOverBarMargin;
 }
 
-/** Ears have risen to bar height — back-camera proxy for chin-over-bar. */
+/** Ears have risen to bar height - back-camera proxy for chin-over-bar. */
 export function isEarOverBar(landmarks: PoseLandmark[], barLineY: number | null): boolean {
   const earY = getEarY(landmarks);
 
@@ -211,7 +211,7 @@ export function isHeadOverBar(landmarks: PoseLandmark[], barLineY: number | null
   );
 }
 
-/** Arms fully extended — bottom of the pull-up range of motion. */
+/** Arms fully extended - bottom of the pull-up range of motion. */
 export function isArmsExtended(
   landmarks: PoseLandmark[],
   elbowThresholds: AngleThresholdConfig,
@@ -227,7 +227,7 @@ export function isArmsExtended(
 }
 
 /**
- * Valid dead hang on a bar — extended arms reaching up, hands above shoulders,
+ * Valid dead hang on a bar - extended arms reaching up, hands above shoulders,
  * head below the bar. Rejects standing with arms down or casual arm swings.
  */
 export function isPullUpDeadHangPosture(
@@ -248,7 +248,7 @@ export function isPullUpDeadHangPosture(
 
 /**
  * Top of rep: bent arms + chin/head over bar + hands still on the bar.
- * Leg/knee position is intentionally ignored — bar height varies.
+ * Leg/knee position is intentionally ignored - bar height varies.
  */
 export function isPullUpTopPosture(
   landmarks: PoseLandmark[],
@@ -295,7 +295,7 @@ export function getPullUpHangHint(landmarks: PoseLandmark[]): string | null {
   }
 
   if (!areArmsRaisedTowardBar(landmarks) || !areWristsAboveShoulders(landmarks)) {
-    return 'Reach up and grab the bar — arms must be stretched overhead';
+    return 'Reach up and grab the bar - arms must be stretched overhead';
   }
 
   const elbowAngle = pushUpElbowAngle(landmarks);

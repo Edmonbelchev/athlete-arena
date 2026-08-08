@@ -4,11 +4,11 @@ import { CameraPreview } from '@/components/CameraPreview';
 import { PoseGuidanceBanner } from '@/components/PoseGuidanceBanner';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { Radius, Spacing } from '@/constants/theme';
-import { ONBOARDING_CAMERA } from '@/features/onboarding/onboardingContent';
 import { useExercisePoseDetection } from '@/features/challenges/useExercisePoseDetection';
 import { useRepCounter } from '@/features/challenges/useRepCounter';
-import { supportsNativePoseDetection } from '@/lib/runtime';
+import { ONBOARDING_CAMERA } from '@/features/onboarding/onboardingContent';
 import { useTheme } from '@/hooks/use-theme';
+import { supportsNativePoseDetection } from '@/lib/runtime';
 
 interface OnboardingCameraTryProps {
   onContinue: () => void;
@@ -77,7 +77,7 @@ export function OnboardingCameraTry({ onContinue }: OnboardingCameraTryProps) {
       ) : null}
 
       <PrimaryButton
-        label={repCounter.isComplete ? 'Nice work — Continue' : 'Continue without finishing'}
+        label={repCounter.isComplete ? 'Nice work - Continue' : 'Continue without finishing'}
         onPress={onContinue}
       />
     </View>

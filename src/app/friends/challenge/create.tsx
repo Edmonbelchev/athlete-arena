@@ -4,31 +4,31 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ProfileAvatar } from '@/components/profile/ProfileAvatar';
-import { AuthTextInput } from '@/components/ui/AuthTextInput';
 import { EmotePicker } from '@/components/shop/EmotePicker';
+import { AuthTextInput } from '@/components/ui/AuthTextInput';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import {
-  EXERCISE_TYPES,
-  EXERCISE_LABELS,
-  type ExerciseType,
+    EXERCISE_LABELS,
+    EXERCISE_TYPES,
+    type ExerciseType,
 } from '@/constants/challenges';
 import { FRIEND_CHALLENGE_WIN_COIN_REWARD, formatCoinAmount } from '@/constants/coins';
 import {
-  calculateFriendChallengeXp,
-  FRIEND_CHALLENGE_REP_MAX,
-  FRIEND_CHALLENGE_REP_MIN,
-  FRIEND_CHALLENGE_REP_PRESETS,
-  FRIEND_CHALLENGE_TIME_PRESETS,
-  formatRaceTimeLimit,
-  getDefaultRepsForExercise,
+    FRIEND_CHALLENGE_REP_MAX,
+    FRIEND_CHALLENGE_REP_MIN,
+    FRIEND_CHALLENGE_REP_PRESETS,
+    FRIEND_CHALLENGE_TIME_PRESETS,
+    calculateFriendChallengeXp,
+    formatRaceTimeLimit,
+    getDefaultRepsForExercise,
 } from '@/constants/friendChallenges';
 import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { useFriends } from '@/features/friends/useFriends';
-import { getOwnedEmotes } from '@/features/shop/shopUtils';
 import { useShop } from '@/features/shop/ShopProvider';
-import { createFriendChallenge } from '@/services/friendChallengeService';
-import { formatUserError } from '@/lib/errors';
+import { getOwnedEmotes } from '@/features/shop/shopUtils';
 import { useTheme } from '@/hooks/use-theme';
+import { formatUserError } from '@/lib/errors';
+import { createFriendChallenge } from '@/services/friendChallengeService';
 
 export default function CreateFriendChallengeScreen() {
   const theme = useTheme();
@@ -234,7 +234,7 @@ export default function CreateFriendChallengeScreen() {
             TIME CAP (OPTIONAL)
           </Text>
           <Text style={StyleSheet.flatten([styles.help, { color: theme.textSecondary }])}>
-            Speed race — fastest to complete the reps wins. Your timer starts when you begin the attempt.
+            Speed race - fastest to complete the reps wins. Your timer starts when you begin the attempt.
           </Text>
           <View style={styles.repRow}>
             {FRIEND_CHALLENGE_TIME_PRESETS.map((preset) => {

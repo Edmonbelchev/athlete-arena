@@ -21,7 +21,7 @@ export function EarlyAccessNotice() {
       </View>
       <Text style={StyleSheet.flatten([styles.description, { color: theme.textSecondary }])}>
         Athlete Arena is still in active development. You may hit rough edges or missing features along the
-        way — we would really appreciate any bugs, ideas, or feedback through the support form.
+        way - we would really appreciate any bugs, ideas, or feedback through the support form.
       </Text>
       <PrimaryButton
         label="Send feedback"

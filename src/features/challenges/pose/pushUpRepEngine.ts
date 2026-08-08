@@ -1,5 +1,5 @@
-import type { PushUpPhase } from '@/features/challenges/poseDetection.types';
 import { PUSH_UP_POSTURE, PUSH_UP_THRESHOLDS } from '@/constants/poseDetection';
+import type { PushUpPhase } from '@/features/challenges/poseDetection.types';
 
 import { ElbowRepEngine } from './elbowRepEngine';
 import type { PoseLandmark } from './landmarks';
@@ -55,7 +55,7 @@ export class PushUpRepEngine {
     }
 
     if (!inPlank) {
-      // Lost plank mid-set — reset rep cycle so standing arm motion cannot finish a rep.
+      // Lost plank mid-set - reset rep cycle so standing arm motion cannot finish a rep.
       this.elbowEngine.reset();
       return false;
     }

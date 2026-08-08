@@ -8,25 +8,25 @@ import { EarlyAccessNotice } from '@/components/home/EarlyAccessNotice';
 import { FriendChallengesCarousel } from '@/components/home/FriendChallengesCarousel';
 import { HomeProgressBlock } from '@/components/home/HomeProgressBlock';
 import { HomeSection } from '@/components/home/HomeSection';
+import { TabScreenHeader } from '@/components/sidebar/TabScreenHeader';
 import { ChallengeCard } from '@/components/ui/ChallengeCard';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
-import { TabScreenHeader } from '@/components/sidebar/TabScreenHeader';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { useAchievementUnlock } from '@/features/achievements/AchievementUnlockProvider';
 import { useDailyChallenge } from '@/features/challenges/useDailyChallenge';
 import { isActiveFriendChallenge } from '@/features/friends/friendChallengeGroups';
 import { useFriendChallenges } from '@/features/friends/useFriendChallenges';
+import { useChallengeNotificationRefresh } from '@/features/notifications/useChallengeNotificationRefresh';
 import { useProfile } from '@/features/profile/useProfile';
-import { formatUserError } from '@/lib/errors';
-import { useAchievementUnlock } from '@/features/achievements/AchievementUnlockProvider';
 import { useShop } from '@/features/shop/ShopProvider';
-import {
-  acceptFriendChallenge,
-  declineFriendChallenge,
-} from '@/services/friendChallengeService';
-import { getOrCreateDailyChallenge } from '@/services/challengeService';
 import { xpProgressInCurrentLevel } from '@/features/xp/levelUtils';
 import { useTheme } from '@/hooks/use-theme';
-import { useChallengeNotificationRefresh } from '@/features/notifications/useChallengeNotificationRefresh';
+import { formatUserError } from '@/lib/errors';
+import { getOrCreateDailyChallenge } from '@/services/challengeService';
+import {
+    acceptFriendChallenge,
+    declineFriendChallenge,
+} from '@/services/friendChallengeService';
 
 function getGreeting(): string {
   const hour = new Date().getHours();
@@ -181,7 +181,7 @@ export default function HomeScreen() {
 
         <HomeSection
           title="Today's Challenge"
-          subtitle="Same workout for everyone today — complete it for XP and coins">
+          subtitle="Same workout for everyone today - complete it for XP and coins">
           {challenge ? (
             <ChallengeCard
               exerciseType={challenge.exerciseType}

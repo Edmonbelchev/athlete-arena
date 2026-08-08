@@ -3,23 +3,23 @@ import { StyleSheet, Text, View } from 'react-native';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { formatExerciseLabel } from '@/constants/challenges';
 import {
-  FRIEND_CHALLENGE_WIN_COIN_REWARD,
-  formatCoinAmount,
+    FRIEND_CHALLENGE_WIN_COIN_REWARD,
+    formatCoinAmount,
 } from '@/constants/coins';
 import { formatRaceTime, formatRaceTimeLimit } from '@/constants/friendChallenges';
 import { Radius, Spacing } from '@/constants/theme';
 import { useFriendChallengeRaceTimer } from '@/features/friends/useFriendChallengeRaceTimer';
-import {
-  getCreatorDisplayName,
-  getMyRaceSeconds,
-  getOpponentDisplayName,
-  getOpponentRaceSeconds,
-  hasFriendChallengeStarted,
-  isFriendChallengeResolved,
-  isFriendChallengeWaitingOnOpponent,
-  type FriendChallenge,
-} from '@/types/friends';
 import { useTheme } from '@/hooks/use-theme';
+import {
+    getCreatorDisplayName,
+    getMyRaceSeconds,
+    getOpponentDisplayName,
+    getOpponentRaceSeconds,
+    hasFriendChallengeStarted,
+    isFriendChallengeResolved,
+    isFriendChallengeWaitingOnOpponent,
+    type FriendChallenge,
+} from '@/types/friends';
 
 interface FriendChallengeCardProps {
   challenge: FriendChallenge;
@@ -90,7 +90,7 @@ export function FriendChallengeCard({
     if (waitingOnOpponent) {
       return (
         <Text style={[styles.progress, { color: theme.textSecondary }]}>
-          Finished in {formatRaceTime(myRaceSeconds)} — waiting for {opponentName}
+          Finished in {formatRaceTime(myRaceSeconds)} - waiting for {opponentName}
         </Text>
       );
     }

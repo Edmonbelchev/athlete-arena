@@ -11,7 +11,7 @@ export const POSE_LANDMARK_MIN_VISIBILITY = isNativeMobile ? 0.35 : 0.45;
 /** Minimum landmark confidence to use a point for rep counting. */
 export const POSE_REP_MIN_VISIBILITY = isNativeMobile ? 0.35 : 0.5;
 
-/** Lower bar while a pull-up set is active — wrists/face flicker more on phone. */
+/** Lower bar while a pull-up set is active - wrists/face flicker more on phone. */
 export const POSE_REP_MIN_VISIBILITY_ARMED = isNativeMobile ? 0.28 : 0.45;
 
 export const POSE_QUALITY = {
@@ -21,9 +21,9 @@ export const POSE_QUALITY = {
   stableFramesRequired: isNativeMobile ? 1 : 2,
   /** Partial-tracking frames before resetting rep-engine state. */
   partialFramesBeforeReset: isNativeMobile ? 30 : 15,
-  /** Longer leash once pull-ups are armed — avoids jitter resets mid-set. */
+  /** Longer leash once pull-ups are armed - avoids jitter resets mid-set. */
   partialFramesBeforeResetArmed: isNativeMobile ? 50 : 25,
-  /** Skeleton overlay visibility — slightly higher to reduce flicker. */
+  /** Skeleton overlay visibility - slightly higher to reduce flicker. */
   skeletonMinVisibility: isNativeMobile ? 0.4 : 0.5,
 } as const;
 
@@ -36,7 +36,7 @@ export const PUSH_UP_THRESHOLDS = {
   hysteresis: isNativeMobile ? 12 : 8,
 } as const;
 
-/** Push-up rep validation — horizontal plank with hands on the floor. */
+/** Push-up rep validation - horizontal plank with hands on the floor. */
 export const PUSH_UP_POSTURE = {
   /** Shoulder and hip stay near the same height in a side-view plank. */
   maxShoulderHipYDelta: isNativeMobile ? 0.1 : 0.08,
@@ -56,7 +56,7 @@ export const PULL_UP_THRESHOLDS = {
   hysteresis: isNativeMobile ? 14 : 8,
 } as const;
 
-/** Pull-up rep validation — dead hang on bar + chin/head over bar at top. */
+/** Pull-up rep validation - dead hang on bar + chin/head over bar at top. */
 export const PULL_UP_POSTURE = {
   /** Chin (lower face) at or above the bar line (y grows downward). */
   chinOverBarMargin: isNativeMobile ? 0.03 : 0.01,
@@ -93,7 +93,7 @@ export const POSE_GUIDANCE: Record<ExerciseType, { title: string; tips: readonly
   push_ups: {
     title: 'Push-up setup',
     tips: [
-      'Get into a plank on the floor — side view works best',
+      'Get into a plank on the floor - side view works best',
       'Keep shoulders, hips, elbows, and wrists in frame',
       'Rep counting starts only once you hold a plank; standing arm motion will not count',
     ],
@@ -110,7 +110,7 @@ export const POSE_GUIDANCE: Record<ExerciseType, { title: string; tips: readonly
     title: 'Pull-up setup',
     tips: [
       'Reach up and hang from the bar with arms fully extended',
-      'Keep your head and arms in frame — the bar line sets from your hands at the hang',
+      'Keep your head and arms in frame - the bar line sets from your hands at the hang',
       'Rep counting starts only in a dead hang; standing or flailing will not count',
       'Pull until your chin clears the bar, then lower back to a full hang',
     ],

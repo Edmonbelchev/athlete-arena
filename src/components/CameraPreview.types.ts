@@ -11,7 +11,7 @@ export interface CameraPreviewProps {
   onLandmarksDetected?: (landmarks: PoseLandmark[]) => void;
   /** Pull-up bar reference line (normalized y) shown during pull-up challenges. */
   pullUpBarLineY?: number | null;
-  /** Exercise being performed — drives rep-cycle progress bar. */
+  /** Exercise being performed - drives rep-cycle progress bar. */
   exerciseType?: ExerciseType;
   /** Current pose phase from the rep engine. */
   repPhase?: ExercisePhase;

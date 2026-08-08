@@ -116,7 +116,7 @@ export function averageElbowAngle(landmarks: PoseLandmark[]): number | null {
   );
 }
 
-/** Most-bent visible elbow — better depth signal than averaging both arms. */
+/** Most-bent visible elbow - better depth signal than averaging both arms. */
 export function pushUpElbowAngle(landmarks: PoseLandmark[]): number | null {
   const angles = [getElbowAngle(landmarks, 'left'), getElbowAngle(landmarks, 'right')].filter(
     (value): value is number => value !== null,
@@ -129,7 +129,7 @@ export function pushUpElbowAngle(landmarks: PoseLandmark[]): number | null {
   return Math.min(...angles);
 }
 
-/** Most-bent visible knee — better depth signal than averaging both legs. */
+/** Most-bent visible knee - better depth signal than averaging both legs. */
 export function squatKneeAngle(landmarks: PoseLandmark[]): number | null {
   const angles = [getKneeAngle(landmarks, 'left'), getKneeAngle(landmarks, 'right')].filter(
     (value): value is number => value !== null,
