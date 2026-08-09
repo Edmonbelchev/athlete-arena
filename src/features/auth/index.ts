@@ -1,6 +1,14 @@
 export { AuthProvider, useAuth, type Session } from './AuthProvider';
-export { getAuthErrorMessage } from './authErrors';
-export { authService, isEmailRegistered, isUsernameAvailable, signInWithEmail, signOut, signUpWithEmail } from './authService';
+export { getAuthErrorMessage, isEmailNotConfirmedError } from './authErrors';
+export {
+  authService,
+  isEmailRegistered,
+  isUsernameAvailable,
+  resendSignUpConfirmation,
+  signInWithEmail,
+  signOut,
+  signUpWithEmail,
+} from './authService';
 export {
   isValidEmail,
   isValidPassword,

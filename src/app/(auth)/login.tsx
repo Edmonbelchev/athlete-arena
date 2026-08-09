@@ -12,11 +12,12 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AuthTextInput } from '@/components/ui/AuthTextInput';
+import { ResendConfirmationEmail } from '@/components/auth/ResendConfirmationEmail';
 import { BrandLogo } from '@/components/ui/BrandLogo';
 import { LegalLinksFooter } from '@/components/legal/LegalLinks';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
-import { getAuthErrorMessage } from '@/features/auth/authErrors';
+import { getAuthErrorMessage, isEmailNotConfirmedError } from '@/features/auth/authErrors';
 import { signInWithEmail } from '@/features/auth/authService';
 import { isValidEmail } from '@/features/auth/validation';
 import { useAuth } from '@/features/auth';
@@ -30,6 +31,7 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string }>({});
   const [formError, setFormError] = useState<string | null>(null);
+  const [needsEmailConfirmation, setNeedsEmailConfirmation] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   function validateForm(): boolean {
@@ -51,6 +53,7 @@ export default function LoginScreen() {
 
   async function handleSignIn() {
     setFormError(null);
+    setNeedsEmailConfirmation(false);
 
     if (!validateForm()) {
       return;
@@ -61,6 +64,7 @@ export default function LoginScreen() {
     try {
       await signInWithEmail(email, password);
     } catch (error) {
+      setNeedsEmailConfirmation(isEmailNotConfirmedError(error));
       setFormError(getAuthErrorMessage(error));
     } finally {
       setIsSubmitting(false);
@@ -107,6 +111,8 @@ export default function LoginScreen() {
                 {formError}
               </Text>
             ) : null}
+
+            {needsEmailConfirmation ? <ResendConfirmationEmail email={email} /> : null}
 
             <PrimaryButton
               label="Sign In"

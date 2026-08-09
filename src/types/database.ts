@@ -446,6 +446,30 @@ export interface Database {
         };
         Relationships: [];
       };
+      account_deletion_feedback: {
+        Row: {
+          id: string;
+          user_id: string;
+          username: string;
+          reason: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          username: string;
+          reason?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          username?: string;
+          reason?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -717,6 +741,12 @@ export interface Database {
           frame_border_width: number | null;
           is_current_user: boolean;
         }[];
+      };
+      delete_my_account: {
+        Args: {
+          p_reason?: string | null;
+        };
+        Returns: undefined;
       };
     };
     Enums: {

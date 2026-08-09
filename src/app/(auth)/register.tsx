@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AuthTextInput } from '@/components/ui/AuthTextInput';
+import { ResendConfirmationEmail } from '@/components/auth/ResendConfirmationEmail';
 import { BrandLogo } from '@/components/ui/BrandLogo';
 import { LegalAgreementNotice } from '@/components/legal/LegalLinks';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
@@ -195,9 +196,12 @@ export default function RegisterScreen() {
             ) : null}
 
             {successMessage ? (
-              <Text style={StyleSheet.flatten([styles.successMessage, { color: theme.success }])}>
-                {successMessage}
-              </Text>
+              <>
+                <Text style={StyleSheet.flatten([styles.successMessage, { color: theme.success }])}>
+                  {successMessage}
+                </Text>
+                <ResendConfirmationEmail email={email} />
+              </>
             ) : null}
 
             <PrimaryButton

@@ -1,5 +1,13 @@
 import type { AuthError } from '@supabase/supabase-js';
 
+export function isEmailNotConfirmedError(error: unknown): boolean {
+  if (!error || typeof error !== 'object' || !('message' in error)) {
+    return false;
+  }
+
+  return String((error as AuthError).message).includes('Email not confirmed');
+}
+
 export function getAuthErrorMessage(error: unknown): string {
   if (error instanceof Error) {
     if (error.message === 'username_taken') {
@@ -42,6 +50,10 @@ export function getAuthErrorMessage(error: unknown): string {
 
   if (message.includes('Email not confirmed')) {
     return 'Confirm your email before signing in.';
+  }
+
+  if (message.includes('For security purposes, you can only request this once every')) {
+    return 'Please wait a moment before requesting another confirmation email.';
   }
 
   return message;

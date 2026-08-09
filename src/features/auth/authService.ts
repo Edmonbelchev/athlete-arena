@@ -113,6 +113,27 @@ export async function signUpWithEmail({ email, password, username }: SignUpParam
   return data;
 }
 
+export async function resendSignUpConfirmation(email: string) {
+  assertSupabaseConfigured();
+
+  const trimmedEmail = email.trim();
+  if (!isValidEmail(trimmedEmail)) {
+    throw new Error('Enter a valid email address.');
+  }
+
+  const { error } = await supabase.auth.resend({
+    type: 'signup',
+    email: trimmedEmail,
+    options: {
+      emailRedirectTo: AUTH_EMAIL_REDIRECT_URL,
+    },
+  });
+
+  if (error) {
+    throw error;
+  }
+}
+
 export async function signOut() {
   assertSupabaseConfigured();
 
@@ -129,4 +150,5 @@ export const authService = {
   signOut,
   isUsernameAvailable,
   isEmailRegistered,
+  resendSignUpConfirmation,
 };

@@ -2,6 +2,7 @@ import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  Pressable,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -13,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { HomeProgressBlock } from '@/components/home/HomeProgressBlock';
 import { HomeSection } from '@/components/home/HomeSection';
 import { ProfileAchievementSection } from '@/components/profile/ProfileAchievementSection';
+import { DeleteAccountModal } from '@/components/profile/DeleteAccountModal';
 import { ProfileHero } from '@/components/profile/ProfileHero';
 import { ProfileQuickActions } from '@/components/profile/ProfileQuickActions';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
@@ -26,6 +28,8 @@ import { useProfile } from '@/features/profile/useProfile';
 import { useProfileStats } from '@/features/profile/useProfileStats';
 import { useShop } from '@/features/shop/ShopProvider';
 import { xpProgressInCurrentLevel } from '@/features/xp/levelUtils';
+import { formatUserError } from '@/lib/errors';
+import { deleteMyAccount } from '@/services/accountService';
 import { useTheme } from '@/hooks/use-theme';
 
 export default function ProfileScreen() {
@@ -49,6 +53,9 @@ export default function ProfileScreen() {
   const { summary, equippedAvatar, equippedFrame, refresh: refreshShop } = useShop();
   const [logoutError, setLogoutError] = useState<string | null>(null);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
 
   const isLoading = isProfileLoading || isStatsLoading;
   const error = profileError ?? statsError;
@@ -115,6 +122,34 @@ export default function ProfileScreen() {
     } finally {
       setIsLoggingOut(false);
     }
+  }
+
+  async function handleDeleteAccount(reason: string) {
+    setDeleteError(null);
+    setIsDeletingAccount(true);
+
+    try {
+      await deleteMyAccount(reason);
+      setIsDeleteModalVisible(false);
+    } catch (err) {
+      setDeleteError(formatUserError(err, 'Failed to delete account'));
+    } finally {
+      setIsDeletingAccount(false);
+    }
+  }
+
+  function openDeleteModal() {
+    setDeleteError(null);
+    setIsDeleteModalVisible(true);
+  }
+
+  function closeDeleteModal() {
+    if (isDeletingAccount) {
+      return;
+    }
+
+    setDeleteError(null);
+    setIsDeleteModalVisible(false);
   }
 
   if (isLoading && !profile) {
@@ -201,7 +236,26 @@ export default function ProfileScreen() {
           loading={isLoggingOut}
           onPress={() => void handleLogout()}
         />
+
+        <Pressable
+          accessibilityRole="button"
+          disabled={isLoggingOut || isDeletingAccount}
+          onPress={openDeleteModal}
+          style={({ pressed }) => [
+            styles.deleteAccountButton,
+            { opacity: pressed ? 0.7 : isLoggingOut || isDeletingAccount ? 0.5 : 1 },
+          ]}>
+          <Text style={[styles.deleteAccountLabel, { color: theme.danger }]}>Delete Account</Text>
+        </Pressable>
       </ScrollView>
+
+      <DeleteAccountModal
+        visible={isDeleteModalVisible}
+        isDeleting={isDeletingAccount}
+        error={deleteError}
+        onClose={closeDeleteModal}
+        onConfirm={(reason) => void handleDeleteAccount(reason)}
+      />
     </SafeAreaView>
   );
 }
@@ -232,5 +286,13 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     textAlign: 'center',
+  },
+  deleteAccountButton: {
+    alignItems: 'center',
+    paddingVertical: Spacing.two,
+  },
+  deleteAccountLabel: {
+    fontSize: 15,
+    fontWeight: '700',
   },
 });
