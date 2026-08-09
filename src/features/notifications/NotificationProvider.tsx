@@ -1,4 +1,3 @@
-import { router } from 'expo-router';
 import {
   createContext,
   useCallback,
@@ -16,6 +15,7 @@ import {
   loadNotificationInbox,
   saveNotificationInbox,
 } from '@/features/notifications/notificationStorage';
+import { routeFromInboxNotification } from '@/features/notifications/notificationRouting';
 import {
   challengeNotificationId,
   friendNotificationId,
@@ -43,7 +43,6 @@ const NotificationContext = createContext<NotificationContextValue | null>(null)
 
 const AUTO_DISMISS_MS = 7000;
 const MAX_INBOX = 50;
-const POLL_INTERVAL_MS = 5000;
 
 type ParticipantChangePayload = { eventType: string; new: unknown; old: unknown };
 type FriendshipChangePayload = { eventType: string; new: unknown; old: unknown };
@@ -423,7 +422,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     (notification: ChallengeNotification) => {
       markAsRead(notification.id);
       setHiddenBannerIds((current) => new Set(current).add(notification.id));
-      router.push('/(tabs)/friends');
+      routeFromInboxNotification(notification);
     },
     [markAsRead],
   );
@@ -435,12 +434,6 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
 
     void refreshInbox();
 
-    const interval = setInterval(() => {
-      if (AppState.currentState === 'active') {
-        void refreshInbox();
-      }
-    }, POLL_INTERVAL_MS);
-
     const appStateSubscription = AppState.addEventListener('change', (state) => {
       if (state === 'active') {
         void refreshInbox();
@@ -448,7 +441,6 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     });
 
     return () => {
-      clearInterval(interval);
       appStateSubscription.remove();
     };
   }, [userId, isHydrated, refreshInbox]);

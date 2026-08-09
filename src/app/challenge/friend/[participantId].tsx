@@ -1,15 +1,18 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { CameraPreview } from '@/components/CameraPreview';
+import {
+  FriendChallengeCompleteOverlay,
+  type FriendChallengeCompleteVariant,
+} from '@/components/challenges/FriendChallengeCompleteOverlay';
 import { PoseGuidanceBanner } from '@/components/PoseGuidanceBanner';
 import { EmoteDisplay } from '@/components/shop/EmoteDisplay';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { formatExerciseLabel } from '@/constants/challenges';
 import {
-  formatXpAndCoins,
   getFriendChallengeCoinReward,
 } from '@/constants/coins';
 import { formatRaceTime, formatRaceTimeLimit, FRIEND_RACE_TIMER_START_HINT } from '@/constants/friendChallenges';
@@ -21,10 +24,13 @@ import { useFriendChallenge } from '@/features/friends/useFriendChallenge';
 import { useFriendChallengeRaceTimer } from '@/features/friends/useFriendChallengeRaceTimer';
 import { useShop } from '@/features/shop/ShopProvider';
 import {
+  acceptFriendChallenge,
   completeFriendChallenge,
+  declineFriendChallenge,
 } from '@/services/friendChallengeService';
 import {
   didIWinFriendChallenge,
+  getCreatorDisplayName,
   getOpponentDisplayName,
   getOpponentRaceSeconds,
   hasFriendChallengeStarted,
@@ -37,6 +43,31 @@ import { supportsNativePoseDetection } from '@/lib/runtime';
 import { useDrainNativeCameraOnLeave } from '@/hooks/use-drain-native-camera-on-leave';
 import { useTheme } from '@/hooks/use-theme';
 
+function getFriendChallengeOverlayVariant(
+  waitingOnOpponent: boolean,
+  isCompleted: boolean,
+  isResolved: boolean,
+  winResult: boolean | null,
+): FriendChallengeCompleteVariant | null {
+  if (waitingOnOpponent) {
+    return 'finished';
+  }
+
+  if (!isCompleted || !isResolved) {
+    return null;
+  }
+
+  if (winResult === true) {
+    return 'winner';
+  }
+
+  if (winResult === false) {
+    return 'lost';
+  }
+
+  return 'tie';
+}
+
 export default function FriendChallengeScreen() {
   const theme = useTheme();
   const router = useRouter();
@@ -46,6 +77,7 @@ export default function FriendChallengeScreen() {
   const { equippedEmote } = useShop();
   const [syncError, setSyncError] = useState<string | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isPendingAction, setIsPendingAction] = useState(false);
   const [isTimedOut, setIsTimedOut] = useState(false);
   const cameraActive = useDrainNativeCameraOnLeave();
   const isSyncingRef = useRef(false);
@@ -67,6 +99,41 @@ export default function FriendChallengeScreen() {
     void refresh({ silent: true });
   }, [refresh]);
 
+  const handleAcceptChallenge = useCallback(async () => {
+    if (!participantId) {
+      return;
+    }
+
+    setIsPendingAction(true);
+    setSyncError(null);
+
+    try {
+      await acceptFriendChallenge(participantId);
+      await refresh({ silent: true });
+    } catch (err) {
+      setSyncError(formatUserError(err, 'Failed to accept challenge'));
+    } finally {
+      setIsPendingAction(false);
+    }
+  }, [participantId, refresh]);
+
+  const handleDeclineChallenge = useCallback(async () => {
+    if (!participantId) {
+      return;
+    }
+
+    setIsPendingAction(true);
+    setSyncError(null);
+
+    try {
+      await declineFriendChallenge(participantId);
+      router.back();
+    } catch (err) {
+      setSyncError(formatUserError(err, 'Failed to decline challenge'));
+      setIsPendingAction(false);
+    }
+  }, [participantId, router]);
+
   const { elapsedSeconds, secondsRemaining } = useFriendChallengeRaceTimer({
     startedAt: challenge?.startedAt ?? null,
     completedAt: challenge?.completedAt ?? null,
@@ -74,6 +141,18 @@ export default function FriendChallengeScreen() {
     enabled: raceStarted && !isPending,
     onExpire: handleTimerExpire,
   });
+
+  useEffect(() => {
+    if (!waitingOnOpponent) {
+      return;
+    }
+
+    const intervalId = setInterval(() => {
+      void refresh({ silent: true });
+    }, 4000);
+
+    return () => clearInterval(intervalId);
+  }, [waitingOnOpponent, refresh]);
 
   const handleRepDetected = useCallback(
     async (repCount: number) => {
@@ -174,13 +253,31 @@ export default function FriendChallengeScreen() {
     challenge.exerciseType,
     challenge.targetReps,
   );
+  const overlayVariant = getFriendChallengeOverlayVariant(
+    waitingOnOpponent,
+    isCompleted,
+    isResolved,
+    winResult,
+  );
+  const overlayKey = `${overlayVariant ?? 'none'}-${challenge.resolvedAt ?? challenge.completedAt ?? 'pending'}`;
 
-  function formatEarnedRewards(xp: number): string {
-    if (earnedCoins > 0) {
-      return `${formatXpAndCoins(xp, earnedCoins)} earned`;
-    }
-
-    return `+${xp} XP earned`;
+  function renderCompletionFrame() {
+    return (
+      <View style={styles.cameraFrame}>
+        {overlayVariant ? (
+          <FriendChallengeCompleteOverlay
+            key={overlayKey}
+            variant={overlayVariant}
+            raceTimeSeconds={myTime}
+            opponentName={opponentName}
+            opponentTimeSeconds={opponentTime}
+            xp={earnedXp}
+            coins={earnedCoins}
+            emote={equippedEmote}
+          />
+        ) : null}
+      </View>
+    );
   }
 
   function renderRaceTimer(activeChallenge: FriendChallenge) {
@@ -229,65 +326,6 @@ export default function FriendChallengeScreen() {
     );
   }
 
-  function renderCompletionBanner() {
-    if (waitingOnOpponent) {
-      return (
-        <View style={[styles.completedBanner, { backgroundColor: theme.backgroundElement, borderColor: theme.primary }]}>
-          <Text style={[styles.completedTitle, { color: theme.primary }]}>FINISHED IN {formatRaceTime(myTime)}</Text>
-          <Text style={[styles.opponentProgress, { color: theme.textSecondary }]}>
-            Waiting for {opponentName} to finish…
-          </Text>
-        </View>
-      );
-    }
-
-    if (!isCompleted) {
-      return null;
-    }
-
-    if (isResolved && winResult !== null) {
-      return (
-        <View
-          style={[
-            styles.completedBanner,
-            { backgroundColor: theme.backgroundElement, borderColor: winResult ? theme.success : theme.danger },
-          ]}>
-          <Text style={[styles.completedTitle, { color: winResult ? theme.success : theme.danger }]}>
-            {winResult ? 'YOU WON THE RACE' : 'YOU LOST THE RACE'}
-          </Text>
-          {winResult ? <EmoteDisplay emoji={equippedEmote} /> : null}
-          <Text style={[styles.completedReward, { color: theme.xp }]}>{formatEarnedRewards(earnedXp)}</Text>
-          <Text style={[styles.opponentProgress, { color: theme.textSecondary }]}>
-            You {formatRaceTime(myTime)} · {opponentName} {formatRaceTime(opponentTime)}
-          </Text>
-        </View>
-      );
-    }
-
-    if (isResolved && winResult === null) {
-      return (
-        <View style={[styles.completedBanner, { backgroundColor: theme.backgroundElement, borderColor: theme.success }]}>
-          <Text style={[styles.completedTitle, { color: theme.success }]}>TIE RACE</Text>
-          <Text style={[styles.completedReward, { color: theme.xp }]}>{formatEarnedRewards(earnedXp)}</Text>
-          <Text style={[styles.opponentProgress, { color: theme.textSecondary }]}>
-            Both finished in {formatRaceTime(myTime)}
-          </Text>
-        </View>
-      );
-    }
-
-    return (
-      <View style={[styles.completedBanner, { backgroundColor: theme.backgroundElement, borderColor: theme.success }]}>
-        <Text style={[styles.completedTitle, { color: theme.success }]}>CHALLENGE COMPLETE</Text>
-        <EmoteDisplay emoji={equippedEmote} />
-        <Text style={[styles.completedReward, { color: theme.xp }]}>+{earnedXp} XP earned</Text>
-        <Text style={[styles.opponentProgress, { color: theme.textSecondary }]}>
-          {opponentName}: {challenge.opponentCompletedReps}/{challenge.targetReps} reps
-        </Text>
-      </View>
-    );
-  }
-
   return (
     <>
       <Stack.Screen options={{ title: 'Friend Challenge', headerShown: true }} />
@@ -317,15 +355,38 @@ export default function FriendChallengeScreen() {
           {renderRaceTimer(challenge)}
 
           {isPending ? (
-            <Text style={StyleSheet.flatten([styles.pending, { color: theme.textSecondary }])}>
-              Accept this challenge from the Friends tab before starting.
-            </Text>
+            challenge.isCreator ? (
+              <Text style={StyleSheet.flatten([styles.pending, { color: theme.textSecondary }])}>
+                Waiting for {opponentName} to accept your challenge.
+              </Text>
+            ) : (
+              <View style={styles.pendingActions}>
+                <Text style={StyleSheet.flatten([styles.pending, { color: theme.textSecondary }])}>
+                  {getCreatorDisplayName(challenge)} challenged you to a speed race.
+                </Text>
+                <PrimaryButton
+                  label="Accept"
+                  onPress={() => {
+                    void handleAcceptChallenge();
+                  }}
+                  loading={isPendingAction}
+                />
+                <PrimaryButton
+                  label="Decline"
+                  variant="secondary"
+                  onPress={() => {
+                    void handleDeclineChallenge();
+                  }}
+                  disabled={isPendingAction}
+                />
+              </View>
+            )
           ) : isExpired ? (
             <Text style={StyleSheet.flatten([styles.pending, { color: theme.danger }])}>
               You hit the time cap before finishing. Head back and try again.
             </Text>
           ) : waitingOnOpponent || isCompleted ? (
-            renderCompletionBanner()
+            renderCompletionFrame()
           ) : (
             <>
               <View style={styles.cameraFrame}>
@@ -476,6 +537,9 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     paddingVertical: Spacing.two,
   },
+  pendingActions: {
+    gap: Spacing.three,
+  },
   phaseLabel: {
     fontSize: 12,
     fontWeight: '700',
@@ -497,28 +561,6 @@ const styles = StyleSheet.create({
   progressFill: {
     height: '100%',
     borderRadius: Radius.sm,
-  },
-  completedBanner: {
-    padding: Spacing.three,
-    borderRadius: Radius.lg,
-    borderWidth: 1,
-    alignItems: 'center',
-    gap: Spacing.one,
-  },
-  completedTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-    letterSpacing: 1,
-    textAlign: 'center',
-  },
-  completedReward: {
-    fontSize: 18,
-    fontWeight: '800',
-  },
-  opponentProgress: {
-    fontSize: 13,
-    fontWeight: '600',
-    textAlign: 'center',
   },
   creatorEmoteRow: {
     alignItems: 'center',
