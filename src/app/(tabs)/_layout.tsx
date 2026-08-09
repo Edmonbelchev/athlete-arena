@@ -1,35 +1,33 @@
 import { Tabs } from 'expo-router';
 import { useEffect } from 'react';
-import { AppState, StyleSheet, View, type ColorValue } from 'react-native';
+import { AppState, Platform, type ColorValue } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppSidebar } from '@/components/sidebar/AppSidebar';
 import { AppTopBar } from '@/components/sidebar/AppTopBar';
 import { AppIcon } from '@/components/ui/AppIcon';
-import { Colors } from '@/constants/theme';
+import { Colors, Spacing } from '@/constants/theme';
 import type { AppIconName } from '@/constants/icons';
 import { useFriends } from '@/features/friends/FriendsProvider';
 import { useChallengeNotificationRefresh } from '@/features/notifications/useChallengeNotificationRefresh';
 import { SidebarProvider } from '@/features/sidebar/SidebarProvider';
 import { useThemePreference } from '@/features/theme/ThemePreferenceProvider';
-import { useTheme } from '@/hooks/use-theme';
+
+const TAB_BAR_HEIGHT = Platform.select({ ios: 49, android: 56, default: 56 }) ?? 56;
 
 export default function TabsLayout() {
-  const { resolvedScheme } = useThemePreference();
-  const colors = Colors[resolvedScheme];
-  const theme = useTheme();
-
   return (
     <SidebarProvider>
       <AppSidebar />
-      <View style={StyleSheet.flatten([styles.container, { backgroundColor: theme.background }])}>
-        <AppTopBar />
-        <TabsLayoutContent colors={colors} />
-      </View>
+      <TabsLayoutContent />
     </SidebarProvider>
   );
 }
 
-function TabsLayoutContent({ colors }: { colors: (typeof Colors)['light'] }) {
+function TabsLayoutContent() {
+  const { resolvedScheme } = useThemePreference();
+  const colors = Colors[resolvedScheme];
+  const insets = useSafeAreaInsets();
   const { requests, refresh } = useFriends();
   const pendingRequestCount = requests.length;
 
@@ -47,15 +45,25 @@ function TabsLayoutContent({ colors }: { colors: (typeof Colors)['light'] }) {
 
   return (
     <Tabs
-      style={styles.scene}
-      sceneContainerStyle={styles.scene}
       screenOptions={{
-        headerShown: false,
+        headerShown: true,
+        header: () => <AppTopBar />,
+        headerStatusBarHeight: 0,
+        headerShadowVisible: false,
+        headerStyle: {
+          backgroundColor: colors.background,
+        },
+        sceneStyle: {
+          backgroundColor: colors.background,
+        },
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textSecondary,
         tabBarStyle: {
           backgroundColor: colors.backgroundElement,
           borderTopColor: colors.border,
+          paddingTop: Spacing.half,
+          paddingBottom: Math.max(insets.bottom, Spacing.two),
+          height: TAB_BAR_HEIGHT + Math.max(insets.bottom, Spacing.two),
         },
         tabBarBadgeStyle: {
           backgroundColor: colors.primary,
@@ -114,15 +122,6 @@ function TabsLayoutContent({ colors }: { colors: (typeof Colors)['light'] }) {
     </Tabs>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  scene: {
-    flex: 1,
-  },
-});
 
 function TabIcon({ name, color }: { name: AppIconName; color: ColorValue }) {
   return <AppIcon name={name} size={22} color={String(color)} />;

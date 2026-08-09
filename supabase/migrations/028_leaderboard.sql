@@ -251,6 +251,8 @@ begin
     from ranked r
     where r.rank <= v_limit or r.is_current_user
     order by r.rank;
+
+    return;
   end if;
 
   return query

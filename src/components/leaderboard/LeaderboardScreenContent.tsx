@@ -11,12 +11,14 @@ import {
 } from 'react-native';
 
 import { LeaderboardListItem } from '@/components/leaderboard/LeaderboardListItem';
+import { LeaderboardPodium } from '@/components/leaderboard/LeaderboardPodium';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { useLeaderboard } from '@/features/leaderboard/useLeaderboard';
 import {
   getLeaderboardPeriodLabel,
   getLeaderboardPeriodSubtitle,
+  getLeaderboardXpLabel,
   type LeaderboardPeriod,
 } from '@/types/leaderboard';
 import { useTheme } from '@/hooks/use-theme';
@@ -36,16 +38,38 @@ export function LeaderboardScreenContent() {
     }, [refresh]),
   );
 
+  const dedupedEntries = useMemo(() => {
+    const seen = new Set<string>();
+
+    return entries.filter((entry) => {
+      if (seen.has(entry.userId)) {
+        return false;
+      }
+
+      seen.add(entry.userId);
+      return true;
+    });
+  }, [entries]);
+
+  const podiumEntries = useMemo(
+    () => dedupedEntries.filter((entry) => entry.rank <= 3),
+    [dedupedEntries],
+  );
+
   const visibleEntries = useMemo(() => {
-    const topEntries = entries.filter((entry) => entry.rank <= 50);
-    const currentUserOutsideTop = entries.find((entry) => entry.isCurrentUser && entry.rank > 50);
+    const topEntries = dedupedEntries.filter((entry) => entry.rank <= 50 && entry.rank > 3);
+    const currentUserOutsideTop = dedupedEntries.find(
+      (entry) => entry.isCurrentUser && entry.rank > 50,
+    );
 
     if (!currentUserOutsideTop) {
       return topEntries;
     }
 
     return [...topEntries, currentUserOutsideTop];
-  }, [entries]);
+  }, [dedupedEntries]);
+
+  const xpLabel = getLeaderboardXpLabel(period);
 
   const handleRefresh = useCallback(async () => {
     setIsRefreshing(true);
@@ -105,7 +129,7 @@ export function LeaderboardScreenContent() {
         {getLeaderboardPeriodSubtitle(period)}
       </Text>
 
-      {isLoading && visibleEntries.length === 0 ? (
+      {isLoading && dedupedEntries.length === 0 ? (
         <View style={styles.loading}>
           <ActivityIndicator size="large" color={theme.primary} />
         </View>
@@ -119,7 +143,7 @@ export function LeaderboardScreenContent() {
         </View>
       ) : null}
 
-      {!isLoading && !error && visibleEntries.length === 0 ? (
+      {!isLoading && !error && dedupedEntries.length === 0 ? (
         <View style={[styles.messageCard, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
           <Text style={[styles.messageTitle, { color: theme.text }]}>No rankings yet</Text>
           <Text style={[styles.messageBody, { color: theme.textSecondary }]}>
@@ -130,13 +154,21 @@ export function LeaderboardScreenContent() {
         </View>
       ) : null}
 
+      {podiumEntries.length > 0 ? (
+        <LeaderboardPodium
+          entries={podiumEntries}
+          period={period}
+          onPress={(entry) => handleEntryPress(entry.userId, entry.isCurrentUser)}
+        />
+      ) : null}
+
       <View style={styles.list}>
         {visibleEntries.map((entry, index) => {
           const showDivider =
             entry.rank > 50 && index > 0 && visibleEntries[index - 1]?.rank <= 50;
 
           return (
-            <View key={`${entry.userId}-${entry.rank}`} style={styles.listItemWrap}>
+            <View key={entry.userId} style={styles.listItemWrap}>
               {showDivider ? (
                 <Text style={[styles.outsideTopLabel, { color: theme.textSecondary }]}>
                   Your rank
@@ -144,6 +176,7 @@ export function LeaderboardScreenContent() {
               ) : null}
               <LeaderboardListItem
                 entry={entry}
+                xpLabel={xpLabel}
                 onPress={() => handleEntryPress(entry.userId, entry.isCurrentUser)}
               />
             </View>

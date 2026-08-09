@@ -28,6 +28,10 @@ export function getLeaderboardPeriodSubtitle(period: LeaderboardPeriod): string 
   return 'Ranked by XP earned this week · Resets every Monday (UTC)';
 }
 
+export function getLeaderboardXpLabel(period: LeaderboardPeriod): string {
+  return period === 'weekly' ? 'Weekly XP' : 'Total XP';
+}
+
 export function getRankAccentColor(rank: number): string | null {
   if (rank === 1) {
     return '#F59E0B';

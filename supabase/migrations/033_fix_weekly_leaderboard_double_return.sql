@@ -1,4 +1,4 @@
--- Fix ambiguous "rank" reference in get_xp_leaderboard (PL/pgSQL output column vs query column).
+-- Fix weekly leaderboard returning all-time rows as well (missing return after weekly query).
 
 create or replace function public.get_xp_leaderboard(
   p_period text default 'weekly',
@@ -111,3 +111,5 @@ begin
   order by r.rank;
 end;
 $$;
+
+grant execute on function public.get_xp_leaderboard(text, integer) to authenticated;

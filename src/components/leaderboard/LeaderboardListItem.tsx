@@ -12,10 +12,11 @@ import { useTheme } from '@/hooks/use-theme';
 
 interface LeaderboardListItemProps {
   entry: LeaderboardEntry;
+  xpLabel?: string;
   onPress?: () => void;
 }
 
-export function LeaderboardListItem({ entry, onPress }: LeaderboardListItemProps) {
+export function LeaderboardListItem({ entry, xpLabel = 'XP', onPress }: LeaderboardListItemProps) {
   const theme = useTheme();
   const displayName = entry.displayName ?? entry.username;
   const rankAccent = getRankAccentColor(entry.rank);
@@ -67,7 +68,7 @@ export function LeaderboardListItem({ entry, onPress }: LeaderboardListItemProps
 
       <View style={styles.xpBlock}>
         <Text style={[styles.xpValue, { color: theme.text }]}>{entry.xpAmount.toLocaleString()}</Text>
-        <Text style={[styles.xpLabel, { color: theme.textSecondary }]}>XP</Text>
+        <Text style={[styles.xpLabel, { color: theme.textSecondary }]}>{xpLabel}</Text>
       </View>
     </Pressable>
   );
