@@ -31,5 +31,6 @@ const styles = StyleSheet.create({
     maxWidth: MaxContentWidth,
     alignSelf: 'center',
     width: '100%',
+    marginBottom: Spacing.two,
   },
 });

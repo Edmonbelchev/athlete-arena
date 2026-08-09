@@ -1,5 +1,5 @@
 import { Image } from 'expo-image';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Modal, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInUp, FadeOutUp, ZoomInRotate } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -22,70 +22,93 @@ export function AchievementUnlockToast({ achievement, onDismiss, onPress }: Achi
   const insets = useSafeAreaInsets();
 
   return (
-    <View pointerEvents="box-none" style={[styles.overlay, { top: insets.top + TOP_BAR_HEIGHT + Spacing.two }]}>
-      <Animated.View entering={FadeInUp.springify().damping(16)} exiting={FadeOutUp.duration(220)}>
-        <Pressable
-          onPress={onPress ?? onDismiss}
-          style={StyleSheet.flatten([
-            styles.card,
-            {
-              backgroundColor: theme.backgroundElement,
-              borderColor: theme.primary,
-              shadowColor: theme.primary,
-            },
-          ])}>
-          <Animated.View entering={ZoomInRotate.springify().delay(120)} style={styles.iconColumn}>
-            <View
+    <Modal
+      visible
+      transparent
+      animationType="none"
+      statusBarTranslucent
+      onRequestClose={onDismiss}
+      {...(Platform.OS === 'ios' ? { presentationStyle: 'overFullScreen' as const } : {})}>
+      <View pointerEvents="box-none" style={styles.modalRoot}>
+        <View
+          pointerEvents="box-none"
+          style={[styles.overlay, { top: insets.top + TOP_BAR_HEIGHT + Spacing.two }]}>
+          <Animated.View
+            entering={FadeInUp.springify().damping(16)}
+            exiting={FadeOutUp.duration(220)}
+            style={styles.toastLayer}>
+            <Pressable
+              onPress={onPress ?? onDismiss}
               style={StyleSheet.flatten([
-                styles.iconWrap,
-                { backgroundColor: theme.backgroundSelected, borderColor: theme.primary },
+                styles.card,
+                {
+                  backgroundColor: theme.backgroundElement,
+                  borderColor: theme.primary,
+                  shadowColor: theme.primary,
+                },
               ])}>
-              {achievement.imageUrl ? (
-                <Image source={{ uri: achievement.imageUrl }} style={styles.image} contentFit="cover" />
-              ) : (
-                <AppIcon name={achievement.icon} size={28} color={theme.primary} />
-              )}
-            </View>
-            <Text style={StyleSheet.flatten([styles.unlockedLabel, { color: theme.primary }])}>UNLOCKED</Text>
+              <Animated.View entering={ZoomInRotate.springify().delay(120)} style={styles.iconColumn}>
+                <View
+                  style={StyleSheet.flatten([
+                    styles.iconWrap,
+                    { backgroundColor: theme.backgroundSelected, borderColor: theme.primary },
+                  ])}>
+                  {achievement.imageUrl ? (
+                    <Image source={{ uri: achievement.imageUrl }} style={styles.image} contentFit="cover" />
+                  ) : (
+                    <AppIcon name={achievement.icon} size={28} color={theme.primary} />
+                  )}
+                </View>
+                <Text style={StyleSheet.flatten([styles.unlockedLabel, { color: theme.primary }])}>
+                  UNLOCKED
+                </Text>
+              </Animated.View>
+
+              <View style={styles.copy}>
+                <Text style={StyleSheet.flatten([styles.eyebrow, { color: theme.textSecondary }])}>
+                  Achievement earned
+                </Text>
+                <Text style={StyleSheet.flatten([styles.title, { color: theme.text }])}>{achievement.title}</Text>
+                <Text style={StyleSheet.flatten([styles.description, { color: theme.textSecondary }])}>
+                  {achievement.description}
+                </Text>
+                {achievement.xpReward > 0 ? (
+                  <Text style={StyleSheet.flatten([styles.xp, { color: theme.xp }])}>
+                    +{achievement.xpReward} XP
+                  </Text>
+                ) : null}
+              </View>
+
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Dismiss achievement notification"
+                onPress={onDismiss}
+                hitSlop={8}
+                style={StyleSheet.flatten([styles.dismissButton, { borderColor: theme.border }])}>
+                <AppIcon name="close" size={14} color={theme.textSecondary} />
+              </Pressable>
+            </Pressable>
           </Animated.View>
-
-          <View style={styles.copy}>
-            <Text style={StyleSheet.flatten([styles.eyebrow, { color: theme.textSecondary }])}>
-              Achievement earned
-            </Text>
-            <Text style={StyleSheet.flatten([styles.title, { color: theme.text }])}>{achievement.title}</Text>
-            <Text style={StyleSheet.flatten([styles.description, { color: theme.textSecondary }])}>
-              {achievement.description}
-            </Text>
-            {achievement.xpReward > 0 ? (
-              <Text style={StyleSheet.flatten([styles.xp, { color: theme.xp }])}>
-                +{achievement.xpReward} XP
-              </Text>
-            ) : null}
-          </View>
-
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Dismiss achievement notification"
-            onPress={onDismiss}
-            hitSlop={8}
-            style={StyleSheet.flatten([styles.dismissButton, { borderColor: theme.border }])}>
-            <AppIcon name="close" size={14} color={theme.textSecondary} />
-          </Pressable>
-        </Pressable>
-      </Animated.View>
-    </View>
+        </View>
+      </View>
+    </Modal>
   );
 }
 
 export { AUTO_DISMISS_MS };
 
 const styles = StyleSheet.create({
+  modalRoot: {
+    flex: 1,
+    backgroundColor: 'transparent',
+  },
   overlay: {
     position: 'absolute',
     left: Spacing.three,
     right: Spacing.three,
-    zIndex: 1100,
+  },
+  toastLayer: {
+    elevation: 24,
   },
   card: {
     flexDirection: 'row',

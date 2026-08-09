@@ -36,16 +36,36 @@ interface NavItem {
   href: Href;
 }
 
-const NAV_ITEMS: NavItem[] = [
-  { label: 'Home', icon: 'home', href: '/(tabs)' },
-  { label: 'Profile', icon: 'profile', href: '/(tabs)/profile' },
-  { label: 'Achievements', icon: 'medal', href: '/profile/achievements' },
-  { label: 'History', icon: 'history', href: '/profile/history' },
-  { label: 'Settings', icon: 'settings', href: '/profile/settings' },
-  { label: 'Support', icon: 'support', href: '/profile/support' },
-  { label: 'Friends', icon: 'friends', href: '/(tabs)/friends' },
-  { label: 'Challenges', icon: 'target', href: '/(tabs)/challenges' },
-  { label: 'Leaderboard', icon: 'crown', href: '/(tabs)/leaderboard' },
+interface NavSection {
+  title: string;
+  items: NavItem[];
+}
+
+const NAV_SECTIONS: NavSection[] = [
+  {
+    title: 'Play',
+    items: [
+      { label: 'Home', icon: 'home', href: '/(tabs)' },
+      { label: 'Friends', icon: 'friends', href: '/(tabs)/friends' },
+      { label: 'Challenges', icon: 'target', href: '/(tabs)/challenges' },
+      { label: 'Leaderboard', icon: 'crown', href: '/(tabs)/leaderboard' },
+    ],
+  },
+  {
+    title: 'You',
+    items: [
+      { label: 'Profile', icon: 'profile', href: '/(tabs)/profile' },
+      { label: 'Achievements', icon: 'medal', href: '/profile/achievements' },
+      { label: 'History', icon: 'history', href: '/profile/history' },
+    ],
+  },
+  {
+    title: 'More',
+    items: [
+      { label: 'Settings', icon: 'settings', href: '/profile/settings' },
+      { label: 'Support', icon: 'support', href: '/profile/support' },
+    ],
+  },
 ];
 
 export function AppSidebar() {
@@ -153,6 +173,41 @@ export function AppSidebar() {
               targetXp={xpProgress.xpToNextLevel}
             />
 
+            <View style={styles.navSections}>
+              {NAV_SECTIONS.map((section) => (
+                <View key={section.title} style={styles.navSection}>
+                  <Text style={StyleSheet.flatten([styles.navSectionTitle, { color: theme.textSecondary }])}>
+                    {section.title}
+                  </Text>
+                  <View
+                    style={StyleSheet.flatten([
+                      styles.navGroup,
+                      { backgroundColor: theme.backgroundElement, borderColor: theme.border },
+                    ])}>
+                    {section.items.map((item, index) => (
+                      <Pressable
+                        key={item.label}
+                        onPress={() => navigate(item.href)}
+                        style={StyleSheet.flatten([
+                          styles.navItem,
+                          index < section.items.length - 1
+                            ? StyleSheet.flatten([
+                                styles.navItemDivider,
+                                { borderBottomColor: theme.border },
+                              ])
+                            : null,
+                        ])}>
+                        <AppIcon name={item.icon} size={20} color={theme.text} />
+                        <Text style={StyleSheet.flatten([styles.navLabel, { color: theme.text }])}>
+                          {item.label}
+                        </Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                </View>
+              ))}
+            </View>
+
             <AchievementBadges
               unlocked={unlockedAchievements}
               upcoming={upcomingAchievements}
@@ -160,21 +215,6 @@ export function AppSidebar() {
             />
 
             <DailyMotivationCard />
-
-            <View style={styles.navList}>
-              {NAV_ITEMS.map((item) => (
-                <Pressable
-                  key={item.label}
-                  onPress={() => navigate(item.href)}
-                  style={StyleSheet.flatten([
-                    styles.navItem,
-                    { backgroundColor: theme.backgroundElement, borderColor: theme.border },
-                  ])}>
-                  <AppIcon name={item.icon} size={20} color={theme.text} />
-                  <Text style={StyleSheet.flatten([styles.navLabel, { color: theme.text }])}>{item.label}</Text>
-                </Pressable>
-              ))}
-            </View>
 
             {logoutError ? (
               <Text style={StyleSheet.flatten([styles.logoutError, { color: theme.danger }])}>
@@ -256,12 +296,12 @@ const styles = StyleSheet.create({
     gap: Spacing.one,
   },
   hello: {
-    fontSize: 22,
-    fontWeight: '800',
+    fontSize: 14,
+    fontWeight: '600',
   },
   displayName: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: 18,
+    fontWeight: '800',
   },
   closeButton: {
     width: 36,
@@ -274,17 +314,33 @@ const styles = StyleSheet.create({
   divider: {
     height: 1,
   },
-  navList: {
-    gap: Spacing.two,
+  navSections: {
+    gap: Spacing.three,
+  },
+  navSection: {
+    gap: Spacing.one,
+  },
+  navSectionTitle: {
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+    paddingHorizontal: Spacing.one,
+  },
+  navGroup: {
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    overflow: 'hidden',
   },
   navItem: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.three,
     paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two,
-    borderRadius: Radius.md,
-    borderWidth: 1,
+    paddingVertical: Spacing.three,
+  },
+  navItemDivider: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
   navLabel: {
     fontSize: 16,

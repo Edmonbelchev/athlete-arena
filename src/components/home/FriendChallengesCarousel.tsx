@@ -14,6 +14,7 @@ import { AppIcon } from '@/components/ui/AppIcon';
 import { FriendChallengeCard } from '@/components/ui/FriendChallengeCard';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { Radius, Spacing } from '@/constants/theme';
+import { useFriends } from '@/features/friends/useFriends';
 import type { FriendChallenge } from '@/types/friends';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -31,6 +32,7 @@ export function FriendChallengesCarousel({
   onDecline,
 }: FriendChallengesCarouselProps) {
   const theme = useTheme();
+  const { friends, isLoading: isFriendsLoading } = useFriends();
   const scrollRef = useRef<ScrollView>(null);
   const slideWidthRef = useRef(0);
   const [slideWidth, setSlideWidth] = useState(0);
@@ -77,6 +79,15 @@ export function FriendChallengesCarousel({
     [challenges.length],
   );
 
+  function handleChallengeFriendPress() {
+    if (friends.length === 0) {
+      router.push('/friends/add');
+      return;
+    }
+
+    router.push('/friends/challenge/create');
+  }
+
   if (challenges.length === 0) {
     return (
       <View
@@ -92,8 +103,10 @@ export function FriendChallengesCarousel({
           Challenge a friend to a speed race and compete for XP.
         </Text>
         <PrimaryButton
-          label="Challenge a Friend"
-          onPress={() => router.push('/friends/challenge/create')}
+          label={friends.length === 0 ? 'Add a Friend' : 'Challenge a Friend'}
+          loading={isFriendsLoading}
+          disabled={isFriendsLoading}
+          onPress={handleChallengeFriendPress}
         />
       </View>
     );

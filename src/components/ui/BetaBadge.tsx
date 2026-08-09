@@ -1,7 +1,6 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { DimensionValue, StyleSheet, Text, View } from 'react-native';
 
-import { APP_VERSION_LABEL } from '@/constants/app';
-import { Radius, Spacing } from '@/constants/theme';
+import { FitContentWidth, Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 interface BetaBadgeProps {
@@ -19,21 +18,24 @@ export function BetaBadge({ showVersion = false, compact = false }: BetaBadgePro
         compact ? styles.badgeCompact : null,
         { backgroundColor: theme.backgroundSelected, borderColor: theme.border },
       ])}>
-      <Text style={StyleSheet.flatten([styles.label, { color: theme.primary }])}>Beta</Text>
-      {showVersion ? (
-        <Text style={StyleSheet.flatten([styles.version, { color: theme.textSecondary }])}>
-          {APP_VERSION_LABEL}
-        </Text>
-      ) : null}
+      <Text
+        style={StyleSheet.flatten([
+          styles.label,
+          showVersion ? styles.versionLabel : null,
+          { color: theme.primary },
+        ])}>
+        {showVersion ? 'BETA Version' : 'Beta'}
+      </Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   badge: {
+    width: FitContentWidth as DimensionValue,
+    alignSelf: 'flex-start',
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.one,
     borderRadius: Radius.sm,
     borderWidth: 1,
     paddingHorizontal: Spacing.two,
@@ -49,8 +51,8 @@ const styles = StyleSheet.create({
     letterSpacing: 0.6,
     textTransform: 'uppercase',
   },
-  version: {
-    fontSize: 10,
-    fontWeight: '600',
+  versionLabel: {
+    textTransform: 'none',
+    letterSpacing: 0.3,
   },
 });
