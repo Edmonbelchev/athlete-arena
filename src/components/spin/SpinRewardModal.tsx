@@ -2,6 +2,7 @@ import { Modal, StyleSheet, Text, View } from 'react-native';
 
 import { CoinBadge } from '@/components/shop/CoinBadge';
 import { AppIcon } from '@/components/ui/AppIcon';
+import { CoinIcon } from '@/components/ui/CoinIcon';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import {
   COIN_MULTIPLIER_VALUE,
@@ -36,12 +37,11 @@ export function SpinRewardModal({ result, onClose }: SpinRewardModalProps) {
           ])}>
           <View
             style={StyleSheet.flatten([styles.iconWrap, { backgroundColor: `${rarityColor}22` }])}>
-            <AppIcon
-              name={result.multiplierGranted ? 'bolt' : 'coin'}
-              size={34}
-              color={rarityColor}
-              weight="bold"
-            />
+            {result.multiplierGranted ? (
+              <AppIcon name="bolt" size={34} color={rarityColor} weight="bold" />
+            ) : (
+              <CoinIcon size={34} />
+            )}
           </View>
 
           <Text style={StyleSheet.flatten([styles.rarity, { color: rarityColor }])}>
