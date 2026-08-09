@@ -1,4 +1,4 @@
-import { Stack, useRouter } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -19,28 +19,52 @@ import {
   ONBOARDING_WELCOME,
 } from '@/features/onboarding/onboardingContent';
 import { useUserSettings } from '@/features/settings/UserSettingsProvider';
+import { leaveScreen } from '@/lib/navigation';
 import { useTheme } from '@/hooks/use-theme';
 
 export default function OnboardingScreen() {
   const theme = useTheme();
   const router = useRouter();
-  const { completeOnboarding, isSaving } = useUserSettings();
+  const { source } = useLocalSearchParams<{ source?: string }>();
+  const isReplay = source === 'settings';
+  const { completeOnboarding, isSaving, preferences } = useUserSettings();
   const [stepIndex, setStepIndex] = useState(0);
   const [isFinishing, setIsFinishing] = useState(false);
+  const [finishError, setFinishError] = useState<string | null>(null);
+
+  const exitOnboarding = useCallback(() => {
+    leaveScreen(router);
+  }, [router]);
 
   const finishOnboarding = useCallback(async () => {
     if (isFinishing) {
       return;
     }
 
+    if (isReplay || preferences.hasCompletedOnboarding) {
+      exitOnboarding();
+      return;
+    }
+
     setIsFinishing(true);
+    setFinishError(null);
+
     try {
       await completeOnboarding();
       router.replace('/(tabs)');
+    } catch (error) {
+      setFinishError(error instanceof Error ? error.message : 'Failed to save onboarding progress.');
     } finally {
       setIsFinishing(false);
     }
-  }, [completeOnboarding, isFinishing, router]);
+  }, [
+    completeOnboarding,
+    exitOnboarding,
+    isFinishing,
+    isReplay,
+    preferences.hasCompletedOnboarding,
+    router,
+  ]);
 
   function handleNext() {
     if (stepIndex >= ONBOARDING_STEP_COUNT - 1) {
@@ -74,13 +98,18 @@ export default function OnboardingScreen() {
                   <PrimaryButton label="Back" variant="secondary" onPress={handleBack} />
                 ) : null}
                 <PrimaryButton
-                  label={isLastStep ? 'Enter Athlete Arena' : 'Next'}
+                  label={isLastStep ? (isReplay ? 'Done' : 'Enter Athlete Arena') : 'Next'}
                   loading={isFinishing || isSaving}
                   onPress={handleNext}
                 />
               </View>
             )
           }>
+          {finishError ? (
+            <Text style={StyleSheet.flatten([styles.finishError, { color: theme.danger }])}>
+              {finishError}
+            </Text>
+          ) : null}
           {stepIndex === 0 ? (
             <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
               <View style={styles.hero}>
@@ -286,5 +315,11 @@ const styles = StyleSheet.create({
   },
   footerActions: {
     gap: Spacing.two,
+  },
+  finishError: {
+    fontSize: 14,
+    fontWeight: '600',
+    textAlign: 'center',
+    marginBottom: Spacing.two,
   },
 });

@@ -118,7 +118,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   );
 
   const refreshInbox = useCallback(async () => {
-    if (!userId || !env.isSupabaseConfigured || isSyncingRef.current) {
+    if (!userId || !env.isSupabaseConfigured || isSyncingRef.current || !isHydratedRef.current) {
       return;
     }
 
@@ -188,11 +188,15 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   );
 
   const bannerNotification = useMemo(() => {
+    if (!isHydrated) {
+      return null;
+    }
+
     return (
       notifications.find((notification) => !notification.read && !hiddenBannerIds.has(notification.id)) ??
       null
     );
-  }, [notifications, hiddenBannerIds]);
+  }, [notifications, hiddenBannerIds, isHydrated]);
 
   const markAsRead = useCallback(
     (id: string) => {

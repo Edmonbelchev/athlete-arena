@@ -3,6 +3,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -11,6 +12,7 @@ import { useColorScheme as useSystemColorScheme } from 'react-native';
 
 import {
   getDefaultUserPreferences,
+  getUserPreferencesStorageKey,
   mergeUserPreferences,
   parseUserPreferences,
   USER_PREFERENCES_STORAGE_KEY,
@@ -47,15 +49,24 @@ export function UserSettingsProvider({ children }: { children: React.ReactNode }
     [systemScheme],
   );
   const [preferences, setPreferencesState] = useState<UserPreferences>(defaults);
-  const [isReady, setIsReady] = useState(false);
+  /** `undefined` = loading for current user; otherwise the user id prefs were loaded for (null = signed out). */
+  const [loadedForUserId, setLoadedForUserId] = useState<string | null | undefined>(undefined);
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const preferencesRef = useRef(preferences);
   preferencesRef.current = preferences;
+  const isReady = loadedForUserId !== undefined && loadedForUserId === userId;
 
-  const persistLocally = useCallback(async (next: UserPreferences) => {
-    await setAppStorageItem(USER_PREFERENCES_STORAGE_KEY, JSON.stringify(next));
-  }, []);
+  useLayoutEffect(() => {
+    setLoadedForUserId(undefined);
+  }, [userId]);
+
+  const persistLocally = useCallback(
+    async (next: UserPreferences, forUserId: string | null = userId) => {
+      await setAppStorageItem(getUserPreferencesStorageKey(forUserId), JSON.stringify(next));
+    },
+    [userId],
+  );
 
   const persistToAccount = useCallback(
     async (patch: Partial<UserPreferences>) => {
@@ -78,6 +89,12 @@ export function UserSettingsProvider({ children }: { children: React.ReactNode }
         await persistLocally(saved);
       } catch (error) {
         setSaveError(error instanceof Error ? error.message : 'Failed to save settings');
+
+        if (patch.hasCompletedOnboarding && optimistic.hasCompletedOnboarding) {
+          // Keep local onboarding completion even if account sync fails offline.
+          return;
+        }
+
         setPreferencesState(previous);
         await persistLocally(previous);
       } finally {
@@ -91,9 +108,19 @@ export function UserSettingsProvider({ children }: { children: React.ReactNode }
     let cancelled = false;
 
     void (async () => {
-      setIsReady(false);
+      setPreferencesState(defaults);
 
-      const stored = await getAppStorageItem(USER_PREFERENCES_STORAGE_KEY);
+      const storageKey = getUserPreferencesStorageKey(userId);
+      let stored = await getAppStorageItem(storageKey);
+
+      if (!stored && userId) {
+        const legacyStored = await getAppStorageItem(USER_PREFERENCES_STORAGE_KEY);
+        if (legacyStored) {
+          stored = legacyStored;
+          await setAppStorageItem(storageKey, legacyStored);
+        }
+      }
+
       let localPreferences = defaults;
 
       if (stored) {
@@ -102,7 +129,7 @@ export function UserSettingsProvider({ children }: { children: React.ReactNode }
         } catch {
           localPreferences = defaults;
         }
-      } else {
+      } else if (!userId) {
         const legacyTheme = await getAppStorageItem('theme-preference');
         if (legacyTheme === 'light' || legacyTheme === 'dark') {
           localPreferences = { ...defaults, theme: legacyTheme };
@@ -119,8 +146,9 @@ export function UserSettingsProvider({ children }: { children: React.ReactNode }
         try {
           const remote = await getUserPreferences(userId);
           if (!cancelled && remote) {
-            setPreferencesState(remote);
-            await persistLocally(remote);
+            const merged = mergeUserPreferences(localPreferences, remote);
+            setPreferencesState(merged);
+            await persistLocally(merged, userId);
           }
         } catch {
           // Keep local preferences when the account sync fails offline.
@@ -128,7 +156,7 @@ export function UserSettingsProvider({ children }: { children: React.ReactNode }
       }
 
       if (!cancelled) {
-        setIsReady(true);
+        setLoadedForUserId(userId);
       }
     })();
 

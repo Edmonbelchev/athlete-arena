@@ -1,4 +1,4 @@
-import { Platform, StyleSheet, Text, View } from 'react-native';
+import { Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { CameraPreview } from '@/components/CameraPreview';
 import { PoseGuidanceBanner } from '@/components/PoseGuidanceBanner';
@@ -22,6 +22,9 @@ export function OnboardingCameraTry({ onContinue }: OnboardingCameraTryProps) {
   const repCounter = useRepCounter({
     targetReps,
     enabled: true,
+    onRepDetected: () => {
+      repCounter.simulateRep();
+    },
   });
 
   const { processLandmarks, phase, trackingStatus, pullUpBarLineY } =
@@ -37,7 +40,11 @@ export function OnboardingCameraTry({ onContinue }: OnboardingCameraTryProps) {
   const showSimulateButton = !autoRepCounting;
 
   return (
-    <View style={styles.container}>
+    <ScrollView
+      style={styles.scroll}
+      contentContainerStyle={styles.container}
+      showsVerticalScrollIndicator={false}
+      keyboardShouldPersistTaps="handled">
       <Text style={StyleSheet.flatten([styles.title, { color: theme.text }])}>{ONBOARDING_CAMERA.title}</Text>
       <Text style={StyleSheet.flatten([styles.description, { color: theme.textSecondary }])}>
         {ONBOARDING_CAMERA.description}
@@ -71,23 +78,21 @@ export function OnboardingCameraTry({ onContinue }: OnboardingCameraTryProps) {
           {repCounter.currentReps} / {targetReps}
         </Text>
       </View>
-
-      {showSimulateButton ? (
-        <PrimaryButton label="+ Simulate Rep" variant="secondary" onPress={() => repCounter.simulateRep()} />
-      ) : null}
-
       <PrimaryButton
         label={repCounter.isComplete ? 'Nice work - Continue' : 'Continue without finishing'}
         onPress={onContinue}
       />
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  scroll: {
     flex: 1,
+  },
+  container: {
     gap: Spacing.three,
+    paddingBottom: Spacing.four,
   },
   title: {
     fontSize: 24,

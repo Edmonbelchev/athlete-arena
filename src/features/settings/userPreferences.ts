@@ -13,6 +13,10 @@ export interface UserPreferences {
 
 export const USER_PREFERENCES_STORAGE_KEY = 'user-preferences';
 
+export function getUserPreferencesStorageKey(userId: string | null): string {
+  return userId ? `${USER_PREFERENCES_STORAGE_KEY}.${userId}` : USER_PREFERENCES_STORAGE_KEY;
+}
+
 export function getDefaultUserPreferences(systemDark = false): UserPreferences {
   return {
     theme: systemDark ? 'dark' : 'light',
@@ -56,10 +60,13 @@ export function mergeUserPreferences(
   current: UserPreferences,
   patch: Partial<UserPreferences>,
 ): UserPreferences {
+  const nextHasCompletedOnboarding =
+    patch.hasCompletedOnboarding ?? current.hasCompletedOnboarding;
+
   return {
     theme: patch.theme ?? current.theme,
     showPoseSkeleton: patch.showPoseSkeleton ?? current.showPoseSkeleton,
     showRepProgressBar: patch.showRepProgressBar ?? current.showRepProgressBar,
-    hasCompletedOnboarding: patch.hasCompletedOnboarding ?? current.hasCompletedOnboarding,
+    hasCompletedOnboarding: current.hasCompletedOnboarding || nextHasCompletedOnboarding,
   };
 }

@@ -1,7 +1,6 @@
 import '@/lib/mediapipe/delayedPoseDetectorRelease';
 import { DarkTheme, DefaultTheme, ThemeProvider, Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { useEffect } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
 import { AuthProvider, useAuth } from '@/features/auth';
@@ -52,12 +51,6 @@ function ThemedRootNavigator() {
 function RootNavigator() {
   const { session, isLoading } = useAuth();
 
-  useEffect(() => {
-    if (!isLoading) {
-      SplashScreen.hideAsync();
-    }
-  }, [isLoading]);
-
   if (isLoading) {
     return (
       <View style={styles.loading}>
@@ -69,10 +62,10 @@ function RootNavigator() {
   return (
     <>
       <AuthDeepLinkHandler />
-      <Stack screenOptions={{ headerShown: false }}>
+      <Stack screenOptions={{ headerShown: false }} initialRouteName="(tabs)">
       <Stack.Protected guard={Boolean(session)}>
-        <Stack.Screen name="onboarding" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="onboarding" options={{ headerShown: false }} />
         <Stack.Screen
           name="challenge/[id]"
           options={{

@@ -110,6 +110,20 @@ export default function SettingsScreen() {
             </View>
           ) : null}
 
+          <View style={styles.section}>
+            <Text style={StyleSheet.flatten([styles.sectionTitle, { color: theme.text }])}>
+              Getting started
+            </Text>
+            <Text style={StyleSheet.flatten([styles.supportCopy, { color: theme.textSecondary }])}>
+              Walk through the app intro, exercise tips, and camera practice again.
+            </Text>
+            <PrimaryButton
+              label="Review onboarding"
+              variant="secondary"
+              onPress={() => router.push('/onboarding?source=settings')}
+            />
+          </View>
+
           {saveError ? (
             <Text style={StyleSheet.flatten([styles.error, { color: theme.danger }])}>{saveError}</Text>
           ) : null}
