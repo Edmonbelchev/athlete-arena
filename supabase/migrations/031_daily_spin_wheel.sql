@@ -152,12 +152,14 @@ as $$
     s.weight::integer,
     s.sort_order::integer
   from (values
-    ('coins_5',       'common',      5, false, 30, 1),
-    ('coins_10',      'common',     10, false, 27, 2),
-    ('coins_20',      'rare',       20, false, 22, 3),
-    ('coins_50',      'epic',       50, false, 12, 4),
-    ('multiplier_2x', 'epic',        0,  true,  6, 5),
-    ('coins_100',     'legendary', 100, false,  3, 6)
+    ('coins_5',       'common',      5, false, 18, 1),
+    ('coins_10',      'common',     10, false, 16, 2),
+    ('coins_15',      'common',     15, false, 14, 3),
+    ('coins_20',      'rare',       20, false, 14, 4),
+    ('coins_30',      'rare',       30, false, 12, 5),
+    ('coins_50',      'epic',       50, false, 10, 6),
+    ('coins_100',     'epic',      100, false,  8, 7),
+    ('multiplier_2x', 'legendary',   0,  true,  8, 8)
   ) as s(reward_id, rarity, coins, grants_multiplier, weight, sort_order)
   order by s.sort_order;
 $$;

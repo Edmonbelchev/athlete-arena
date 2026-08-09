@@ -9,12 +9,14 @@ import Animated, {
 } from 'react-native-reanimated';
 import Svg, { Circle, Path, Text as SvgText } from 'react-native-svg';
 
+import { AppIcon } from '@/components/ui/AppIcon';
 import { getSegmentShortLabel, SPIN_RARITY_COLORS } from '@/constants/spinWheel';
 import { useTheme } from '@/hooks/use-theme';
 import type { SpinSegment } from '@/types/spin';
 
 const SPIN_DURATION_MS = 4200;
 const FULL_TURNS = 5;
+const HUB_SIZE_RATIO = 0.32;
 
 export interface SpinTarget {
   index: number;
@@ -58,6 +60,7 @@ export function SpinWheel({ segments, size = 280, target, onSpinEnd }: SpinWheel
 
   const center = size / 2;
   const radius = center - 6;
+  const hubSize = radius * HUB_SIZE_RATIO;
   const step = segments.length > 0 ? 360 / segments.length : 360;
 
   const animatedStyle = useAnimatedStyle(() => ({
@@ -123,17 +126,23 @@ export function SpinWheel({ segments, size = 280, target, onSpinEnd }: SpinWheel
               </SvgText>
             );
           })}
-
-          <Circle
-            cx={center}
-            cy={center}
-            r={radius * 0.16}
-            fill={theme.backgroundElement}
-            stroke={theme.border}
-            strokeWidth={2}
-          />
         </Svg>
       </Animated.View>
+
+      <View
+        pointerEvents="none"
+        style={[
+          styles.hub,
+          {
+            width: hubSize,
+            height: hubSize,
+            borderRadius: hubSize / 2,
+            backgroundColor: theme.backgroundElement,
+            borderColor: theme.border,
+          },
+        ]}>
+        <AppIcon name="coin" size={hubSize * 0.52} color={theme.accent} weight="bold" />
+      </View>
 
       <View
         pointerEvents="none"
@@ -151,6 +160,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     alignSelf: 'center',
+  },
+  hub: {
+    position: 'absolute',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
   },
   pointer: {
     position: 'absolute',

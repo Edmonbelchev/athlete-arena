@@ -15,11 +15,12 @@ interface UseDailySpinResult {
   error: string | null;
   refresh: () => Promise<void>;
   spin: () => Promise<SpinResult | null>;
+  commitSpinResult: (result: SpinResult) => void;
 }
 
 export function useDailySpin(): UseDailySpinResult {
   const { session } = useAuth();
-  const { refresh: refreshShop } = useShop();
+  const { refresh: refreshShop, patchSummary } = useShop();
   const [status, setStatus] = useState<DailySpinStatus | null>(null);
   const [isLoading, setIsLoading] = useState(Boolean(session));
   const [isSpinning, setIsSpinning] = useState(false);
@@ -46,16 +47,13 @@ export function useDailySpin(): UseDailySpinResult {
     }
   }, [session]);
 
-  const spin = useCallback(async () => {
-    if (isSpinning) {
-      return null;
-    }
-
-    setIsSpinning(true);
-    setError(null);
-
-    try {
-      const result = await spinDailyWheel();
+  const commitSpinResult = useCallback(
+    (result: SpinResult) => {
+      patchSummary({
+        coinBalance: result.coinBalance,
+        coinMultiplier: result.coinMultiplier,
+        coinMultiplierExpiresAt: result.coinMultiplierExpiresAt,
+      });
 
       setStatus((current) =>
         current
@@ -71,6 +69,22 @@ export function useDailySpin(): UseDailySpinResult {
       );
 
       void refreshShop().catch(() => undefined);
+    },
+    [patchSummary, refreshShop],
+  );
+
+  const spin = useCallback(async () => {
+    if (isSpinning) {
+      return null;
+    }
+
+    setIsSpinning(true);
+    setError(null);
+
+    try {
+      const result = await spinDailyWheel();
+
+      setStatus((current) => (current ? { ...current, canSpin: false } : current));
 
       return result;
     } catch (err) {
@@ -79,7 +93,7 @@ export function useDailySpin(): UseDailySpinResult {
     } finally {
       setIsSpinning(false);
     }
-  }, [isSpinning, refreshShop]);
+  }, [isSpinning]);
 
   useEffect(() => {
     void refresh();
@@ -93,5 +107,6 @@ export function useDailySpin(): UseDailySpinResult {
     error,
     refresh,
     spin,
+    commitSpinResult,
   };
 }

@@ -21,12 +21,14 @@ export const COIN_MULTIPLIER_VALUE = 2;
 
 /** Used only until the server status loads, so the wheel never renders empty. */
 export const FALLBACK_SPIN_SEGMENTS: SpinSegment[] = [
-  { rewardId: 'coins_5', rarity: 'common', coins: 5, grantsMultiplier: false, weight: 30 },
-  { rewardId: 'coins_10', rarity: 'common', coins: 10, grantsMultiplier: false, weight: 27 },
-  { rewardId: 'coins_20', rarity: 'rare', coins: 20, grantsMultiplier: false, weight: 22 },
-  { rewardId: 'coins_50', rarity: 'epic', coins: 50, grantsMultiplier: false, weight: 12 },
-  { rewardId: 'multiplier_2x', rarity: 'epic', coins: 0, grantsMultiplier: true, weight: 6 },
-  { rewardId: 'coins_100', rarity: 'legendary', coins: 100, grantsMultiplier: false, weight: 3 },
+  { rewardId: 'coins_5', rarity: 'common', coins: 5, grantsMultiplier: false, weight: 18 },
+  { rewardId: 'coins_10', rarity: 'common', coins: 10, grantsMultiplier: false, weight: 16 },
+  { rewardId: 'coins_15', rarity: 'common', coins: 15, grantsMultiplier: false, weight: 14 },
+  { rewardId: 'coins_20', rarity: 'rare', coins: 20, grantsMultiplier: false, weight: 14 },
+  { rewardId: 'coins_30', rarity: 'rare', coins: 30, grantsMultiplier: false, weight: 12 },
+  { rewardId: 'coins_50', rarity: 'epic', coins: 50, grantsMultiplier: false, weight: 10 },
+  { rewardId: 'coins_100', rarity: 'epic', coins: 100, grantsMultiplier: false, weight: 8 },
+  { rewardId: 'multiplier_2x', rarity: 'legendary', coins: 0, grantsMultiplier: true, weight: 8 },
 ];
 
 export function getSegmentShortLabel(segment: SpinSegment): string {

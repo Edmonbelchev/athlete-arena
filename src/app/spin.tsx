@@ -9,10 +9,7 @@ import { AppIcon } from '@/components/ui/AppIcon';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import {
   COIN_MULTIPLIER_VALUE,
-  formatTimeRemaining,
-  getSegmentTitle,
-  SPIN_RARITY_COLORS,
-  SPIN_RARITY_LABELS,
+  formatTimeRemaining
 } from '@/constants/spinWheel';
 import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { useDailySpin } from '@/features/spin/useDailySpin';
@@ -21,7 +18,7 @@ import type { SpinResult } from '@/types/spin';
 
 export default function SpinScreen() {
   const theme = useTheme();
-  const { status, segments, isLoading, isSpinning, error, spin } = useDailySpin();
+  const { status, segments, isLoading, isSpinning, error, spin, commitSpinResult } = useDailySpin();
 
   const [target, setTarget] = useState<SpinTarget | null>(null);
   const [pendingResult, setPendingResult] = useState<SpinResult | null>(null);
@@ -35,9 +32,14 @@ export default function SpinScreen() {
 
   const handleSpinEnd = useCallback(() => {
     setIsAnimating(false);
-    setRevealedResult(pendingResult);
+
+    if (pendingResult) {
+      commitSpinResult(pendingResult);
+      setRevealedResult(pendingResult);
+    }
+
     setPendingResult(null);
-  }, [pendingResult]);
+  }, [commitSpinResult, pendingResult]);
 
   async function handleSpin() {
     if (!canSpin) {
@@ -118,43 +120,6 @@ export default function SpinScreen() {
             Next spin in {nextSpinRemaining}
           </Text>
         ) : null}
-
-        <View style={styles.legend}>
-          <Text style={StyleSheet.flatten([styles.legendTitle, { color: theme.text }])}>
-            Rewards
-          </Text>
-
-          {segments.map((segment) => (
-            <View
-              key={segment.rewardId}
-              style={StyleSheet.flatten([
-                styles.legendRow,
-                { backgroundColor: theme.backgroundElement, borderColor: theme.border },
-              ])}>
-              <View
-                style={StyleSheet.flatten([
-                  styles.legendDot,
-                  { backgroundColor: SPIN_RARITY_COLORS[segment.rarity] },
-                ])}
-              />
-              <View style={styles.legendCopy}>
-                <Text style={StyleSheet.flatten([styles.legendReward, { color: theme.text }])}>
-                  {getSegmentTitle(segment)}
-                </Text>
-                <Text
-                  style={StyleSheet.flatten([
-                    styles.legendRarity,
-                    { color: SPIN_RARITY_COLORS[segment.rarity] },
-                  ])}>
-                  {SPIN_RARITY_LABELS[segment.rarity]}
-                </Text>
-              </View>
-              <Text style={StyleSheet.flatten([styles.legendOdds, { color: theme.textSecondary }])}>
-                {segment.weight}%
-              </Text>
-            </View>
-          ))}
-        </View>
       </ScrollView>
 
       <SpinRewardModal result={revealedResult} onClose={() => setRevealedResult(null)} />
