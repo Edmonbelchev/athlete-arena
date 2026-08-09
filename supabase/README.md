@@ -168,6 +168,30 @@ Run after core migrations:
 
 Weekly rankings use **UTC weeks starting Monday**. All-time rankings use `profiles.total_xp`.
 
+## Daily spin wheel (migration `031_daily_spin_wheel.sql`)
+
+```sql
+-- Paste contents of supabase/migrations/031_daily_spin_wheel.sql
+```
+
+| Object | Purpose |
+|--------|---------|
+| `daily_spins` | One row per user per UTC day; the unique key enforces one spin daily |
+| `profiles.coin_multiplier_expires_at` | While in the future, coin rewards are doubled |
+| `get_daily_spin_status()` | Wheel segments, whether a spin is available, active multiplier |
+| `spin_daily_wheel()` | Picks a weighted random reward and grants it |
+| `award_coins_exact(uuid, int)` | Raw coin increment that ignores the multiplier |
+| Updated `award_coins` | Doubles the payout while the multiplier is active |
+| Updated `get_my_shop_summary` | Also returns `coin_multiplier` and its expiry |
+
+The **2x buff** is applied inside `award_coins`, so every coin source (daily
+challenge, friend races, future rewards) respects it without changes at the call
+site. It expires at the next **UTC midnight**, the same boundary the daily
+challenge and the next spin reset on.
+
+`award_coins` is also revoked from `public` in this migration; it previously
+inherited the default `EXECUTE` grant, which let any signed-in user mint coins.
+
 ## Incremental migrations
 
 If you prefer running migrations separately:

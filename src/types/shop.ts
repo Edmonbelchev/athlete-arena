@@ -30,6 +30,9 @@ export interface ShopSummary {
   coinBalance: number;
   inventory: string[];
   equipped: Partial<Record<ShopSlot, string>>;
+  /** 2 while the daily spin wheel buff is active, otherwise 1. */
+  coinMultiplier: number;
+  coinMultiplierExpiresAt: string | null;
 }
 
 export interface ShopAvatarDisplay {

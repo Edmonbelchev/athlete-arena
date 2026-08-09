@@ -45,18 +45,21 @@ export const Fonts = Platform.select({
     serif: 'ui-serif',
     rounded: 'ui-rounded',
     mono: 'ui-monospace',
+    display: 'ui-rounded',
   },
   default: {
     sans: 'normal',
     serif: 'serif',
     rounded: 'normal',
     mono: 'monospace',
+    display: 'sans-serif-black',
   },
   web: {
     sans: 'var(--font-display)',
     serif: 'var(--font-serif)',
     rounded: 'var(--font-rounded)',
     mono: 'var(--font-mono)',
+    display: 'Spline Sans, Inter, ui-sans-serif, system-ui, sans-serif',
   },
 });
 

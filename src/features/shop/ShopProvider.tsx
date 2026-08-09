@@ -30,6 +30,10 @@ import type {
   ShopSummary,
 } from '@/types/shop';
 
+type ShopSummaryPatch = Partial<
+  Pick<ShopSummary, 'coinBalance' | 'coinMultiplier' | 'coinMultiplierExpiresAt'>
+>;
+
 interface ShopContextValue {
   items: ShopItemRecord[];
   summary: ShopSummary;
@@ -40,6 +44,7 @@ interface ShopContextValue {
   equippedFrame: ShopFrameDisplay | null;
   equippedEmote: string | null;
   refresh: () => Promise<void>;
+  patchSummary: (patch: ShopSummaryPatch) => void;
   purchaseItem: (itemId: string) => Promise<void>;
   equipItem: (itemId: string) => Promise<void>;
   getItemsByType: (itemType: ShopItemType) => ShopItemRecord[];
@@ -49,6 +54,8 @@ const emptySummary: ShopSummary = {
   coinBalance: 0,
   inventory: [],
   equipped: {},
+  coinMultiplier: 1,
+  coinMultiplierExpiresAt: null,
 };
 
 const ShopContext = createContext<ShopContextValue | null>(null);
@@ -60,6 +67,10 @@ export function ShopProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(Boolean(session));
   const [isUpdating, setIsUpdating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const patchSummary = useCallback((patch: ShopSummaryPatch) => {
+    setSummary((current) => ({ ...current, ...patch }));
+  }, []);
 
   const refresh = useCallback(async () => {
     if (!session?.user.id) {
@@ -141,6 +152,7 @@ export function ShopProvider({ children }: { children: ReactNode }) {
       equippedFrame: resolveShopFrame(equippedFrameItem),
       equippedEmote: resolveShopEmote(equippedEmoteItem),
       refresh,
+      patchSummary,
       purchaseItem,
       equipItem,
       getItemsByType: (itemType: ShopItemType) => items.filter((item) => item.itemType === itemType),
@@ -155,6 +167,7 @@ export function ShopProvider({ children }: { children: ReactNode }) {
       equippedFrameItem,
       equippedEmoteItem,
       refresh,
+      patchSummary,
       purchaseItem,
       equipItem,
     ],

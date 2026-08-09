@@ -2,6 +2,8 @@
 
 export const DAILY_CHALLENGE_COIN_REWARD = 50;
 export const FRIEND_CHALLENGE_WIN_COIN_REWARD = 20;
+/** Best coin segment on the daily spin wheel (031_daily_spin_wheel.sql). */
+export const DAILY_SPIN_MAX_COIN_REWARD = 100;
 
 export const COIN_EARN_SOURCES = [
   {
@@ -13,6 +15,11 @@ export const COIN_EARN_SOURCES = [
     id: 'friend_race_win',
     label: 'Win a friend speed race',
     amount: FRIEND_CHALLENGE_WIN_COIN_REWARD,
+  },
+  {
+    id: 'daily_spin',
+    label: 'Spin the daily wheel',
+    amount: DAILY_SPIN_MAX_COIN_REWARD,
   },
 ] as const;
 
