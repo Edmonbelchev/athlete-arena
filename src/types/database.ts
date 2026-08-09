@@ -204,6 +204,7 @@ export interface Database {
           target_reps: number;
           xp_reward: number;
           catalog_slot: number | null;
+          mission_index: number;
           created_at: string;
         };
         Insert: {
@@ -213,6 +214,7 @@ export interface Database {
           target_reps: number;
           xp_reward: number;
           catalog_slot?: number | null;
+          mission_index?: number;
           created_at?: string;
         };
         Update: {
@@ -222,6 +224,7 @@ export interface Database {
           target_reps?: number;
           xp_reward?: number;
           catalog_slot?: number | null;
+          mission_index?: number;
           created_at?: string;
         };
         Relationships: [];
@@ -235,6 +238,7 @@ export interface Database {
           completed_reps: number;
           xp_reward: number;
           challenge_date: string;
+          mission_index: number;
           status: ChallengeStatus;
           completed_at: string | null;
           created_at: string;
@@ -247,6 +251,7 @@ export interface Database {
           completed_reps?: number;
           xp_reward: number;
           challenge_date: string;
+          mission_index?: number;
           status?: ChallengeStatus;
           completed_at?: string | null;
           created_at?: string;
@@ -259,6 +264,7 @@ export interface Database {
           completed_reps?: number;
           xp_reward?: number;
           challenge_date?: string;
+          mission_index?: number;
           status?: ChallengeStatus;
           completed_at?: string | null;
           created_at?: string;
@@ -513,12 +519,13 @@ export interface Database {
       get_daily_challenge_home: {
         Args: Record<string, never>;
         Returns: {
+          mission_index: number;
           template_id: string;
           challenge_date: string;
           exercise_type: ExerciseType;
           target_reps: number;
           xp_reward: number;
-          catalog_slot: number;
+          catalog_slot: number | null;
           user_challenge_id: string | null;
           user_status: ChallengeStatus | null;
           completed_reps: number;
@@ -526,7 +533,9 @@ export interface Database {
         }[];
       };
       get_or_create_daily_challenge: {
-        Args: Record<string, never>;
+        Args: {
+          p_mission_index?: number;
+        };
         Returns: Database['public']['Tables']['daily_challenges']['Row'];
       };
       start_challenge: {

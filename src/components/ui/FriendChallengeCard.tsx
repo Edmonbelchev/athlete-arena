@@ -2,10 +2,11 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { formatExerciseLabel } from '@/constants/challenges';
+import { formatCoinAmount } from '@/constants/coins';
 import {
-    FRIEND_CHALLENGE_WIN_COIN_REWARD,
-    formatCoinAmount,
-} from '@/constants/coins';
+  calculateFriendChallengeCoins,
+  calculateFriendChallengeConsolationXp,
+} from '@/constants/friendChallengeRewards';
 import { formatRaceTime, formatRaceTimeLimit } from '@/constants/friendChallenges';
 import { Radius, Spacing } from '@/constants/theme';
 import { useFriendChallengeRaceTimer } from '@/features/friends/useFriendChallengeRaceTimer';
@@ -48,6 +49,9 @@ export function FriendChallengeCard({
   const raceStarted = hasFriendChallengeStarted(challenge);
   const myRaceSeconds = getMyRaceSeconds(challenge);
   const opponentRaceSeconds = getOpponentRaceSeconds(challenge);
+
+  const winnerCoins = calculateFriendChallengeCoins(challenge.exerciseType, challenge.targetReps);
+  const runnerUpXp = calculateFriendChallengeConsolationXp(challenge.exerciseType, challenge.targetReps);
 
   const { elapsedSeconds, secondsRemaining, isExpired } = useFriendChallengeRaceTimer({
     startedAt: challenge.startedAt,
@@ -135,8 +139,7 @@ export function FriendChallengeCard({
         <View style={styles.actions}>
           {renderStatusLine()}
           <Text style={[styles.reward, { color: theme.xp }]}>
-            Winner +{challenge.xpReward} XP & {formatCoinAmount(FRIEND_CHALLENGE_WIN_COIN_REWARD)} · Runner-up
-            +{Math.max(1, Math.floor(challenge.xpReward * 0.25))} XP
+            Winner +{challenge.xpReward} XP & {formatCoinAmount(winnerCoins)} · Runner-up +{runnerUpXp} XP
           </Text>
           <PrimaryButton
             label={

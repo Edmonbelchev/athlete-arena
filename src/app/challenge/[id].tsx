@@ -8,7 +8,11 @@ import { PoseGuidanceBanner } from '@/components/PoseGuidanceBanner';
 import { EmoteDisplay } from '@/components/shop/EmoteDisplay';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { formatExerciseLabel } from '@/constants/challenges';
-import { DAILY_CHALLENGE_COIN_REWARD, formatXpAndCoins } from '@/constants/coins';
+import {
+  DAILY_MISSION_COIN_REWARD,
+  DAILY_MISSION_XP_REWARD,
+} from '@/constants/dailyMissionRewards';
+import { formatXpAndCoins } from '@/constants/coins';
 import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { useChallenge } from '@/features/challenges/useChallenge';
 import { useExercisePoseDetection } from '@/features/challenges/useExercisePoseDetection';
@@ -88,6 +92,8 @@ export default function ChallengeScreen() {
   const autoRepCounting =
     Platform.OS === 'web' || supportsNativePoseDetection();
   const showSimulateButton = !isCompleted && !autoRepCounting;
+  const earnedXp = challenge && isCompleted ? DAILY_MISSION_XP_REWARD : 0;
+  const earnedCoins = challenge && isCompleted ? DAILY_MISSION_COIN_REWARD : 0;
 
   if (isLoading) {
     return (
@@ -178,7 +184,7 @@ export default function ChallengeScreen() {
               </Text>
               <EmoteDisplay emoji={equippedEmote} />
               <Text style={StyleSheet.flatten([styles.completedReward, { color: theme.xp }])}>
-                {formatXpAndCoins(challenge.xp_reward, DAILY_CHALLENGE_COIN_REWARD)} earned
+                {formatXpAndCoins(earnedXp, earnedCoins)} earned
               </Text>
             </View>
           ) : showSimulateButton ? (

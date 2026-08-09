@@ -4,6 +4,7 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ProfileAvatar } from '@/components/profile/ProfileAvatar';
+import { FriendChallengeRewardInfo } from '@/components/friends/FriendChallengeRewardInfo';
 import { EmotePicker } from '@/components/shop/EmotePicker';
 import { AuthTextInput } from '@/components/ui/AuthTextInput';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
@@ -12,13 +13,12 @@ import {
     EXERCISE_TYPES,
     type ExerciseType,
 } from '@/constants/challenges';
-import { FRIEND_CHALLENGE_WIN_COIN_REWARD, formatCoinAmount } from '@/constants/coins';
+
 import {
     FRIEND_CHALLENGE_REP_MAX,
     FRIEND_CHALLENGE_REP_MIN,
     FRIEND_CHALLENGE_REP_PRESETS,
     FRIEND_CHALLENGE_TIME_PRESETS,
-    calculateFriendChallengeXp,
     formatRaceTimeLimit,
     getDefaultRepsForExercise,
 } from '@/constants/friendChallenges';
@@ -62,7 +62,6 @@ export default function CreateFriendChallengeScreen() {
   }, [initialFriendId]);
 
   const repPresets = FRIEND_CHALLENGE_REP_PRESETS[exerciseType];
-  const xpReward = useMemo(() => calculateFriendChallengeXp(targetReps), [targetReps]);
 
   function handleExerciseChange(next: ExerciseType) {
     setExerciseType(next);
@@ -192,6 +191,8 @@ export default function CreateFriendChallengeScreen() {
             })}
           </View>
 
+          <FriendChallengeRewardInfo exerciseType={exerciseType} targetReps={targetReps} />
+
           <Text style={StyleSheet.flatten([styles.label, { color: theme.textSecondary }])}>TARGET REPS</Text>
           <View style={styles.repRow}>
             {repPresets.map((reps) => {
@@ -285,10 +286,6 @@ export default function CreateFriendChallengeScreen() {
             </Text>
             <Text style={StyleSheet.flatten([styles.summaryMeta, { color: theme.textSecondary }])}>
               {formatRaceTimeLimit(timeLimitSeconds)} · fastest finisher wins
-            </Text>
-            <Text style={StyleSheet.flatten([styles.summaryXp, { color: theme.xp }])}>
-              Winner +{xpReward} XP & {formatCoinAmount(FRIEND_CHALLENGE_WIN_COIN_REWARD)} · Runner-up +
-              {Math.max(1, Math.floor(xpReward * 0.25))} XP
             </Text>
           </View>
 
@@ -403,10 +400,6 @@ const styles = StyleSheet.create({
   summaryMeta: {
     fontSize: 14,
     fontWeight: '600',
-  },
-  summaryXp: {
-    fontSize: 15,
-    fontWeight: '700',
   },
   error: {
     fontSize: 14,

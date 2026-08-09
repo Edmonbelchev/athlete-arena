@@ -5,12 +5,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ComingSoonBlock } from '@/components/home/ComingSoonBlock';
 import { EarlyAccessNotice } from '@/components/home/EarlyAccessNotice';
+import { DailyMissionsCarousel } from '@/components/home/DailyMissionsCarousel';
+import { DailyMissionRewardInfo } from '@/components/home/DailyMissionRewardInfo';
 import { FriendChallengesCarousel } from '@/components/home/FriendChallengesCarousel';
 import { HomeProgressBlock } from '@/components/home/HomeProgressBlock';
 import { HomeSection } from '@/components/home/HomeSection';
 import { TabScreenHeader } from '@/components/sidebar/TabScreenHeader';
 import { DailySpinCard } from '@/components/spin/DailySpinCard';
-import { ChallengeCard } from '@/components/ui/ChallengeCard';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useAchievementUnlock } from '@/features/achievements/AchievementUnlockProvider';
@@ -24,7 +25,7 @@ import { useDailySpin } from '@/features/spin/useDailySpin';
 import { xpProgressInCurrentLevel } from '@/features/xp/levelUtils';
 import { useTheme } from '@/hooks/use-theme';
 import { formatUserError } from '@/lib/errors';
-import { getOrCreateDailyChallenge } from '@/services/challengeService';
+import { getOrCreateDailyChallenge, resolveMissionIndex } from '@/services/challengeService';
 import {
     acceptFriendChallenge,
     declineFriendChallenge,
@@ -42,7 +43,7 @@ export default function HomeScreen() {
   const { profile, isLoading: isProfileLoading, error: profileError, refresh: refreshProfile } =
     useProfile();
   const {
-    challenge,
+    missions,
     isLoading: isChallengeLoading,
     error: challengeError,
     refresh: refreshChallenge,
@@ -53,7 +54,7 @@ export default function HomeScreen() {
     refresh: refreshFriendChallenges,
   } = useFriendChallenges();
   const [busyChallengeId, setBusyChallengeId] = useState<string | null>(null);
-  const [isStartingDailyChallenge, setIsStartingDailyChallenge] = useState(false);
+  const [startingMissionIndex, setStartingMissionIndex] = useState<number | null>(null);
   const [friendActionError, setFriendActionError] = useState<string | null>(null);
   const { syncAndCelebrate } = useAchievementUnlock();
   const { refresh: refreshShop } = useShop();
@@ -85,23 +86,25 @@ export default function HomeScreen() {
 
   useChallengeNotificationRefresh(handleRefresh);
 
-  async function handleStartDailyChallenge() {
-    if (!challenge || isStartingDailyChallenge) {
+  async function handleStartDailyMission(mission: (typeof missions)[number], listIndex: number) {
+    if (startingMissionIndex !== null) {
       return;
     }
 
-    setIsStartingDailyChallenge(true);
+    const missionIndex = resolveMissionIndex(mission.exerciseType, mission.missionIndex, listIndex);
+
+    setStartingMissionIndex(missionIndex);
     setFriendActionError(null);
 
     try {
       const userChallenge =
-        challenge.userChallengeId === null
-          ? await getOrCreateDailyChallenge()
+        mission.userChallengeId === null
+          ? await getOrCreateDailyChallenge(missionIndex)
           : null;
-      const challengeId = userChallenge?.id ?? challenge.userChallengeId;
+      const challengeId = userChallenge?.id ?? mission.userChallengeId;
 
       if (!challengeId) {
-        throw new Error('Failed to start daily challenge');
+        throw new Error('Failed to start daily mission');
       }
 
       router.push({
@@ -109,9 +112,9 @@ export default function HomeScreen() {
         params: { id: challengeId },
       });
     } catch (err) {
-      setFriendActionError(formatUserError(err, 'Failed to start daily challenge'));
+      setFriendActionError(formatUserError(err, 'Failed to start daily mission'));
     } finally {
-      setIsStartingDailyChallenge(false);
+      setStartingMissionIndex(null);
     }
   }
 
@@ -184,17 +187,14 @@ export default function HomeScreen() {
         </HomeSection>
 
         <HomeSection
-          title="Today's Challenge"
-          subtitle="Same workout for everyone today - complete it for XP and coins">
-          {challenge ? (
-            <ChallengeCard
-              exerciseType={challenge.exerciseType}
-              targetReps={challenge.targetReps}
-              xpReward={challenge.xpReward}
-              status={challenge.status === 'not_started' ? 'pending' : challenge.status}
-              completedReps={challenge.completedReps}
-              loading={isStartingDailyChallenge}
-              onStart={() => void handleStartDailyChallenge()}
+          title="Daily Missions"
+          subtitle="Three exercises today - complete all three to keep your streak alive">
+          <DailyMissionRewardInfo />
+          {missions.length > 0 ? (
+            <DailyMissionsCarousel
+              missions={missions}
+              startingMissionIndex={startingMissionIndex}
+              onStartMission={(mission, index) => void handleStartDailyMission(mission, index)}
             />
           ) : (
             <View
@@ -203,7 +203,7 @@ export default function HomeScreen() {
                 { backgroundColor: theme.backgroundElement, borderColor: theme.border },
               ])}>
               <Text style={StyleSheet.flatten([styles.placeholderText, { color: theme.textSecondary }])}>
-                No daily challenge available right now.
+                No daily missions available right now.
               </Text>
             </View>
           )}
@@ -236,12 +236,14 @@ export default function HomeScreen() {
         <HomeSection title="More Ways to Play" subtitle="New features landing soon">
           <View style={styles.comingSoonList}>
             <ComingSoonBlock
+              key="shop"
               title="Shop"
               description="Spend coins on emotes, avatars, and profile frames."
               icon="gift"
               accentColor={theme.primary}
             />
             <ComingSoonBlock
+              key="weekly-quiz"
               title="Weekly Quiz"
               description="Test your fitness knowledge and earn bonus XP every week."
               icon="quiz"

@@ -171,6 +171,8 @@ export default function FriendChallengeScreen() {
     challenge.resolvedAt,
     challenge.winnerUserId,
     myUserId,
+    challenge.exerciseType,
+    challenge.targetReps,
   );
 
   function formatEarnedRewards(xp: number): string {

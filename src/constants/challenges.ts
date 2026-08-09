@@ -20,28 +20,13 @@ export function getInitialExercisePhase(exerciseType: ExerciseType): 'UP' | 'STA
 
 export interface ChallengeTier {
   reps: number;
-  xp: number;
 }
 
+/** Rep targets for daily missions. Each completion earns flat XP/coins in dailyMissionRewards.ts / SQL. */
 export const CHALLENGE_CONFIG: Record<ExerciseType, readonly ChallengeTier[]> = {
-  push_ups: [
-    { reps: 5, xp: 50 },
-    { reps: 10, xp: 75 },
-    { reps: 15, xp: 100 },
-    { reps: 20, xp: 150 },
-  ],
-  squats: [
-    { reps: 10, xp: 50 },
-    { reps: 15, xp: 75 },
-    { reps: 20, xp: 100 },
-    { reps: 30, xp: 150 },
-  ],
-  pull_ups: [
-    { reps: 3, xp: 50 },
-    { reps: 5, xp: 75 },
-    { reps: 8, xp: 100 },
-    { reps: 10, xp: 150 },
-  ],
+  push_ups: [{ reps: 5 }, { reps: 10 }, { reps: 15 }, { reps: 20 }],
+  squats: [{ reps: 10 }, { reps: 15 }, { reps: 20 }, { reps: 30 }],
+  pull_ups: [{ reps: 3 }, { reps: 5 }, { reps: 8 }, { reps: 10 }],
 } as const;
 
 export const EXERCISE_LABELS: Record<DisplayExerciseType, string> = {

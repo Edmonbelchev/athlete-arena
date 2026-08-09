@@ -6,7 +6,7 @@ import { getDailyChallengeHome } from '@/services/challengeService';
 import type { DailyChallengeHome } from '@/types';
 
 interface UseDailyChallengeResult {
-  challenge: DailyChallengeHome | null;
+  missions: DailyChallengeHome[];
   isLoading: boolean;
   error: string | null;
   refresh: () => Promise<void>;
@@ -14,13 +14,13 @@ interface UseDailyChallengeResult {
 
 export function useDailyChallenge(): UseDailyChallengeResult {
   const { session } = useAuth();
-  const [challenge, setChallenge] = useState<DailyChallengeHome | null>(null);
+  const [missions, setMissions] = useState<DailyChallengeHome[]>([]);
   const [isLoading, setIsLoading] = useState(Boolean(session));
   const [error, setError] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
     if (!session) {
-      setChallenge(null);
+      setMissions([]);
       setIsLoading(false);
       setError(null);
       return;
@@ -30,11 +30,11 @@ export function useDailyChallenge(): UseDailyChallengeResult {
     setError(null);
 
     try {
-      const nextChallenge = await getDailyChallengeHome();
-      setChallenge(nextChallenge);
+      const nextMissions = await getDailyChallengeHome();
+      setMissions(nextMissions);
     } catch (err) {
-      setChallenge(null);
-      setError(formatUserError(err, 'Failed to load daily challenge'));
+      setMissions([]);
+      setError(formatUserError(err, 'Failed to load daily missions'));
     } finally {
       setIsLoading(false);
     }
@@ -45,7 +45,7 @@ export function useDailyChallenge(): UseDailyChallengeResult {
   }, [refresh]);
 
   return {
-    challenge,
+    missions,
     isLoading,
     error,
     refresh,

@@ -1,4 +1,5 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -10,17 +11,26 @@ import { AppIcon } from '@/components/ui/AppIcon';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { StatCard } from '@/components/ui/StatCard';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { useAuth } from '@/features/auth';
 import { useFriendAchievements } from '@/features/friends/useFriendAchievements';
 import { useFriendProfile } from '@/features/friends/useFriendProfile';
+import { useFriends } from '@/features/friends/useFriends';
 import { xpProgressInCurrentLevel } from '@/features/xp/levelUtils';
 import { leaveScreen } from '@/lib/navigation';
+import { formatUserError } from '@/lib/errors';
+import { sendFriendRequest } from '@/services/friendsService';
 import { useTheme } from '@/hooks/use-theme';
 
 export default function FriendProfileScreen() {
   const theme = useTheme();
   const router = useRouter();
+  const { session } = useAuth();
   const { userId, username } = useLocalSearchParams<{ userId: string; username?: string }>();
   const { profile, isLoading, error, refresh } = useFriendProfile(userId);
+  const { friends, refresh: refreshFriends } = useFriends();
+  const [isAddingFriend, setIsAddingFriend] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [actionSuccess, setActionSuccess] = useState<string | null>(null);
   const {
     achievements,
     isLoading: isAchievementsLoading,
@@ -28,8 +38,14 @@ export default function FriendProfileScreen() {
     refresh: refreshAchievements,
   } = useFriendAchievements(userId);
 
+  const isFriend = useMemo(
+    () => friends.some((friend) => friend.friendId === userId),
+    [friends, userId],
+  );
+  const isSelf = session?.user.id === userId;
+
   const headerOptions = {
-    title: profile?.displayName ?? profile?.username ?? username ?? 'Friend',
+    title: profile?.displayName ?? profile?.username ?? username ?? 'Profile',
     headerShown: true,
     headerBackVisible: false,
     headerLeft: () => (
@@ -58,6 +74,26 @@ export default function FriendProfileScreen() {
     });
   }
 
+  async function handleAddFriend() {
+    if (!profile) {
+      return;
+    }
+
+    setIsAddingFriend(true);
+    setActionError(null);
+    setActionSuccess(null);
+
+    try {
+      await sendFriendRequest(profile.username);
+      await refreshFriends();
+      setActionSuccess(`Friend request sent to @${profile.username}.`);
+    } catch (err) {
+      setActionError(formatUserError(err, 'Could not send friend request'));
+    } finally {
+      setIsAddingFriend(false);
+    }
+  }
+
   if (isLoading && !profile) {
     return (
       <>
@@ -75,7 +111,7 @@ export default function FriendProfileScreen() {
         <Stack.Screen options={headerOptions} />
         <View style={StyleSheet.flatten([styles.loading, { backgroundColor: theme.background }])}>
           <Text style={StyleSheet.flatten([styles.error, { color: theme.danger }])}>
-            {error ?? 'Friend profile not found.'}
+            {error ?? 'Profile not found.'}
           </Text>
           <PrimaryButton label="Try Again" variant="secondary" onPress={() => void handleRefresh()} />
         </View>
@@ -103,8 +139,21 @@ export default function FriendProfileScreen() {
           {error ? (
             <Text style={StyleSheet.flatten([styles.error, { color: theme.danger }])}>{error}</Text>
           ) : null}
+          {actionError ? (
+            <Text style={StyleSheet.flatten([styles.error, { color: theme.danger }])}>{actionError}</Text>
+          ) : null}
+          {actionSuccess ? (
+            <Text style={StyleSheet.flatten([styles.success, { color: theme.success }])}>{actionSuccess}</Text>
+          ) : null}
 
-          <FriendProfileHero profile={profile} onChallenge={handleChallenge} />
+          <FriendProfileHero
+            profile={profile}
+            isFriend={isFriend}
+            isSelf={isSelf}
+            onChallenge={handleChallenge}
+            onAddFriend={() => void handleAddFriend()}
+            isAddingFriend={isAddingFriend}
+          />
 
           <HomeSection title="Progress" subtitle="Level and streak at a glance">
             <HomeProgressBlock
@@ -168,6 +217,11 @@ const styles = StyleSheet.create({
     gap: Spacing.three,
   },
   error: {
+    fontSize: 14,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  success: {
     fontSize: 14,
     fontWeight: '600',
     textAlign: 'center',

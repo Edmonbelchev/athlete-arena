@@ -8,7 +8,7 @@ export const FRIEND_CHALLENGE_REP_PRESETS: Record<ExerciseType, readonly number[
 } as const;
 
 export const FRIEND_CHALLENGE_REP_MIN = 1;
-export const FRIEND_CHALLENGE_REP_MAX = 100;
+export const FRIEND_CHALLENGE_REP_MAX = 1000;
 
 /** Optional timer presets in seconds. `null` = no time cap per attempt. */
 export const FRIEND_CHALLENGE_TIME_PRESETS: readonly { label: string; seconds: number | null }[] = [
@@ -29,9 +29,12 @@ export const FRIEND_CHALLENGE_TIME_MAX_SECONDS = 5400;
 /** Shown before the race clock starts (first rep starts the timer). */
 export const FRIEND_RACE_TIMER_START_HINT = 'Timer starts on your first rep';
 
-export function calculateFriendChallengeXp(targetReps: number): number {
-  return Math.max(25, Math.min(200, targetReps * 5));
-}
+export {
+  calculateFriendChallengeCoins,
+  calculateFriendChallengeConsolationXp,
+  calculateFriendChallengeXp,
+  formatFriendChallengeRewardPreview,
+} from '@/constants/friendChallengeRewards';
 
 export function getDefaultRepsForExercise(exerciseType: ExerciseType): number {
   return FRIEND_CHALLENGE_REP_PRESETS[exerciseType][1] ?? 10;

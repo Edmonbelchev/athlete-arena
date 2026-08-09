@@ -27,7 +27,7 @@ export function useFriendProfile(userId?: string) {
       setProfile(nextProfile);
     } catch (err) {
       setProfile(null);
-      setError(formatUserError(err, 'Failed to load friend profile'));
+      setError(formatUserError(err, 'Failed to load profile'));
     } finally {
       setIsLoading(false);
     }

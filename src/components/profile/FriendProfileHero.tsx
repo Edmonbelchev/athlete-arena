@@ -8,10 +8,21 @@ import { useTheme } from '@/hooks/use-theme';
 
 interface FriendProfileHeroProps {
   profile: FriendPublicProfile;
+  isFriend: boolean;
+  isSelf?: boolean;
   onChallenge: () => void;
+  onAddFriend?: () => void;
+  isAddingFriend?: boolean;
 }
 
-export function FriendProfileHero({ profile, onChallenge }: FriendProfileHeroProps) {
+export function FriendProfileHero({
+  profile,
+  isFriend,
+  isSelf = false,
+  onChallenge,
+  onAddFriend,
+  isAddingFriend = false,
+}: FriendProfileHeroProps) {
   const theme = useTheme();
   const displayName = profile.displayName ?? profile.username;
 
@@ -41,7 +52,13 @@ export function FriendProfileHero({ profile, onChallenge }: FriendProfileHeroPro
         <Text style={StyleSheet.flatten([styles.levelValue, { color: theme.primary }])}>{profile.level}</Text>
       </View>
 
-      <PrimaryButton label="Challenge Friend" onPress={onChallenge} />
+      {!isSelf ? (
+        <PrimaryButton
+          label={isFriend ? 'Challenge Friend' : 'Add Friend'}
+          loading={isAddingFriend}
+          onPress={isFriend ? onChallenge : onAddFriend}
+        />
+      ) : null}
     </View>
   );
 }

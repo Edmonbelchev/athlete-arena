@@ -26,19 +26,21 @@ export interface DailyChallenge {
   completed_reps: number;
   xp_reward: number;
   challenge_date: string;
+  mission_index: number;
   status: ChallengeStatus;
   completed_at: string | null;
   created_at: string;
 }
 
-/** Global daily workout plus optional per-user progress for the home screen. */
+/** Global daily mission plus optional per-user progress for the home screen. */
 export interface DailyChallengeHome {
+  missionIndex: number;
   templateId: string;
   challengeDate: string;
   exerciseType: ExerciseType;
   targetReps: number;
   xpReward: number;
-  catalogSlot: number;
+  catalogSlot: number | null;
   userChallengeId: string | null;
   status: ChallengeStatus | 'not_started';
   completedReps: number;
