@@ -16,7 +16,7 @@ import Animated, {
 import { EmoteDisplay } from '@/components/shop/EmoteDisplay';
 import { formatXpAndCoins } from '@/constants/coins';
 import { formatRaceTime } from '@/constants/friendChallenges';
-import { Radius, Spacing } from '@/constants/theme';
+import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 export type FriendChallengeCompleteVariant = 'finished' | 'winner' | 'lost' | 'tie';
@@ -192,13 +192,13 @@ export function FriendChallengeCompleteOverlay({
     <Animated.View entering={FadeIn.duration(260)} style={styles.overlay} pointerEvents="none">
       <View style={StyleSheet.flatten([styles.backdrop, { backgroundColor: `${theme.background}CC` }])} />
 
-      <View style={styles.confettiLayer}>
+      <View style={styles.confettiLayer} pointerEvents="none">
         {Array.from({ length: confettiCount }, (_, index) => (
           <ConfettiPiece key={index} index={index} variant={variant} />
         ))}
       </View>
 
-      <View style={styles.content}>
+      <View style={styles.content} pointerEvents="none">
         <Animated.View entering={ZoomIn.springify().damping(14).delay(120)} style={styles.iconStack}>
           <PulsingRing accentColor={accentColor} />
           <View
@@ -252,18 +252,20 @@ export function FriendChallengeCompleteOverlay({
 
 const styles = StyleSheet.create({
   overlay: {
-    ...StyleSheet.absoluteFillObject,
-    borderRadius: Radius.lg,
-    overflow: 'hidden',
+    ...StyleSheet.absoluteFill,
+    zIndex: 10,
+    elevation: 10,
     alignItems: 'center',
     justifyContent: 'center',
   },
   backdrop: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
+    zIndex: 1,
   },
   confettiLayer: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     overflow: 'hidden',
+    zIndex: 2,
   },
   confetti: {
     position: 'absolute',
@@ -273,6 +275,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: Spacing.two,
     paddingHorizontal: Spacing.three,
+    zIndex: 3,
+    elevation: 12,
   },
   iconStack: {
     width: 96,

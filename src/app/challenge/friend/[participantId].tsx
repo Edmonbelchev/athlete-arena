@@ -201,7 +201,6 @@ export default function FriendChallengeScreen() {
   const {
     phase: posePhase,
     trackingStatus,
-    trackingMessage,
     pullUpBarLineY,
     processLandmarks,
   } = useExercisePoseDetection({
@@ -212,7 +211,6 @@ export default function FriendChallengeScreen() {
     },
   });
 
-  const progress = targetReps > 0 ? Math.min(repCounter.currentReps / targetReps, 1) : 0;
   const autoRepCounting = Platform.OS === 'web' || supportsNativePoseDetection();
   const showSimulateButton = canAttempt && !autoRepCounting;
 
@@ -260,25 +258,6 @@ export default function FriendChallengeScreen() {
     winResult,
   );
   const overlayKey = `${overlayVariant ?? 'none'}-${challenge.resolvedAt ?? challenge.completedAt ?? 'pending'}`;
-
-  function renderCompletionFrame() {
-    return (
-      <View style={styles.cameraFrame}>
-        {overlayVariant ? (
-          <FriendChallengeCompleteOverlay
-            key={overlayKey}
-            variant={overlayVariant}
-            raceTimeSeconds={myTime}
-            opponentName={opponentName}
-            opponentTimeSeconds={opponentTime}
-            xp={earnedXp}
-            coins={earnedCoins}
-            emote={equippedEmote}
-          />
-        ) : null}
-      </View>
-    );
-  }
 
   function renderRaceTimer(activeChallenge: FriendChallenge) {
     if (isPending) {
@@ -385,11 +364,13 @@ export default function FriendChallengeScreen() {
             <Text style={StyleSheet.flatten([styles.pending, { color: theme.danger }])}>
               You hit the time cap before finishing. Head back and try again.
             </Text>
-          ) : waitingOnOpponent || isCompleted ? (
-            renderCompletionFrame()
           ) : (
             <>
-              <View style={styles.cameraFrame}>
+              <View
+                style={StyleSheet.flatten([
+                  styles.cameraFrame,
+                  overlayVariant ? styles.cameraFrameComplete : null,
+                ])}>
                 <CameraPreview
                   active={cameraActive && canAttempt}
                   pullUpBarLineY={challenge.exerciseType === 'pull_ups' ? pullUpBarLineY : null}
@@ -399,34 +380,23 @@ export default function FriendChallengeScreen() {
                   onCameraReady={handleCameraReady}
                   onLandmarksDetected={processLandmarks}
                 />
+                {overlayVariant ? (
+                  <FriendChallengeCompleteOverlay
+                    key={overlayKey}
+                    variant={overlayVariant}
+                    raceTimeSeconds={myTime}
+                    opponentName={opponentName}
+                    opponentTimeSeconds={opponentTime}
+                    xp={earnedXp}
+                    coins={earnedCoins}
+                    emote={equippedEmote}
+                  />
+                ) : null}
               </View>
 
-              <PoseGuidanceBanner exerciseType={challenge.exerciseType} />
-
-              {autoRepCounting ? (
-                <>
-                  <Text style={StyleSheet.flatten([styles.phaseLabel, { color: theme.textSecondary }])}>
-                    Phase: {posePhase}
-                    {trackingMessage ? '' : ' · counting'}
-                  </Text>
-                  {trackingMessage ? (
-                    <Text style={StyleSheet.flatten([styles.trackingMessage, { color: theme.streak }])}>
-                      {trackingMessage}
-                    </Text>
-                  ) : null}
-                </>
-              ) : null}
+              {!overlayVariant ? <PoseGuidanceBanner exerciseType={challenge.exerciseType} /> : null}
             </>
           )}
-
-          <View style={StyleSheet.flatten([styles.progressTrack, { backgroundColor: theme.backgroundSelected }])}>
-            <View
-              style={StyleSheet.flatten([
-                styles.progressFill,
-                { backgroundColor: theme.primary, width: `${progress * 100}%` },
-              ])}
-            />
-          </View>
 
           {showSimulateButton ? (
             <PrimaryButton
@@ -476,6 +446,12 @@ const styles = StyleSheet.create({
   cameraFrame: {
     width: '100%',
     height: 320,
+    borderRadius: Radius.lg,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  cameraFrameComplete: {
+    height: 400,
   },
   container: {
     flex: 1,
@@ -539,28 +515,6 @@ const styles = StyleSheet.create({
   },
   pendingActions: {
     gap: Spacing.three,
-  },
-  phaseLabel: {
-    fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-    textAlign: 'center',
-    textTransform: 'uppercase',
-  },
-  trackingMessage: {
-    fontSize: 13,
-    fontWeight: '700',
-    lineHeight: 18,
-    textAlign: 'center',
-  },
-  progressTrack: {
-    height: 12,
-    borderRadius: Radius.sm,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    borderRadius: Radius.sm,
   },
   creatorEmoteRow: {
     alignItems: 'center',

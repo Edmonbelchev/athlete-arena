@@ -81,7 +81,6 @@ export default function ChallengeScreen() {
   const {
     phase: posePhase,
     trackingStatus,
-    trackingMessage,
     pullUpBarLineY,
     processLandmarks,
   } = useExercisePoseDetection({
@@ -92,7 +91,6 @@ export default function ChallengeScreen() {
     },
   });
 
-  const progress = targetReps > 0 ? Math.min(repCounter.currentReps / targetReps, 1) : 0;
   const autoRepCounting =
     Platform.OS === 'web' || supportsNativePoseDetection();
   const showSimulateButton = !isCompleted && !autoRepCounting;
@@ -167,31 +165,6 @@ export default function ChallengeScreen() {
 
           {!isCompleted ? <PoseGuidanceBanner exerciseType={challenge.exercise_type} /> : null}
 
-          {!isCompleted && autoRepCounting ? (
-            <>
-              <Text style={StyleSheet.flatten([styles.phaseLabel, { color: theme.textSecondary }])}>
-                Phase: {posePhase}
-                {trackingMessage ? '' : ' · counting'}
-              </Text>
-              {trackingMessage ? (
-                <Text style={StyleSheet.flatten([styles.trackingMessage, { color: theme.streak }])}>
-                  {trackingMessage}
-                </Text>
-              ) : null}
-            </>
-          ) : null}
-
-          {!isCompleted ? (
-            <View style={StyleSheet.flatten([styles.progressTrack, { backgroundColor: theme.backgroundSelected }])}>
-              <View
-                style={StyleSheet.flatten([
-                  styles.progressFill,
-                  { backgroundColor: theme.primary, width: `${progress * 100}%` },
-                ])}
-              />
-            </View>
-          ) : null}
-
           {!isCompleted && showSimulateButton ? (
             <PrimaryButton
               label="+ Simulate Rep"
@@ -261,28 +234,6 @@ const styles = StyleSheet.create({
     fontSize: 48,
     fontWeight: '900',
     textAlign: 'center',
-  },
-  phaseLabel: {
-    fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-    textAlign: 'center',
-    textTransform: 'uppercase',
-  },
-  trackingMessage: {
-    fontSize: 13,
-    fontWeight: '700',
-    lineHeight: 18,
-    textAlign: 'center',
-  },
-  progressTrack: {
-    height: 12,
-    borderRadius: Radius.sm,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    borderRadius: Radius.sm,
   },
   error: {
     fontSize: 14,
