@@ -2,7 +2,7 @@
   "expo": {
     "name": "Athlete Arena",
     "slug": "athlete-arena",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/images/logo.png",
     "scheme": "athletearena",
@@ -24,7 +24,8 @@
         "foregroundImage": "./assets/images/logo.png"
       },
       "permissions": [
-        "android.permission.CAMERA"
+        "android.permission.CAMERA",
+        "android.permission.POST_NOTIFICATIONS"
       ],
       "predictiveBackGestureEnabled": false
     },
@@ -60,7 +61,17 @@
       [
         "react-native-mediapipe-posedetection",
         {
-          "assetsPaths": ["./assets/models/"]
+          "assetsPaths": [
+            "./assets/models/"
+          ]
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/logo.png",
+          "color": "#111111",
+          "defaultChannel": "default"
         }
       ]
     ],
@@ -68,6 +79,13 @@
       "typedRoutes": true,
       "reactCompiler": true
     },
-    "newArchEnabled": true
+    "newArchEnabled": true,
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "47035c24-fd38-4c7e-943b-edf676906896"
+      }
+    },
+    "owner": "edmonbelchev"
   }
 }

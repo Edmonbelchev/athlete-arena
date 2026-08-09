@@ -86,6 +86,12 @@ npx expo run:android
 | Expo Go | Yes | Manual simulate only |
 | Dev / prod build | Yes | Yes (Vision Camera + MediaPipe) |
 
+## Push notifications (TestFlight)
+
+Remote push for friend requests and speed races is configured via Expo Push + Supabase Edge Functions. See **[supabase/PUSH_NOTIFICATIONS.md](./supabase/PUSH_NOTIFICATIONS.md)** for APNs credentials, migration `039`, edge function deploy, and webhook setup.
+
+After changing push config, create a **new iOS build** for TestFlight (`eas build --profile production --platform ios`).
+
 ## Project structure
 
 ```

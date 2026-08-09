@@ -8,6 +8,7 @@ import { AuthDeepLinkHandler } from '@/features/auth/AuthDeepLinkHandler';
 import { AchievementUnlockProvider } from '@/features/achievements/AchievementUnlockProvider';
 import { FriendsProvider } from '@/features/friends/FriendsProvider';
 import { NotificationProvider } from '@/features/notifications/NotificationProvider';
+import { PushNotificationBootstrap } from '@/features/notifications/PushNotificationBootstrap';
 import { ShopProvider } from '@/features/shop/ShopProvider';
 import { UserSettingsProvider } from '@/features/settings/UserSettingsProvider';
 import { useThemePreference } from '@/features/theme/ThemePreferenceProvider';
@@ -42,6 +43,7 @@ function ThemedRootNavigator() {
     <ThemeProvider value={resolvedScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <OnboardingGate>
         <RootNavigator />
+        <PushNotificationBootstrap />
       </OnboardingGate>
       <ChallengeNotificationBanner />
     </ThemeProvider>
