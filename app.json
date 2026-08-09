@@ -10,8 +10,11 @@
     "ios": {
       "icon": "./assets/images/logo.png",
       "bundleIdentifier": "com.athletearena.app",
+      "buildNumber": "2",
       "infoPlist": {
-        "NSCameraUsageDescription": "Athlete Arena uses the camera to see you during workouts and count repetitions."
+        "NSCameraUsageDescription": "Athlete Arena uses the camera to see you during workouts and count repetitions.",
+        "NSLocationWhenInUseUsageDescription": "Athlete Arena does not use your location. This description is required because an included library references location APIs.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {

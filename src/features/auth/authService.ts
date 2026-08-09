@@ -1,12 +1,68 @@
 import { AUTH_EMAIL_REDIRECT_URL } from '@/constants/app';
 import { assertSupabaseConfigured, supabase } from '@/lib/supabase';
 
-import { normalizeUsername } from './validation';
+import { isValidEmail, isValidUsername, normalizeUsername } from './validation';
 
 interface SignUpParams {
   email: string;
   password: string;
   username: string;
+}
+
+export class UsernameTakenError extends Error {
+  constructor() {
+    super('username_taken');
+    this.name = 'UsernameTakenError';
+  }
+}
+
+export class EmailAlreadyRegisteredError extends Error {
+  constructor() {
+    super('email_already_registered');
+    this.name = 'EmailAlreadyRegisteredError';
+  }
+}
+
+export async function isUsernameAvailable(
+  username: string,
+  excludeUserId?: string,
+): Promise<boolean> {
+  assertSupabaseConfigured();
+
+  const normalizedUsername = normalizeUsername(username);
+  if (!isValidUsername(normalizedUsername)) {
+    return false;
+  }
+
+  const { data, error } = await supabase.rpc('is_username_available', {
+    p_username: normalizedUsername,
+    p_exclude_user_id: excludeUserId ?? null,
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  return data === true;
+}
+
+export async function isEmailRegistered(email: string): Promise<boolean> {
+  assertSupabaseConfigured();
+
+  const trimmedEmail = email.trim();
+  if (!isValidEmail(trimmedEmail)) {
+    return false;
+  }
+
+  const { data, error } = await supabase.rpc('is_email_registered', {
+    p_email: trimmedEmail,
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  return data === true;
 }
 
 export async function signInWithEmail(email: string, password: string) {
@@ -28,9 +84,18 @@ export async function signUpWithEmail({ email, password, username }: SignUpParam
   assertSupabaseConfigured();
 
   const normalizedUsername = normalizeUsername(username);
+  const trimmedEmail = email.trim();
+
+  if (!(await isUsernameAvailable(normalizedUsername))) {
+    throw new UsernameTakenError();
+  }
+
+  if (await isEmailRegistered(trimmedEmail)) {
+    throw new EmailAlreadyRegisteredError();
+  }
 
   const { data, error } = await supabase.auth.signUp({
-    email: email.trim(),
+    email: trimmedEmail,
     password,
     options: {
       data: {
@@ -62,4 +127,6 @@ export const authService = {
   signInWithEmail,
   signUpWithEmail,
   signOut,
+  isUsernameAvailable,
+  isEmailRegistered,
 };

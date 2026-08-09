@@ -1,4 +1,5 @@
 import { normalizeUsername, isValidUsername } from '@/features/auth/validation';
+import { isUsernameAvailable } from '@/features/auth/authService';
 import { assertSupabaseConfigured, supabase } from '@/lib/supabase';
 import type { ProfileStats, UpdateProfileInput } from '@/types/profile';
 import type { Profile } from '@/types';
@@ -78,6 +79,12 @@ export async function updateProfile(
     if (!isValidUsername(normalizedUsername)) {
       throw new Error('Username must be 3–30 characters: lowercase letters, numbers, underscore');
     }
+
+    const available = await isUsernameAvailable(normalizedUsername, userId);
+    if (!available) {
+      throw new Error('username_taken');
+    }
+
     payload.username = normalizedUsername;
   }
 

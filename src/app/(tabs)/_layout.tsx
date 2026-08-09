@@ -87,6 +87,13 @@ function TabsLayoutContent({ colors }: { colors: (typeof Colors)['light'] }) {
         }}
       />
       <Tabs.Screen
+        name="leaderboard"
+        options={{
+          title: 'Leaderboard',
+          tabBarIcon: ({ color }) => <TabIcon name="crown" color={color} />,
+        }}
+      />
+      <Tabs.Screen
         name="shop"
         options={{
           href: null,
@@ -101,8 +108,7 @@ function TabsLayoutContent({ colors }: { colors: (typeof Colors)['light'] }) {
       <Tabs.Screen
         name="profile"
         options={{
-          title: 'Profile',
-          tabBarIcon: ({ color }) => <TabIcon name="profile" color={color} />,
+          href: null,
         }}
       />
     </Tabs>

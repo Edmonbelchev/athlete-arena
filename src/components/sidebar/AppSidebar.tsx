@@ -45,6 +45,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Support', icon: 'support', href: '/profile/support' },
   { label: 'Friends', icon: 'friends', href: '/(tabs)/friends' },
   { label: 'Challenges', icon: 'target', href: '/(tabs)/challenges' },
+  { label: 'Leaderboard', icon: 'crown', href: '/(tabs)/leaderboard' },
 ];
 
 export function AppSidebar() {

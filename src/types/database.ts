@@ -419,6 +419,33 @@ export interface Database {
         };
         Relationships: [];
       };
+      xp_events: {
+        Row: {
+          id: string;
+          user_id: string;
+          amount: number;
+          source_type: string;
+          source_id: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          amount: number;
+          source_type: string;
+          source_id?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          amount?: number;
+          source_type?: string;
+          source_id?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -461,6 +488,17 @@ export interface Database {
           username: string;
           display_name: string | null;
         }[];
+      };
+      is_username_available: {
+        Args: {
+          p_username: string;
+          p_exclude_user_id?: string | null;
+        };
+        Returns: boolean;
+      };
+      is_email_registered: {
+        Args: { p_email: string };
+        Returns: boolean;
       };
       send_friend_request: {
         Args: { p_username: string };
@@ -658,6 +696,26 @@ export interface Database {
           sort_order: number;
           unlocked: boolean;
           unlocked_at: string | null;
+        }[];
+      };
+      get_xp_leaderboard: {
+        Args: {
+          p_period?: string;
+          p_limit?: number;
+        };
+        Returns: {
+          rank: number;
+          user_id: string;
+          username: string;
+          display_name: string | null;
+          level: number;
+          xp_amount: number;
+          avatar_url: string | null;
+          avatar_icon: string | null;
+          avatar_background: string | null;
+          frame_border_color: string | null;
+          frame_border_width: number | null;
+          is_current_user: boolean;
         }[];
       };
     };

@@ -18,7 +18,11 @@ import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { SUPPORT_EMAIL } from '@/constants/app';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { getAuthErrorMessage } from '@/features/auth/authErrors';
-import { signUpWithEmail } from '@/features/auth/authService';
+import {
+  EmailAlreadyRegisteredError,
+  signUpWithEmail,
+  UsernameTakenError,
+} from '@/features/auth/authService';
 import {
   isValidEmail,
   isValidPassword,
@@ -108,6 +112,22 @@ export default function RegisterScreen() {
         `Account created. Check your inbox for a confirmation email from ${SUPPORT_EMAIL}, then sign in.`,
       );
     } catch (error) {
+      if (error instanceof UsernameTakenError) {
+        setFieldErrors((current) => ({
+          ...current,
+          username: getAuthErrorMessage(error),
+        }));
+        return;
+      }
+
+      if (error instanceof EmailAlreadyRegisteredError) {
+        setFieldErrors((current) => ({
+          ...current,
+          email: getAuthErrorMessage(error),
+        }));
+        return;
+      }
+
       setFormError(getAuthErrorMessage(error));
     } finally {
       setIsSubmitting(false);

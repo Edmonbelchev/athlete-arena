@@ -5,7 +5,7 @@ export function getProfileErrorMessage(error: unknown): string {
 
   const message = String(error.message);
 
-  if (message.includes('duplicate key') && message.includes('username')) {
+  if (message === 'username_taken' || (message.includes('duplicate key') && message.includes('username'))) {
     return 'That username is already taken.';
   }
 

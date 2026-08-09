@@ -1,6 +1,16 @@
 import type { AuthError } from '@supabase/supabase-js';
 
 export function getAuthErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    if (error.message === 'username_taken') {
+      return 'That username is already taken.';
+    }
+
+    if (error.message === 'email_already_registered') {
+      return 'An account with this email already exists.';
+    }
+  }
+
   if (!error || typeof error !== 'object' || !('message' in error)) {
     return 'Something went wrong. Please try again.';
   }
@@ -23,7 +33,10 @@ export function getAuthErrorMessage(error: unknown): string {
     return 'Enter a valid email address.';
   }
 
-  if (message.includes('duplicate key value') && message.includes('username')) {
+  if (
+    message.includes('username_taken') ||
+    (message.includes('duplicate key value') && message.includes('username'))
+  ) {
     return 'That username is already taken.';
   }
 

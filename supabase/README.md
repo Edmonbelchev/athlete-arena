@@ -152,6 +152,22 @@ EXPO_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 
 Restart Metro after changing `.env`.
 
+## Leaderboard (migration `028_leaderboard.sql`)
+
+Run after core migrations:
+
+```sql
+-- Paste contents of supabase/migrations/028_leaderboard.sql
+```
+
+| Object | Purpose |
+|--------|---------|
+| `xp_events` | Logs XP awards for weekly rankings |
+| `get_xp_leaderboard(period, limit?)` | Returns weekly or all-time top players |
+| Updated `complete_challenge` / `award_friend_challenge_xp` | Write XP events when XP is earned |
+
+Weekly rankings use **UTC weeks starting Monday**. All-time rankings use `profiles.total_xp`.
+
 ## Incremental migrations
 
 If you prefer running migrations separately:
