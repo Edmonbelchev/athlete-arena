@@ -62,122 +62,131 @@ function RootNavigator() {
   return (
     <>
       <AuthDeepLinkHandler />
-      <Stack screenOptions={{ headerShown: false }} initialRouteName="(tabs)">
-      <Stack.Protected guard={Boolean(session)}>
-        <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="onboarding" options={{ headerShown: false }} />
-        <Stack.Screen
-          name="challenge/[id]"
-          options={{
-            presentation: 'modal',
-            headerShown: true,
-            title: 'Challenge',
-            headerRight: () => <ModalCloseButton />,
-          }}
-        />
-        <Stack.Screen
-          name="challenge/friend/[participantId]"
-          options={{
-            presentation: 'modal',
-            headerShown: true,
-            title: 'Friend Challenge',
-            headerRight: () => <ModalCloseButton />,
-          }}
-        />
-        <Stack.Screen
-          name="friends/[userId]"
-          options={{
-            presentation: 'modal',
-            headerShown: true,
-            title: 'Friend Profile',
-          }}
-        />
-        <Stack.Screen
-          name="friends/add"
-          options={{
-            presentation: 'modal',
-            headerShown: true,
-            title: 'Add Friend',
-          }}
-        />
-        <Stack.Screen
-          name="friends/challenges"
-          options={{
-            headerShown: true,
-            title: 'Challenges',
-          }}
-        />
-        <Stack.Screen
-          name="friends/challenge/create"
-          options={{
-            presentation: 'modal',
-            headerShown: true,
-            title: 'Challenge Friend',
-          }}
-        />
-        <Stack.Screen
-          name="profile/history"
-          options={{
-            presentation: 'modal',
-            headerShown: true,
-            title: 'Challenge History',
-          }}
-        />
-        <Stack.Screen
-          name="profile/edit"
-          options={{
-            presentation: 'modal',
-            headerShown: true,
-            title: 'Edit Profile',
-          }}
-        />
-        <Stack.Screen
-          name="profile/shop"
-          options={{
-            presentation: 'modal',
-            headerShown: true,
-            title: 'Shop',
-          }}
-        />
-        <Stack.Screen
-          name="profile/achievements"
-          options={{
-            presentation: 'modal',
-            headerShown: true,
-            title: 'Achievements',
-          }}
-        />
-        <Stack.Screen
-          name="profile/settings"
-          options={{
-            presentation: 'modal',
-            headerShown: true,
-            title: 'Settings',
-          }}
-        />
-        <Stack.Screen
-          name="profile/support/index"
-          options={{
-            presentation: 'modal',
-            headerShown: true,
-            title: 'Support',
-          }}
-        />
-        <Stack.Screen
-          name="profile/support/create"
-          options={{
-            presentation: 'modal',
-            headerShown: true,
-            title: 'New Ticket',
-          }}
-        />
-        <Stack.Screen name="reset-password" options={{ headerShown: false }} />
-      </Stack.Protected>
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Protected guard={Boolean(session)}>
+          <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="onboarding" options={{ headerShown: false }} />
+          <Stack.Screen
+            name="challenge/[id]"
+            options={{
+              presentation: 'modal',
+              headerShown: true,
+              title: 'Challenge',
+              headerRight: () => <ModalCloseButton />,
+            }}
+          />
+          <Stack.Screen
+            name="challenge/friend/[participantId]"
+            options={{
+              presentation: 'modal',
+              headerShown: true,
+              title: 'Friend Challenge',
+              headerRight: () => <ModalCloseButton />,
+            }}
+          />
+          <Stack.Screen
+            name="friends/[userId]"
+            options={{
+              presentation: 'modal',
+              headerShown: true,
+              title: 'Friend Profile',
+            }}
+          />
+          <Stack.Screen
+            name="friends/add"
+            options={{
+              presentation: 'modal',
+              headerShown: true,
+              title: 'Add Friend',
+            }}
+          />
+          <Stack.Screen
+            name="friends/challenges"
+            options={{
+              headerShown: true,
+              title: 'Challenges',
+            }}
+          />
+          <Stack.Screen
+            name="friends/challenge/create"
+            options={{
+              presentation: 'modal',
+              headerShown: true,
+              title: 'Challenge Friend',
+            }}
+          />
+          <Stack.Screen
+            name="profile/history"
+            options={{
+              presentation: 'modal',
+              headerShown: true,
+              title: 'Challenge History',
+            }}
+          />
+          <Stack.Screen
+            name="profile/edit"
+            options={{
+              presentation: 'modal',
+              headerShown: true,
+              title: 'Edit Profile',
+            }}
+          />
+          <Stack.Screen
+            name="profile/shop"
+            options={{
+              presentation: 'modal',
+              headerShown: true,
+              title: 'Shop',
+            }}
+          />
+          <Stack.Screen
+            name="profile/achievements"
+            options={{
+              presentation: 'modal',
+              headerShown: true,
+              title: 'Achievements',
+            }}
+          />
+          <Stack.Screen
+            name="profile/settings"
+            options={{
+              presentation: 'modal',
+              headerShown: true,
+              title: 'Settings',
+            }}
+          />
+          <Stack.Screen
+            name="profile/support/index"
+            options={{
+              presentation: 'modal',
+              headerShown: true,
+              title: 'Support',
+            }}
+          />
+          <Stack.Screen
+            name="profile/support/create"
+            options={{
+              presentation: 'modal',
+              headerShown: true,
+              title: 'New Ticket',
+            }}
+          />
+          <Stack.Screen
+            name="spin"
+            options={{
+              presentation: 'modal',
+              headerShown: true,
+              title: 'Daily Spin',
+              headerRight: () => <ModalCloseButton />,
+            }}
+          />
+          <Stack.Screen name="reset-password" options={{ headerShown: false }} />
+        </Stack.Protected>
 
-      <Stack.Protected guard={!session}>
-        <Stack.Screen name="(auth)" />
-      </Stack.Protected>
-    </Stack>
+        <Stack.Protected guard={!session}>
+          <Stack.Screen name="(auth)" />
+        </Stack.Protected>
+      </Stack>
     </>
   );
 }
