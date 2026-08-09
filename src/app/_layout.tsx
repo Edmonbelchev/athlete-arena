@@ -5,6 +5,7 @@ import { useEffect } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
 import { AuthProvider, useAuth } from '@/features/auth';
+import { AuthDeepLinkHandler } from '@/features/auth/AuthDeepLinkHandler';
 import { AchievementUnlockProvider } from '@/features/achievements/AchievementUnlockProvider';
 import { FriendsProvider } from '@/features/friends/FriendsProvider';
 import { NotificationProvider } from '@/features/notifications/NotificationProvider';
@@ -66,7 +67,9 @@ function RootNavigator() {
   }
 
   return (
-    <Stack screenOptions={{ headerShown: false }}>
+    <>
+      <AuthDeepLinkHandler />
+      <Stack screenOptions={{ headerShown: false }}>
       <Stack.Protected guard={Boolean(session)}>
         <Stack.Screen name="onboarding" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" />
@@ -175,12 +178,14 @@ function RootNavigator() {
             title: 'New Ticket',
           }}
         />
+        <Stack.Screen name="reset-password" options={{ headerShown: false }} />
       </Stack.Protected>
 
       <Stack.Protected guard={!session}>
         <Stack.Screen name="(auth)" />
       </Stack.Protected>
     </Stack>
+    </>
   );
 }
 

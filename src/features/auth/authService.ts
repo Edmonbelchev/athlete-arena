@@ -1,7 +1,12 @@
-import { AUTH_EMAIL_REDIRECT_URL } from '@/constants/app';
+import { AUTH_EMAIL_REDIRECT_URL, AUTH_PASSWORD_RESET_REDIRECT_URL } from '@/constants/app';
 import { assertSupabaseConfigured, supabase } from '@/lib/supabase';
 
-import { isValidEmail, isValidUsername, normalizeUsername } from './validation';
+import {
+  isValidEmail,
+  isValidPassword,
+  isValidUsername,
+  normalizeUsername,
+} from './validation';
 
 interface SignUpParams {
   email: string;
@@ -113,6 +118,37 @@ export async function signUpWithEmail({ email, password, username }: SignUpParam
   return data;
 }
 
+export async function requestPasswordReset(email: string) {
+  assertSupabaseConfigured();
+
+  const trimmedEmail = email.trim();
+  if (!isValidEmail(trimmedEmail)) {
+    throw new Error('Enter a valid email address.');
+  }
+
+  const { error } = await supabase.auth.resetPasswordForEmail(trimmedEmail, {
+    redirectTo: AUTH_PASSWORD_RESET_REDIRECT_URL,
+  });
+
+  if (error) {
+    throw error;
+  }
+}
+
+export async function updatePassword(password: string) {
+  assertSupabaseConfigured();
+
+  if (!isValidPassword(password)) {
+    throw new Error('Password must be at least 8 characters.');
+  }
+
+  const { error } = await supabase.auth.updateUser({ password });
+
+  if (error) {
+    throw error;
+  }
+}
+
 export async function resendSignUpConfirmation(email: string) {
   assertSupabaseConfigured();
 
@@ -151,4 +187,6 @@ export const authService = {
   isUsernameAvailable,
   isEmailRegistered,
   resendSignUpConfirmation,
+  requestPasswordReset,
+  updatePassword,
 };

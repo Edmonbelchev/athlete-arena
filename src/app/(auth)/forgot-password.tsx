@@ -12,48 +12,44 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AuthTextInput } from '@/components/ui/AuthTextInput';
-import { ResendConfirmationEmail } from '@/components/auth/ResendConfirmationEmail';
 import { BrandLogo } from '@/components/ui/BrandLogo';
 import { LegalLinksFooter } from '@/components/legal/LegalLinks';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
-import { getAuthErrorMessage, isEmailNotConfirmedError } from '@/features/auth/authErrors';
-import { signInWithEmail } from '@/features/auth/authService';
+import { getAuthErrorMessage } from '@/features/auth/authErrors';
+import { requestPasswordReset } from '@/features/auth/authService';
 import { isValidEmail } from '@/features/auth/validation';
 import { useAuth } from '@/features/auth';
 import { useTheme } from '@/hooks/use-theme';
 
-export default function LoginScreen() {
+export default function ForgotPasswordScreen() {
   const theme = useTheme();
   const { isConfigured } = useAuth();
 
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string }>({});
+  const [fieldError, setFieldError] = useState<string | undefined>();
   const [formError, setFormError] = useState<string | null>(null);
-  const [needsEmailConfirmation, setNeedsEmailConfirmation] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   function validateForm(): boolean {
-    const nextErrors: { email?: string; password?: string } = {};
-
     if (!email.trim()) {
-      nextErrors.email = 'Email is required';
-    } else if (!isValidEmail(email)) {
-      nextErrors.email = 'Enter a valid email address';
+      setFieldError('Email is required');
+      return false;
     }
 
-    if (!password) {
-      nextErrors.password = 'Password is required';
+    if (!isValidEmail(email)) {
+      setFieldError('Enter a valid email address');
+      return false;
     }
 
-    setFieldErrors(nextErrors);
-    return Object.keys(nextErrors).length === 0;
+    setFieldError(undefined);
+    return true;
   }
 
-  async function handleSignIn() {
+  async function handleSubmit() {
     setFormError(null);
-    setNeedsEmailConfirmation(false);
+    setSuccessMessage(null);
 
     if (!validateForm()) {
       return;
@@ -62,9 +58,11 @@ export default function LoginScreen() {
     setIsSubmitting(true);
 
     try {
-      await signInWithEmail(email, password);
+      await requestPasswordReset(email);
+      setSuccessMessage(
+        'If an account exists for that email, we sent a link to reset your password.',
+      );
     } catch (error) {
-      setNeedsEmailConfirmation(isEmailNotConfirmedError(error));
       setFormError(getAuthErrorMessage(error));
     } finally {
       setIsSubmitting(false);
@@ -81,9 +79,11 @@ export default function LoginScreen() {
           keyboardShouldPersistTaps="handled">
           <View style={styles.container}>
             <BrandLogo size={88} style={styles.logo} />
-            <Text style={StyleSheet.flatten([styles.title, { color: theme.text }])}>Welcome back</Text>
+            <Text style={StyleSheet.flatten([styles.title, { color: theme.text }])}>
+              Reset password
+            </Text>
             <Text style={StyleSheet.flatten([styles.subtitle, { color: theme.textSecondary }])}>
-              Sign in to continue your streak and complete today&apos;s challenge.
+              Enter your email and we&apos;ll send you a link to choose a new password.
             </Text>
 
             <AuthTextInput
@@ -93,26 +93,8 @@ export default function LoginScreen() {
               keyboardType="email-address"
               textContentType="emailAddress"
               autoComplete="email"
-              error={fieldErrors.email}
+              error={fieldError}
             />
-
-            <AuthTextInput
-              label="Password"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-              textContentType="password"
-              autoComplete="password"
-              error={fieldErrors.password}
-            />
-
-            <Link href="/(auth)/forgot-password" asChild>
-              <Pressable style={styles.forgotPasswordPressable}>
-                <Text style={StyleSheet.flatten([styles.forgotPasswordLink, { color: theme.primary }])}>
-                  Forgot password?
-                </Text>
-              </Pressable>
-            </Link>
 
             {formError ? (
               <Text style={StyleSheet.flatten([styles.formError, { color: theme.danger }])}>
@@ -120,19 +102,23 @@ export default function LoginScreen() {
               </Text>
             ) : null}
 
-            {needsEmailConfirmation ? <ResendConfirmationEmail email={email} /> : null}
+            {successMessage ? (
+              <Text style={StyleSheet.flatten([styles.successMessage, { color: theme.success }])}>
+                {successMessage}
+              </Text>
+            ) : null}
 
             <PrimaryButton
-              label="Sign In"
+              label="Send reset link"
               disabled={!isConfigured}
               loading={isSubmitting}
-              onPress={() => void handleSignIn()}
+              onPress={() => void handleSubmit()}
             />
 
-            <Link href="/(auth)/register" asChild>
+            <Link href="/(auth)/login" asChild>
               <Pressable style={styles.linkPressable}>
                 <Text style={StyleSheet.flatten([styles.link, { color: theme.primary }])}>
-                  Don&apos;t have an account? Register
+                  Back to sign in
                 </Text>
               </Pressable>
             </Link>
@@ -180,17 +166,15 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textAlign: 'center',
   },
+  successMessage: {
+    fontSize: 14,
+    fontWeight: '600',
+    textAlign: 'center',
+    lineHeight: 20,
+  },
   linkPressable: {
     alignSelf: 'center',
     marginTop: Spacing.two,
-  },
-  forgotPasswordPressable: {
-    alignSelf: 'flex-end',
-    marginTop: -Spacing.one,
-  },
-  forgotPasswordLink: {
-    fontSize: 14,
-    fontWeight: '600',
   },
   link: {
     textAlign: 'center',

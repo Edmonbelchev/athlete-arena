@@ -53,7 +53,7 @@ export function getAuthErrorMessage(error: unknown): string {
   }
 
   if (message.includes('For security purposes, you can only request this once every')) {
-    return 'Please wait a moment before requesting another confirmation email.';
+    return 'Please wait a moment before requesting another email.';
   }
 
   return message;

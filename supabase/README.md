@@ -140,7 +140,7 @@ Configure in the Supabase Dashboard (hosted project):
 **Authentication → URL Configuration**
 
 - Site URL: `https://athlete-arena.app`
-- Redirect URLs: add `athletearena://login` (used by the app after email confirmation)
+- Redirect URLs: add `athletearena://login` (email confirmation) and `athletearena://reset-password` (password reset)
 
 ## Environment variables
 
