@@ -27,6 +27,8 @@ interface ShopSummaryRpc {
   coin_balance: number;
   inventory: string[];
   equipped: Partial<Record<ShopSlot, string>>;
+  coin_multiplier?: number;
+  coin_multiplier_expires_at?: string | null;
 }
 
 function isShopItemType(value: string): value is ShopItemType {
@@ -94,6 +96,9 @@ export function mapShopSummary(value: unknown): ShopSummary {
     coinBalance: typeof record.coin_balance === 'number' ? record.coin_balance : 0,
     inventory: Array.isArray(record.inventory) ? record.inventory.filter((item) => typeof item === 'string') : [],
     equipped: record.equipped ?? {},
+    coinMultiplier: typeof record.coin_multiplier === 'number' ? record.coin_multiplier : 1,
+    coinMultiplierExpiresAt:
+      typeof record.coin_multiplier_expires_at === 'string' ? record.coin_multiplier_expires_at : null,
   };
 }
 

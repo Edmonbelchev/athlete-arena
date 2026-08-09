@@ -9,6 +9,7 @@ import { FriendChallengesCarousel } from '@/components/home/FriendChallengesCaro
 import { HomeProgressBlock } from '@/components/home/HomeProgressBlock';
 import { HomeSection } from '@/components/home/HomeSection';
 import { TabScreenHeader } from '@/components/sidebar/TabScreenHeader';
+import { DailySpinCard } from '@/components/spin/DailySpinCard';
 import { ChallengeCard } from '@/components/ui/ChallengeCard';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
@@ -19,6 +20,7 @@ import { useFriendChallenges } from '@/features/friends/useFriendChallenges';
 import { useChallengeNotificationRefresh } from '@/features/notifications/useChallengeNotificationRefresh';
 import { useProfile } from '@/features/profile/useProfile';
 import { useShop } from '@/features/shop/ShopProvider';
+import { useDailySpin } from '@/features/spin/useDailySpin';
 import { xpProgressInCurrentLevel } from '@/features/xp/levelUtils';
 import { useTheme } from '@/hooks/use-theme';
 import { formatUserError } from '@/lib/errors';
@@ -55,6 +57,7 @@ export default function HomeScreen() {
   const [friendActionError, setFriendActionError] = useState<string | null>(null);
   const { syncAndCelebrate } = useAchievementUnlock();
   const { refresh: refreshShop } = useShop();
+  const { status: spinStatus, refresh: refreshSpin } = useDailySpin();
 
   const isLoading = isProfileLoading || isChallengeLoading || isFriendChallengesLoading;
   const error = profileError ?? challengeError ?? friendActionError;
@@ -76,6 +79,7 @@ export default function HomeScreen() {
       refreshFriendChallenges(),
       syncAndCelebrate().catch(() => []),
       refreshShop().catch(() => undefined),
+      refreshSpin().catch(() => undefined),
     ]);
   }
 
@@ -205,6 +209,16 @@ export default function HomeScreen() {
           )}
         </HomeSection>
 
+        <HomeSection title="Daily Spin" subtitle="One free spin every day">
+          <DailySpinCard
+            canSpin={Boolean(spinStatus?.canSpin)}
+            multiplierActive={(spinStatus?.coinMultiplier ?? 1) > 1}
+            multiplierExpiresAt={spinStatus?.coinMultiplierExpiresAt ?? null}
+            nextSpinAt={spinStatus?.nextSpinAt ?? null}
+            onPress={() => router.push('/spin')}
+          />
+        </HomeSection>
+
         <HomeSection
           title="Friend Races"
           subtitle="View active speed races by friend"
@@ -232,12 +246,6 @@ export default function HomeScreen() {
               description="Test your fitness knowledge and earn bonus XP every week."
               icon="quiz"
               accentColor={theme.accent}
-            />
-            <ComingSoonBlock
-              title="Prize Wheel"
-              description="Spin for random rewards, streak boosts, and surprise bonuses."
-              icon="crown"
-              accentColor={theme.success}
             />
           </View>
         </HomeSection>

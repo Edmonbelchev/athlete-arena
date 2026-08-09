@@ -9,6 +9,7 @@ export type Json =
 export type ExerciseType = 'push_ups' | 'squats' | 'pull_ups' | 'dips';
 export type ChallengeStatus = 'pending' | 'in_progress' | 'completed' | 'declined' | 'expired';
 export type FriendshipStatus = 'pending' | 'accepted' | 'declined';
+export type SpinRarity = 'common' | 'rare' | 'epic' | 'legendary';
 
 export interface FriendChallengeRpcRow {
   participant_id: string;
@@ -56,6 +57,7 @@ export interface Database {
           current_streak: number;
           longest_streak: number;
           coin_balance: number;
+          coin_multiplier_expires_at: string | null;
           preferences: Json;
           created_at: string;
           updated_at: string;
@@ -70,6 +72,7 @@ export interface Database {
           current_streak?: number;
           longest_streak?: number;
           coin_balance?: number;
+          coin_multiplier_expires_at?: string | null;
           preferences?: Json;
           created_at?: string;
           updated_at?: string;
@@ -84,6 +87,7 @@ export interface Database {
           current_streak?: number;
           longest_streak?: number;
           coin_balance?: number;
+          coin_multiplier_expires_at?: string | null;
           preferences?: Json;
           created_at?: string;
           updated_at?: string;
@@ -470,6 +474,39 @@ export interface Database {
         };
         Relationships: [];
       };
+      daily_spins: {
+        Row: {
+          id: string;
+          user_id: string;
+          spin_date: string;
+          reward_id: string;
+          rarity: SpinRarity;
+          coins_awarded: number;
+          multiplier_granted: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          spin_date: string;
+          reward_id: string;
+          rarity: SpinRarity;
+          coins_awarded?: number;
+          multiplier_granted?: boolean;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          spin_date?: string;
+          reward_id?: string;
+          rarity?: SpinRarity;
+          coins_awarded?: number;
+          multiplier_granted?: boolean;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -747,6 +784,14 @@ export interface Database {
           p_reason?: string | null;
         };
         Returns: undefined;
+      };
+      get_daily_spin_status: {
+        Args: Record<string, never>;
+        Returns: Json;
+      };
+      spin_daily_wheel: {
+        Args: Record<string, never>;
+        Returns: Json;
       };
     };
     Enums: {

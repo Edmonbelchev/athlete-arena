@@ -49,6 +49,8 @@ const emptySummary: ShopSummary = {
   coinBalance: 0,
   inventory: [],
   equipped: {},
+  coinMultiplier: 1,
+  coinMultiplierExpiresAt: null,
 };
 
 const ShopContext = createContext<ShopContextValue | null>(null);
