@@ -9,6 +9,7 @@ import { AchievementUnlockProvider } from '@/features/achievements/AchievementUn
 import { FriendsProvider } from '@/features/friends/FriendsProvider';
 import { NotificationProvider } from '@/features/notifications/NotificationProvider';
 import { PushNotificationBootstrap } from '@/features/notifications/PushNotificationBootstrap';
+import { ProfileProvider } from '@/features/profile/ProfileProvider';
 import { ShopProvider } from '@/features/shop/ShopProvider';
 import { UserSettingsProvider } from '@/features/settings/UserSettingsProvider';
 import { useThemePreference } from '@/features/theme/ThemePreferenceProvider';
@@ -23,13 +24,15 @@ export default function RootLayout() {
     <AuthProvider>
       <UserSettingsProvider>
         <AchievementUnlockProvider>
-          <ShopProvider>
-            <FriendsProvider>
-              <NotificationProvider>
-                <ThemedRootNavigator />
-              </NotificationProvider>
-            </FriendsProvider>
-          </ShopProvider>
+          <ProfileProvider>
+            <ShopProvider>
+              <FriendsProvider>
+                <NotificationProvider>
+                  <ThemedRootNavigator />
+                </NotificationProvider>
+              </FriendsProvider>
+            </ShopProvider>
+          </ProfileProvider>
         </AchievementUnlockProvider>
       </UserSettingsProvider>
     </AuthProvider>

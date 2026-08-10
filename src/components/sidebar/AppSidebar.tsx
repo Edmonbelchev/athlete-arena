@@ -74,7 +74,7 @@ export function AppSidebar() {
   const { width } = useWindowDimensions();
   const { isOpen, close } = useSidebar();
   const { signOut } = useAuth();
-  const { profile } = useProfile();
+  const { profile, refresh: refreshProfile } = useProfile();
   const { summary, equippedAvatar, equippedFrame } = useShop();
   const { achievements } = useAchievements({ syncOnLoad: false });
   const [logoutError, setLogoutError] = useState<string | null>(null);
@@ -111,8 +111,11 @@ export function AppSidebar() {
   useEffect(() => {
     if (!isOpen) {
       setLogoutError(null);
+      return;
     }
-  }, [isOpen]);
+
+    void refreshProfile();
+  }, [isOpen, refreshProfile]);
 
   return (
     <Modal visible={isOpen} transparent animationType="fade" onRequestClose={close}>

@@ -22,6 +22,7 @@ import { useRepCounter } from '@/features/challenges/useRepCounter';
 import { useAuth } from '@/features/auth';
 import { useFriendChallenge } from '@/features/friends/useFriendChallenge';
 import { useFriendChallengeRaceTimer } from '@/features/friends/useFriendChallengeRaceTimer';
+import { useProfile } from '@/features/profile/useProfile';
 import { useShop } from '@/features/shop/ShopProvider';
 import {
   acceptFriendChallenge,
@@ -75,6 +76,7 @@ export default function FriendChallengeScreen() {
   const { participantId } = useLocalSearchParams<{ participantId: string }>();
   const { challenge, isLoading, error, refresh } = useFriendChallenge(participantId);
   const { equippedEmote } = useShop();
+  const { refresh: refreshProfile } = useProfile();
   const [syncError, setSyncError] = useState<string | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
   const [isPendingAction, setIsPendingAction] = useState(false);
@@ -176,6 +178,7 @@ export default function FriendChallengeScreen() {
       try {
         await completeFriendChallenge(participantId, repCount);
         await refresh({ silent: true });
+        void refreshProfile();
       } catch (err) {
         setSyncError(formatUserError(err, 'Failed to sync repetition'));
       } finally {
@@ -183,7 +186,7 @@ export default function FriendChallengeScreen() {
         setIsSyncing(false);
       }
     },
-    [participantId, refresh, isTimedOut],
+    [participantId, refresh, refreshProfile, isTimedOut],
   );
 
   const canAttempt =

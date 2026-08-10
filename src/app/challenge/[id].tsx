@@ -17,6 +17,7 @@ import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { useChallenge } from '@/features/challenges/useChallenge';
 import { useExercisePoseDetection } from '@/features/challenges/useExercisePoseDetection';
 import { useRepCounter } from '@/features/challenges/useRepCounter';
+import { useProfile } from '@/features/profile/useProfile';
 import { useShop } from '@/features/shop/ShopProvider';
 import { useDrainNativeCameraOnLeave } from '@/hooks/use-drain-native-camera-on-leave';
 import { useTheme } from '@/hooks/use-theme';
@@ -30,6 +31,7 @@ export default function ChallengeScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { challenge, isLoading, error, applyChallenge } = useChallenge(id);
   const { equippedEmote } = useShop();
+  const { applyXpDelta, refresh: refreshProfile } = useProfile();
   const [syncError, setSyncError] = useState<string | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
   const cameraActive = useDrainNativeCameraOnLeave();
@@ -59,6 +61,8 @@ export default function ChallengeScreen() {
       try {
         const updated = await completeChallenge(activeChallenge.id, repCount);
         applyChallenge(updated);
+        applyXpDelta(DAILY_MISSION_XP_REWARD);
+        void refreshProfile();
       } catch (err) {
         setSyncError(formatUserError(err, 'Failed to complete challenge'));
       } finally {
@@ -66,7 +70,7 @@ export default function ChallengeScreen() {
         setIsSyncing(false);
       }
     },
-    [applyChallenge],
+    [applyChallenge, applyXpDelta, refreshProfile],
   );
 
   const repCounter = useRepCounter({
