@@ -17,11 +17,13 @@ import { AppIcon } from '@/components/ui/AppIcon';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import {
+  COMING_SOON_GOAL_ACTIVITIES,
   GOAL_PERIODS,
   GOAL_TARGET_LIMITS,
   GOAL_TARGET_PRESETS,
   formatGoalPeriodLabel,
   formatGoalValue,
+  isComingSoonGoalActivity,
 } from '@/constants/goals';
 import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { useUserGoals } from '@/features/goals/useUserGoals';
@@ -70,10 +72,18 @@ export default function GoalsScreen() {
     [activities],
   );
 
-  const otherActivities = useMemo(
-    () => activities.filter((activity) => activity.kind !== 'reps'),
-    [activities],
-  );
+  function handleActivitySelect(activity: GoalActivityCatalogItem) {
+    if (isComingSoonGoalActivity(activity.id)) {
+      return;
+    }
+
+    setSelectedActivityId(activity.id);
+    setFormError(null);
+    const presets = GOAL_TARGET_PRESETS[activity.kind];
+    const defaultTarget = presets[1] ?? presets[0] ?? GOAL_TARGET_LIMITS[activity.kind].min;
+    setTargetValue(String(defaultTarget));
+    setCustomTarget('');
+  }
 
   const headerOptions = {
     title: 'Personal Goals',
@@ -89,15 +99,6 @@ export default function GoalsScreen() {
       </Pressable>
     ),
   } as const;
-
-  function handleActivitySelect(activity: GoalActivityCatalogItem) {
-    setSelectedActivityId(activity.id);
-    setFormError(null);
-    const presets = GOAL_TARGET_PRESETS[activity.kind];
-    const defaultTarget = presets[1] ?? presets[0] ?? GOAL_TARGET_LIMITS[activity.kind].min;
-    setTargetValue(String(defaultTarget));
-    setCustomTarget('');
-  }
 
   function resolveTargetValue(activity: GoalActivityCatalogItem): number {
     if (customTarget.trim()) {
@@ -283,7 +284,7 @@ export default function GoalsScreen() {
             ]}>
             <Text style={[styles.summaryTitle, { color: theme.text }]}>Your targets</Text>
             <Text style={[styles.summaryCopy, { color: theme.textSecondary }]}>
-              Create daily or weekly goals for reps, steps, or distance. Rep goals update
+              Create daily or weekly rep goals for push-ups, squats, and pull-ups. Rep goals update
               automatically when you finish daily missions or friend challenges.
             </Text>
           </View>
@@ -350,34 +351,31 @@ export default function GoalsScreen() {
               })}
             </View>
 
-            {otherActivities.length > 0 ? (
-              <>
-                <Text style={[styles.fieldLabel, { color: theme.textSecondary }]}>OTHER ACTIVITIES</Text>
-                <View style={styles.chipRow}>
-                  {otherActivities.map((activity) => {
-                    const selected = selectedActivityId === activity.id;
-                    return (
-                      <Pressable
-                        key={activity.id}
-                        accessibilityRole="button"
-                        onPress={() => handleActivitySelect(activity)}
-                        style={[
-                          styles.chip,
-                          {
-                            backgroundColor: selected ? theme.primary : theme.backgroundElement,
-                            borderColor: selected ? theme.primary : theme.border,
-                          },
-                        ]}>
-                        <Text style={[styles.chipLabel, { color: selected ? '#FFFFFF' : theme.text }]}>
-                          {activity.label}
-                          {activity.id === 'run_km' ? ' (km)' : ''}
-                        </Text>
-                      </Pressable>
-                    );
-                  })}
-                </View>
-              </>
-            ) : null}
+            <>
+              <Text style={[styles.fieldLabel, { color: theme.textSecondary }]}>OTHER ACTIVITIES</Text>
+              <View style={styles.chipRow}>
+                {COMING_SOON_GOAL_ACTIVITIES.map((activity) => (
+                  <View
+                    key={activity.id}
+                    accessibilityRole="text"
+                    style={[
+                      styles.chip,
+                      styles.chipDisabled,
+                      {
+                        backgroundColor: theme.backgroundElement,
+                        borderColor: theme.border,
+                      },
+                    ]}>
+                    <Text style={[styles.chipLabel, { color: theme.textSecondary }]}>
+                      {activity.label} (Coming soon)
+                    </Text>
+                  </View>
+                ))}
+              </View>
+              <Text style={[styles.comingSoonNotice, { color: theme.textSecondary }]}>
+                More activities like steps and running will be added soon.
+              </Text>
+            </>
 
             {selectedActivity ? (
               <>
@@ -542,9 +540,17 @@ const styles = StyleSheet.create({
     borderRadius: Radius.md,
     borderWidth: 1,
   },
+  chipDisabled: {
+    opacity: 0.72,
+  },
   chipLabel: {
     fontSize: 14,
     fontWeight: '700',
+  },
+  comingSoonNotice: {
+    fontSize: 13,
+    lineHeight: 18,
+    fontWeight: '600',
   },
   customInput: {
     borderWidth: 1,

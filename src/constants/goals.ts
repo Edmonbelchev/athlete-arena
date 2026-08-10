@@ -2,6 +2,20 @@ import type { GoalActivityKind, GoalPeriod } from '@/types/goals';
 
 export const GOAL_PERIODS: readonly GoalPeriod[] = ['daily', 'weekly'];
 
+/** Non-rep activities shown in the picker but not yet available to create. */
+export const COMING_SOON_GOAL_ACTIVITIES = [
+  { id: 'steps', label: 'Steps' },
+  { id: 'run_km', label: 'Running' },
+] as const;
+
+export const COMING_SOON_GOAL_ACTIVITY_IDS = new Set<string>(
+  COMING_SOON_GOAL_ACTIVITIES.map((activity) => activity.id),
+);
+
+export function isComingSoonGoalActivity(activityId: string): boolean {
+  return COMING_SOON_GOAL_ACTIVITY_IDS.has(activityId);
+}
+
 export const GOAL_PERIOD_LABELS: Record<GoalPeriod, string> = {
   daily: 'Daily',
   weekly: 'Weekly',

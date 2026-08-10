@@ -11,15 +11,15 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { GoalHistoryCard } from '@/components/stats/GoalHistoryCard';
 import { HomeSection } from '@/components/home/HomeSection';
+import { GoalHistoryCard } from '@/components/stats/GoalHistoryCard';
 import { AppIcon } from '@/components/ui/AppIcon';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { StatCard } from '@/components/ui/StatCard';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useUserStats } from '@/features/stats/useUserStats';
-import { leaveScreen } from '@/lib/navigation';
 import { useTheme } from '@/hooks/use-theme';
+import { leaveScreen } from '@/lib/navigation';
 
 function formatCount(value: number): string {
   return value.toLocaleString();
@@ -127,17 +127,10 @@ export default function StatsScreen() {
             <View style={styles.statsGrid}>
               <StatCard label="Steps" value={formatCount(movementStats.totalSteps)} accentColor={theme.streak} />
               <StatCard
-                label="Running (km)"
+                label="Running"
                 value={formatDistance(movementStats.totalRunKm, 'km')}
                 accentColor={theme.streak}
               />
-              {movementStats.totalRunMi > 0 ? (
-                <StatCard
-                  label="Running (mi)"
-                  value={formatDistance(movementStats.totalRunMi, 'mi')}
-                  accentColor={theme.streak}
-                />
-              ) : null}
             </View>
           </HomeSection>
 

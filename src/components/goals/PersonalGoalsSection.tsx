@@ -32,7 +32,8 @@ export function PersonalGoalsSection({ goals, isLoading, error }: PersonalGoalsS
 
       {!isLoading && activeGoals.length === 0 ? (
         <Text style={[styles.empty, { color: theme.textSecondary }]}>
-          Set a daily or weekly target for push-ups, squats, steps, and more.
+          Set a daily or weekly target for push-ups, squats, or pull-ups. More activities coming
+          soon.
         </Text>
       ) : null}
 
