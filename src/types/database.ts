@@ -385,6 +385,7 @@ export interface Database {
           icon: string;
           requirements: Json;
           xp_reward: number;
+          coin_reward: number;
           sort_order: number;
           is_active: boolean;
           created_at: string;
@@ -708,6 +709,7 @@ export interface Database {
           image_url: string | null;
           icon: string;
           xp_reward: number;
+          coin_reward: number;
           sort_order: number;
           unlocked_at: string;
         }[];
@@ -851,6 +853,7 @@ export interface Database {
           icon: string;
           requirements: Json;
           xp_reward: number;
+          coin_reward: number;
           sort_order: number;
           unlocked: boolean;
           unlocked_at: string | null;

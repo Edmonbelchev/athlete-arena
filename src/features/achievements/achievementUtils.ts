@@ -18,6 +18,9 @@ const REQUIREMENT_LABELS: Record<AchievementRequirementType, string> = {
   dips_total: 'Dips completed',
   friend_races_won: 'Friend races won',
   friends_count: 'Friends added',
+  goals_created: 'Goals created',
+  goals_completed: 'Goals completed',
+  login_streak: 'Consecutive login days',
 };
 
 function isRequirementType(value: string): value is AchievementRequirementType {
@@ -51,6 +54,20 @@ export function resolveAchievementIcon(icon: string | null | undefined): AppIcon
 export function formatAchievementRequirement(requirements: AchievementRequirement): string {
   const label = REQUIREMENT_LABELS[requirements.type];
   return `${label}: ${requirements.min.toLocaleString()}`;
+}
+
+export function formatAchievementReward(xpReward: number, coinReward: number): string | null {
+  const parts: string[] = [];
+
+  if (xpReward > 0) {
+    parts.push(`+${xpReward} XP`);
+  }
+
+  if (coinReward > 0) {
+    parts.push(`+${coinReward.toLocaleString()} coins`);
+  }
+
+  return parts.length > 0 ? parts.join(' · ') : null;
 }
 
 export function getUnlockedAchievements(achievements: AchievementRecord[]): AchievementRecord[] {

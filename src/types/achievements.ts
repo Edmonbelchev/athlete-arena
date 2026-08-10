@@ -11,7 +11,10 @@ export type AchievementRequirementType =
   | 'pull_ups_total'
   | 'dips_total'
   | 'friend_races_won'
-  | 'friends_count';
+  | 'friends_count'
+  | 'goals_created'
+  | 'goals_completed'
+  | 'login_streak';
 
 export interface AchievementRequirement {
   type: AchievementRequirementType;
@@ -26,6 +29,7 @@ export interface AchievementRecord {
   icon: AppIconName;
   requirements: AchievementRequirement;
   xpReward: number;
+  coinReward: number;
   sortOrder: number;
   unlocked: boolean;
   unlockedAt: string | null;
@@ -40,6 +44,7 @@ export interface FriendAchievementSummary {
   imageUrl: string | null;
   icon: AppIconName;
   xpReward: number;
+  coinReward: number;
   sortOrder: number;
   unlockedAt: string;
 }

@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppIcon } from '@/components/ui/AppIcon';
 import { Radius, Spacing } from '@/constants/theme';
+import { formatAchievementReward } from '@/features/achievements/achievementUtils';
 import type { AchievementRecord } from '@/types/achievements';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -20,6 +21,7 @@ interface AchievementUnlockToastProps {
 export function AchievementUnlockToast({ achievement, onDismiss, onPress }: AchievementUnlockToastProps) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
+  const rewardLabel = formatAchievementReward(achievement.xpReward, achievement.coinReward);
 
   return (
     <Modal
@@ -72,10 +74,8 @@ export function AchievementUnlockToast({ achievement, onDismiss, onPress }: Achi
                 <Text style={StyleSheet.flatten([styles.description, { color: theme.textSecondary }])}>
                   {achievement.description}
                 </Text>
-                {achievement.xpReward > 0 ? (
-                  <Text style={StyleSheet.flatten([styles.xp, { color: theme.xp }])}>
-                    +{achievement.xpReward} XP
-                  </Text>
+                {rewardLabel ? (
+                  <Text style={StyleSheet.flatten([styles.xp, { color: theme.xp }])}>{rewardLabel}</Text>
                 ) : null}
               </View>
 

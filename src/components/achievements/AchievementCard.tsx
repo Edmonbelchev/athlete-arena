@@ -2,7 +2,7 @@ import { Image } from 'expo-image';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { AppIcon } from '@/components/ui/AppIcon';
-import { formatAchievementRequirement } from '@/features/achievements/achievementUtils';
+import { formatAchievementRequirement, formatAchievementReward } from '@/features/achievements/achievementUtils';
 import { Radius, Spacing } from '@/constants/theme';
 import type { AchievementRecord } from '@/types/achievements';
 import { useTheme } from '@/hooks/use-theme';
@@ -22,6 +22,7 @@ function formatUnlockedDate(unlockedAt: string): string {
 export function AchievementCard({ achievement }: AchievementCardProps) {
   const theme = useTheme();
   const locked = !achievement.unlocked;
+  const rewardLabel = formatAchievementReward(achievement.xpReward, achievement.coinReward);
 
   return (
     <View
@@ -65,11 +66,9 @@ export function AchievementCard({ achievement }: AchievementCardProps) {
         <Text style={StyleSheet.flatten([styles.requirement, { color: theme.textSecondary }])}>
           {formatAchievementRequirement(achievement.requirements)}
         </Text>
-        {achievement.xpReward > 0 ? (
+        {rewardLabel ? (
           <View style={StyleSheet.flatten([styles.xpBadge, { backgroundColor: theme.backgroundSelected }])}>
-            <Text style={StyleSheet.flatten([styles.xpText, { color: theme.xp }])}>
-              +{achievement.xpReward} XP
-            </Text>
+            <Text style={StyleSheet.flatten([styles.xpText, { color: theme.xp }])}>{rewardLabel}</Text>
           </View>
         ) : null}
       </View>

@@ -13,6 +13,7 @@ interface AchievementRpcRow {
   icon: string;
   requirements: unknown;
   xp_reward: number;
+  coin_reward: number;
   sort_order: number;
   unlocked: boolean;
   unlocked_at: string | null;
@@ -32,6 +33,7 @@ function mapAchievement(row: AchievementRpcRow): AchievementRecord | null {
     icon: resolveAchievementIcon(row.icon),
     requirements,
     xpReward: row.xp_reward,
+    coinReward: row.coin_reward,
     sortOrder: row.sort_order,
     unlocked: row.unlocked,
     unlockedAt: row.unlocked_at,
@@ -69,6 +71,7 @@ interface FriendAchievementRpcRow {
   image_url: string | null;
   icon: string;
   xp_reward: number;
+  coin_reward: number;
   sort_order: number;
   unlocked_at: string;
 }
@@ -81,6 +84,7 @@ function mapFriendAchievement(row: FriendAchievementRpcRow): FriendAchievementSu
     imageUrl: row.image_url,
     icon: resolveAchievementIcon(row.icon),
     xpReward: row.xp_reward,
+    coinReward: row.coin_reward,
     sortOrder: row.sort_order,
     unlockedAt: row.unlocked_at,
   };
