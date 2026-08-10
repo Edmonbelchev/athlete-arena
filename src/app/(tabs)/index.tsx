@@ -191,7 +191,7 @@ export default function HomeScreen() {
             <HomeLinkBlock
               title="Challenge Friends"
               description="Race a friend to the finish"
-              icon="friends"
+              icon="swords"
               accentColor={theme.streak}
               badge={activeFriendChallengeCount}
               onPress={() => router.push('/(tabs)/challenges')}

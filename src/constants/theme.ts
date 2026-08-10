@@ -80,6 +80,6 @@ export const Radius = {
   xl: 24,
 } as const;
 
-export const BottomTabInset = Platform.select({ ios: 50, android: 80 }) ?? 0;
+export const BottomTabInset = Platform.select({ ios: 86, android: 96 }) ?? 86;
 export const MaxContentWidth = 480;
 export const FitContentWidth = 'fit-content';

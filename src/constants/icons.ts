@@ -12,6 +12,7 @@ export type AppIconName =
   | 'sun'
   | 'moon'
   | 'target'
+  | 'swords'
   | 'medal'
   | 'flame'
   | 'bolt'
@@ -42,6 +43,7 @@ export const APP_ICONS: Record<AppIconName, SymbolViewProps['name']> = {
   sun: { ios: 'sun.max.fill', android: 'wb_sunny', web: 'wb_sunny' },
   moon: { ios: 'moon.fill', android: 'dark_mode', web: 'dark_mode' },
   target: { ios: 'target', android: 'track_changes', web: 'track_changes' },
+  swords: { ios: 'figure.fencing', android: 'swords', web: 'swords' },
   medal: { ios: 'medal.fill', android: 'military_tech', web: 'military_tech' },
   flame: { ios: 'flame.fill', android: 'local_fire_department', web: 'local_fire_department' },
   bolt: { ios: 'bolt.fill', android: 'bolt', web: 'bolt' },

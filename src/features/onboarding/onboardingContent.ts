@@ -32,7 +32,7 @@ export const ONBOARDING_HOW_IT_WORKS: OnboardingFeature[] = [
       'Your front camera tracks movement with pose detection. Position yourself in frame and the app counts valid reps.',
   },
   {
-    icon: 'friends',
+    icon: 'swords',
     title: 'Friend speed races',
     description:
       'Challenge friends to finish a set fastest. Accept races, run your attempt, and compare results.',

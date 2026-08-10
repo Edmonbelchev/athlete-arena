@@ -96,7 +96,7 @@ export function FriendChallengesCarousel({
           { backgroundColor: theme.backgroundElement, borderColor: theme.border },
         ])}>
         <View style={StyleSheet.flatten([styles.emptyIcon, { backgroundColor: theme.backgroundSelected }])}>
-          <AppIcon name="friends" size={28} color={theme.primary} />
+          <AppIcon name="swords" size={28} color={theme.primary} />
         </View>
         <Text style={StyleSheet.flatten([styles.emptyTitle, { color: theme.text }])}>No friend races yet</Text>
         <Text style={StyleSheet.flatten([styles.emptyCopy, { color: theme.textSecondary }])}>

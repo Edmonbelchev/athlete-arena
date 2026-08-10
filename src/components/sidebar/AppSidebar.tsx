@@ -47,7 +47,7 @@ const NAV_SECTIONS: NavSection[] = [
     items: [
       { label: 'Home', icon: 'home', href: '/(tabs)' },
       { label: 'Friends', icon: 'friends', href: '/(tabs)/friends' },
-      { label: 'Challenges', icon: 'target', href: '/(tabs)/challenges' },
+      { label: 'Challenges', icon: 'swords', href: '/(tabs)/challenges' },
       { label: 'Leaderboard', icon: 'crown', href: '/(tabs)/leaderboard' },
     ],
   },
