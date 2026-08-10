@@ -78,6 +78,12 @@ export default function ProfileScreen() {
   const quickActions = useMemo(
     () => [
       {
+        id: 'goals',
+        label: 'Goals',
+        icon: 'target' as const,
+        onPress: () => router.push('/profile/goals'),
+      },
+      {
         id: 'achievements',
         label: 'Achievements',
         icon: 'medal' as const,

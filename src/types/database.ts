@@ -10,6 +10,8 @@ export type ExerciseType = 'push_ups' | 'squats' | 'pull_ups' | 'dips';
 export type ChallengeStatus = 'pending' | 'in_progress' | 'completed' | 'declined' | 'expired';
 export type FriendshipStatus = 'pending' | 'accepted' | 'declined';
 export type SpinRarity = 'common' | 'rare' | 'epic' | 'legendary';
+export type GoalPeriod = 'daily' | 'weekly';
+export type GoalStatus = 'active' | 'completed' | 'cancelled';
 
 export interface FriendChallengeRpcRow {
   participant_id: string;
@@ -513,6 +515,90 @@ export interface Database {
         };
         Relationships: [];
       };
+      goal_activity_catalog: {
+        Row: {
+          id: string;
+          kind: string;
+          label: string;
+          unit_singular: string;
+          unit_plural: string;
+          exercise_type: ExerciseType | null;
+          tracking_mode: string;
+          decimal_places: number;
+          sort_order: number;
+          enabled: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id: string;
+          kind: string;
+          label: string;
+          unit_singular: string;
+          unit_plural: string;
+          exercise_type?: ExerciseType | null;
+          tracking_mode?: string;
+          decimal_places?: number;
+          sort_order?: number;
+          enabled?: boolean;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          kind?: string;
+          label?: string;
+          unit_singular?: string;
+          unit_plural?: string;
+          exercise_type?: ExerciseType | null;
+          tracking_mode?: string;
+          decimal_places?: number;
+          sort_order?: number;
+          enabled?: boolean;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      user_goals: {
+        Row: {
+          id: string;
+          user_id: string;
+          activity_id: string;
+          period: GoalPeriod;
+          target_value: number;
+          current_value: number;
+          period_start: string;
+          status: GoalStatus;
+          completed_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          activity_id: string;
+          period: GoalPeriod;
+          target_value: number;
+          current_value?: number;
+          period_start: string;
+          status?: GoalStatus;
+          completed_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          activity_id?: string;
+          period?: GoalPeriod;
+          target_value?: number;
+          current_value?: number;
+          period_start?: string;
+          status?: GoalStatus;
+          completed_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {
@@ -802,11 +888,61 @@ export interface Database {
         Args: Record<string, never>;
         Returns: Json;
       };
+      get_goal_activity_catalog: {
+        Args: Record<string, never>;
+        Returns: Database['public']['Tables']['goal_activity_catalog']['Row'][];
+      };
+      get_user_goals: {
+        Args: {
+          p_include_completed?: boolean;
+        };
+        Returns: {
+          id: string;
+          activity_id: string;
+          activity_label: string;
+          activity_kind: string;
+          unit_singular: string;
+          unit_plural: string;
+          tracking_mode: string;
+          decimal_places: number;
+          period: GoalPeriod;
+          target_value: number;
+          current_value: number;
+          period_start: string;
+          period_end: string;
+          status: GoalStatus;
+          completed_at: string | null;
+          created_at: string;
+        }[];
+      };
+      create_user_goal: {
+        Args: {
+          p_activity_id: string;
+          p_period: GoalPeriod;
+          p_target_value: number;
+        };
+        Returns: Database['public']['Tables']['user_goals']['Row'];
+      };
+      cancel_user_goal: {
+        Args: {
+          p_goal_id: string;
+        };
+        Returns: Database['public']['Tables']['user_goals']['Row'];
+      };
+      log_goal_progress: {
+        Args: {
+          p_goal_id: string;
+          p_amount: number;
+        };
+        Returns: Database['public']['Tables']['user_goals']['Row'];
+      };
     };
     Enums: {
       exercise_type: ExerciseType;
       challenge_status: ChallengeStatus;
       friendship_status: FriendshipStatus;
+      goal_period: GoalPeriod;
+      goal_status: GoalStatus;
     };
     CompositeTypes: Record<string, never>;
   };

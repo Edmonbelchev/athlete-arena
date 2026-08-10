@@ -3,6 +3,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { PersonalGoalsSection } from '@/components/goals/PersonalGoalsSection';
 import { ComingSoonBlock } from '@/components/home/ComingSoonBlock';
 import { EarlyAccessNotice } from '@/components/home/EarlyAccessNotice';
 import { DailyMissionsCarousel } from '@/components/home/DailyMissionsCarousel';
@@ -16,6 +17,7 @@ import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useAchievementUnlock } from '@/features/achievements/AchievementUnlockProvider';
 import { useDailyChallenge } from '@/features/challenges/useDailyChallenge';
+import { useUserGoals } from '@/features/goals/useUserGoals';
 import { isActiveFriendChallenge } from '@/features/friends/friendChallengeGroups';
 import { useFriendChallenges } from '@/features/friends/useFriendChallenges';
 import { useChallengeNotificationRefresh } from '@/features/notifications/useChallengeNotificationRefresh';
@@ -59,8 +61,14 @@ export default function HomeScreen() {
   const { syncAndCelebrate } = useAchievementUnlock();
   const { refresh: refreshShop } = useShop();
   const { status: spinStatus, refresh: refreshSpin } = useDailySpin();
+  const {
+    goals: userGoals,
+    isLoading: isGoalsLoading,
+    error: goalsError,
+    refresh: refreshGoals,
+  } = useUserGoals();
 
-  const isLoading = isProfileLoading || isChallengeLoading || isFriendChallengesLoading;
+  const isLoading = isProfileLoading || isChallengeLoading || isFriendChallengesLoading || isGoalsLoading;
   const error = profileError ?? challengeError ?? friendActionError;
 
   const displayName = profile?.display_name ?? profile?.username ?? 'Athlete';
@@ -81,6 +89,7 @@ export default function HomeScreen() {
       syncAndCelebrate().catch(() => []),
       refreshShop().catch(() => undefined),
       refreshSpin().catch(() => undefined),
+      refreshGoals().catch(() => undefined),
     ]);
   }
 
@@ -185,6 +194,8 @@ export default function HomeScreen() {
             streak={currentStreak}
           />
         </HomeSection>
+
+        <PersonalGoalsSection goals={userGoals} isLoading={isGoalsLoading} error={goalsError} />
 
         <HomeSection
           title="Daily Missions"
