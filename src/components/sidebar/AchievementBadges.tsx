@@ -2,8 +2,8 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { AppIcon } from '@/components/ui/AppIcon';
 import { Radius, Spacing } from '@/constants/theme';
-import type { AchievementRecord } from '@/types/achievements';
 import { useTheme } from '@/hooks/use-theme';
+import type { AchievementRecord } from '@/types/achievements';
 
 interface AchievementBadgesProps {
   unlocked: AchievementRecord[];
@@ -75,6 +75,7 @@ export function AchievementBadges({ unlocked, upcoming, onViewAll }: Achievement
 const styles = StyleSheet.create({
   container: {
     gap: Spacing.two,
+    rowGap: Spacing.three,
   },
   header: {
     flexDirection: 'row',

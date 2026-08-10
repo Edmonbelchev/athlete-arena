@@ -7,88 +7,66 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { GoalCard } from '@/components/goals/GoalCard';
+import { CreateGoalModal } from '@/components/goals/CreateGoalModal';
+import { GoalListRow } from '@/components/goals/GoalListRow';
+import { GoalPeriodTabs } from '@/components/goals/GoalPeriodTabs';
 import { AppIcon } from '@/components/ui/AppIcon';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
-import {
-  COMING_SOON_GOAL_ACTIVITIES,
-  GOAL_PERIODS,
-  GOAL_TARGET_LIMITS,
-  GOAL_TARGET_PRESETS,
-  formatGoalPeriodLabel,
-  formatGoalValue,
-  isComingSoonGoalActivity,
-} from '@/constants/goals';
-import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
+import { formatGoalPeriodLabel } from '@/constants/goals';
+import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useUserGoals } from '@/features/goals/useUserGoals';
 import { leaveScreen } from '@/lib/navigation';
 import { formatUserError } from '@/lib/errors';
-import type { GoalActivityCatalogItem, GoalPeriod, UserGoal } from '@/types/goals';
+import type { GoalPeriod, UserGoal } from '@/types/goals';
 import { useTheme } from '@/hooks/use-theme';
 
 export default function GoalsScreen() {
   const theme = useTheme();
   const router = useRouter();
   const {
-    goals,
-    activities,
     dailyGoals,
     weeklyGoals,
+    activities,
     isLoading,
     error,
     refresh,
     createGoal,
     cancelGoal,
-    logProgress,
   } = useUserGoals();
 
-  const [selectedPeriod, setSelectedPeriod] = useState<GoalPeriod>('daily');
-  const [selectedActivityId, setSelectedActivityId] = useState<string | null>(null);
-  const [targetValue, setTargetValue] = useState('');
-  const [customTarget, setCustomTarget] = useState('');
+  const [activePeriod, setActivePeriod] = useState<GoalPeriod>('daily');
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
-  const [logGoalId, setLogGoalId] = useState<string | null>(null);
-  const [logAmount, setLogAmount] = useState('');
-  const [isLogging, setIsLogging] = useState(false);
   const [pendingCancelGoal, setPendingCancelGoal] = useState<UserGoal | null>(null);
   const [isCancelling, setIsCancelling] = useState(false);
   const [cancelError, setCancelError] = useState<string | null>(null);
-  const [logError, setLogError] = useState<string | null>(null);
 
-  const selectedActivity = useMemo(
-    () => activities.find((activity) => activity.id === selectedActivityId) ?? null,
-    [activities, selectedActivityId],
-  );
-
-  const repActivities = useMemo(
-    () => activities.filter((activity) => activity.kind === 'reps'),
-    [activities],
-  );
-
-  function handleActivitySelect(activity: GoalActivityCatalogItem) {
-    if (isComingSoonGoalActivity(activity.id)) {
-      return;
-    }
-
-    setSelectedActivityId(activity.id);
-    setFormError(null);
-    const presets = GOAL_TARGET_PRESETS[activity.kind];
-    const defaultTarget = presets[1] ?? presets[0] ?? GOAL_TARGET_LIMITS[activity.kind].min;
-    setTargetValue(String(defaultTarget));
-    setCustomTarget('');
-  }
+  const visibleGoals = activePeriod === 'daily' ? dailyGoals : weeklyGoals;
+  const activeGoals = visibleGoals.filter((goal) => goal.status === 'active');
+  const completedGoals = visibleGoals.filter((goal) => goal.status === 'completed');
 
   const headerOptions = {
     title: 'Personal Goals',
     headerShown: true,
     headerBackVisible: false,
+    headerRight: () => (
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Add goal"
+        onPress={() => {
+          setFormError(null);
+          setIsCreateOpen(true);
+        }}
+        style={styles.headerAction}>
+        <AppIcon name="target" size={22} color={theme.primary} />
+      </Pressable>
+    ),
     headerLeft: () => (
       <Pressable
         accessibilityRole="button"
@@ -100,38 +78,14 @@ export default function GoalsScreen() {
     ),
   } as const;
 
-  function resolveTargetValue(activity: GoalActivityCatalogItem): number {
-    if (customTarget.trim()) {
-      const parsed = Number.parseFloat(customTarget);
-      if (Number.isNaN(parsed)) {
-        throw new Error('Enter a valid target');
-      }
-      return parsed;
-    }
-
-    const parsed = Number.parseFloat(targetValue);
-    if (Number.isNaN(parsed)) {
-      throw new Error('Select or enter a target');
-    }
-
-    return parsed;
-  }
-
-  async function handleCreateGoal() {
-    if (!selectedActivity) {
-      setFormError('Choose an activity');
-      return;
-    }
-
+  async function handleCreateGoal(activityId: string, period: GoalPeriod, targetValue: number) {
     setIsSubmitting(true);
     setFormError(null);
 
     try {
-      const nextTarget = resolveTargetValue(selectedActivity);
-      await createGoal(selectedActivity.id, selectedPeriod, nextTarget);
-      setSelectedActivityId(null);
-      setTargetValue('');
-      setCustomTarget('');
+      await createGoal(activityId, period, targetValue);
+      setIsCreateOpen(false);
+      setActivePeriod(period);
     } catch (err) {
       setFormError(formatUserError(err, 'Failed to create goal'));
     } finally {
@@ -162,100 +116,12 @@ export default function GoalsScreen() {
     }
   }
 
-  async function handleLogProgress(goalId: string) {
-    const parsed = Number.parseFloat(logAmount);
-    if (Number.isNaN(parsed) || parsed <= 0) {
-      setLogError('Enter a value greater than zero.');
-      return;
-    }
+  const emptyCopy = useMemo(() => {
+    const periodLabel = formatGoalPeriodLabel(activePeriod).toLowerCase();
+    return `No ${periodLabel} goals yet. Add a rep target for push-ups, squats, or pull-ups.`;
+  }, [activePeriod]);
 
-    setIsLogging(true);
-    setLogError(null);
-
-    try {
-      await logProgress(goalId, parsed);
-      setLogGoalId(null);
-      setLogAmount('');
-    } catch (err) {
-      setLogError(formatUserError(err, 'Failed to log progress'));
-    } finally {
-      setIsLogging(false);
-    }
-  }
-
-  function renderGoalGroup(title: string, groupGoals: typeof goals) {
-    if (groupGoals.length === 0) {
-      return null;
-    }
-
-    return (
-      <View style={styles.section}>
-        <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>{title}</Text>
-        <View style={styles.goalList}>
-          {groupGoals.map((goal) => (
-            <View key={goal.id} style={styles.goalItem}>
-              <GoalCard
-                goal={goal}
-                onCancel={handleCancelGoal}
-                onLogProgress={(nextGoal) => {
-                  setLogGoalId(nextGoal.id);
-                  setLogAmount('');
-                  setLogError(null);
-                }}
-              />
-              {logGoalId === goal.id ? (
-                <View
-                  style={[
-                    styles.logPanel,
-                    { backgroundColor: theme.backgroundElement, borderColor: theme.border },
-                  ]}>
-                  <Text style={[styles.logLabel, { color: theme.textSecondary }]}>
-                    Add {goal.unitPlural}
-                  </Text>
-                  <TextInput
-                    value={logAmount}
-                    onChangeText={setLogAmount}
-                    keyboardType={goal.decimalPlaces > 0 ? 'decimal-pad' : 'number-pad'}
-                    placeholder={`e.g. ${GOAL_TARGET_PRESETS[goal.activityKind][0]}`}
-                    placeholderTextColor={theme.textSecondary}
-                    style={[
-                      styles.logInput,
-                      {
-                        color: theme.text,
-                        borderColor: theme.border,
-                        backgroundColor: theme.background,
-                      },
-                    ]}
-                  />
-                  {logError && logGoalId === goal.id ? (
-                    <Text style={[styles.error, { color: theme.danger }]}>{logError}</Text>
-                  ) : null}
-                  <View style={styles.logActions}>
-                    <PrimaryButton
-                      label="Save"
-                      loading={isLogging}
-                      onPress={() => void handleLogProgress(goal.id)}
-                    />
-                    <PrimaryButton
-                      label="Cancel"
-                      variant="secondary"
-                      onPress={() => {
-                        setLogGoalId(null);
-                        setLogAmount('');
-                        setLogError(null);
-                      }}
-                    />
-                  </View>
-                </View>
-              ) : null}
-            </View>
-          ))}
-        </View>
-      </View>
-    );
-  }
-
-  if (isLoading && goals.length === 0 && activities.length === 0) {
+  if (isLoading && dailyGoals.length === 0 && weeklyGoals.length === 0 && activities.length === 0) {
     return (
       <>
         <Stack.Screen options={headerOptions} />
@@ -277,174 +143,88 @@ export default function GoalsScreen() {
           refreshControl={
             <RefreshControl refreshing={isLoading} onRefresh={() => void refresh()} tintColor={theme.primary} />
           }>
-          <View
-            style={[
-              styles.summaryCard,
-              { backgroundColor: theme.backgroundElement, borderColor: theme.border },
-            ]}>
-            <Text style={[styles.summaryTitle, { color: theme.text }]}>Your targets</Text>
-            <Text style={[styles.summaryCopy, { color: theme.textSecondary }]}>
-              Create daily or weekly rep goals for push-ups, squats, and pull-ups. Rep goals update
-              automatically when you finish daily missions or friend challenges.
-            </Text>
-          </View>
+          <GoalPeriodTabs
+            value={activePeriod}
+            dailyCount={dailyGoals.length}
+            weeklyCount={weeklyGoals.length}
+            onChange={setActivePeriod}
+          />
 
           {error ? <Text style={[styles.error, { color: theme.danger }]}>{error}</Text> : null}
 
-          {renderGoalGroup('Daily goals', dailyGoals)}
-          {renderGoalGroup('Weekly goals', weeklyGoals)}
-
-          <PrimaryButton
-            label="View completed goals & stats"
-            variant="secondary"
-            onPress={() => router.push('/profile/stats')}
-          />
-
-          <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>Create goal</Text>
-
-            <Text style={[styles.fieldLabel, { color: theme.textSecondary }]}>PERIOD</Text>
-            <View style={styles.chipRow}>
-              {GOAL_PERIODS.map((period) => {
-                const selected = selectedPeriod === period;
-                return (
-                  <Pressable
-                    key={period}
-                    accessibilityRole="button"
-                    onPress={() => setSelectedPeriod(period)}
-                    style={[
-                      styles.chip,
-                      {
-                        backgroundColor: selected ? theme.primary : theme.backgroundElement,
-                        borderColor: selected ? theme.primary : theme.border,
-                      },
-                    ]}>
-                    <Text style={[styles.chipLabel, { color: selected ? '#FFFFFF' : theme.text }]}>
-                      {formatGoalPeriodLabel(period)}
-                    </Text>
-                  </Pressable>
-                );
-              })}
+          {activeGoals.length === 0 && completedGoals.length === 0 ? (
+            <View
+              style={[
+                styles.emptyCard,
+                { backgroundColor: theme.backgroundElement, borderColor: theme.border },
+              ]}>
+              <Text style={[styles.emptyTitle, { color: theme.text }]}>No goals this period</Text>
+              <Text style={[styles.emptyCopy, { color: theme.textSecondary }]}>{emptyCopy}</Text>
+              <PrimaryButton
+                label={`Add ${formatGoalPeriodLabel(activePeriod).toLowerCase()} goal`}
+                onPress={() => {
+                  setFormError(null);
+                  setIsCreateOpen(true);
+                }}
+              />
             </View>
-
-            <Text style={[styles.fieldLabel, { color: theme.textSecondary }]}>ACTIVITY</Text>
-            <View style={styles.chipRow}>
-              {repActivities.map((activity) => {
-                const selected = selectedActivityId === activity.id;
-                return (
-                  <Pressable
-                    key={activity.id}
-                    accessibilityRole="button"
-                    onPress={() => handleActivitySelect(activity)}
-                    style={[
-                      styles.chip,
-                      {
-                        backgroundColor: selected ? theme.primary : theme.backgroundElement,
-                        borderColor: selected ? theme.primary : theme.border,
-                      },
-                    ]}>
-                    <Text style={[styles.chipLabel, { color: selected ? '#FFFFFF' : theme.text }]}>
-                      {activity.label}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-
-            <>
-              <Text style={[styles.fieldLabel, { color: theme.textSecondary }]}>OTHER ACTIVITIES</Text>
-              <View style={styles.chipRow}>
-                {COMING_SOON_GOAL_ACTIVITIES.map((activity) => (
-                  <View
-                    key={activity.id}
-                    accessibilityRole="text"
-                    style={[
-                      styles.chip,
-                      styles.chipDisabled,
-                      {
-                        backgroundColor: theme.backgroundElement,
-                        borderColor: theme.border,
-                      },
-                    ]}>
-                    <Text style={[styles.chipLabel, { color: theme.textSecondary }]}>
-                      {activity.label} (Coming soon)
-                    </Text>
+          ) : (
+            <View style={styles.listSection}>
+              {activeGoals.length > 0 ? (
+                <View style={styles.group}>
+                  <Text style={[styles.groupLabel, { color: theme.textSecondary }]}>Active</Text>
+                  <View style={styles.list}>
+                    {activeGoals.map((goal) => (
+                      <GoalListRow key={goal.id} goal={goal} onRemove={handleCancelGoal} />
+                    ))}
                   </View>
-                ))}
-              </View>
-              <Text style={[styles.comingSoonNotice, { color: theme.textSecondary }]}>
-                More activities like steps and running will be added soon.
-              </Text>
-            </>
-
-            {selectedActivity ? (
-              <>
-                <Text style={[styles.fieldLabel, { color: theme.textSecondary }]}>TARGET</Text>
-                <View style={styles.chipRow}>
-                  {GOAL_TARGET_PRESETS[selectedActivity.kind].map((preset) => {
-                    const selected = !customTarget && targetValue === String(preset);
-                    return (
-                      <Pressable
-                        key={preset}
-                        accessibilityRole="button"
-                        onPress={() => {
-                          setTargetValue(String(preset));
-                          setCustomTarget('');
-                        }}
-                        style={[
-                          styles.chip,
-                          {
-                            backgroundColor: selected ? theme.primary : theme.backgroundElement,
-                            borderColor: selected ? theme.primary : theme.border,
-                          },
-                        ]}>
-                        <Text style={[styles.chipLabel, { color: selected ? '#FFFFFF' : theme.text }]}>
-                          {formatGoalValue(
-                            preset,
-                            selectedActivity.unitSingular,
-                            selectedActivity.unitPlural,
-                            selectedActivity.decimalPlaces,
-                          )}
-                        </Text>
-                      </Pressable>
-                    );
-                  })}
                 </View>
+              ) : null}
 
-                <TextInput
-                  value={customTarget}
-                  onChangeText={(value) => {
-                    setCustomTarget(value);
-                    if (value.trim()) {
-                      setTargetValue('');
-                    }
-                  }}
-                  keyboardType={selectedActivity.decimalPlaces > 0 ? 'decimal-pad' : 'number-pad'}
-                  placeholder="Custom target"
-                  placeholderTextColor={theme.textSecondary}
-                  style={[
-                    styles.customInput,
-                    {
-                      color: theme.text,
-                      borderColor: theme.border,
-                      backgroundColor: theme.backgroundElement,
-                    },
-                  ]}
-                />
-              </>
-            ) : null}
+              {completedGoals.length > 0 ? (
+                <View style={styles.group}>
+                  <Text style={[styles.groupLabel, { color: theme.textSecondary }]}>Completed</Text>
+                  <View style={styles.list}>
+                    {completedGoals.map((goal) => (
+                      <GoalListRow key={goal.id} goal={goal} />
+                    ))}
+                  </View>
+                </View>
+              ) : null}
+            </View>
+          )}
 
-            {formError ? <Text style={[styles.error, { color: theme.danger }]}>{formError}</Text> : null}
-
+          <View style={styles.footer}>
             <PrimaryButton
-              label="Add Goal"
-              loading={isSubmitting}
-              disabled={!selectedActivity}
-              onPress={() => void handleCreateGoal()}
+              label="Add goal"
+              onPress={() => {
+                setFormError(null);
+                setIsCreateOpen(true);
+              }}
+            />
+            <PrimaryButton
+              label="View completed goals & stats"
+              variant="secondary"
+              onPress={() => router.push('/profile/stats')}
             />
           </View>
         </ScrollView>
       </SafeAreaView>
+
+      <CreateGoalModal
+        visible={isCreateOpen}
+        activities={activities}
+        initialPeriod={activePeriod}
+        isSubmitting={isSubmitting}
+        error={formError}
+        onClose={() => {
+          if (!isSubmitting) {
+            setIsCreateOpen(false);
+            setFormError(null);
+          }
+        }}
+        onSubmit={(activityId, period, targetValue) => void handleCreateGoal(activityId, period, targetValue)}
+      />
 
       <ConfirmDialog
         visible={pendingCancelGoal !== null}
@@ -484,7 +264,7 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: Spacing.four,
-    gap: Spacing.five,
+    gap: Spacing.four,
     maxWidth: MaxContentWidth,
     alignSelf: 'center',
     width: '100%',
@@ -494,94 +274,44 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.two,
     paddingVertical: Spacing.one,
   },
-  summaryCard: {
-    padding: Spacing.four,
-    borderRadius: Radius.lg,
-    borderWidth: 1,
+  headerAction: {
+    paddingHorizontal: Spacing.two,
+    paddingVertical: Spacing.one,
+  },
+  listSection: {
+    gap: Spacing.four,
+  },
+  group: {
     gap: Spacing.two,
   },
-  summaryTitle: {
-    fontSize: 20,
+  groupLabel: {
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+  },
+  list: {
+    gap: Spacing.two,
+  },
+  emptyCard: {
+    padding: Spacing.four,
+    borderRadius: 12,
+    borderWidth: 1,
+    gap: Spacing.three,
+    alignItems: 'stretch',
+  },
+  emptyTitle: {
+    fontSize: 18,
     fontWeight: '800',
   },
-  summaryCopy: {
+  emptyCopy: {
     fontSize: 14,
     lineHeight: 20,
     fontWeight: '600',
   },
-  section: {
-    gap: Spacing.three,
-  },
-  sectionTitle: {
-    fontSize: 12,
-    fontWeight: '800',
-    letterSpacing: 1.2,
-    textTransform: 'uppercase',
-  },
-  goalList: {
-    gap: Spacing.three,
-  },
-  goalItem: {
+  footer: {
     gap: Spacing.two,
-  },
-  fieldLabel: {
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 1,
-  },
-  chipRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.two,
-  },
-  chip: {
-    paddingVertical: Spacing.two,
-    paddingHorizontal: Spacing.three,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-  },
-  chipDisabled: {
-    opacity: 0.72,
-  },
-  chipLabel: {
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  comingSoonNotice: {
-    fontSize: 13,
-    lineHeight: 18,
-    fontWeight: '600',
-  },
-  customInput: {
-    borderWidth: 1,
-    borderRadius: Radius.md,
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two,
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  logPanel: {
-    borderWidth: 1,
-    borderRadius: Radius.md,
-    padding: Spacing.three,
-    gap: Spacing.two,
-  },
-  logLabel: {
-    fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: 0.6,
-    textTransform: 'uppercase',
-  },
-  logInput: {
-    borderWidth: 1,
-    borderRadius: Radius.md,
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two,
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  logActions: {
-    gap: Spacing.two,
+    marginTop: Spacing.one,
   },
   error: {
     fontSize: 14,

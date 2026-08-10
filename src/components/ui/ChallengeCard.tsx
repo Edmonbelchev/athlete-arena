@@ -1,11 +1,11 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import { formatExerciseLabel, type ExerciseType } from '@/constants/challenges';
+import { formatRewardPreview, formatXpAndCoins } from '@/constants/coins';
 import {
   DAILY_MISSION_COIN_REWARD,
   DAILY_MISSION_XP_REWARD,
 } from '@/constants/dailyMissionRewards';
-import { formatRewardPreview, formatXpAndCoins } from '@/constants/coins';
 import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import type { ChallengeStatus } from '@/types';

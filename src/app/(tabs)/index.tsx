@@ -3,35 +3,27 @@ import { useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { PersonalGoalsSection } from '@/components/goals/PersonalGoalsSection';
 import { ComingSoonBlock } from '@/components/home/ComingSoonBlock';
-import { EarlyAccessNotice } from '@/components/home/EarlyAccessNotice';
 import { DailyMissionsCarousel } from '@/components/home/DailyMissionsCarousel';
-import { DailyMissionRewardInfo } from '@/components/home/DailyMissionRewardInfo';
-import { FriendChallengesCarousel } from '@/components/home/FriendChallengesCarousel';
+import { EarlyAccessNotice } from '@/components/home/EarlyAccessNotice';
+import { HomeLinkBlock } from '@/components/home/HomeLinkBlock';
 import { HomeProgressBlock } from '@/components/home/HomeProgressBlock';
 import { HomeSection } from '@/components/home/HomeSection';
 import { TabScreenHeader } from '@/components/sidebar/TabScreenHeader';
-import { DailySpinCard } from '@/components/spin/DailySpinCard';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useAchievementUnlock } from '@/features/achievements/AchievementUnlockProvider';
 import { useDailyChallenge } from '@/features/challenges/useDailyChallenge';
-import { useUserGoals } from '@/features/goals/useUserGoals';
 import { isActiveFriendChallenge } from '@/features/friends/friendChallengeGroups';
 import { useFriendChallenges } from '@/features/friends/useFriendChallenges';
+import { useUserGoals } from '@/features/goals/useUserGoals';
 import { useChallengeNotificationRefresh } from '@/features/notifications/useChallengeNotificationRefresh';
 import { useProfile } from '@/features/profile/useProfile';
 import { useShop } from '@/features/shop/ShopProvider';
-import { useDailySpin } from '@/features/spin/useDailySpin';
 import { xpProgressInCurrentLevel } from '@/features/xp/levelUtils';
 import { useTheme } from '@/hooks/use-theme';
 import { formatUserError } from '@/lib/errors';
 import { getOrCreateDailyChallenge, resolveMissionIndex } from '@/services/challengeService';
-import {
-    acceptFriendChallenge,
-    declineFriendChallenge,
-} from '@/services/friendChallengeService';
 
 function getGreeting(): string {
   const hour = new Date().getHours();
@@ -50,46 +42,40 @@ export default function HomeScreen() {
     error: challengeError,
     refresh: refreshChallenge,
   } = useDailyChallenge();
-  const {
-    challenges: friendChallenges,
-    isLoading: isFriendChallengesLoading,
-    refresh: refreshFriendChallenges,
-  } = useFriendChallenges();
-  const [busyChallengeId, setBusyChallengeId] = useState<string | null>(null);
+  const { challenges: friendChallenges, refresh: refreshFriendChallenges } = useFriendChallenges();
+  const { goals: userGoals, refresh: refreshGoals } = useUserGoals();
   const [startingMissionIndex, setStartingMissionIndex] = useState<number | null>(null);
-  const [friendActionError, setFriendActionError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const { syncAndCelebrate } = useAchievementUnlock();
   const { refresh: refreshShop } = useShop();
-  const { status: spinStatus, refresh: refreshSpin } = useDailySpin();
-  const {
-    goals: userGoals,
-    isLoading: isGoalsLoading,
-    error: goalsError,
-    refresh: refreshGoals,
-  } = useUserGoals();
 
-  const isLoading = isProfileLoading || isChallengeLoading || isFriendChallengesLoading || isGoalsLoading;
-  const error = profileError ?? challengeError ?? friendActionError;
+  const isLoading = isProfileLoading || isChallengeLoading;
+  const error = profileError ?? challengeError ?? actionError;
 
   const displayName = profile?.display_name ?? profile?.username ?? 'Athlete';
   const totalXp = profile?.total_xp ?? 0;
   const currentStreak = profile?.current_streak ?? 0;
   const xpProgress = xpProgressInCurrentLevel(totalXp);
-  const activeFriendChallenges = useMemo(
-    () => friendChallenges.filter(isActiveFriendChallenge),
+
+  const activeFriendChallengeCount = useMemo(
+    () => friendChallenges.filter(isActiveFriendChallenge).length,
     [friendChallenges],
   );
 
+  const activeGoalCount = useMemo(
+    () => userGoals.filter((goal) => goal.status === 'active').length,
+    [userGoals],
+  );
+
   async function handleRefresh() {
-    setFriendActionError(null);
+    setActionError(null);
     await Promise.all([
       refreshProfile(),
       refreshChallenge(),
       refreshFriendChallenges(),
+      refreshGoals(),
       syncAndCelebrate().catch(() => []),
       refreshShop().catch(() => undefined),
-      refreshSpin().catch(() => undefined),
-      refreshGoals().catch(() => undefined),
     ]);
   }
 
@@ -103,7 +89,7 @@ export default function HomeScreen() {
     const missionIndex = resolveMissionIndex(mission.exerciseType, mission.missionIndex, listIndex);
 
     setStartingMissionIndex(missionIndex);
-    setFriendActionError(null);
+    setActionError(null);
 
     try {
       const userChallenge =
@@ -121,38 +107,9 @@ export default function HomeScreen() {
         params: { id: challengeId },
       });
     } catch (err) {
-      setFriendActionError(formatUserError(err, 'Failed to start daily mission'));
+      setActionError(formatUserError(err, 'Failed to start daily mission'));
     } finally {
       setStartingMissionIndex(null);
-    }
-  }
-
-  async function handleAcceptFriendChallenge(participantId: string) {
-    setBusyChallengeId(participantId);
-    setFriendActionError(null);
-    try {
-      await acceptFriendChallenge(participantId);
-      router.push({
-        pathname: '/challenge/friend/[participantId]',
-        params: { participantId },
-      });
-    } catch (err) {
-      setFriendActionError(formatUserError(err, 'Failed to accept challenge'));
-    } finally {
-      setBusyChallengeId(null);
-    }
-  }
-
-  async function handleDeclineFriendChallenge(participantId: string) {
-    setBusyChallengeId(participantId);
-    setFriendActionError(null);
-    try {
-      await declineFriendChallenge(participantId);
-      await refreshFriendChallenges();
-    } catch (err) {
-      setFriendActionError(formatUserError(err, 'Failed to decline challenge'));
-    } finally {
-      setBusyChallengeId(null);
     }
   }
 
@@ -195,12 +152,9 @@ export default function HomeScreen() {
           />
         </HomeSection>
 
-        <PersonalGoalsSection goals={userGoals} isLoading={isGoalsLoading} error={goalsError} />
-
         <HomeSection
           title="Daily Missions"
           subtitle="Three exercises today - complete all three to keep your streak alive">
-          <DailyMissionRewardInfo />
           {missions.length > 0 ? (
             <DailyMissionsCarousel
               missions={missions}
@@ -220,28 +174,25 @@ export default function HomeScreen() {
           )}
         </HomeSection>
 
-        <HomeSection title="Daily Spin" subtitle="One free spin every day">
-          <DailySpinCard
-            canSpin={Boolean(spinStatus?.canSpin)}
-            multiplierActive={(spinStatus?.coinMultiplier ?? 1) > 1}
-            multiplierExpiresAt={spinStatus?.coinMultiplierExpiresAt ?? null}
-            nextSpinAt={spinStatus?.nextSpinAt ?? null}
-            onPress={() => router.push('/spin')}
-          />
-        </HomeSection>
-
-        <HomeSection
-          title="Friend Races"
-          subtitle="View active speed races by friend"
-          badge={activeFriendChallenges.length > 0 ? activeFriendChallenges.length : undefined}
-          actionLabel="View all"
-          onAction={() => router.push('/(tabs)/challenges')}>
-          <FriendChallengesCarousel
-            challenges={activeFriendChallenges}
-            busyChallengeId={busyChallengeId}
-            onAccept={(participantId) => void handleAcceptFriendChallenge(participantId)}
-            onDecline={(participantId) => void handleDeclineFriendChallenge(participantId)}
-          />
+        <HomeSection title="Keep Going" subtitle="More ways to train and track">
+          <View style={styles.linkBlocks}>
+            <HomeLinkBlock
+              title="Personal Goals"
+              description="Set daily and weekly rep targets"
+              icon="target"
+              accentColor={theme.primary}
+              badge={activeGoalCount}
+              onPress={() => router.push('/profile/goals')}
+            />
+            <HomeLinkBlock
+              title="Challenge Friends"
+              description="Race a friend to the finish"
+              icon="friends"
+              accentColor={theme.streak}
+              badge={activeFriendChallengeCount}
+              onPress={() => router.push('/(tabs)/challenges')}
+            />
+          </View>
         </HomeSection>
 
         <HomeSection title="More Ways to Play" subtitle="New features landing soon">
@@ -302,6 +253,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     textAlign: 'center',
+  },
+  linkBlocks: {
+    gap: Spacing.two,
   },
   comingSoonList: {
     gap: Spacing.two,
