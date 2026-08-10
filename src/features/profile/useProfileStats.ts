@@ -17,6 +17,7 @@ const EMPTY_STATS: ProfileStats = {
   totalSquats: 0,
   totalPullUps: 0,
   totalDips: 0,
+  totalBurpees: 0,
 };
 
 export function useProfileStats(): UseProfileStatsResult {

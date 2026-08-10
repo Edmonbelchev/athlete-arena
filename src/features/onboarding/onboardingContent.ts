@@ -64,6 +64,11 @@ export const ONBOARDING_EXERCISE_BENEFITS: OnboardingBenefit[] = [
     muscles: 'Back (lats), biceps, and grip',
     note: 'A demanding pulling movement - progress takes time; use assisted variations if needed.',
   },
+  {
+    exercise: 'Burpees',
+    muscles: 'Full body - legs, chest, shoulders, and core',
+    note: 'A high-intensity compound move combining squat, plank, and jump.',
+  },
 ];
 
 export const ONBOARDING_GENERAL_NOTE =

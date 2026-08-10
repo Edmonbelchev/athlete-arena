@@ -22,6 +22,7 @@ export interface MovementStats {
   totalSquats: number;
   totalPullUps: number;
   totalDips: number;
+  totalBurpees: number;
   totalSteps: number;
   totalRunKm: number;
   totalRunMi: number;
@@ -37,6 +38,7 @@ export const EMPTY_MOVEMENT_STATS: MovementStats = {
   totalSquats: 0,
   totalPullUps: 0,
   totalDips: 0,
+  totalBurpees: 0,
   totalSteps: 0,
   totalRunKm: 0,
   totalRunMi: 0,

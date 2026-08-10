@@ -29,6 +29,12 @@ export const FRIEND_CHALLENGE_REWARD_RULES: Record<ExerciseType, FriendChallenge
     maxXp: FRIEND_CHALLENGE_MAX_XP,
     maxCoins: FRIEND_CHALLENGE_MAX_COINS,
   },
+  burpees: {
+    xpPerRep: 2,
+    coinEveryReps: 4,
+    maxXp: FRIEND_CHALLENGE_MAX_XP,
+    maxCoins: FRIEND_CHALLENGE_MAX_COINS,
+  },
 };
 
 export function calculateFriendChallengeXp(exerciseType: ExerciseType, reps: number): number {

@@ -9,6 +9,7 @@ import type { PoseLandmark } from './pose/landmarks';
 import { PullUpRepEngine } from './pose/pullUpRepEngine';
 import { PushUpRepEngine } from './pose/pushUpRepEngine';
 import { getSquatStanceHint } from './pose/squatPosture';
+import { getBurpeeStanceHint } from './pose/burpeePosture';
 import { PoseQualityGate, type PoseTrackingStatus } from './pose/poseQuality';
 
 interface UseExercisePoseDetectionOptions {
@@ -121,6 +122,17 @@ export function useExercisePoseDetection({
         const squatHint = getSquatStanceHint(landmarks);
         if (squatHint) {
           setTrackingMessage(squatHint);
+        } else if (quality.message) {
+          setTrackingMessage(quality.message);
+        } else {
+          setTrackingMessage(null);
+        }
+      }
+
+      if (exerciseType === 'burpees') {
+        const burpeeHint = getBurpeeStanceHint(landmarks);
+        if (burpeeHint) {
+          setTrackingMessage(burpeeHint);
         } else if (quality.message) {
           setTrackingMessage(quality.message);
         } else {

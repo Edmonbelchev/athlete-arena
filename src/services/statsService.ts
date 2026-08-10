@@ -25,6 +25,7 @@ type MovementStatsRow = {
   total_squats: number;
   total_pull_ups: number;
   total_dips: number;
+  total_burpees: number;
   total_steps: number;
   total_run_km: number;
   total_run_mi: number;
@@ -64,6 +65,7 @@ function mapMovementStats(row: MovementStatsRow | null | undefined): MovementSta
     totalSquats: Number(row.total_squats),
     totalPullUps: Number(row.total_pull_ups),
     totalDips: Number(row.total_dips),
+    totalBurpees: Number(row.total_burpees),
     totalSteps: Number(row.total_steps),
     totalRunKm: Number(row.total_run_km),
     totalRunMi: Number(row.total_run_mi),

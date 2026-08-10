@@ -16,6 +16,7 @@ const REQUIREMENT_LABELS: Record<AchievementRequirementType, string> = {
   squats_total: 'Squats completed',
   pull_ups_total: 'Pull-ups completed',
   dips_total: 'Dips completed',
+  burpees_total: 'Burpees completed',
   friend_races_won: 'Friend races won',
   friends_count: 'Friends added',
   goals_created: 'Goals created',

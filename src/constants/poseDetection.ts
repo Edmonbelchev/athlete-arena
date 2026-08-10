@@ -108,6 +108,39 @@ export const SQUAT_POSTURE = {
   maxKneeYDelta: isNativeMobile ? 0.14 : 0.12,
 } as const;
 
+export const BURPEE_THRESHOLDS = {
+  /** Knee angle (degrees) - standing upright at top of rep (front view). */
+  standingAngle: 155,
+  /** Knee angle (degrees) - partial squat drop (front view). */
+  dropAngle: 130,
+  /** Degrees of slack between phases to reduce jitter (front view). */
+  hysteresis: isNativeMobile ? 15 : 20,
+} as const;
+
+/** Burpee rep validation - partial squat drop + horizontal body on floor (plank or chest-down). */
+export const BURPEE_POSTURE = {
+  /** Front view: torso near horizontal on the floor. */
+  maxTorsoFromHorizontalFront: isNativeMobile ? 55 : 50,
+  /** Side view: torso near horizontal on the floor. */
+  maxTorsoFromHorizontalSide: isNativeMobile ? 65 : 60,
+  /** Side view: shoulder and hip stay near the same height on the floor. */
+  maxShoulderHipYDeltaSide: isNativeMobile ? 0.22 : 0.2,
+  /** Reject clearly upright torsos during the ground-phase check. */
+  minUprightTorsoAngle: isNativeMobile ? 60 : 55,
+  /** Both shoulders visible across the frame when facing the camera. */
+  minShoulderWidthFront: isNativeMobile ? 0.12 : 0.14,
+  /** Shoulders stacked - body in profile to the camera. */
+  maxShoulderWidthSide: isNativeMobile ? 0.09 : 0.11,
+  /** Shoulders sit above hips when facing the camera and standing. */
+  minShoulderAboveHipFront: isNativeMobile ? 0.04 : 0.05,
+  /** Both ankles near the same height during the standing/drop phases (front view). */
+  maxAnkleYDelta: isNativeMobile ? 0.14 : 0.12,
+  /** Both knees bend by a similar amount during the drop (front view). */
+  maxKneeAngleAsymmetry: 45,
+  /** Frames to ignore new rep progress after a rep registers. */
+  repCooldownFrames: isNativeMobile ? 12 : 10,
+} as const;
+
 /** EMA smoothing for native camera landmarks (0 = frozen, 1 = raw). */
 export const POSE_LANDMARK_SMOOTH_ALPHA = isNativeMobile ? 0.52 : 1;
 
@@ -135,6 +168,15 @@ export const POSE_GUIDANCE: Record<ExerciseType, { title: string; tips: readonly
       'Keep your head and arms in frame - the bar line sets from your hands at the hang',
       'Rep counting starts only in a dead hang; standing or flailing will not count',
       'Pull until your chin clears the bar, then lower back to a full hang',
+    ],
+  },
+  burpees: {
+    title: 'Burpee setup',
+    tips: [
+      'Face the camera or use a side view - both work',
+      'Keep your full body in frame - at least one leg or arm chain visible',
+      'Stand tall, drop into a partial squat, then kick back to the floor',
+      'Chest-to-floor counts - you do not need a push-up at the bottom',
     ],
   },
 };

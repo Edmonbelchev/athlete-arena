@@ -216,6 +216,7 @@ export default function ProfileScreen() {
             <StatCard label="Push-ups" value={stats.totalPushUps.toLocaleString()} accentColor={theme.primary} />
             <StatCard label="Squats" value={stats.totalSquats.toLocaleString()} accentColor={theme.primary} />
             <StatCard label="Pull-ups" value={stats.totalPullUps.toLocaleString()} accentColor={theme.primary} />
+            <StatCard label="Burpees" value={stats.totalBurpees.toLocaleString()} accentColor={theme.primary} />
             <StatCard label="Missions Done" value={stats.completedChallenges} />
           </View>
           <PrimaryButton

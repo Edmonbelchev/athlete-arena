@@ -1,4 +1,4 @@
-export const EXERCISE_TYPES = ['push_ups', 'squats', 'pull_ups'] as const;
+export const EXERCISE_TYPES = ['push_ups', 'squats', 'pull_ups', 'burpees'] as const;
 
 export type ExerciseType = (typeof EXERCISE_TYPES)[number];
 
@@ -11,7 +11,7 @@ export type DisplayExerciseType = ExerciseType | LegacyExerciseType;
 export const ELBOW_EXERCISE_TYPES = ['push_ups', 'pull_ups'] as const satisfies readonly ExerciseType[];
 
 export function isElbowBasedExercise(exerciseType: ExerciseType): boolean {
-  return exerciseType !== 'squats';
+  return exerciseType === 'push_ups' || exerciseType === 'pull_ups';
 }
 
 export function getInitialExercisePhase(exerciseType: ExerciseType): 'UP' | 'STANDING' {
@@ -24,15 +24,17 @@ export interface ChallengeTier {
 
 /** Rep targets for daily missions. Each completion earns flat XP/coins in dailyMissionRewards.ts / SQL. */
 export const CHALLENGE_CONFIG: Record<ExerciseType, readonly ChallengeTier[]> = {
-  push_ups: [{ reps: 5 }, { reps: 10 }, { reps: 15 }, { reps: 20 }],
-  squats: [{ reps: 10 }, { reps: 15 }, { reps: 20 }, { reps: 30 }],
-  pull_ups: [{ reps: 3 }, { reps: 5 }, { reps: 8 }, { reps: 10 }],
+  push_ups: [{ reps: 10 }, { reps: 25 }, { reps: 50 }, { reps: 100 }],
+  squats: [{ reps: 25 }, { reps: 50 }, { reps: 75 }, { reps: 100 }],
+  pull_ups: [{ reps: 5 }, { reps: 10 }, { reps: 20 }, { reps: 30 }],
+  burpees: [{ reps: 10 }, { reps: 20 }, { reps: 30 }, { reps: 40 }],
 } as const;
 
 export const EXERCISE_LABELS: Record<DisplayExerciseType, string> = {
   push_ups: 'Push-ups',
   squats: 'Squats',
   pull_ups: 'Pull-ups',
+  burpees: 'Burpees',
   dips: 'Dips',
 };
 

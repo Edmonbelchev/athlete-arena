@@ -65,7 +65,8 @@ export default function StatsScreen() {
     movementStats.totalPushUps > 0 ||
     movementStats.totalSquats > 0 ||
     movementStats.totalPullUps > 0 ||
-    movementStats.totalDips > 0;
+    movementStats.totalDips > 0 ||
+    movementStats.totalBurpees > 0;
 
   const hasOtherStats =
     movementStats.totalSteps > 0 ||
@@ -117,6 +118,7 @@ export default function StatsScreen() {
               <StatCard label="Push-ups" value={formatCount(movementStats.totalPushUps)} accentColor={theme.primary} />
               <StatCard label="Squats" value={formatCount(movementStats.totalSquats)} accentColor={theme.primary} />
               <StatCard label="Pull-ups" value={formatCount(movementStats.totalPullUps)} accentColor={theme.primary} />
+              <StatCard label="Burpees" value={formatCount(movementStats.totalBurpees)} accentColor={theme.primary} />
               {movementStats.totalDips > 0 ? (
                 <StatCard label="Dips" value={formatCount(movementStats.totalDips)} accentColor={theme.primary} />
               ) : null}

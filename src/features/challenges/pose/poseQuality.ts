@@ -6,6 +6,7 @@ import {
 } from '@/constants/poseDetection';
 
 import { PoseLandmarkIndex, type PoseLandmark } from './landmarks';
+import { hasBurpeeTrackingLandmarks } from './burpeePosture';
 import { hasPullUpTrackingLandmarks } from './pullUpPosture';
 import { hasPushUpTrackingLandmarks } from './pushUpPosture';
 import { hasBothSquatLegChains } from './squatPosture';
@@ -125,6 +126,23 @@ function getTrackingIndices(exerciseType: ExerciseType): number[] {
     ];
   }
 
+  if (exerciseType === 'burpees') {
+    return [
+      PoseLandmarkIndex.LEFT_SHOULDER,
+      PoseLandmarkIndex.RIGHT_SHOULDER,
+      PoseLandmarkIndex.LEFT_ELBOW,
+      PoseLandmarkIndex.RIGHT_ELBOW,
+      PoseLandmarkIndex.LEFT_WRIST,
+      PoseLandmarkIndex.RIGHT_WRIST,
+      PoseLandmarkIndex.LEFT_HIP,
+      PoseLandmarkIndex.RIGHT_HIP,
+      PoseLandmarkIndex.LEFT_KNEE,
+      PoseLandmarkIndex.RIGHT_KNEE,
+      PoseLandmarkIndex.LEFT_ANKLE,
+      PoseLandmarkIndex.RIGHT_ANKLE,
+    ];
+  }
+
   return [
     PoseLandmarkIndex.LEFT_HIP,
     PoseLandmarkIndex.RIGHT_HIP,
@@ -188,6 +206,24 @@ function checkRequiredLandmarks(
       return {
         ok: false,
         message: 'Move back - keep your upper body and hips in frame',
+      };
+    }
+
+    return { ok: true, message: null };
+  }
+
+  if (exerciseType === 'burpees') {
+    if (!hasBurpeeTrackingLandmarks(landmarks)) {
+      return {
+        ok: false,
+        message: 'Keep your full body in frame - arms and legs visible',
+      };
+    }
+
+    if (visibleCount < POSE_QUALITY.minVisibleTrackingPoints) {
+      return {
+        ok: false,
+        message: 'Move back - keep your full body in frame',
       };
     }
 

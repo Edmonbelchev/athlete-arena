@@ -6,7 +6,10 @@ export type PushUpPhase = 'UP' | 'DESCENDING' | 'DOWN' | 'ASCENDING';
 /** Squat pose phases - for future MediaPipe / ML Kit integration. */
 export type SquatPhase = 'STANDING' | 'DESCENDING' | 'BOTTOM' | 'ASCENDING';
 
-export type ExercisePhase = PushUpPhase | SquatPhase;
+/** Burpee pose phases - compound squat + plank + jump. */
+export type BurpeePhase = 'STANDING' | 'DROP' | 'PLANK' | 'JUMP';
+
+export type ExercisePhase = PushUpPhase | SquatPhase | BurpeePhase;
 
 export interface PoseFrame {
   timestamp: number;

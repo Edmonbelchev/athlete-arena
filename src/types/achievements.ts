@@ -10,6 +10,7 @@ export type AchievementRequirementType =
   | 'squats_total'
   | 'pull_ups_total'
   | 'dips_total'
+  | 'burpees_total'
   | 'friend_races_won'
   | 'friends_count'
   | 'goals_created'

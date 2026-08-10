@@ -36,6 +36,21 @@ export function getRepCycleProgress(
     }
   }
 
+  if (exerciseType === 'burpees') {
+    switch (phase) {
+      case 'STANDING':
+        return 0.05;
+      case 'DROP':
+        return 0.35;
+      case 'PLANK':
+        return 0.65;
+      case 'JUMP':
+        return 0.9;
+      default:
+        return 0;
+    }
+  }
+
   switch (phase) {
     case 'UP':
       return 0.05;
