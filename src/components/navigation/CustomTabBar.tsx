@@ -55,14 +55,15 @@ export function CustomTabBar({
 }: CustomTabBarProps) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
-  const bottomInset = 15;
+  const bottomPadding = Spacing.two + insets.bottom;
 
   return (
     <View
       style={[
         styles.wrapper,
         {
-          paddingVertical: bottomInset,
+          paddingTop: Spacing.two,
+          paddingBottom: bottomPadding,
           backgroundColor: theme.backgroundElement,
           borderTopColor: theme.border,
         },
