@@ -31,9 +31,9 @@ export const PUSH_UP_THRESHOLDS = {
   /** Elbow angle (degrees) - arms extended at top of rep. */
   upAngle: 150,
   /** Elbow angle (degrees) - chest near floor at bottom. */
-  downAngle: 95,
+  downAngle: 105,
   /** Degrees of slack between phases to reduce jitter. */
-  hysteresis: isNativeMobile ? 12 : 8,
+  hysteresis: isNativeMobile ? 15 : 20,
 } as const;
 
 /** Push-up rep validation - horizontal plank with hands on the floor. */
@@ -65,7 +65,7 @@ export const PULL_UP_THRESHOLDS = {
   upAngle: 165,
   /** Elbow angle (degrees) - bent enough at the top of a rep. */
   downAngle: 90,
-  hysteresis: isNativeMobile ? 14 : 8,
+  hysteresis: isNativeMobile ? 16 : 12,
 } as const;
 
 /** Pull-up rep validation - dead hang on bar + chin/head over bar at top. */
@@ -95,7 +95,7 @@ export const SQUAT_THRESHOLDS = {
   standingAngle: 155,
   /** Knee angle (degrees) - bottom of squat. */
   bottomAngle: 100,
-  hysteresis: isNativeMobile ? 12 : 8,
+  hysteresis: isNativeMobile ? 15 : 20,
 } as const;
 
 /** Squat rep validation - both feet down and knees move together. */
@@ -103,7 +103,7 @@ export const SQUAT_POSTURE = {
   /** Left and right ankles stay near the same height when both feet are on the floor. */
   maxAnkleYDelta: isNativeMobile ? 0.12 : 0.1,
   /** Both knees bend by a similar amount during a real squat. */
-  maxKneeAngleAsymmetry: isNativeMobile ? 35 : 30,
+  maxKneeAngleAsymmetry: 40,
   /** Left and right knees stay near the same depth while squatting. */
   maxKneeYDelta: isNativeMobile ? 0.14 : 0.12,
 } as const;
