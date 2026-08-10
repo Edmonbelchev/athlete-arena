@@ -17,6 +17,7 @@ import { useDailyChallenge } from '@/features/challenges/useDailyChallenge';
 import { isActiveFriendChallenge } from '@/features/friends/friendChallengeGroups';
 import { useFriendChallenges } from '@/features/friends/useFriendChallenges';
 import { useUserGoals } from '@/features/goals/useUserGoals';
+import { useWeeklyMissionStreak } from '@/features/streaks/useWeeklyMissionStreak';
 import { useChallengeNotificationRefresh } from '@/features/notifications/useChallengeNotificationRefresh';
 import { useProfile } from '@/features/profile/useProfile';
 import { useShop } from '@/features/shop/ShopProvider';
@@ -48,6 +49,7 @@ export default function HomeScreen() {
   const [actionError, setActionError] = useState<string | null>(null);
   const { syncAndCelebrate } = useAchievementUnlock();
   const { refresh: refreshShop } = useShop();
+  const { weeklyStreak, refresh: refreshWeeklyStreak } = useWeeklyMissionStreak();
 
   const isLoading = isProfileLoading || isChallengeLoading;
   const error = profileError ?? challengeError ?? actionError;
@@ -74,6 +76,7 @@ export default function HomeScreen() {
       refreshChallenge(),
       refreshFriendChallenges(),
       refreshGoals(),
+      refreshWeeklyStreak(),
       syncAndCelebrate().catch(() => []),
       refreshShop().catch(() => undefined),
     ]);
@@ -149,6 +152,7 @@ export default function HomeScreen() {
             currentXp={xpProgress.currentLevelXp}
             targetXp={xpProgress.xpToNextLevel}
             streak={currentStreak}
+            weeklyStreak={weeklyStreak}
           />
         </HomeSection>
 

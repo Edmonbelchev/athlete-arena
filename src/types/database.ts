@@ -60,6 +60,8 @@ export interface Database {
           longest_streak: number;
           coin_balance: number;
           coin_multiplier_expires_at: string | null;
+          weekly_mission_streak: number;
+          weekly_mission_streak_last_date: string | null;
           preferences: Json;
           created_at: string;
           updated_at: string;
@@ -972,6 +974,16 @@ export interface Database {
           goals_completed: number;
           goals_completed_daily: number;
           goals_completed_weekly: number;
+        }[];
+      };
+      get_weekly_mission_streak_status: {
+        Args: Record<string, never>;
+        Returns: {
+          streak_days: number;
+          target_days: number;
+          today_completed: boolean;
+          reward_xp: number;
+          reward_coins: number;
         }[];
       };
     };

@@ -27,18 +27,18 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.three,
+    gap: Spacing.two,
     padding: Spacing.three,
     borderRadius: Radius.lg,
     borderWidth: 1,
   },
   count: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: '800',
     lineHeight: 28,
   },
   label: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '600',
   },
 });

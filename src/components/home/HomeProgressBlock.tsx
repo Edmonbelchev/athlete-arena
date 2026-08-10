@@ -1,18 +1,27 @@
 import { StyleSheet, View } from 'react-native';
 
+import { WeeklyMissionStreakTracker } from '@/components/home/WeeklyMissionStreakTracker';
 import { StreakDisplay } from '@/components/ui/StreakDisplay';
 import { XPProgressBar } from '@/components/ui/XPProgressBar';
 import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import type { WeeklyMissionStreakStatus } from '@/types/weeklyStreak';
 
 interface HomeProgressBlockProps {
   level: number;
   currentXp: number;
   targetXp: number;
   streak: number;
+  weeklyStreak?: WeeklyMissionStreakStatus;
 }
 
-export function HomeProgressBlock({ level, currentXp, targetXp, streak }: HomeProgressBlockProps) {
+export function HomeProgressBlock({
+  level,
+  currentXp,
+  targetXp,
+  streak,
+  weeklyStreak,
+}: HomeProgressBlockProps) {
   const theme = useTheme();
 
   return (
@@ -29,6 +38,7 @@ export function HomeProgressBlock({ level, currentXp, targetXp, streak }: HomePr
           <StreakDisplay streak={streak} />
         </View>
       </View>
+      {weeklyStreak ? <WeeklyMissionStreakTracker status={weeklyStreak} /> : null}
     </View>
   );
 }
