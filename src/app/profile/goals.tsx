@@ -2,7 +2,6 @@ import { Stack, useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -15,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { GoalCard } from '@/components/goals/GoalCard';
 import { AppIcon } from '@/components/ui/AppIcon';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import {
   GOAL_PERIODS,
@@ -27,7 +27,7 @@ import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { useUserGoals } from '@/features/goals/useUserGoals';
 import { leaveScreen } from '@/lib/navigation';
 import { formatUserError } from '@/lib/errors';
-import type { GoalActivityCatalogItem, GoalPeriod } from '@/types/goals';
+import type { GoalActivityCatalogItem, GoalPeriod, UserGoal } from '@/types/goals';
 import { useTheme } from '@/hooks/use-theme';
 
 export default function GoalsScreen() {
@@ -55,6 +55,10 @@ export default function GoalsScreen() {
   const [logGoalId, setLogGoalId] = useState<string | null>(null);
   const [logAmount, setLogAmount] = useState('');
   const [isLogging, setIsLogging] = useState(false);
+  const [pendingCancelGoal, setPendingCancelGoal] = useState<UserGoal | null>(null);
+  const [isCancelling, setIsCancelling] = useState(false);
+  const [cancelError, setCancelError] = useState<string | null>(null);
+  const [logError, setLogError] = useState<string | null>(null);
 
   const selectedActivity = useMemo(
     () => activities.find((activity) => activity.id === selectedActivityId) ?? null,
@@ -134,36 +138,45 @@ export default function GoalsScreen() {
     }
   }
 
-  function handleCancelGoal(goalId: string, label: string) {
-    Alert.alert('Remove goal?', `Stop tracking ${label} for this period.`, [
-      { text: 'Keep', style: 'cancel' },
-      {
-        text: 'Remove',
-        style: 'destructive',
-        onPress: () => {
-          void cancelGoal(goalId).catch((err) => {
-            Alert.alert('Could not remove goal', formatUserError(err, 'Failed to remove goal'));
-          });
-        },
-      },
-    ]);
+  function handleCancelGoal(goal: UserGoal) {
+    setCancelError(null);
+    setPendingCancelGoal(goal);
+  }
+
+  async function confirmCancelGoal() {
+    if (!pendingCancelGoal) {
+      return;
+    }
+
+    setIsCancelling(true);
+    setCancelError(null);
+
+    try {
+      await cancelGoal(pendingCancelGoal.id);
+      setPendingCancelGoal(null);
+    } catch (err) {
+      setCancelError(formatUserError(err, 'Failed to remove goal'));
+    } finally {
+      setIsCancelling(false);
+    }
   }
 
   async function handleLogProgress(goalId: string) {
     const parsed = Number.parseFloat(logAmount);
     if (Number.isNaN(parsed) || parsed <= 0) {
-      Alert.alert('Invalid amount', 'Enter a value greater than zero.');
+      setLogError('Enter a value greater than zero.');
       return;
     }
 
     setIsLogging(true);
+    setLogError(null);
 
     try {
       await logProgress(goalId, parsed);
       setLogGoalId(null);
       setLogAmount('');
     } catch (err) {
-      Alert.alert('Could not log progress', formatUserError(err, 'Failed to log progress'));
+      setLogError(formatUserError(err, 'Failed to log progress'));
     } finally {
       setIsLogging(false);
     }
@@ -182,10 +195,11 @@ export default function GoalsScreen() {
             <View key={goal.id} style={styles.goalItem}>
               <GoalCard
                 goal={goal}
-                onCancel={() => handleCancelGoal(goal.id, goal.activityLabel)}
-                onLogProgress={() => {
-                  setLogGoalId(goal.id);
+                onCancel={handleCancelGoal}
+                onLogProgress={(nextGoal) => {
+                  setLogGoalId(nextGoal.id);
                   setLogAmount('');
+                  setLogError(null);
                 }}
               />
               {logGoalId === goal.id ? (
@@ -212,6 +226,9 @@ export default function GoalsScreen() {
                       },
                     ]}
                   />
+                  {logError && logGoalId === goal.id ? (
+                    <Text style={[styles.error, { color: theme.danger }]}>{logError}</Text>
+                  ) : null}
                   <View style={styles.logActions}>
                     <PrimaryButton
                       label="Save"
@@ -224,6 +241,7 @@ export default function GoalsScreen() {
                       onPress={() => {
                         setLogGoalId(null);
                         setLogAmount('');
+                        setLogError(null);
                       }}
                     />
                   </View>
@@ -274,6 +292,12 @@ export default function GoalsScreen() {
 
           {renderGoalGroup('Daily goals', dailyGoals)}
           {renderGoalGroup('Weekly goals', weeklyGoals)}
+
+          <PrimaryButton
+            label="View completed goals & stats"
+            variant="secondary"
+            onPress={() => router.push('/profile/stats')}
+          />
 
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>Create goal</Text>
@@ -423,6 +447,30 @@ export default function GoalsScreen() {
           </View>
         </ScrollView>
       </SafeAreaView>
+
+      <ConfirmDialog
+        visible={pendingCancelGoal !== null}
+        title="Remove goal?"
+        message={
+          pendingCancelGoal
+            ? `Stop tracking ${pendingCancelGoal.activityLabel} for this ${formatGoalPeriodLabel(pendingCancelGoal.period).toLowerCase()} period.`
+            : ''
+        }
+        confirmLabel="Remove"
+        cancelLabel="Keep"
+        destructive
+        loading={isCancelling}
+        error={cancelError}
+        onConfirm={() => void confirmCancelGoal()}
+        onCancel={() => {
+          if (isCancelling) {
+            return;
+          }
+
+          setPendingCancelGoal(null);
+          setCancelError(null);
+        }}
+      />
     </>
   );
 }

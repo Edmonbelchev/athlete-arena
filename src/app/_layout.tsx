@@ -158,6 +158,14 @@ function RootNavigator() {
             }}
           />
           <Stack.Screen
+            name="profile/stats"
+            options={{
+              presentation: 'modal',
+              headerShown: true,
+              title: 'Stats',
+            }}
+          />
+          <Stack.Screen
             name="profile/settings"
             options={{
               presentation: 'modal',

@@ -936,6 +936,44 @@ export interface Database {
         };
         Returns: Database['public']['Tables']['user_goals']['Row'];
       };
+      get_user_goal_history: {
+        Args: {
+          p_limit?: number;
+        };
+        Returns: {
+          id: string;
+          activity_id: string;
+          activity_label: string;
+          activity_kind: string;
+          unit_singular: string;
+          unit_plural: string;
+          decimal_places: number;
+          period: GoalPeriod;
+          target_value: number;
+          current_value: number;
+          period_start: string;
+          period_end: string;
+          completed_at: string | null;
+          created_at: string;
+        }[];
+      };
+      get_user_movement_stats: {
+        Args: Record<string, never>;
+        Returns: {
+          total_push_ups: number;
+          total_squats: number;
+          total_pull_ups: number;
+          total_dips: number;
+          total_steps: number;
+          total_run_km: number;
+          total_run_mi: number;
+          daily_missions_completed: number;
+          friend_races_completed: number;
+          goals_completed: number;
+          goals_completed_daily: number;
+          goals_completed_weekly: number;
+        }[];
+      };
     };
     Enums: {
       exercise_type: ExerciseType;

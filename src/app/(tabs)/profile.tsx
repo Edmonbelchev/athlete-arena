@@ -78,6 +78,12 @@ export default function ProfileScreen() {
   const quickActions = useMemo(
     () => [
       {
+        id: 'stats',
+        label: 'Stats',
+        icon: 'bolt' as const,
+        onPress: () => router.push('/profile/stats'),
+      },
+      {
         id: 'goals',
         label: 'Goals',
         icon: 'target' as const,
@@ -207,19 +213,16 @@ export default function ProfileScreen() {
 
         <HomeSection title="Stats" subtitle="Lifetime performance">
           <View style={styles.statsGrid}>
-            <StatCard label="Total XP" value={totalXp.toLocaleString()} accentColor={theme.xp} />
-            <StatCard label="Level" value={profile?.level ?? xpProgress.level} accentColor={theme.primary} />
-            <StatCard
-              label="Current Streak"
-              value={`${profile?.current_streak ?? 0} days`}
-              accentColor={theme.streak}
-            />
-            <StatCard label="Longest Streak" value={`${profile?.longest_streak ?? 0} days`} />
-            <StatCard label="Challenges Done" value={stats.completedChallenges} />
-            <StatCard label="Push-ups" value={stats.totalPushUps.toLocaleString()} />
-            <StatCard label="Squats" value={stats.totalSquats.toLocaleString()} />
-            <StatCard label="Pull-ups" value={stats.totalPullUps.toLocaleString()} />
+            <StatCard label="Push-ups" value={stats.totalPushUps.toLocaleString()} accentColor={theme.primary} />
+            <StatCard label="Squats" value={stats.totalSquats.toLocaleString()} accentColor={theme.primary} />
+            <StatCard label="Pull-ups" value={stats.totalPullUps.toLocaleString()} accentColor={theme.primary} />
+            <StatCard label="Missions Done" value={stats.completedChallenges} />
           </View>
+          <PrimaryButton
+            label="View All Stats"
+            variant="secondary"
+            onPress={() => router.push('/profile/stats')}
+          />
         </HomeSection>
 
         <ProfileAchievementSection
