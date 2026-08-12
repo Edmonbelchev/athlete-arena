@@ -3,7 +3,7 @@
     "name": "Athlete Arena",
     "slug": "athlete-arena",
     "version": "1.0.1",
-    "orientation": "portrait",
+    "orientation": "default",
     "icon": "./assets/images/logo.png",
     "scheme": "athletearena",
     "userInterfaceStyle": "automatic",
@@ -73,7 +73,8 @@
           "color": "#111111",
           "defaultChannel": "default"
         }
-      ]
+      ],
+      "expo-screen-orientation"
     ],
     "experiments": {
       "typedRoutes": true,

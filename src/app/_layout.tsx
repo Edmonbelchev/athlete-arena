@@ -1,7 +1,9 @@
 import '@/lib/mediapipe/delayedPoseDetectorRelease';
 import { DarkTheme, DefaultTheme, ThemeProvider, Stack } from 'expo-router';
+import * as ScreenOrientation from 'expo-screen-orientation';
 import * as SplashScreen from 'expo-splash-screen';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { useEffect } from 'react';
+import { ActivityIndicator, Platform, StyleSheet, View } from 'react-native';
 
 import { AuthProvider, useAuth } from '@/features/auth';
 import { AuthDeepLinkHandler } from '@/features/auth/AuthDeepLinkHandler';
@@ -19,7 +21,19 @@ import { ModalCloseButton } from '@/components/ui/ModalCloseButton';
 
 SplashScreen.preventAutoHideAsync();
 
+function useDefaultPortraitOrientation(): void {
+  useEffect(() => {
+    if (Platform.OS === 'web') {
+      return;
+    }
+
+    void ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
+  }, []);
+}
+
 export default function RootLayout() {
+  useDefaultPortraitOrientation();
+
   return (
     <AuthProvider>
       <UserSettingsProvider>

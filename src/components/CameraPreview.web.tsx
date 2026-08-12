@@ -43,6 +43,8 @@ export function CameraPreview({
   exerciseType = 'push_ups',
   repPhase = 'UP',
   repTrackingReady = false,
+  fullscreen = false,
+  hideStatusOverlay = false,
 }: CameraPreviewProps) {
   const theme = useTheme();
   const { preferences } = useUserSettings();
@@ -292,6 +294,7 @@ export function CameraPreview({
     <View
       style={StyleSheet.flatten([
         styles.container,
+        fullscreen ? styles.containerFullscreen : null,
         styles.cameraContainer,
         { borderColor: theme.border },
       ])}>
@@ -323,11 +326,13 @@ export function CameraPreview({
           visible={showRepProgressBar}
           trackingReady={repTrackingReady}
         />
-        <View style={styles.overlay}>
-          <Text style={styles.overlayText}>
-            {trackingBody ? 'Tracking - keep your body in frame' : 'Move into frame to start counting'}
-          </Text>
-        </View>
+        {!hideStatusOverlay ? (
+          <View style={styles.overlay}>
+            <Text style={styles.overlayText}>
+              {trackingBody ? 'Tracking - keep your body in frame' : 'Move into frame to start counting'}
+            </Text>
+          </View>
+        ) : null}
       </View>
     </View>
   );
@@ -368,6 +373,11 @@ const styles = StyleSheet.create({
     borderRadius: Radius.xl,
     borderWidth: 1,
     overflow: 'hidden',
+  },
+  containerFullscreen: {
+    minHeight: 0,
+    borderRadius: 0,
+    borderWidth: 0,
   },
   cameraContainer: {
     backgroundColor: '#000000',

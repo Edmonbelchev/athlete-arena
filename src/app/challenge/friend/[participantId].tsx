@@ -3,19 +3,21 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { CameraPreview } from '@/components/CameraPreview';
 import {
   FriendChallengeCompleteOverlay,
   type FriendChallengeCompleteVariant,
 } from '@/components/challenges/FriendChallengeCompleteOverlay';
-import { PoseGuidanceBanner } from '@/components/PoseGuidanceBanner';
+import { ChallengeWorkoutMode } from '@/components/challenges/ChallengeWorkoutMode';
+import { ChallengeWorkoutSetup } from '@/components/challenges/ChallengeWorkoutSetup';
 import { EmoteDisplay } from '@/components/shop/EmoteDisplay';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { formatExerciseLabel } from '@/constants/challenges';
+import { getFriendChallengeCoinReward } from '@/constants/coins';
 import {
-  getFriendChallengeCoinReward,
-} from '@/constants/coins';
-import { formatRaceTime, formatRaceTimeLimit, FRIEND_RACE_TIMER_START_HINT } from '@/constants/friendChallenges';
+  formatRaceTime,
+  formatRaceTimeLimit,
+  FRIEND_RACE_TIMER_START_HINT,
+} from '@/constants/friendChallenges';
 import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { useExercisePoseDetection } from '@/features/challenges/useExercisePoseDetection';
 import { useRepCounter } from '@/features/challenges/useRepCounter';
@@ -69,6 +71,71 @@ function getFriendChallengeOverlayVariant(
   return 'tie';
 }
 
+function FriendRaceTimerBanner({
+  challenge,
+  isPending,
+  canAttempt,
+  raceStarted,
+  isExpired,
+  elapsedSeconds,
+  secondsRemaining,
+}: {
+  challenge: FriendChallenge;
+  isPending: boolean;
+  canAttempt: boolean;
+  raceStarted: boolean;
+  isExpired: boolean;
+  elapsedSeconds: number;
+  secondsRemaining: number | null;
+}) {
+  const theme = useTheme();
+
+  if (isPending) {
+    return null;
+  }
+
+  if (!raceStarted && canAttempt) {
+    return (
+      <View
+        style={[
+          styles.timerHintBanner,
+          { backgroundColor: theme.backgroundElement, borderColor: theme.border },
+        ]}>
+        <Text style={[styles.timerHintText, { color: theme.textSecondary }]}>
+          {FRIEND_RACE_TIMER_START_HINT}
+        </Text>
+      </View>
+    );
+  }
+
+  if (!raceStarted) {
+    return null;
+  }
+
+  if (isExpired) {
+    return (
+      <View style={[styles.timerBanner, { backgroundColor: theme.backgroundElement, borderColor: theme.danger }]}>
+        <Text style={[styles.timerText, { color: theme.danger }]}>Time cap reached</Text>
+      </View>
+    );
+  }
+
+  return (
+    <View style={[styles.timerBanner, { backgroundColor: theme.backgroundElement, borderColor: theme.streak }]}>
+      <Text style={[styles.timerLabel, { color: theme.textSecondary }]}>YOUR TIME</Text>
+      <Text style={[styles.timerText, { color: theme.streak }]}>{formatRaceTime(elapsedSeconds)}</Text>
+      {challenge.timeLimitSeconds ? (
+        <Text style={[styles.timerMeta, { color: theme.textSecondary }]}>
+          {formatRaceTimeLimit(challenge.timeLimitSeconds)} ·{' '}
+          {formatRaceTime(secondsRemaining ?? 0)} left
+        </Text>
+      ) : (
+        <Text style={[styles.timerMeta, { color: theme.textSecondary }]}>Fastest to finish wins</Text>
+      )}
+    </View>
+  );
+}
+
 export default function FriendChallengeScreen() {
   const theme = useTheme();
   const router = useRouter();
@@ -81,6 +148,7 @@ export default function FriendChallengeScreen() {
   const [isSyncing, setIsSyncing] = useState(false);
   const [isPendingAction, setIsPendingAction] = useState(false);
   const [isTimedOut, setIsTimedOut] = useState(false);
+  const [workoutStarted, setWorkoutStarted] = useState(false);
   const cameraActive = useDrainNativeCameraOnLeave();
   const isSyncingRef = useRef(false);
   const challengeRef = useRef(challenge);
@@ -201,14 +269,21 @@ export default function FriendChallengeScreen() {
     },
   });
 
+  const overlayVariant = challenge
+    ? getFriendChallengeOverlayVariant(waitingOnOpponent, isCompleted, isResolved, didIWinFriendChallenge(challenge, myUserId))
+    : null;
+  const inWorkout = canAttempt || Boolean(overlayVariant);
+  const showWorkout = inWorkout && (workoutStarted || Boolean(overlayVariant));
+
   const {
     phase: posePhase,
     trackingStatus,
+    trackingMessage,
     pullUpBarLineY,
     processLandmarks,
   } = useExercisePoseDetection({
     exerciseType: challenge?.exerciseType ?? 'push_ups',
-    enabled: canAttempt && cameraActive,
+    enabled: canAttempt && cameraActive && showWorkout,
     onRepDetected: () => {
       repCounter.simulateRep();
     },
@@ -254,57 +329,88 @@ export default function FriendChallengeScreen() {
     challenge.exerciseType,
     challenge.targetReps,
   );
-  const overlayVariant = getFriendChallengeOverlayVariant(
-    waitingOnOpponent,
-    isCompleted,
-    isResolved,
-    winResult,
-  );
   const overlayKey = `${overlayVariant ?? 'none'}-${challenge.resolvedAt ?? challenge.completedAt ?? 'pending'}`;
 
-  function renderRaceTimer(activeChallenge: FriendChallenge) {
-    if (isPending) {
-      return null;
-    }
-
-    if (!raceStarted && canAttempt) {
-      return (
-        <View
-          style={[
-            styles.timerHintBanner,
-            { backgroundColor: theme.backgroundElement, borderColor: theme.border },
-          ]}>
-          <Text style={[styles.timerHintText, { color: theme.textSecondary }]}>
-            {FRIEND_RACE_TIMER_START_HINT}
-          </Text>
-        </View>
-      );
-    }
-
-    if (!raceStarted) {
-      return null;
-    }
-
-    if (isExpired) {
-      return (
-        <View style={[styles.timerBanner, { backgroundColor: theme.backgroundElement, borderColor: theme.danger }]}>
-          <Text style={[styles.timerText, { color: theme.danger }]}>Time cap reached</Text>
-        </View>
-      );
-    }
-
+  if (showWorkout) {
     return (
-      <View style={[styles.timerBanner, { backgroundColor: theme.backgroundElement, borderColor: theme.streak }]}>
-        <Text style={[styles.timerLabel, { color: theme.textSecondary }]}>YOUR TIME</Text>
-        <Text style={[styles.timerText, { color: theme.streak }]}>{formatRaceTime(elapsedSeconds)}</Text>
-        {activeChallenge.timeLimitSeconds ? (
-          <Text style={[styles.timerMeta, { color: theme.textSecondary }]}>
-            {formatRaceTimeLimit(activeChallenge.timeLimitSeconds)} · {formatRaceTime(secondsRemaining)} left
-          </Text>
-        ) : (
-          <Text style={[styles.timerMeta, { color: theme.textSecondary }]}>Fastest to finish wins</Text>
-        )}
-      </View>
+      <>
+        <Stack.Screen options={{ headerShown: false }} />
+        <ChallengeWorkoutMode
+          exerciseType={challenge.exerciseType}
+          currentReps={repCounter.currentReps}
+          targetReps={challenge.targetReps}
+          trackingStatus={trackingStatus}
+          trackingMessage={trackingMessage}
+          repPhase={posePhase}
+          cameraActive={cameraActive && canAttempt}
+          pullUpBarLineY={challenge.exerciseType === 'pull_ups' ? pullUpBarLineY : null}
+          onCameraReady={handleCameraReady}
+          onLandmarksDetected={processLandmarks}
+          onExit={() => router.back()}
+          completed={Boolean(overlayVariant)}
+          topBanner={
+            <FriendRaceTimerBanner
+              challenge={challenge}
+              isPending={isPending}
+              canAttempt={canAttempt}
+              raceStarted={raceStarted}
+              isExpired={isExpired}
+              elapsedSeconds={elapsedSeconds}
+              secondsRemaining={secondsRemaining}
+            />
+          }
+          completeOverlay={
+            overlayVariant ? (
+              <FriendChallengeCompleteOverlay
+                key={overlayKey}
+                variant={overlayVariant}
+                raceTimeSeconds={myTime}
+                opponentName={opponentName}
+                opponentTimeSeconds={opponentTime}
+                xp={earnedXp}
+                coins={earnedCoins}
+                emote={equippedEmote}
+              />
+            ) : null
+          }
+          footer={
+            <>
+              {showSimulateButton ? (
+                <PrimaryButton
+                  label="+ Simulate Rep"
+                  variant="secondary"
+                  disabled={repCounter.isComplete || isSyncing}
+                  loading={isSyncing}
+                  onPress={repCounter.simulateRep}
+                />
+              ) : null}
+              {syncError ? (
+                <Text style={StyleSheet.flatten([styles.error, { color: theme.danger }])}>{syncError}</Text>
+              ) : null}
+            </>
+          }
+        />
+      </>
+    );
+  }
+
+  if (canAttempt && !workoutStarted) {
+    return (
+      <>
+        <Stack.Screen options={{ title: 'Friend Challenge', headerShown: true }} />
+        <SafeAreaView
+          style={StyleSheet.flatten([styles.safeArea, { backgroundColor: theme.background }])}
+          edges={['bottom']}>
+          <ChallengeWorkoutSetup
+            exerciseLabel={formatExerciseLabel(challenge.exerciseType, true)}
+            exerciseType={challenge.exerciseType}
+            targetReps={challenge.targetReps}
+            subtitle={`Speed race vs ${opponentName}`}
+            onStart={() => setWorkoutStarted(true)}
+            onCancel={() => router.back()}
+          />
+        </SafeAreaView>
+      </>
     );
   }
 
@@ -330,11 +436,6 @@ export default function FriendChallengeScreen() {
               <EmoteDisplay emoji={challenge.creatorEmoteEmoji} size="sm" />
             </View>
           ) : null}
-          <Text style={StyleSheet.flatten([styles.reps, { color: theme.text }])}>
-            {repCounter.currentReps} / {challenge.targetReps}
-          </Text>
-
-          {renderRaceTimer(challenge)}
 
           {isPending ? (
             challenge.isCreator ? (
@@ -367,59 +468,13 @@ export default function FriendChallengeScreen() {
             <Text style={StyleSheet.flatten([styles.pending, { color: theme.danger }])}>
               You hit the time cap before finishing. Head back and try again.
             </Text>
-          ) : (
-            <>
-              <View
-                style={StyleSheet.flatten([
-                  styles.cameraFrame,
-                  overlayVariant ? styles.cameraFrameComplete : null,
-                ])}>
-                <CameraPreview
-                  active={cameraActive && canAttempt}
-                  pullUpBarLineY={challenge.exerciseType === 'pull_ups' ? pullUpBarLineY : null}
-                  exerciseType={challenge.exerciseType}
-                  repPhase={posePhase}
-                  repTrackingReady={trackingStatus === 'ready'}
-                  onCameraReady={handleCameraReady}
-                  onLandmarksDetected={processLandmarks}
-                />
-                {overlayVariant ? (
-                  <FriendChallengeCompleteOverlay
-                    key={overlayKey}
-                    variant={overlayVariant}
-                    raceTimeSeconds={myTime}
-                    opponentName={opponentName}
-                    opponentTimeSeconds={opponentTime}
-                    xp={earnedXp}
-                    coins={earnedCoins}
-                    emote={equippedEmote}
-                  />
-                ) : null}
-              </View>
-
-              {!overlayVariant ? <PoseGuidanceBanner exerciseType={challenge.exerciseType} /> : null}
-            </>
-          )}
-
-          {showSimulateButton ? (
-            <PrimaryButton
-              label="+ Simulate Rep"
-              variant="secondary"
-              disabled={repCounter.isComplete || isSyncing}
-              loading={isSyncing}
-              onPress={repCounter.simulateRep}
-            />
           ) : null}
 
           {syncError ? (
             <Text style={StyleSheet.flatten([styles.error, { color: theme.danger }])}>{syncError}</Text>
           ) : null}
 
-          <PrimaryButton
-            label={isCompleted || waitingOnOpponent ? 'Done' : 'Cancel'}
-            variant="secondary"
-            onPress={() => router.back()}
-          />
+          <PrimaryButton label="Back" variant="secondary" onPress={() => router.back()} />
         </ScrollView>
       </SafeAreaView>
     </>
@@ -446,16 +501,6 @@ const styles = StyleSheet.create({
     width: '100%',
     paddingBottom: Spacing.six,
   },
-  cameraFrame: {
-    width: '100%',
-    height: 320,
-    borderRadius: Radius.lg,
-    overflow: 'hidden',
-    position: 'relative',
-  },
-  cameraFrameComplete: {
-    height: 400,
-  },
   container: {
     flex: 1,
     padding: Spacing.four,
@@ -468,11 +513,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '800',
     letterSpacing: 1.5,
-    textAlign: 'center',
-  },
-  reps: {
-    fontSize: 48,
-    fontWeight: '900',
     textAlign: 'center',
   },
   timerBanner: {

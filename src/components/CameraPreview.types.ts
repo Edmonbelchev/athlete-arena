@@ -17,4 +17,8 @@ export interface CameraPreviewProps {
   repPhase?: ExercisePhase;
   /** Whether pose tracking is ready to count reps. */
   repTrackingReady?: boolean;
+  /** Fill parent and drop card chrome — for workout mode. */
+  fullscreen?: boolean;
+  /** Hide the built-in bottom tracking message (workout hint panel replaces it). */
+  hideStatusOverlay?: boolean;
 }

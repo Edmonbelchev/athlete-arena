@@ -19,6 +19,8 @@ export function ExpoGoCameraPreview({
   exerciseType = 'push_ups',
   repPhase = 'UP',
   repTrackingReady = false,
+  fullscreen = false,
+  hideStatusOverlay = false,
 }: CameraPreviewProps) {
   const theme = useTheme();
   const { preferences } = useUserSettings();
@@ -90,10 +92,15 @@ export function ExpoGoCameraPreview({
     <View
       style={StyleSheet.flatten([
         styles.container,
+        fullscreen ? styles.containerFullscreen : null,
         styles.cameraContainer,
         { borderColor: theme.border },
       ])}>
-      <CameraView style={styles.camera} facing="front" onCameraReady={onCameraReady} />
+      <CameraView
+        style={StyleSheet.flatten([styles.camera, fullscreen ? styles.cameraFullscreen : null])}
+        facing="front"
+        onCameraReady={onCameraReady}
+      />
       <View style={styles.bottomOverlay}>
         <RepCycleProgressBar
           exerciseType={exerciseType}
@@ -101,10 +108,12 @@ export function ExpoGoCameraPreview({
           visible={showRepProgressBar}
           trackingReady={repTrackingReady}
         />
-        <View style={styles.overlay}>
-          <Text style={styles.overlayText}>Position yourself in frame</Text>
-          <Text style={styles.overlaySubtext}>Expo Go - use + Simulate Rep or install a dev build</Text>
-        </View>
+        {!hideStatusOverlay ? (
+          <View style={styles.overlay}>
+            <Text style={styles.overlayText}>Position yourself in frame</Text>
+            <Text style={styles.overlaySubtext}>Expo Go - use + Simulate Rep or install a dev build</Text>
+          </View>
+        ) : null}
       </View>
     </View>
   );
@@ -118,12 +127,20 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     overflow: 'hidden',
   },
+  containerFullscreen: {
+    minHeight: 0,
+    borderRadius: 0,
+    borderWidth: 0,
+  },
   cameraContainer: {
     backgroundColor: '#000000',
   },
   camera: {
     flex: 1,
     minHeight: 280,
+  },
+  cameraFullscreen: {
+    minHeight: 0,
   },
   permissionContainer: {
     alignItems: 'center',

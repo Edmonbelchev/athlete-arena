@@ -58,6 +58,8 @@ function VisionCameraPreviewActive({
   exerciseType = 'push_ups',
   repPhase = 'UP',
   repTrackingReady = false,
+  fullscreen = false,
+  hideStatusOverlay = false,
   facing,
   cameraLive,
   onFlipCamera,
@@ -224,13 +226,18 @@ function VisionCameraPreviewActive({
     <View
       style={StyleSheet.flatten([
         styles.container,
+        fullscreen ? styles.containerFullscreen : null,
         styles.cameraContainer,
         { borderColor: theme.border },
       ])}>
       {cameraLive ? (
-        <MediapipeCamera style={styles.camera} solution={poseDetection} activeCamera={facing} />
+        <MediapipeCamera
+          style={StyleSheet.flatten([styles.camera, fullscreen ? styles.cameraFullscreen : null])}
+          solution={poseDetection}
+          activeCamera={facing}
+        />
       ) : (
-        <View style={styles.camera} />
+        <View style={StyleSheet.flatten([styles.camera, fullscreen ? styles.cameraFullscreen : null])} />
       )}
 
       <PoseSkeletonOverlay landmarks={latestLandmarks} visible={showPoseSkeleton && cameraLive} />
@@ -255,17 +262,19 @@ function VisionCameraPreviewActive({
           visible={showRepProgressBar && cameraLive}
           trackingReady={repTrackingReady}
         />
-        <View style={styles.overlay}>
-          <Text style={styles.overlayText}>
-            {!cameraLive
-              ? 'Closing camera…'
-              : detectionError
-                ? 'Pose detection error - check dev build setup'
-                : trackingBody
-                  ? 'Tracking - keep your body in frame'
-                  : 'Move into frame to start counting'}
-          </Text>
-        </View>
+        {!hideStatusOverlay ? (
+          <View style={styles.overlay}>
+            <Text style={styles.overlayText}>
+              {!cameraLive
+                ? 'Closing camera…'
+                : detectionError
+                  ? 'Pose detection error - check dev build setup'
+                  : trackingBody
+                    ? 'Tracking - keep your body in frame'
+                    : 'Move into frame to start counting'}
+            </Text>
+          </View>
+        ) : null}
       </View>
     </View>
   );
@@ -282,6 +291,8 @@ export function VisionCameraPreview({
   exerciseType = 'push_ups',
   repPhase = 'UP',
   repTrackingReady = false,
+  fullscreen = false,
+  hideStatusOverlay = false,
 }: CameraPreviewProps) {
   const theme = useTheme();
   const { hasPermission, requestPermission } = useCameraPermission();
@@ -353,6 +364,8 @@ export function VisionCameraPreview({
       exerciseType={exerciseType}
       repPhase={repPhase}
       repTrackingReady={repTrackingReady}
+      fullscreen={fullscreen}
+      hideStatusOverlay={hideStatusOverlay}
     />
   );
 }
@@ -365,6 +378,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     overflow: 'hidden',
   },
+  containerFullscreen: {
+    minHeight: 0,
+    borderRadius: 0,
+    borderWidth: 0,
+  },
   cameraContainer: {
     backgroundColor: '#000000',
     position: 'relative',
@@ -372,6 +390,9 @@ const styles = StyleSheet.create({
   camera: {
     flex: 1,
     minHeight: 280,
+  },
+  cameraFullscreen: {
+    minHeight: 0,
   },
   centered: {
     alignItems: 'center',
