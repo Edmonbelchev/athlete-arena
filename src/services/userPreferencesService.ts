@@ -27,6 +27,7 @@ export async function getUserPreferences(userId: string): Promise<UserPreference
     theme: 'light',
     showPoseSkeleton: false,
     showRepProgressBar: true,
+    repSoundEnabled: true,
     hasCompletedOnboarding: true,
   });
 }

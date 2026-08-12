@@ -1,4 +1,4 @@
-import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
 import { ActivityIndicator, Platform, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -19,6 +19,8 @@ import { useRepCounter } from '@/features/challenges/useRepCounter';
 import { useProfile } from '@/features/profile/useProfile';
 import { useShop } from '@/features/shop/ShopProvider';
 import { useDrainNativeCameraOnLeave } from '@/hooks/use-drain-native-camera-on-leave';
+import { useRouteParam } from '@/hooks/use-route-param';
+import { useWorkoutSession } from '@/hooks/use-workout-session';
 import { useTheme } from '@/hooks/use-theme';
 import { formatUserError } from '@/lib/errors';
 import { supportsNativePoseDetection } from '@/lib/runtime';
@@ -27,22 +29,22 @@ import { completeChallenge } from '@/services/challengeService';
 export default function ChallengeScreen() {
   const theme = useTheme();
   const router = useRouter();
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const id = useRouteParam('id');
   const { challenge, isLoading, error, applyChallenge } = useChallenge(id);
   const { equippedEmote } = useShop();
   const { applyXpDelta, refresh: refreshProfile } = useProfile();
+  const { workoutStarted, startWorkout } = useWorkoutSession('daily', id);
   const [syncError, setSyncError] = useState<string | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
-  const [workoutStarted, setWorkoutStarted] = useState(false);
-  const cameraActive = useDrainNativeCameraOnLeave();
   const isSyncingRef = useRef(false);
   const challengeRef = useRef(challenge);
+  const isCompleted = challenge?.status === 'completed';
+  const targetReps = challenge?.target_reps ?? 0;
+  const inWorkout = Boolean(challenge) && (workoutStarted || isCompleted);
 
   challengeRef.current = challenge;
 
-  const isCompleted = challenge?.status === 'completed';
-  const targetReps = challenge?.target_reps ?? 0;
-  const inWorkout = workoutStarted || isCompleted;
+  const cameraActive = useDrainNativeCameraOnLeave(inWorkout);
 
   const handleRepDetected = useCallback(
     async (repCount: number) => {
@@ -125,70 +127,64 @@ export default function ChallengeScreen() {
 
   if (inWorkout) {
     return (
-      <>
-        <Stack.Screen options={{ headerShown: false }} />
-        <ChallengeWorkoutMode
-          exerciseType={challenge.exercise_type}
-          currentReps={repCounter.currentReps}
-          targetReps={challenge.target_reps}
-          trackingStatus={trackingStatus}
-          trackingMessage={trackingMessage}
-          repPhase={posePhase}
-          cameraActive={cameraActive}
-          pullUpBarLineY={challenge.exercise_type === 'pull_ups' ? pullUpBarLineY : null}
-          onCameraReady={() => {
-            repCounter.start();
-          }}
-          onLandmarksDetected={processLandmarks}
-          onExit={() => router.back()}
-          completed={isCompleted}
-          completeOverlay={
-            isCompleted ? (
-              <DailyMissionCompleteOverlay
-                targetReps={challenge.target_reps}
-                exerciseLabel={formatExerciseLabel(challenge.exercise_type, true)}
-                xp={earnedXp}
-                coins={earnedCoins}
-                emote={equippedEmote}
+      <ChallengeWorkoutMode
+        exerciseType={challenge.exercise_type}
+        currentReps={repCounter.currentReps}
+        targetReps={challenge.target_reps}
+        trackingStatus={trackingStatus}
+        trackingMessage={trackingMessage}
+        repPhase={posePhase}
+        cameraActive={cameraActive}
+        pullUpBarLineY={challenge.exercise_type === 'pull_ups' ? pullUpBarLineY : null}
+        onCameraReady={() => {
+          repCounter.start();
+        }}
+        onLandmarksDetected={processLandmarks}
+        onExit={() => router.back()}
+        completed={isCompleted}
+        completeOverlay={
+          isCompleted ? (
+            <DailyMissionCompleteOverlay
+              targetReps={challenge.target_reps}
+              exerciseLabel={formatExerciseLabel(challenge.exercise_type, true)}
+              xp={earnedXp}
+              coins={earnedCoins}
+              emote={equippedEmote}
+            />
+          ) : null
+        }
+        footer={
+          <>
+            {showSimulateButton ? (
+              <PrimaryButton
+                label="+ Simulate Rep"
+                variant="secondary"
+                disabled={repCounter.isComplete || isSyncing}
+                loading={isSyncing}
+                onPress={repCounter.simulateRep}
               />
-            ) : null
-          }
-          footer={
-            <>
-              {showSimulateButton ? (
-                <PrimaryButton
-                  label="+ Simulate Rep"
-                  variant="secondary"
-                  disabled={repCounter.isComplete || isSyncing}
-                  loading={isSyncing}
-                  onPress={repCounter.simulateRep}
-                />
-              ) : null}
-              {syncError ? (
-                <Text style={StyleSheet.flatten([styles.error, { color: theme.danger }])}>{syncError}</Text>
-              ) : null}
-            </>
-          }
-        />
-      </>
+            ) : null}
+            {syncError ? (
+              <Text style={StyleSheet.flatten([styles.error, { color: theme.danger }])}>{syncError}</Text>
+            ) : null}
+          </>
+        }
+      />
     );
   }
 
   return (
-    <>
-      <Stack.Screen options={{ title: 'Challenge', headerShown: true }} />
-      <SafeAreaView
-        style={StyleSheet.flatten([styles.safeArea, { backgroundColor: theme.background }])}
-        edges={['bottom']}>
-        <ChallengeWorkoutSetup
-          exerciseLabel={formatExerciseLabel(challenge.exercise_type, true)}
-          exerciseType={challenge.exercise_type}
-          targetReps={challenge.target_reps}
-          onStart={() => setWorkoutStarted(true)}
-          onCancel={() => router.back()}
-        />
-      </SafeAreaView>
-    </>
+    <SafeAreaView
+      style={StyleSheet.flatten([styles.safeArea, { backgroundColor: theme.background }])}
+      edges={['bottom']}>
+      <ChallengeWorkoutSetup
+        exerciseLabel={formatExerciseLabel(challenge.exercise_type, true)}
+        exerciseType={challenge.exercise_type}
+        targetReps={challenge.target_reps}
+        onStart={startWorkout}
+        onCancel={() => router.back()}
+      />
+    </SafeAreaView>
   );
 }
 

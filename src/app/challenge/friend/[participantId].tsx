@@ -1,4 +1,4 @@
-import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -44,6 +44,8 @@ import {
 import { formatUserError } from '@/lib/errors';
 import { supportsNativePoseDetection } from '@/lib/runtime';
 import { useDrainNativeCameraOnLeave } from '@/hooks/use-drain-native-camera-on-leave';
+import { useRouteParam } from '@/hooks/use-route-param';
+import { useWorkoutSession } from '@/hooks/use-workout-session';
 import { useTheme } from '@/hooks/use-theme';
 
 function getFriendChallengeOverlayVariant(
@@ -140,7 +142,7 @@ export default function FriendChallengeScreen() {
   const theme = useTheme();
   const router = useRouter();
   const { session } = useAuth();
-  const { participantId } = useLocalSearchParams<{ participantId: string }>();
+  const participantId = useRouteParam('participantId');
   const { challenge, isLoading, error, refresh } = useFriendChallenge(participantId);
   const { equippedEmote } = useShop();
   const { refresh: refreshProfile } = useProfile();
@@ -148,8 +150,7 @@ export default function FriendChallengeScreen() {
   const [isSyncing, setIsSyncing] = useState(false);
   const [isPendingAction, setIsPendingAction] = useState(false);
   const [isTimedOut, setIsTimedOut] = useState(false);
-  const [workoutStarted, setWorkoutStarted] = useState(false);
-  const cameraActive = useDrainNativeCameraOnLeave();
+  const { workoutStarted, startWorkout } = useWorkoutSession('friend', participantId);
   const isSyncingRef = useRef(false);
   const challengeRef = useRef(challenge);
 
@@ -163,6 +164,16 @@ export default function FriendChallengeScreen() {
   const targetReps = challenge?.targetReps ?? 0;
   const raceStarted = challenge ? hasFriendChallengeStarted(challenge) : false;
   const myUserId = session?.user.id ?? '';
+  const canAttempt =
+    Boolean(challenge) && !isCompleted && !isPending && !isExpired && !waitingOnOpponent;
+  const overlayVariant = challenge
+    ? getFriendChallengeOverlayVariant(waitingOnOpponent, isCompleted, isResolved, didIWinFriendChallenge(challenge, myUserId))
+    : null;
+  const showWorkout =
+    Boolean(challenge) &&
+    (canAttempt || Boolean(overlayVariant)) &&
+    (workoutStarted || Boolean(overlayVariant));
+  const cameraActive = useDrainNativeCameraOnLeave(showWorkout);
 
   const handleTimerExpire = useCallback(() => {
     setIsTimedOut(true);
@@ -257,9 +268,6 @@ export default function FriendChallengeScreen() {
     [participantId, refresh, refreshProfile, isTimedOut],
   );
 
-  const canAttempt =
-    Boolean(challenge) && !isCompleted && !isPending && !isExpired && !waitingOnOpponent;
-
   const repCounter = useRepCounter({
     targetReps,
     initialReps: challenge?.completedReps ?? 0,
@@ -268,12 +276,6 @@ export default function FriendChallengeScreen() {
       void handleRepDetected(repCount);
     },
   });
-
-  const overlayVariant = challenge
-    ? getFriendChallengeOverlayVariant(waitingOnOpponent, isCompleted, isResolved, didIWinFriendChallenge(challenge, myUserId))
-    : null;
-  const inWorkout = canAttempt || Boolean(overlayVariant);
-  const showWorkout = inWorkout && (workoutStarted || Boolean(overlayVariant));
 
   const {
     phase: posePhase,
@@ -333,9 +335,7 @@ export default function FriendChallengeScreen() {
 
   if (showWorkout) {
     return (
-      <>
-        <Stack.Screen options={{ headerShown: false }} />
-        <ChallengeWorkoutMode
+      <ChallengeWorkoutMode
           exerciseType={challenge.exerciseType}
           currentReps={repCounter.currentReps}
           targetReps={challenge.targetReps}
@@ -390,15 +390,12 @@ export default function FriendChallengeScreen() {
             </>
           }
         />
-      </>
     );
   }
 
   if (canAttempt && !workoutStarted) {
     return (
-      <>
-        <Stack.Screen options={{ title: 'Friend Challenge', headerShown: true }} />
-        <SafeAreaView
+      <SafeAreaView
           style={StyleSheet.flatten([styles.safeArea, { backgroundColor: theme.background }])}
           edges={['bottom']}>
           <ChallengeWorkoutSetup
@@ -406,18 +403,15 @@ export default function FriendChallengeScreen() {
             exerciseType={challenge.exerciseType}
             targetReps={challenge.targetReps}
             subtitle={`Speed race vs ${opponentName}`}
-            onStart={() => setWorkoutStarted(true)}
+            onStart={startWorkout}
             onCancel={() => router.back()}
           />
-        </SafeAreaView>
-      </>
+      </SafeAreaView>
     );
   }
 
   return (
-    <>
-      <Stack.Screen options={{ title: 'Friend Challenge', headerShown: true }} />
-      <SafeAreaView
+    <SafeAreaView
         style={StyleSheet.flatten([styles.safeArea, { backgroundColor: theme.background }])}
         edges={['bottom']}>
         <ScrollView
@@ -476,8 +470,7 @@ export default function FriendChallengeScreen() {
 
           <PrimaryButton label="Back" variant="secondary" onPress={() => router.back()} />
         </ScrollView>
-      </SafeAreaView>
-    </>
+    </SafeAreaView>
   );
 }
 

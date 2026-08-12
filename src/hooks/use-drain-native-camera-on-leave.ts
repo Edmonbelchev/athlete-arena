@@ -6,20 +6,23 @@ import { POSE_DETECTOR_RELEASE_DELAY_MS } from '@/lib/mediapipe/delayedPoseDetec
 import { supportsNativePoseDetection } from '@/lib/runtime';
 
 /**
- * Keeps the native pose camera running only while the screen is focused, and
+ * Keeps the native pose camera running only while the workout is active, and
  * delays stack pop until MediaPipe has time to drain in-flight frames.
  */
-export function useDrainNativeCameraOnLeave(): boolean {
+export function useDrainNativeCameraOnLeave(workoutActive: boolean): boolean {
   const navigation = useNavigation();
-  const [cameraActive, setCameraActive] = useState(true);
+  const [cameraActive, setCameraActive] = useState(workoutActive);
+  const workoutActiveRef = useRef(workoutActive);
   const isDrainingLeaveRef = useRef(false);
   const drainTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const needsNativeDrain = Platform.OS !== 'web' && supportsNativePoseDetection();
 
+  workoutActiveRef.current = workoutActive;
+
   useFocusEffect(
     useCallback(() => {
       isDrainingLeaveRef.current = false;
-      setCameraActive(true);
+      setCameraActive(workoutActiveRef.current);
 
       return () => {
         if (drainTimerRef.current) {
@@ -35,12 +38,16 @@ export function useDrainNativeCameraOnLeave(): boolean {
   );
 
   useEffect(() => {
-    if (!needsNativeDrain) {
+    setCameraActive(workoutActive);
+  }, [workoutActive]);
+
+  useEffect(() => {
+    if (!needsNativeDrain || !workoutActive) {
       return;
     }
 
     const unsubscribe = navigation.addListener('beforeRemove', (event) => {
-      if (isDrainingLeaveRef.current) {
+      if (isDrainingLeaveRef.current || !cameraActive) {
         return;
       }
 
@@ -61,7 +68,7 @@ export function useDrainNativeCameraOnLeave(): boolean {
       }
       unsubscribe();
     };
-  }, [navigation, needsNativeDrain]);
+  }, [cameraActive, navigation, needsNativeDrain, workoutActive]);
 
   return cameraActive;
 }

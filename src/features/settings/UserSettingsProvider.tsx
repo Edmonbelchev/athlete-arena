@@ -32,6 +32,7 @@ interface UserSettingsContextValue {
   setTheme: (theme: ThemePreference) => void;
   setShowPoseSkeleton: (show: boolean) => void;
   setShowRepProgressBar: (show: boolean) => void;
+  setRepSoundEnabled: (enabled: boolean) => void;
   completeOnboarding: () => Promise<void>;
   isReady: boolean;
   isSaving: boolean;
@@ -186,6 +187,13 @@ export function UserSettingsProvider({ children }: { children: React.ReactNode }
     [persistToAccount],
   );
 
+  const setRepSoundEnabled = useCallback(
+    (repSoundEnabled: boolean) => {
+      void persistToAccount({ repSoundEnabled });
+    },
+    [persistToAccount],
+  );
+
   const completeOnboarding = useCallback(async () => {
     await persistToAccount({ hasCompletedOnboarding: true });
   }, [persistToAccount]);
@@ -197,6 +205,7 @@ export function UserSettingsProvider({ children }: { children: React.ReactNode }
       setTheme,
       setShowPoseSkeleton,
       setShowRepProgressBar,
+      setRepSoundEnabled,
       completeOnboarding,
       isReady,
       isSaving,
@@ -207,6 +216,7 @@ export function UserSettingsProvider({ children }: { children: React.ReactNode }
       setTheme,
       setShowPoseSkeleton,
       setShowRepProgressBar,
+      setRepSoundEnabled,
       completeOnboarding,
       isReady,
       isSaving,

@@ -30,6 +30,7 @@ export default function SettingsScreen() {
     setTheme,
     setShowPoseSkeleton,
     setShowRepProgressBar,
+    setRepSoundEnabled,
     isSaving,
     saveError,
   } = useUserSettings();
@@ -105,6 +106,13 @@ export default function SettingsScreen() {
                 description="Red-to-green bar on the camera preview while you move through each rep."
                 value={preferences.showRepProgressBar}
                 onValueChange={setShowRepProgressBar}
+                disabled={isSaving}
+              />
+              <SettingsToggleRow
+                label="Rep sound"
+                description="Play a soft ding when a rep is counted during workouts."
+                value={preferences.repSoundEnabled}
+                onValueChange={setRepSoundEnabled}
                 disabled={isSaving}
               />
             </View>

@@ -8,6 +8,8 @@ export interface UserPreferences {
   showPoseSkeleton: boolean;
   /** Red → green bar showing progress through each rep on the camera preview. */
   showRepProgressBar: boolean;
+  /** Soft ding when a rep is counted during workouts. */
+  repSoundEnabled: boolean;
   hasCompletedOnboarding: boolean;
 }
 
@@ -22,6 +24,7 @@ export function getDefaultUserPreferences(systemDark = false): UserPreferences {
     theme: systemDark ? 'dark' : 'light',
     showPoseSkeleton: Platform.OS === 'web',
     showRepProgressBar: true,
+    repSoundEnabled: true,
     hasCompletedOnboarding: false,
   };
 }
@@ -47,6 +50,10 @@ export function parseUserPreferences(
       typeof record.showRepProgressBar === 'boolean'
         ? record.showRepProgressBar
         : fallback.showRepProgressBar,
+    repSoundEnabled:
+      typeof record.repSoundEnabled === 'boolean'
+        ? record.repSoundEnabled
+        : fallback.repSoundEnabled,
     hasCompletedOnboarding:
       typeof record.hasCompletedOnboarding === 'boolean'
         ? record.hasCompletedOnboarding
@@ -67,6 +74,7 @@ export function mergeUserPreferences(
     theme: patch.theme ?? current.theme,
     showPoseSkeleton: patch.showPoseSkeleton ?? current.showPoseSkeleton,
     showRepProgressBar: patch.showRepProgressBar ?? current.showRepProgressBar,
+    repSoundEnabled: patch.repSoundEnabled ?? current.repSoundEnabled,
     hasCompletedOnboarding: current.hasCompletedOnboarding || nextHasCompletedOnboarding,
   };
 }

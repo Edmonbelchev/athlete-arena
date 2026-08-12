@@ -1,6 +1,16 @@
+import { useEffect, useRef } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated';
 
 import { Radius, Spacing } from '@/constants/theme';
+import { useUserSettings } from '@/features/settings/UserSettingsProvider';
+import { useRepFeedback } from '@/hooks/use-rep-feedback';
 import { useTheme } from '@/hooks/use-theme';
 
 interface ChallengeRepHudProps {
@@ -11,10 +21,72 @@ interface ChallengeRepHudProps {
 
 export function ChallengeRepHud({ currentReps, targetReps, completed = false }: ChallengeRepHudProps) {
   const theme = useTheme();
+  const { preferences } = useUserSettings();
+  const prevRepsRef = useRef(currentReps);
+  const countScale = useSharedValue(1);
+  const ringScale = useSharedValue(1);
+  const ringOpacity = useSharedValue(0);
+  const flashOpacity = useSharedValue(0);
+
+  useRepFeedback(currentReps, {
+    enabled: !completed,
+    soundEnabled: preferences.repSoundEnabled,
+  });
+
+  useEffect(() => {
+    if (completed || currentReps <= prevRepsRef.current) {
+      prevRepsRef.current = currentReps;
+      return;
+    }
+
+    countScale.value = withSequence(
+      withTiming(1.1, { duration: 90, easing: Easing.out(Easing.quad) }),
+      withTiming(1, { duration: 150, easing: Easing.out(Easing.quad) }),
+    );
+
+    ringScale.value = 1;
+    ringOpacity.value = 0.42;
+    ringScale.value = withTiming(1.45, { duration: 340, easing: Easing.out(Easing.cubic) });
+    ringOpacity.value = withTiming(0, { duration: 340, easing: Easing.out(Easing.quad) });
+
+    flashOpacity.value = withSequence(
+      withTiming(0.28, { duration: 70 }),
+      withTiming(0, { duration: 220, easing: Easing.out(Easing.quad) }),
+    );
+
+    prevRepsRef.current = currentReps;
+  }, [completed, countScale, currentReps, flashOpacity, ringOpacity, ringScale]);
+
+  const hudStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: countScale.value }],
+  }));
+
+  const ringStyle = useAnimatedStyle(() => ({
+    opacity: ringOpacity.value,
+    transform: [{ scale: ringScale.value }],
+  }));
+
+  const flashStyle = useAnimatedStyle(() => ({
+    opacity: flashOpacity.value,
+  }));
 
   return (
     <View style={styles.wrap} pointerEvents="none">
-      <View style={styles.hud}>
+      <Animated.View style={StyleSheet.flatten([styles.hud, hudStyle])}>
+        <Animated.View
+          style={StyleSheet.flatten([
+            styles.flash,
+            flashStyle,
+            { backgroundColor: theme.success },
+          ])}
+        />
+        <Animated.View
+          style={StyleSheet.flatten([
+            styles.ring,
+            ringStyle,
+            { borderColor: 'rgba(255,255,255,0.55)' },
+          ])}
+        />
         <Text style={StyleSheet.flatten([styles.label, { color: 'rgba(255,255,255,0.82)' }])}>REPS</Text>
         <Text
           style={StyleSheet.flatten([
@@ -24,7 +96,7 @@ export function ChallengeRepHud({ currentReps, targetReps, completed = false }: 
           {currentReps}
           <Text style={styles.target}> / {targetReps}</Text>
         </Text>
-      </View>
+      </Animated.View>
     </View>
   );
 }
@@ -42,6 +114,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,
     gap: Spacing.half,
+    overflow: 'hidden',
+  },
+  flash: {
+    ...StyleSheet.absoluteFill,
+    borderRadius: Radius.md,
+  },
+  ring: {
+    position: 'absolute',
+    top: '18%',
+    left: Spacing.two,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    borderWidth: 1.5,
   },
   label: {
     fontSize: 10,

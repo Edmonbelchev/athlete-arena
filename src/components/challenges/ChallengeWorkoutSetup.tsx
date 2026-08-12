@@ -1,10 +1,11 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { useEffect } from 'react';
+import { Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import * as ScreenOrientation from 'expo-screen-orientation';
 
 import { PoseGuidanceBanner } from '@/components/PoseGuidanceBanner';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import type { ExerciseType } from '@/constants/challenges';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
-import { getWorkoutSetupTips } from '@/features/challenges/workoutGuidance';
 import { useTheme } from '@/hooks/use-theme';
 
 interface ChallengeWorkoutSetupProps {
@@ -16,6 +17,17 @@ interface ChallengeWorkoutSetupProps {
   onCancel: () => void;
 }
 
+/** Keep setup in portrait so the pre-workout sheet stays scrollable and tappable. */
+function useSetupPortraitLock(): void {
+  useEffect(() => {
+    if (Platform.OS === 'web') {
+      return;
+    }
+
+    void ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
+  }, []);
+}
+
 export function ChallengeWorkoutSetup({
   exerciseLabel,
   exerciseType,
@@ -25,46 +37,60 @@ export function ChallengeWorkoutSetup({
   onCancel,
 }: ChallengeWorkoutSetupProps) {
   const theme = useTheme();
-  const tips = getWorkoutSetupTips(exerciseType);
+
+  useSetupPortraitLock();
 
   return (
-    <View style={styles.container}>
-      <Text style={StyleSheet.flatten([styles.eyebrow, { color: theme.textSecondary }])}>WORKOUT SETUP</Text>
-      <Text style={StyleSheet.flatten([styles.title, { color: theme.text }])}>{exerciseLabel}</Text>
-      <Text style={StyleSheet.flatten([styles.target, { color: theme.text }])}>{targetReps} reps</Text>
-      {subtitle ? (
-        <Text style={StyleSheet.flatten([styles.subtitle, { color: theme.textSecondary }])}>{subtitle}</Text>
-      ) : null}
+    <View style={styles.root}>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled">
+        <Text style={StyleSheet.flatten([styles.eyebrow, { color: theme.textSecondary }])}>WORKOUT SETUP</Text>
+        <Text style={StyleSheet.flatten([styles.title, { color: theme.text }])}>{exerciseLabel}</Text>
+        <Text style={StyleSheet.flatten([styles.target, { color: theme.text }])}>{targetReps} reps</Text>
+        {subtitle ? (
+          <Text style={StyleSheet.flatten([styles.subtitle, { color: theme.textSecondary }])}>{subtitle}</Text>
+        ) : null}
 
-      <PoseGuidanceBanner exerciseType={exerciseType} />
+        <PoseGuidanceBanner exerciseType={exerciseType} />
 
-      <View
-        style={StyleSheet.flatten([
-          styles.tipCard,
-          { backgroundColor: theme.backgroundElement, borderColor: theme.border },
-        ])}>
-        <Text style={StyleSheet.flatten([styles.tipTitle, { color: theme.text }])}>Before you start</Text>
-        {tips.slice(0, 2).map((tip) => (
-          <Text key={tip} style={StyleSheet.flatten([styles.tip, { color: theme.textSecondary }])}>
-            • {tip}
-          </Text>
-        ))}
         <Text style={StyleSheet.flatten([styles.landscapeNote, { color: theme.primary }])}>
           Landscape + a prop works best, but portrait is fine too.
         </Text>
-      </View>
+      </ScrollView>
 
-      <PrimaryButton label="Start workout" onPress={onStart} />
-      <PrimaryButton label="Cancel" variant="secondary" onPress={onCancel} />
+      <View style={StyleSheet.flatten([styles.footer, { borderTopColor: theme.border }])}>
+        <PrimaryButton label="Start" onPress={onStart} />
+        <PrimaryButton label="Cancel" variant="secondary" onPress={onCancel} />
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  root: {
     flex: 1,
+  },
+  scroll: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
     padding: Spacing.four,
     gap: Spacing.three,
+    maxWidth: MaxContentWidth,
+    alignSelf: 'center',
+    width: '100%',
+    paddingBottom: Spacing.two,
+  },
+  footer: {
+    paddingHorizontal: Spacing.four,
+    paddingTop: Spacing.three,
+    paddingBottom: Spacing.four,
+    gap: Spacing.two,
+    borderTopWidth: StyleSheet.hairlineWidth,
     maxWidth: MaxContentWidth,
     alignSelf: 'center',
     width: '100%',
@@ -91,25 +117,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textAlign: 'center',
   },
-  tipCard: {
-    borderWidth: 1,
-    borderRadius: 16,
-    padding: Spacing.three,
-    gap: Spacing.one,
-  },
-  tipTitle: {
-    fontSize: 14,
-    fontWeight: '800',
-  },
-  tip: {
-    fontSize: 13,
-    lineHeight: 18,
-    fontWeight: '600',
-  },
   landscapeNote: {
     fontSize: 12,
     lineHeight: 17,
     fontWeight: '700',
-    marginTop: Spacing.one,
+    textAlign: 'center',
   },
 });
