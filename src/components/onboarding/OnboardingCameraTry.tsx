@@ -7,6 +7,7 @@ import { Radius, Spacing } from '@/constants/theme';
 import { useExercisePoseDetection } from '@/features/challenges/useExercisePoseDetection';
 import { useRepCounter } from '@/features/challenges/useRepCounter';
 import { ONBOARDING_CAMERA } from '@/features/onboarding/onboardingContent';
+import { getTrackingBorderColor } from '@/features/challenges/workoutGuidance';
 import { useTheme } from '@/hooks/use-theme';
 import { supportsNativePoseDetection } from '@/lib/runtime';
 
@@ -38,6 +39,7 @@ export function OnboardingCameraTry({ onContinue }: OnboardingCameraTryProps) {
 
   const autoRepCounting = Platform.OS === 'web' || supportsNativePoseDetection();
   const showSimulateButton = !autoRepCounting;
+  const trackingBorderColor = getTrackingBorderColor(trackingStatus, theme);
 
   return (
     <ScrollView
@@ -53,7 +55,11 @@ export function OnboardingCameraTry({ onContinue }: OnboardingCameraTryProps) {
       <View
         style={StyleSheet.flatten([
           styles.cameraWrap,
-          { backgroundColor: theme.backgroundElement, borderColor: theme.border },
+          {
+            backgroundColor: theme.backgroundElement,
+            borderColor: trackingBorderColor,
+            borderWidth: TRACKING_BORDER_WIDTH,
+          },
         ])}>
         <CameraPreview
           active
@@ -86,6 +92,8 @@ export function OnboardingCameraTry({ onContinue }: OnboardingCameraTryProps) {
   );
 }
 
+const TRACKING_BORDER_WIDTH = 3;
+
 const styles = StyleSheet.create({
   scroll: {
     flex: 1,
@@ -107,7 +115,6 @@ const styles = StyleSheet.create({
   cameraWrap: {
     height: 280,
     borderRadius: Radius.lg,
-    borderWidth: 1,
     overflow: 'hidden',
   },
   repCard: {
