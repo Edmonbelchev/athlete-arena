@@ -1,9 +1,12 @@
+import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { Radius, Spacing } from '@/constants/theme';
 import { useNotifications } from '@/features/notifications/NotificationProvider';
 import type { ChallengeNotification } from '@/features/notifications/types';
 import { useTheme } from '@/hooks/use-theme';
+
+const PAGE_SIZE = 5;
 
 function formatRelativeTime(timestamp: number): string {
   const diffSeconds = Math.max(0, Math.floor((Date.now() - timestamp) / 1000));
@@ -34,6 +37,41 @@ interface NotificationInboxListProps {
 export function NotificationInboxList({ showMarkAll = true, scrollable = true }: NotificationInboxListProps) {
   const theme = useTheme();
   const { notifications, unreadCount, markAllAsRead, openNotification } = useNotifications();
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+  }, [notifications.length]);
+
+  const visibleNotifications = notifications.slice(0, visibleCount);
+  const hasMore = notifications.length > visibleCount;
+  const remainingCount = notifications.length - visibleCount;
+
+  const listContent = (
+    <>
+      {visibleNotifications.map((notification) => (
+        <NotificationListItem
+          key={notification.id}
+          notification={notification}
+          onPress={() => openNotification(notification)}
+        />
+      ))}
+
+      {hasMore ? (
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => setVisibleCount((current) => current + PAGE_SIZE)}
+          style={StyleSheet.flatten([
+            styles.showMoreButton,
+            { backgroundColor: theme.backgroundElement, borderColor: theme.border },
+          ])}>
+          <Text style={StyleSheet.flatten([styles.showMoreText, { color: theme.primary }])}>
+            Show more ({remainingCount})
+          </Text>
+        </Pressable>
+      ) : null}
+    </>
+  );
 
   return (
     <View style={styles.container}>
@@ -51,24 +89,10 @@ export function NotificationInboxList({ showMarkAll = true, scrollable = true }:
         </Text>
       ) : scrollable ? (
         <ScrollView contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
-          {notifications.map((notification) => (
-            <NotificationListItem
-              key={notification.id}
-              notification={notification}
-              onPress={() => openNotification(notification)}
-            />
-          ))}
+          {listContent}
         </ScrollView>
       ) : (
-        <View style={styles.list}>
-          {notifications.map((notification) => (
-            <NotificationListItem
-              key={notification.id}
-              notification={notification}
-              onPress={() => openNotification(notification)}
-            />
-          ))}
-        </View>
+        <View style={styles.list}>{listContent}</View>
       )}
     </View>
   );
@@ -131,6 +155,18 @@ const styles = StyleSheet.create({
   list: {
     gap: Spacing.two,
     paddingBottom: Spacing.two,
+  },
+  showMoreButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    paddingVertical: Spacing.two,
+    paddingHorizontal: Spacing.three,
+  },
+  showMoreText: {
+    fontSize: 14,
+    fontWeight: '700',
   },
   item: {
     borderRadius: Radius.md,

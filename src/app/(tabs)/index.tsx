@@ -18,11 +18,11 @@ import { useDailyChallenge } from '@/features/challenges/useDailyChallenge';
 import { isActiveFriendChallenge } from '@/features/friends/friendChallengeGroups';
 import { useFriendChallenges } from '@/features/friends/useFriendChallenges';
 import { useUserGoals } from '@/features/goals/useUserGoals';
-import { useWeeklyMissionStreak } from '@/features/streaks/useWeeklyMissionStreak';
 import { useChallengeNotificationRefresh } from '@/features/notifications/useChallengeNotificationRefresh';
 import { useProfile } from '@/features/profile/useProfile';
 import { useShop } from '@/features/shop/ShopProvider';
 import { useDailySpin } from '@/features/spin/useDailySpin';
+import { useWeeklyMissionStreak } from '@/features/streaks/useWeeklyMissionStreak';
 import { xpProgressInCurrentLevel } from '@/features/xp/levelUtils';
 import { useTheme } from '@/hooks/use-theme';
 import { formatUserError } from '@/lib/errors';
@@ -141,8 +141,6 @@ export default function HomeScreen() {
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <TabScreenHeader subtitle={getGreeting()} title={displayName} />
 
-        <EarlyAccessNotice />
-
         {error ? (
           <View style={styles.errorBlock}>
             <Text style={StyleSheet.flatten([styles.error, { color: theme.danger }])}>{error}</Text>
@@ -231,6 +229,8 @@ export default function HomeScreen() {
             />
           </View>
         </HomeSection>
+
+        <EarlyAccessNotice />
       </ScrollView>
     </SafeAreaView>
   );

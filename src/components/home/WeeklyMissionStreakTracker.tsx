@@ -1,5 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 
+import { AppIcon } from '@/components/ui/AppIcon';
 import { CoinIcon } from '@/components/ui/CoinIcon';
 import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -37,8 +38,9 @@ export function WeeklyMissionStreakTracker({ status }: WeeklyMissionStreakTracke
                     backgroundColor: filled ? theme.streak : theme.backgroundSelected,
                     borderColor: isNextSlot ? theme.streak : filled ? theme.streak : theme.border,
                   },
-                ]}
-              />
+                ]}>
+                {filled ? <AppIcon name="flame" size={16} color="#FFFFFF" weight="bold" /> : null}
+              </View>
               <Text style={[styles.dayLabel, { color: theme.textSecondary }]}>{index + 1}</Text>
             </View>
           );
@@ -99,6 +101,8 @@ const styles = StyleSheet.create({
     aspectRatio: 1,
     borderRadius: Radius.md,
     borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   dayLabel: {
     fontSize: 10,
