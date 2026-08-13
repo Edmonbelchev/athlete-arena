@@ -1,5 +1,5 @@
-import { memo, useState } from 'react';
-import { LayoutChangeEvent, StyleSheet, View } from 'react-native';
+import { memo } from 'react';
+import { StyleSheet, View } from 'react-native';
 import Svg, { Circle, Line } from 'react-native-svg';
 
 import { POSE_QUALITY } from '@/constants/poseDetection';
@@ -13,6 +13,9 @@ import { useTheme } from '@/hooks/use-theme';
 interface PoseSkeletonOverlayProps {
   landmarks: PoseLandmark[] | null;
   visible: boolean;
+  /** Match MediapipeCamera view dimensions used by ViewCoordinator. */
+  viewWidth?: number;
+  viewHeight?: number;
 }
 
 function isVisible(landmark: PoseLandmark | undefined, minVisibility: number): landmark is PoseLandmark {
@@ -22,19 +25,13 @@ function isVisible(landmark: PoseLandmark | undefined, minVisibility: number): l
 export const PoseSkeletonOverlay = memo(function PoseSkeletonOverlay({
   landmarks,
   visible,
+  viewWidth = 0,
+  viewHeight = 0,
 }: PoseSkeletonOverlayProps) {
   const theme = useTheme();
-  const [layout, setLayout] = useState({ width: 0, height: 0 });
 
-  function handleLayout(event: LayoutChangeEvent) {
-    const { width, height } = event.nativeEvent.layout;
-    if (width !== layout.width || height !== layout.height) {
-      setLayout({ width, height });
-    }
-  }
-
-  if (!visible || !landmarks?.length || layout.width <= 0 || layout.height <= 0) {
-    return <View style={styles.overlay} onLayout={handleLayout} pointerEvents="none" />;
+  if (!visible || !landmarks?.length || viewWidth <= 0 || viewHeight <= 0) {
+    return <View style={styles.overlay} pointerEvents="none" />;
   }
 
   const style = {
@@ -43,11 +40,9 @@ export const PoseSkeletonOverlay = memo(function PoseSkeletonOverlay({
     minVisibility: POSE_QUALITY.skeletonMinVisibility,
   };
 
-  const { width, height } = layout;
-
   return (
-    <View style={styles.overlay} onLayout={handleLayout} pointerEvents="none">
-      <Svg width={width} height={height}>
+    <View style={styles.overlay} pointerEvents="none">
+      <Svg width={viewWidth} height={viewHeight}>
         {POSE_CONNECTIONS.map(([startIndex, endIndex]) => {
           const start = landmarks[startIndex];
           const end = landmarks[endIndex];
@@ -59,10 +54,10 @@ export const PoseSkeletonOverlay = memo(function PoseSkeletonOverlay({
           return (
             <Line
               key={`${startIndex}-${endIndex}`}
-              x1={start.x * width}
-              y1={start.y * height}
-              x2={end.x * width}
-              y2={end.y * height}
+              x1={start.x * viewWidth}
+              y1={start.y * viewHeight}
+              x2={end.x * viewWidth}
+              y2={end.y * viewHeight}
               stroke={style.lineColor}
               strokeWidth={style.lineWidth}
               strokeLinecap="round"
@@ -81,8 +76,8 @@ export const PoseSkeletonOverlay = memo(function PoseSkeletonOverlay({
           return (
             <Circle
               key={index}
-              cx={landmark.x * width}
-              cy={landmark.y * height}
+              cx={landmark.x * viewWidth}
+              cy={landmark.y * viewHeight}
               r={style.jointRadius}
               fill={style.jointColor}
             />
@@ -95,6 +90,6 @@ export const PoseSkeletonOverlay = memo(function PoseSkeletonOverlay({
 
 const styles = StyleSheet.create({
   overlay: {
-    ...StyleSheet.absoluteFill,
+    ...StyleSheet.absoluteFillObject,
   },
 });

@@ -21,11 +21,22 @@ const SMOOTH_INDICES = [
 
 const SMOOTH_INDEX_SET = new Set<number>(SMOOTH_INDICES);
 
+interface PoseLandmarkSmootherOptions {
+  alpha?: number;
+  /** When true, smooth every landmark (for skeleton overlay). */
+  smoothAll?: boolean;
+}
+
 /** Exponential moving average to reduce MediaPipe jitter on native camera. */
 export class PoseLandmarkSmoother {
   private previous: PoseLandmark[] | null = null;
+  private readonly alpha: number;
+  private readonly smoothAll: boolean;
 
-  constructor(private readonly alpha: number = POSE_LANDMARK_SMOOTH_ALPHA) {}
+  constructor(options: PoseLandmarkSmootherOptions = {}) {
+    this.alpha = options.alpha ?? POSE_LANDMARK_SMOOTH_ALPHA;
+    this.smoothAll = options.smoothAll ?? false;
+  }
 
   smooth(landmarks: PoseLandmark[]): PoseLandmark[] {
     if (this.alpha >= 1 || landmarks.length === 0) {
@@ -38,7 +49,7 @@ export class PoseLandmarkSmoother {
     }
 
     const smoothed = landmarks.map((landmark, index) => {
-      if (!SMOOTH_INDEX_SET.has(index)) {
+      if (!this.smoothAll && !SMOOTH_INDEX_SET.has(index)) {
         return landmark;
       }
 

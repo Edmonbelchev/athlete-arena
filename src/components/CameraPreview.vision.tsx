@@ -14,6 +14,7 @@ import { RepCycleProgressBar } from '@/components/challenges/RepCycleProgressBar
 import { PoseSkeletonOverlay } from '@/components/settings/PoseSkeletonOverlay';
 import { PullUpBarLineOverlay } from '@/components/settings/PullUpBarLineOverlay';
 import type { CameraFacing, CameraPreviewProps } from '@/components/CameraPreview.types';
+import { POSE_DISPLAY_SMOOTH_ALPHA } from '@/constants/poseDetection';
 import {
   isDisplayFrameStale,
   POSE_DISPLAY_STALE_MS,
@@ -32,13 +33,20 @@ const POSE_MODEL = 'pose_landmarker_lite.task';
 /** CPU is more stable on iOS; GPU can stall or crash under camera + inference load. */
 const POSE_DELEGATE = Platform.OS === 'ios' ? Delegate.CPU : Delegate.GPU;
 
+/** iOS preview is already mirrored; Android needs explicit front-camera mirroring. */
+const POSE_MIRROR_MODE = Platform.select({
+  ios: 'no-mirror' as const,
+  android: 'mirror-front-only' as const,
+  default: 'mirror-front-only' as const,
+});
+
 const POSE_DETECTION_OPTIONS = {
   numPoses: 1,
   minPoseDetectionConfidence: 0.45,
   minPosePresenceConfidence: 0.45,
   minTrackingConfidence: 0.45,
   delegate: POSE_DELEGATE,
-  mirrorMode: 'mirror-front-only' as const,
+  mirrorMode: POSE_MIRROR_MODE,
 };
 
 type ActiveVisionCameraProps = Omit<CameraPreviewProps, 'active'> & {
@@ -78,7 +86,10 @@ function VisionCameraPreviewActive({
   const [latestLandmarks, setLatestLandmarks] = useState<PoseLandmark[] | null>(null);
   const [viewBarLineY, setViewBarLineY] = useState<number | null>(null);
   const pullUpBarLineYRef = useRef(pullUpBarLineY);
-  const landmarkSmootherRef = useRef(new PoseLandmarkSmoother());
+  const repLandmarkSmootherRef = useRef(new PoseLandmarkSmoother());
+  const displayLandmarkSmootherRef = useRef(
+    new PoseLandmarkSmoother({ alpha: POSE_DISPLAY_SMOOTH_ALPHA, smoothAll: true }),
+  );
   const lastDisplayFrameAtRef = useRef(0);
   const lastBarLineYRef = useRef<number | null>(null);
 
@@ -119,22 +130,21 @@ function VisionCameraPreviewActive({
         return;
       }
 
-      const viewLandmarks = landmarkSmootherRef.current.smooth(
-        mapLandmarksToViewNormalized(
-          landmarks,
-          frameInfo,
-          viewCoordinator,
-          width,
-          height,
-        ),
+      const mappedLandmarks = mapLandmarksToViewNormalized(
+        landmarks,
+        frameInfo,
+        viewCoordinator,
+        width,
+        height,
       );
 
+      const viewLandmarks = repLandmarkSmootherRef.current.smooth(mappedLandmarks);
       onLandmarksRef.current?.(viewLandmarks);
 
       const now = performance.now();
       if (shouldEmitDisplayFrame(lastDisplayFrameAtRef.current, now)) {
         lastDisplayFrameAtRef.current = now;
-        setLatestLandmarks(viewLandmarks);
+        setLatestLandmarks(displayLandmarkSmootherRef.current.smooth(mappedLandmarks));
         setTrackingBody(true);
 
         const nextBarLineY = pullUpBarLineYRef.current;
@@ -204,6 +214,7 @@ function VisionCameraPreviewActive({
   }, []);
 
   viewDimensionsRef.current = poseDetection.cameraViewDimensions;
+  const { width: viewWidth, height: viewHeight } = poseDetection.cameraViewDimensions;
 
   useEffect(() => {
     if (!cameraReadyRef.current) {
@@ -213,7 +224,8 @@ function VisionCameraPreviewActive({
   }, []);
 
   useEffect(() => {
-    landmarkSmootherRef.current.reset();
+    repLandmarkSmootherRef.current.reset();
+    displayLandmarkSmootherRef.current.reset();
     setLatestLandmarks(null);
     setViewBarLineY(null);
     setTrackingBody(false);
@@ -240,9 +252,19 @@ function VisionCameraPreviewActive({
         <View style={StyleSheet.flatten([styles.camera, fullscreen ? styles.cameraFullscreen : null])} />
       )}
 
-      <PoseSkeletonOverlay landmarks={latestLandmarks} visible={showPoseSkeleton && cameraLive} />
+      <PoseSkeletonOverlay
+        landmarks={latestLandmarks}
+        visible={showPoseSkeleton && cameraLive}
+        viewWidth={viewWidth}
+        viewHeight={viewHeight}
+      />
 
-      <PullUpBarLineOverlay barLineY={viewBarLineY} visible={cameraLive && viewBarLineY !== null} />
+      <PullUpBarLineOverlay
+        barLineY={viewBarLineY}
+        visible={cameraLive && viewBarLineY !== null}
+        viewWidth={viewWidth}
+        viewHeight={viewHeight}
+      />
 
       <View style={styles.topOverlay}>
         <Pressable
