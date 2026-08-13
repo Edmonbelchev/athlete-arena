@@ -25,7 +25,7 @@ export function useRepFeedback(
     void setAudioModeAsync({
       interruptionMode: 'mixWithOthers',
       playsInSilentMode: false,
-    });
+    }).catch(() => {});
   }, [player]);
 
   useEffect(() => {
@@ -36,12 +36,16 @@ export function useRepFeedback(
 
     if (currentReps > prevRepsRef.current) {
       if (soundEnabled) {
-        player.seekTo(0);
-        player.play();
+        try {
+          player.seekTo(0);
+          player.play();
+        } catch {
+          // Audio session may be unavailable during camera-heavy workouts.
+        }
       }
 
       if (Platform.OS !== 'web') {
-        void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Soft);
+        void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Soft).catch(() => {});
       }
     }
 

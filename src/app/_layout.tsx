@@ -1,6 +1,5 @@
 import '@/lib/mediapipe/delayedPoseDetectorRelease';
 import { DarkTheme, DefaultTheme, ThemeProvider, Stack } from 'expo-router';
-import * as ScreenOrientation from 'expo-screen-orientation';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { ActivityIndicator, Platform, StyleSheet, View } from 'react-native';
@@ -18,6 +17,7 @@ import { useThemePreference } from '@/features/theme/ThemePreferenceProvider';
 import { ChallengeNotificationBanner } from '@/components/notifications/ChallengeNotificationBanner';
 import { OnboardingGate } from '@/components/onboarding/OnboardingGate';
 import { ModalCloseButton } from '@/components/ui/ModalCloseButton';
+import { lockPortraitOrientation } from '@/lib/screenOrientation';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -27,7 +27,7 @@ function useDefaultPortraitOrientation(): void {
       return;
     }
 
-    void ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
+    void lockPortraitOrientation();
   }, []);
 }
 
