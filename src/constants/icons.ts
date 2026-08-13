@@ -18,6 +18,7 @@ export type AppIconName =
   | 'bolt'
   | 'star'
   | 'crown'
+  | 'spinWheel'
   | 'dumbbell'
   | 'rocket'
   | 'quiz'
@@ -49,6 +50,11 @@ export const APP_ICONS: Record<AppIconName, SymbolViewProps['name']> = {
   bolt: { ios: 'bolt.fill', android: 'bolt', web: 'bolt' },
   star: { ios: 'star.fill', android: 'star', web: 'star' },
   crown: { ios: 'crown.fill', android: 'emoji_events', web: 'emoji_events' },
+  spinWheel: {
+    ios: 'circle.grid.cross.fill',
+    android: 'donut_large',
+    web: 'donut_large',
+  },
   dumbbell: { ios: 'dumbbell.fill', android: 'fitness_center', web: 'fitness_center' },
   rocket: { ios: 'paperplane.fill', android: 'rocket_launch', web: 'rocket_launch' },
   quiz: { ios: 'questionmark.circle.fill', android: 'quiz', web: 'quiz' },

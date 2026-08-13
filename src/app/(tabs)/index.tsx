@@ -10,6 +10,7 @@ import { HomeLinkBlock } from '@/components/home/HomeLinkBlock';
 import { HomeProgressBlock } from '@/components/home/HomeProgressBlock';
 import { HomeSection } from '@/components/home/HomeSection';
 import { TabScreenHeader } from '@/components/sidebar/TabScreenHeader';
+import { DailySpinCard } from '@/components/spin/DailySpinCard';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useAchievementUnlock } from '@/features/achievements/AchievementUnlockProvider';
@@ -21,6 +22,7 @@ import { useWeeklyMissionStreak } from '@/features/streaks/useWeeklyMissionStrea
 import { useChallengeNotificationRefresh } from '@/features/notifications/useChallengeNotificationRefresh';
 import { useProfile } from '@/features/profile/useProfile';
 import { useShop } from '@/features/shop/ShopProvider';
+import { useDailySpin } from '@/features/spin/useDailySpin';
 import { xpProgressInCurrentLevel } from '@/features/xp/levelUtils';
 import { useTheme } from '@/hooks/use-theme';
 import { formatUserError } from '@/lib/errors';
@@ -49,6 +51,7 @@ export default function HomeScreen() {
   const [actionError, setActionError] = useState<string | null>(null);
   const { syncAndCelebrate } = useAchievementUnlock();
   const { refresh: refreshShop } = useShop();
+  const { status: spinStatus, refresh: refreshSpin } = useDailySpin();
   const { weeklyStreak, refresh: refreshWeeklyStreak } = useWeeklyMissionStreak();
 
   const isLoading = isProfileLoading || isChallengeLoading;
@@ -79,6 +82,7 @@ export default function HomeScreen() {
       refreshWeeklyStreak(),
       syncAndCelebrate().catch(() => []),
       refreshShop().catch(() => undefined),
+      refreshSpin().catch(() => undefined),
     ]);
   }
 
@@ -176,6 +180,16 @@ export default function HomeScreen() {
               </Text>
             </View>
           )}
+        </HomeSection>
+
+        <HomeSection title="Daily Spin" subtitle="One free spin every day">
+          <DailySpinCard
+            canSpin={Boolean(spinStatus?.canSpin)}
+            multiplierActive={(spinStatus?.coinMultiplier ?? 1) > 1}
+            multiplierExpiresAt={spinStatus?.coinMultiplierExpiresAt ?? null}
+            nextSpinAt={spinStatus?.nextSpinAt ?? null}
+            onPress={() => router.push('/spin')}
+          />
         </HomeSection>
 
         <HomeSection title="Keep Going" subtitle="More ways to train and track">

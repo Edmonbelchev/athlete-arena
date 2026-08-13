@@ -24,7 +24,7 @@ export function DailySpinCard({
   onPress,
 }: DailySpinCardProps) {
   const theme = useTheme();
-  const accentColor = canSpin ? theme.success : theme.textSecondary;
+  const iconColor = theme.accent;
   const multiplierRemaining = formatTimeRemaining(multiplierExpiresAt);
   const nextSpinRemaining = formatTimeRemaining(nextSpinAt);
 
@@ -53,7 +53,7 @@ export function DailySpinCard({
       }>
       <View
         style={StyleSheet.flatten([styles.iconWrap, { backgroundColor: theme.backgroundSelected }])}>
-        <AppIcon name="crown" size={24} color={accentColor} weight="semibold" />
+        <AppIcon name="spinWheel" size={24} color={iconColor} weight="semibold" />
       </View>
 
       <View style={styles.copy}>
