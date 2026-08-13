@@ -23,6 +23,7 @@ import { mapLandmarksToViewNormalized } from '@/features/challenges/pose/mapLand
 import type { PoseLandmark } from '@/features/challenges/pose/landmarks';
 import { PoseLandmarkSmoother } from '@/features/challenges/pose/smoothPoseLandmarks';
 import { POSE_DETECTOR_RELEASE_DELAY_MS } from '@/lib/mediapipe/delayedPoseDetectorRelease';
+import { useCameraDebugOverlaysAccess } from '@/features/settings/cameraDebugAccess';
 import { useUserSettings } from '@/features/settings/UserSettingsProvider';
 import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -66,8 +67,9 @@ function VisionCameraPreviewActive({
 }: ActiveVisionCameraProps) {
   const theme = useTheme();
   const { preferences } = useUserSettings();
-  const showPoseSkeleton = preferences.showPoseSkeleton;
-  const showRepProgressBar = preferences.showRepProgressBar;
+  const cameraDebugOverlaysEnabled = useCameraDebugOverlaysAccess();
+  const showPoseSkeleton = cameraDebugOverlaysEnabled && preferences.showPoseSkeleton;
+  const showRepProgressBar = cameraDebugOverlaysEnabled && preferences.showRepProgressBar;
   const onLandmarksRef = useRef(onLandmarksDetected);
   const onCameraReadyRef = useRef(onCameraReady);
   const viewDimensionsRef = useRef({ width: 1, height: 1 });

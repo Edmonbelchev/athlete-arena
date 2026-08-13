@@ -18,6 +18,7 @@ import type { PoseLandmark } from '@/features/challenges/pose/landmarks';
 import { createWebPoseLandmarker, type WebPoseLandmarker } from '@/lib/mediapipeWeb';
 import { POSE_QUALITY } from '@/constants/poseDetection';
 import { Radius, Spacing } from '@/constants/theme';
+import { useCameraDebugOverlaysAccess } from '@/features/settings/cameraDebugAccess';
 import { useUserSettings } from '@/features/settings/UserSettingsProvider';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -48,8 +49,9 @@ export function CameraPreview({
 }: CameraPreviewProps) {
   const theme = useTheme();
   const { preferences } = useUserSettings();
-  const showPoseSkeleton = preferences.showPoseSkeleton;
-  const showRepProgressBar = preferences.showRepProgressBar;
+  const cameraDebugOverlaysEnabled = useCameraDebugOverlaysAccess();
+  const showPoseSkeleton = cameraDebugOverlaysEnabled && preferences.showPoseSkeleton;
+  const showRepProgressBar = cameraDebugOverlaysEnabled && preferences.showRepProgressBar;
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const landmarkerRef = useRef<WebPoseLandmarker | null>(null);

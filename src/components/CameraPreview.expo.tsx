@@ -6,6 +6,7 @@ import type { CameraPreviewProps } from '@/components/CameraPreview.types';
 import { RepCycleProgressBar } from '@/components/challenges/RepCycleProgressBar';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { Radius, Spacing } from '@/constants/theme';
+import { useCameraDebugOverlaysAccess } from '@/features/settings/cameraDebugAccess';
 import { useUserSettings } from '@/features/settings/UserSettingsProvider';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -24,7 +25,8 @@ export function ExpoGoCameraPreview({
 }: CameraPreviewProps) {
   const theme = useTheme();
   const { preferences } = useUserSettings();
-  const showRepProgressBar = preferences.showRepProgressBar;
+  const cameraDebugOverlaysEnabled = useCameraDebugOverlaysAccess();
+  const showRepProgressBar = cameraDebugOverlaysEnabled && preferences.showRepProgressBar;
   const [permission, requestPermission] = useCameraPermissions();
 
   useEffect(() => {
