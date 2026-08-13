@@ -12,6 +12,16 @@ import type { ChallengeStatus } from '@/types';
 
 import { PrimaryButton } from './PrimaryButton';
 
+const ACTION_PROGRESS_HEIGHT = 20;
+const ACTION_BUTTON_HEIGHT = 52;
+const ACTION_REWARD_HEIGHT = 22;
+const ACTION_AREA_MIN_HEIGHT =
+  ACTION_PROGRESS_HEIGHT +
+  Spacing.three +
+  ACTION_REWARD_HEIGHT +
+  Spacing.three +
+  ACTION_BUTTON_HEIGHT;
+
 interface ChallengeCardProps {
   exerciseType: ExerciseType;
   targetReps: number;
@@ -46,30 +56,37 @@ export function ChallengeCard({
         {targetReps} {formatExerciseLabel(exerciseType, true)}
       </Text>
 
-      {isCompleted ? (
-        <View style={styles.completedBlock}>
-          <Text style={[styles.completedBadge, { color: theme.success }]}>COMPLETED</Text>
-          <Text style={[styles.reward, { color: theme.xp }]}>
-            {formatXpAndCoins(xpReward, coinReward)} earned
-          </Text>
-        </View>
-      ) : (
-        <>
-          {isInProgress ? (
-            <Text style={[styles.progress, { color: theme.textSecondary }]}>
-              Progress: {completedReps} / {targetReps} reps
+      <View style={styles.actionArea}>
+        {isCompleted ? (
+          <>
+            <View style={styles.completedBlock}>
+              <Text style={[styles.completedBadge, { color: theme.success }]}>COMPLETED</Text>
+              <Text style={[styles.reward, { color: theme.xp }]}>
+                {formatXpAndCoins(xpReward, coinReward)} earned
+              </Text>
+            </View>
+            <View style={styles.actionSpacer} />
+          </>
+        ) : (
+          <>
+            {isInProgress ? (
+              <Text style={[styles.progress, { color: theme.textSecondary }]}>
+                Progress: {completedReps} / {targetReps} reps
+              </Text>
+            ) : (
+              <View style={styles.progressPlaceholder} />
+            )}
+            <Text style={[styles.reward, { color: theme.xp }]}>
+              {formatRewardPreview(xpReward, coinReward)}
             </Text>
-          ) : null}
-          <Text style={[styles.reward, { color: theme.xp }]}>
-            {formatRewardPreview(xpReward, coinReward)}
-          </Text>
-          <PrimaryButton
-            label={isInProgress ? 'CONTINUE MISSION' : 'START MISSION'}
-            loading={loading}
-            onPress={onStart}
-          />
-        </>
-      )}
+            <PrimaryButton
+              label={isInProgress ? 'CONTINUE MISSION' : 'START MISSION'}
+              loading={loading}
+              onPress={onStart}
+            />
+          </>
+        )}
+      </View>
     </View>
   );
 }
@@ -91,16 +108,27 @@ const styles = StyleSheet.create({
     fontWeight: '900',
     letterSpacing: -0.5,
   },
+  actionArea: {
+    minHeight: ACTION_AREA_MIN_HEIGHT,
+    gap: Spacing.three,
+  },
   reward: {
     fontSize: 16,
     fontWeight: '700',
   },
   progress: {
     fontSize: 14,
+    lineHeight: ACTION_PROGRESS_HEIGHT,
     fontWeight: '600',
+  },
+  progressPlaceholder: {
+    height: ACTION_PROGRESS_HEIGHT,
   },
   completedBlock: {
     gap: Spacing.one,
+  },
+  actionSpacer: {
+    minHeight: ACTION_BUTTON_HEIGHT,
   },
   completedBadge: {
     fontSize: 18,
