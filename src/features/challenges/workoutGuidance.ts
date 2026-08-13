@@ -14,6 +14,42 @@ export function getTrackingStatusLabel(status: PoseTrackingStatus): string {
   }
 }
 
+interface TrackingBorderColors {
+  success: string;
+  accent: string;
+  danger: string;
+  border: string;
+}
+
+interface TrackingBorderOptions {
+  inactive?: boolean;
+  completed?: boolean;
+}
+
+/** Camera preview border color from pose tracking readiness. */
+export function getTrackingBorderColor(
+  status: PoseTrackingStatus,
+  colors: TrackingBorderColors,
+  options?: TrackingBorderOptions,
+): string {
+  if (options?.completed) {
+    return colors.success;
+  }
+
+  if (options?.inactive) {
+    return colors.border;
+  }
+
+  switch (status) {
+    case 'ready':
+      return colors.success;
+    case 'stabilizing':
+      return colors.accent;
+    default:
+      return colors.danger;
+  }
+}
+
 export function getRepPhaseHint(exerciseType: ExerciseType, phase: ExercisePhase): string | null {
   switch (exerciseType) {
     case 'push_ups':

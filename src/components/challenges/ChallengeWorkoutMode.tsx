@@ -8,7 +8,7 @@ import { WorkoutHintPanel } from '@/components/challenges/WorkoutHintPanel';
 import type { ExerciseType } from '@/constants/challenges';
 import { Spacing } from '@/constants/theme';
 import type { ExercisePhase } from '@/features/challenges/poseDetection.types';
-import { getWorkoutSetupTips } from '@/features/challenges/workoutGuidance';
+import { getWorkoutSetupTips, getTrackingBorderColor } from '@/features/challenges/workoutGuidance';
 import type { PoseLandmark } from '@/features/challenges/pose/landmarks';
 import type { PoseTrackingStatus } from '@/features/challenges/pose/poseQuality';
 import { useWorkoutLayout } from '@/hooks/use-workout-layout';
@@ -52,6 +52,10 @@ export function ChallengeWorkoutMode({
   const { isLandscape, hintPanelWidth } = useWorkoutLayout();
   const tips = getWorkoutSetupTips(exerciseType);
   const trackingReady = trackingStatus === 'ready';
+  const trackingBorderColor = getTrackingBorderColor(trackingStatus, theme, {
+    inactive: !cameraActive,
+    completed,
+  });
 
   useWorkoutOrientation(true);
 
@@ -59,7 +63,11 @@ export function ChallengeWorkoutMode({
     <SafeAreaView style={StyleSheet.flatten([styles.safeArea, { backgroundColor: '#000000' }])} edges={['top', 'bottom']}>
       <View style={isLandscape ? styles.landscapeRow : styles.portraitColumn}>
         <View style={styles.cameraColumn}>
-          <View style={styles.cameraShell}>
+          <View
+            style={StyleSheet.flatten([
+              styles.cameraShell,
+              { borderColor: trackingBorderColor, borderWidth: TRACKING_BORDER_WIDTH },
+            ])}>
             <CameraPreview
               active={cameraActive}
               fullscreen
@@ -119,6 +127,8 @@ export function ChallengeWorkoutMode({
     </SafeAreaView>
   );
 }
+
+const TRACKING_BORDER_WIDTH = 3;
 
 const styles = StyleSheet.create({
   safeArea: {
