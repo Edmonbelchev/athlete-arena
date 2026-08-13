@@ -144,12 +144,6 @@ export const BURPEE_POSTURE = {
 /** EMA smoothing for native camera landmarks (0 = frozen, 1 = raw). */
 export const POSE_LANDMARK_SMOOTH_ALPHA = isNativeMobile ? 0.52 : 1;
 
-/** Extra smoothing for skeleton overlay display (rep logic uses POSE_LANDMARK_SMOOTH_ALPHA). */
-export const POSE_DISPLAY_SMOOTH_ALPHA = isNativeMobile ? 0.38 : 1;
-
-/** Skeleton overlay refresh interval on native mobile (~30 fps). */
-export const POSE_DISPLAY_UPDATE_MS = isNativeMobile ? 33 : 66;
-
 export const POSE_GUIDANCE: Record<ExerciseType, { title: string; tips: readonly string[] }> = {
   push_ups: {
     title: 'Push-up setup',

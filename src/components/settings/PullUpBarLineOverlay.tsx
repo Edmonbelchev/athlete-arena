@@ -1,36 +1,39 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { useState } from 'react';
+import { LayoutChangeEvent, StyleSheet, Text, View } from 'react-native';
 import Svg, { Line } from 'react-native-svg';
 
 interface PullUpBarLineOverlayProps {
   /** Normalized y (0 = top, 1 = bottom) of the captured bar line. */
   barLineY: number | null;
   visible: boolean;
-  /** Match MediapipeCamera view dimensions used by ViewCoordinator. */
-  viewWidth?: number;
-  viewHeight?: number;
 }
 
 const BAR_COLOR = '#FBBF24';
 const BAR_DASH = '10 6';
 
-export function PullUpBarLineOverlay({
-  barLineY,
-  visible,
-  viewWidth = 0,
-  viewHeight = 0,
-}: PullUpBarLineOverlayProps) {
-  const showLine = visible && barLineY !== null && viewWidth > 0 && viewHeight > 0;
-  const lineY = showLine ? barLineY! * viewHeight : 0;
+export function PullUpBarLineOverlay({ barLineY, visible }: PullUpBarLineOverlayProps) {
+  const [layout, setLayout] = useState({ width: 0, height: 0 });
+
+  function handleLayout(event: LayoutChangeEvent) {
+    const { width, height } = event.nativeEvent.layout;
+    if (width !== layout.width || height !== layout.height) {
+      setLayout({ width, height });
+    }
+  }
+
+  const showLine =
+    visible && barLineY !== null && layout.width > 0 && layout.height > 0;
+  const lineY = showLine ? barLineY * layout.height : 0;
 
   return (
-    <View style={styles.overlay} pointerEvents="none">
+    <View style={styles.overlay} onLayout={handleLayout} pointerEvents="none">
       {showLine ? (
         <>
-          <Svg width={viewWidth} height={viewHeight}>
+          <Svg width={layout.width} height={layout.height}>
             <Line
               x1={0}
               y1={lineY}
-              x2={viewWidth}
+              x2={layout.width}
               y2={lineY}
               stroke={BAR_COLOR}
               strokeWidth={3}

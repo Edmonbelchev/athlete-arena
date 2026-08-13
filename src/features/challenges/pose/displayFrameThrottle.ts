@@ -1,7 +1,5 @@
-import { POSE_DISPLAY_UPDATE_MS as POSE_DISPLAY_UPDATE_MS_FROM_CONSTANTS } from '@/constants/poseDetection';
-
-/** Target interval for skeleton / HUD display updates. */
-export const POSE_DISPLAY_UPDATE_MS = POSE_DISPLAY_UPDATE_MS_FROM_CONSTANTS;
+/** Target interval for skeleton / HUD display updates (~15 fps). */
+export const POSE_DISPLAY_UPDATE_MS = 66;
 
 /** Clear the skeleton when no frames arrive for this long. */
 export const POSE_DISPLAY_STALE_MS = 750;
