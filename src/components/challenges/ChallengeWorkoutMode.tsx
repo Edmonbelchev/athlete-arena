@@ -1,9 +1,9 @@
 import type { ReactNode } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { CameraPreview } from '@/components/CameraPreview';
-import { ChallengeRepHud } from '@/components/challenges/ChallengeRepHud';
+import { ChallengeRepHud, type ChallengeRepHudRaceTimer } from '@/components/challenges/ChallengeRepHud';
 import { WorkoutHintPanel } from '@/components/challenges/WorkoutHintPanel';
 import type { ExerciseType } from '@/constants/challenges';
 import { Spacing } from '@/constants/theme';
@@ -26,10 +26,9 @@ interface ChallengeWorkoutModeProps {
   pullUpBarLineY: number | null;
   onCameraReady: () => void;
   onLandmarksDetected: (landmarks: PoseLandmark[]) => void;
-  onExit: () => void;
   completed?: boolean;
   completeOverlay?: ReactNode;
-  topBanner?: ReactNode;
+  raceTimer?: ChallengeRepHudRaceTimer | null;
   footer?: ReactNode;
 }
 
@@ -44,10 +43,9 @@ export function ChallengeWorkoutMode({
   pullUpBarLineY,
   onCameraReady,
   onLandmarksDetected,
-  onExit,
   completed = false,
   completeOverlay,
-  topBanner,
+  raceTimer = null,
   footer,
 }: ChallengeWorkoutModeProps) {
   const theme = useTheme();
@@ -59,8 +57,6 @@ export function ChallengeWorkoutMode({
 
   return (
     <SafeAreaView style={StyleSheet.flatten([styles.safeArea, { backgroundColor: '#000000' }])} edges={['top', 'bottom']}>
-      {topBanner ? <View style={styles.topBanner}>{topBanner}</View> : null}
-
       <View style={isLandscape ? styles.landscapeRow : styles.portraitColumn}>
         <View style={styles.cameraColumn}>
           <View style={styles.cameraShell}>
@@ -79,6 +75,7 @@ export function ChallengeWorkoutMode({
               currentReps={currentReps}
               targetReps={targetReps}
               completed={completed}
+              raceTimer={raceTimer}
             />
             {completeOverlay}
           </View>
@@ -116,18 +113,9 @@ export function ChallengeWorkoutMode({
         ) : null}
       </View>
 
-      <View style={StyleSheet.flatten([styles.footer, { backgroundColor: theme.background }])}>
-        {footer}
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={completed ? 'Done' : 'End workout'}
-          onPress={onExit}
-          style={StyleSheet.flatten([styles.exitButton, { borderColor: theme.border }])}>
-          <Text style={StyleSheet.flatten([styles.exitButtonText, { color: theme.text }])}>
-            {completed ? 'Done' : 'End workout'}
-          </Text>
-        </Pressable>
-      </View>
+      {footer ? (
+        <View style={StyleSheet.flatten([styles.footer, { backgroundColor: theme.background }])}>{footer}</View>
+      ) : null}
     </SafeAreaView>
   );
 }
@@ -135,11 +123,6 @@ export function ChallengeWorkoutMode({
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-  },
-  topBanner: {
-    paddingHorizontal: Spacing.three,
-    paddingTop: Spacing.one,
-    paddingBottom: Spacing.two,
   },
   landscapeRow: {
     flex: 1,
@@ -170,15 +153,5 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.two,
     paddingBottom: Spacing.two,
     gap: Spacing.two,
-  },
-  exitButton: {
-    borderWidth: 1,
-    borderRadius: 12,
-    paddingVertical: Spacing.two,
-    alignItems: 'center',
-  },
-  exitButtonText: {
-    fontSize: 15,
-    fontWeight: '800',
   },
 });

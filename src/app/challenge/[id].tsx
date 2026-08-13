@@ -126,6 +126,24 @@ export default function ChallengeScreen() {
   }
 
   if (inWorkout) {
+    const workoutFooter =
+      showSimulateButton || syncError ? (
+        <>
+          {showSimulateButton ? (
+            <PrimaryButton
+              label="+ Simulate Rep"
+              variant="secondary"
+              disabled={repCounter.isComplete || isSyncing}
+              loading={isSyncing}
+              onPress={repCounter.simulateRep}
+            />
+          ) : null}
+          {syncError ? (
+            <Text style={StyleSheet.flatten([styles.error, { color: theme.danger }])}>{syncError}</Text>
+          ) : null}
+        </>
+      ) : undefined;
+
     return (
       <ChallengeWorkoutMode
         exerciseType={challenge.exercise_type}
@@ -140,7 +158,6 @@ export default function ChallengeScreen() {
           repCounter.start();
         }}
         onLandmarksDetected={processLandmarks}
-        onExit={() => router.back()}
         completed={isCompleted}
         completeOverlay={
           isCompleted ? (
@@ -153,22 +170,7 @@ export default function ChallengeScreen() {
             />
           ) : null
         }
-        footer={
-          <>
-            {showSimulateButton ? (
-              <PrimaryButton
-                label="+ Simulate Rep"
-                variant="secondary"
-                disabled={repCounter.isComplete || isSyncing}
-                loading={isSyncing}
-                onPress={repCounter.simulateRep}
-              />
-            ) : null}
-            {syncError ? (
-              <Text style={StyleSheet.flatten([styles.error, { color: theme.danger }])}>{syncError}</Text>
-            ) : null}
-          </>
-        }
+        footer={workoutFooter}
       />
     );
   }

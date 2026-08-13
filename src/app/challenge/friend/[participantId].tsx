@@ -14,11 +14,9 @@ import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { formatExerciseLabel } from '@/constants/challenges';
 import { getFriendChallengeCoinReward } from '@/constants/coins';
 import {
-  formatRaceTime,
-  formatRaceTimeLimit,
   FRIEND_RACE_TIMER_START_HINT,
 } from '@/constants/friendChallenges';
-import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
+import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useExercisePoseDetection } from '@/features/challenges/useExercisePoseDetection';
 import { useRepCounter } from '@/features/challenges/useRepCounter';
 import { useAuth } from '@/features/auth';
@@ -39,7 +37,6 @@ import {
   hasFriendChallengeStarted,
   isFriendChallengeResolved,
   isFriendChallengeWaitingOnOpponent,
-  type FriendChallenge,
 } from '@/types/friends';
 import { formatUserError } from '@/lib/errors';
 import { supportsNativePoseDetection } from '@/lib/runtime';
@@ -71,71 +68,6 @@ function getFriendChallengeOverlayVariant(
   }
 
   return 'tie';
-}
-
-function FriendRaceTimerBanner({
-  challenge,
-  isPending,
-  canAttempt,
-  raceStarted,
-  isExpired,
-  elapsedSeconds,
-  secondsRemaining,
-}: {
-  challenge: FriendChallenge;
-  isPending: boolean;
-  canAttempt: boolean;
-  raceStarted: boolean;
-  isExpired: boolean;
-  elapsedSeconds: number;
-  secondsRemaining: number | null;
-}) {
-  const theme = useTheme();
-
-  if (isPending) {
-    return null;
-  }
-
-  if (!raceStarted && canAttempt) {
-    return (
-      <View
-        style={[
-          styles.timerHintBanner,
-          { backgroundColor: theme.backgroundElement, borderColor: theme.border },
-        ]}>
-        <Text style={[styles.timerHintText, { color: theme.textSecondary }]}>
-          {FRIEND_RACE_TIMER_START_HINT}
-        </Text>
-      </View>
-    );
-  }
-
-  if (!raceStarted) {
-    return null;
-  }
-
-  if (isExpired) {
-    return (
-      <View style={[styles.timerBanner, { backgroundColor: theme.backgroundElement, borderColor: theme.danger }]}>
-        <Text style={[styles.timerText, { color: theme.danger }]}>Time cap reached</Text>
-      </View>
-    );
-  }
-
-  return (
-    <View style={[styles.timerBanner, { backgroundColor: theme.backgroundElement, borderColor: theme.streak }]}>
-      <Text style={[styles.timerLabel, { color: theme.textSecondary }]}>YOUR TIME</Text>
-      <Text style={[styles.timerText, { color: theme.streak }]}>{formatRaceTime(elapsedSeconds)}</Text>
-      {challenge.timeLimitSeconds ? (
-        <Text style={[styles.timerMeta, { color: theme.textSecondary }]}>
-          {formatRaceTimeLimit(challenge.timeLimitSeconds)} ·{' '}
-          {formatRaceTime(secondsRemaining ?? 0)} left
-        </Text>
-      ) : (
-        <Text style={[styles.timerMeta, { color: theme.textSecondary }]}>Fastest to finish wins</Text>
-      )}
-    </View>
-  );
 }
 
 export default function FriendChallengeScreen() {
@@ -332,6 +264,36 @@ export default function FriendChallengeScreen() {
     challenge.targetReps,
   );
   const overlayKey = `${overlayVariant ?? 'none'}-${challenge.resolvedAt ?? challenge.completedAt ?? 'pending'}`;
+  const raceTimer =
+    isPending || !canAttempt
+      ? null
+      : !raceStarted
+        ? { kind: 'hint' as const, message: FRIEND_RACE_TIMER_START_HINT }
+        : isExpired
+          ? { kind: 'expired' as const }
+          : {
+              kind: 'running' as const,
+              elapsedSeconds,
+              secondsRemaining,
+              timeLimitSeconds: challenge.timeLimitSeconds,
+            };
+  const workoutFooter =
+    showSimulateButton || syncError ? (
+      <>
+        {showSimulateButton ? (
+          <PrimaryButton
+            label="+ Simulate Rep"
+            variant="secondary"
+            disabled={repCounter.isComplete || isSyncing}
+            loading={isSyncing}
+            onPress={repCounter.simulateRep}
+          />
+        ) : null}
+        {syncError ? (
+          <Text style={StyleSheet.flatten([styles.error, { color: theme.danger }])}>{syncError}</Text>
+        ) : null}
+      </>
+    ) : undefined;
 
   if (showWorkout) {
     return (
@@ -346,19 +308,8 @@ export default function FriendChallengeScreen() {
           pullUpBarLineY={challenge.exerciseType === 'pull_ups' ? pullUpBarLineY : null}
           onCameraReady={handleCameraReady}
           onLandmarksDetected={processLandmarks}
-          onExit={() => router.back()}
           completed={Boolean(overlayVariant)}
-          topBanner={
-            <FriendRaceTimerBanner
-              challenge={challenge}
-              isPending={isPending}
-              canAttempt={canAttempt}
-              raceStarted={raceStarted}
-              isExpired={isExpired}
-              elapsedSeconds={elapsedSeconds}
-              secondsRemaining={secondsRemaining}
-            />
-          }
+          raceTimer={raceTimer}
           completeOverlay={
             overlayVariant ? (
               <FriendChallengeCompleteOverlay
@@ -373,22 +324,7 @@ export default function FriendChallengeScreen() {
               />
             ) : null
           }
-          footer={
-            <>
-              {showSimulateButton ? (
-                <PrimaryButton
-                  label="+ Simulate Rep"
-                  variant="secondary"
-                  disabled={repCounter.isComplete || isSyncing}
-                  loading={isSyncing}
-                  onPress={repCounter.simulateRep}
-                />
-              ) : null}
-              {syncError ? (
-                <Text style={StyleSheet.flatten([styles.error, { color: theme.danger }])}>{syncError}</Text>
-              ) : null}
-            </>
-          }
+          footer={workoutFooter}
         />
     );
   }
@@ -506,41 +442,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '800',
     letterSpacing: 1.5,
-    textAlign: 'center',
-  },
-  timerBanner: {
-    paddingVertical: Spacing.two,
-    paddingHorizontal: Spacing.three,
-    borderRadius: Radius.lg,
-    borderWidth: 1,
-    alignItems: 'center',
-    gap: Spacing.one,
-  },
-  timerHintBanner: {
-    paddingVertical: Spacing.two,
-    paddingHorizontal: Spacing.three,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    alignItems: 'center',
-  },
-  timerHintText: {
-    fontSize: 12,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  timerLabel: {
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 1,
-  },
-  timerText: {
-    fontSize: 28,
-    fontWeight: '900',
-    letterSpacing: 0.5,
-  },
-  timerMeta: {
-    fontSize: 13,
-    fontWeight: '600',
     textAlign: 'center',
   },
   pending: {

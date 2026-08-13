@@ -13,11 +13,24 @@ export function useDrainNativeCameraOnLeave(workoutActive: boolean): boolean {
   const navigation = useNavigation();
   const [cameraActive, setCameraActive] = useState(workoutActive);
   const workoutActiveRef = useRef(workoutActive);
+  const cameraActiveRef = useRef(workoutActive);
   const isDrainingLeaveRef = useRef(false);
   const drainTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const needsNativeDrain = Platform.OS !== 'web' && supportsNativePoseDetection();
 
   workoutActiveRef.current = workoutActive;
+  cameraActiveRef.current = cameraActive;
+
+  const clearDrainTimer = useCallback((force = false) => {
+    if (!force && isDrainingLeaveRef.current) {
+      return;
+    }
+
+    if (drainTimerRef.current) {
+      clearTimeout(drainTimerRef.current);
+      drainTimerRef.current = null;
+    }
+  }, []);
 
   useFocusEffect(
     useCallback(() => {
@@ -25,20 +38,19 @@ export function useDrainNativeCameraOnLeave(workoutActive: boolean): boolean {
       setCameraActive(workoutActiveRef.current);
 
       return () => {
-        if (drainTimerRef.current) {
-          clearTimeout(drainTimerRef.current);
-          drainTimerRef.current = null;
-        }
+        clearDrainTimer();
 
         if (!isDrainingLeaveRef.current) {
           setCameraActive(false);
         }
       };
-    }, []),
+    }, [clearDrainTimer]),
   );
 
   useEffect(() => {
-    setCameraActive(workoutActive);
+    if (!isDrainingLeaveRef.current) {
+      setCameraActive(workoutActive);
+    }
   }, [workoutActive]);
 
   useEffect(() => {
@@ -47,7 +59,11 @@ export function useDrainNativeCameraOnLeave(workoutActive: boolean): boolean {
     }
 
     const unsubscribe = navigation.addListener('beforeRemove', (event) => {
-      if (isDrainingLeaveRef.current || !cameraActive) {
+      if (isDrainingLeaveRef.current) {
+        return;
+      }
+
+      if (!cameraActiveRef.current) {
         return;
       }
 
@@ -62,13 +78,10 @@ export function useDrainNativeCameraOnLeave(workoutActive: boolean): boolean {
     });
 
     return () => {
-      if (drainTimerRef.current) {
-        clearTimeout(drainTimerRef.current);
-        drainTimerRef.current = null;
-      }
+      clearDrainTimer();
       unsubscribe();
     };
-  }, [cameraActive, navigation, needsNativeDrain, workoutActive]);
+  }, [clearDrainTimer, navigation, needsNativeDrain, workoutActive]);
 
   return cameraActive;
 }
