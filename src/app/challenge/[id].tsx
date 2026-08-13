@@ -19,7 +19,6 @@ import { useRepCounter } from '@/features/challenges/useRepCounter';
 import { useProfile } from '@/features/profile/useProfile';
 import { useShop } from '@/features/shop/ShopProvider';
 import { useDrainNativeCameraOnLeave } from '@/hooks/use-drain-native-camera-on-leave';
-import { useRestorePortraitOnLeave } from '@/hooks/use-restore-portrait-on-leave';
 import { useRouteParam } from '@/hooks/use-route-param';
 import { useWorkoutSession } from '@/hooks/use-workout-session';
 import { useTheme } from '@/hooks/use-theme';
@@ -46,8 +45,6 @@ export default function ChallengeScreen() {
   challengeRef.current = challenge;
 
   const cameraActive = useDrainNativeCameraOnLeave(inWorkout);
-
-  useRestorePortraitOnLeave();
 
   const handleRepDetected = useCallback(
     async (repCount: number) => {

@@ -41,7 +41,6 @@ import {
 import { formatUserError } from '@/lib/errors';
 import { supportsNativePoseDetection } from '@/lib/runtime';
 import { useDrainNativeCameraOnLeave } from '@/hooks/use-drain-native-camera-on-leave';
-import { useRestorePortraitOnLeave } from '@/hooks/use-restore-portrait-on-leave';
 import { useRouteParam } from '@/hooks/use-route-param';
 import { useWorkoutSession } from '@/hooks/use-workout-session';
 import { useTheme } from '@/hooks/use-theme';
@@ -107,8 +106,6 @@ export default function FriendChallengeScreen() {
     (canAttempt || Boolean(overlayVariant)) &&
     (workoutStarted || Boolean(overlayVariant));
   const cameraActive = useDrainNativeCameraOnLeave(showWorkout);
-
-  useRestorePortraitOnLeave();
 
   const handleTimerExpire = useCallback(() => {
     setIsTimedOut(true);

@@ -132,32 +132,28 @@ function VisionCameraPreviewActive({
         return;
       }
 
-      try {
-        const mappedLandmarks = mapLandmarksToViewNormalized(
-          landmarks,
-          frameInfo,
-          viewCoordinator,
-          width,
-          height,
-        );
+      const mappedLandmarks = mapLandmarksToViewNormalized(
+        landmarks,
+        frameInfo,
+        viewCoordinator,
+        width,
+        height,
+      );
 
-        const viewLandmarks = repLandmarkSmootherRef.current.smooth(mappedLandmarks);
-        onLandmarksRef.current?.(viewLandmarks);
+      const viewLandmarks = repLandmarkSmootherRef.current.smooth(mappedLandmarks);
+      onLandmarksRef.current?.(viewLandmarks);
 
-        const now = performance.now();
-        if (shouldEmitDisplayFrame(lastDisplayFrameAtRef.current, now)) {
-          lastDisplayFrameAtRef.current = now;
-          setLatestLandmarks(displayLandmarkSmootherRef.current.smooth(mappedLandmarks));
-          setTrackingBody(true);
+      const now = performance.now();
+      if (shouldEmitDisplayFrame(lastDisplayFrameAtRef.current, now)) {
+        lastDisplayFrameAtRef.current = now;
+        setLatestLandmarks(displayLandmarkSmootherRef.current.smooth(mappedLandmarks));
+        setTrackingBody(true);
 
-          const nextBarLineY = pullUpBarLineYRef.current;
-          if (nextBarLineY !== lastBarLineYRef.current) {
-            lastBarLineYRef.current = nextBarLineY;
-            setViewBarLineY(nextBarLineY);
-          }
+        const nextBarLineY = pullUpBarLineYRef.current;
+        if (nextBarLineY !== lastBarLineYRef.current) {
+          lastBarLineYRef.current = nextBarLineY;
+          setViewBarLineY(nextBarLineY);
         }
-      } catch {
-        // ViewCoordinator can throw during camera layout/orientation transitions.
       }
     },
     [],

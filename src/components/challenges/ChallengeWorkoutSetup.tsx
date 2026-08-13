@@ -1,12 +1,12 @@
 import { useEffect } from 'react';
 import { Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import * as ScreenOrientation from 'expo-screen-orientation';
 
 import { PoseGuidanceBanner } from '@/components/PoseGuidanceBanner';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import type { ExerciseType } from '@/constants/challenges';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import { lockPortraitOrientation } from '@/lib/screenOrientation';
 
 interface ChallengeWorkoutSetupProps {
   exerciseLabel: string;
@@ -24,7 +24,7 @@ function useSetupPortraitLock(): void {
       return;
     }
 
-    void lockPortraitOrientation();
+    void ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT_UP);
   }, []);
 }
 
