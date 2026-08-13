@@ -11,6 +11,7 @@ import { AppIcon } from '@/components/ui/AppIcon';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { APP_VERSION_LABEL } from '@/constants/app';
 import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
+import { useCameraDebugOverlaysAccess } from '@/features/settings/cameraDebugAccess';
 import { useUserSettings } from '@/features/settings/UserSettingsProvider';
 import { leaveScreen } from '@/lib/navigation';
 import { useTheme } from '@/hooks/use-theme';
@@ -34,6 +35,7 @@ export default function SettingsScreen() {
     isSaving,
     saveError,
   } = useUserSettings();
+  const showCameraDebugSettings = useCameraDebugOverlaysAccess();
 
   return (
     <>
@@ -94,20 +96,24 @@ export default function SettingsScreen() {
               <Text style={StyleSheet.flatten([styles.sectionTitle, { color: theme.text }])}>
                 Camera
               </Text>
-              <SettingsToggleRow
-                label="Show pose skeleton"
-                description="Overlay body tracking lines on the camera preview while you work out."
-                value={preferences.showPoseSkeleton}
-                onValueChange={setShowPoseSkeleton}
-                disabled={isSaving}
-              />
-              <SettingsToggleRow
-                label="Show rep progress bar"
-                description="Red-to-green bar on the camera preview while you move through each rep."
-                value={preferences.showRepProgressBar}
-                onValueChange={setShowRepProgressBar}
-                disabled={isSaving}
-              />
+              {showCameraDebugSettings ? (
+                <>
+                  <SettingsToggleRow
+                    label="Show pose skeleton"
+                    description="Overlay body tracking lines on the camera preview while you work out."
+                    value={preferences.showPoseSkeleton}
+                    onValueChange={setShowPoseSkeleton}
+                    disabled={isSaving}
+                  />
+                  <SettingsToggleRow
+                    label="Show rep progress bar"
+                    description="Red-to-green bar on the camera preview while you move through each rep."
+                    value={preferences.showRepProgressBar}
+                    onValueChange={setShowRepProgressBar}
+                    disabled={isSaving}
+                  />
+                </>
+              ) : null}
               <SettingsToggleRow
                 label="Rep sound"
                 description="Play a soft ding when a rep is counted during workouts."
