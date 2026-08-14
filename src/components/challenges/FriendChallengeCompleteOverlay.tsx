@@ -2,9 +2,6 @@ import { useEffect } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, {
   Easing,
-  FadeIn,
-  FadeInUp,
-  ZoomIn,
   useAnimatedStyle,
   useSharedValue,
   withDelay,
@@ -189,8 +186,8 @@ export function FriendChallengeCompleteOverlay({
     coins > 0 ? `${formatXpAndCoins(xp, coins)} earned` : xp > 0 ? `+${xp} XP earned` : null;
 
   return (
-    <Animated.View entering={FadeIn.duration(260)} style={styles.overlay} pointerEvents="none">
-      <View style={StyleSheet.flatten([styles.backdrop, { backgroundColor: `${theme.background}CC` }])} />
+    <View style={styles.overlay}>
+      <View style={StyleSheet.flatten([styles.backdrop, { backgroundColor: theme.background }])} />
 
       <View style={styles.confettiLayer} pointerEvents="none">
         {Array.from({ length: confettiCount }, (_, index) => (
@@ -198,8 +195,8 @@ export function FriendChallengeCompleteOverlay({
         ))}
       </View>
 
-      <View style={styles.content} pointerEvents="none">
-        <Animated.View entering={ZoomIn.springify().damping(14).delay(120)} style={styles.iconStack}>
+      <View style={styles.content}>
+        <View style={styles.iconStack}>
           <PulsingRing accentColor={accentColor} />
           <View
             style={StyleSheet.flatten([
@@ -210,51 +207,41 @@ export function FriendChallengeCompleteOverlay({
               {variant === 'winner' ? '🏆' : '✓'}
             </Text>
           </View>
-        </Animated.View>
+        </View>
 
-        <Animated.Text
-          entering={FadeInUp.springify().damping(16).delay(220)}
-          style={StyleSheet.flatten([styles.eyebrow, { color: theme.textSecondary }])}>
+        <Text style={StyleSheet.flatten([styles.eyebrow, { color: theme.textSecondary }])}>
           {copy.eyebrow}
-        </Animated.Text>
+        </Text>
 
-        <Animated.Text
-          entering={FadeInUp.springify().damping(16).delay(300)}
-          style={StyleSheet.flatten([styles.title, { color: theme.text }])}>
+        <Text style={StyleSheet.flatten([styles.title, { color: theme.text }])}>
           {copy.title}
-        </Animated.Text>
+        </Text>
 
         {showEmote ? (
-          <Animated.View entering={FadeInUp.springify().damping(16).delay(380)} style={styles.emoteWrap}>
+          <View style={styles.emoteWrap}>
             <EmoteDisplay emoji={emote} />
-          </Animated.View>
+          </View>
         ) : null}
 
         {rewardLabel ? (
-          <Animated.Text
-            entering={FadeInUp.springify().damping(16).delay(440)}
-            style={StyleSheet.flatten([styles.reward, { color: theme.xp }])}>
+          <Text style={StyleSheet.flatten([styles.reward, { color: theme.xp }])}>
             {rewardLabel}
-          </Animated.Text>
+          </Text>
         ) : null}
 
         {copy.subtitle ? (
-          <Animated.Text
-            entering={FadeInUp.springify().damping(16).delay(520)}
-            style={StyleSheet.flatten([styles.subtitle, { color: theme.textSecondary }])}>
+          <Text style={StyleSheet.flatten([styles.subtitle, { color: theme.textSecondary }])}>
             {copy.subtitle}
-          </Animated.Text>
+          </Text>
         ) : null}
       </View>
-    </Animated.View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   overlay: {
-    ...StyleSheet.absoluteFill,
-    zIndex: 10,
-    elevation: 10,
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },

@@ -23,6 +23,7 @@ import { useRouteParam } from '@/hooks/use-route-param';
 import { useWorkoutSession } from '@/hooks/use-workout-session';
 import { useTheme } from '@/hooks/use-theme';
 import { formatUserError } from '@/lib/errors';
+import { leaveScreen } from '@/lib/navigation';
 import { supportsNativePoseDetection } from '@/lib/runtime';
 import { completeChallenge } from '@/services/challengeService';
 
@@ -104,6 +105,10 @@ export default function ChallengeScreen() {
   const earnedXp = challenge && isCompleted ? DAILY_MISSION_XP_REWARD : 0;
   const earnedCoins = challenge && isCompleted ? DAILY_MISSION_COIN_REWARD : 0;
 
+  const handleLeave = useCallback(() => {
+    leaveScreen(router, '/(tabs)');
+  }, [router]);
+
   if (isLoading) {
     return (
       <View style={StyleSheet.flatten([styles.loading, { backgroundColor: theme.background }])}>
@@ -119,7 +124,7 @@ export default function ChallengeScreen() {
           <Text style={StyleSheet.flatten([styles.error, { color: theme.danger }])}>
             {error ?? 'Challenge not found'}
           </Text>
-          <PrimaryButton label="Go Back" variant="secondary" onPress={() => router.back()} />
+          <PrimaryButton label="Go Back" variant="secondary" onPress={handleLeave} />
         </View>
       </SafeAreaView>
     );
@@ -152,7 +157,8 @@ export default function ChallengeScreen() {
         trackingStatus={trackingStatus}
         trackingMessage={trackingMessage}
         repPhase={posePhase}
-        cameraActive={cameraActive}
+        cameraActive={!isCompleted && cameraActive}
+        onContinue={handleLeave}
         pullUpBarLineY={challenge.exercise_type === 'pull_ups' ? pullUpBarLineY : null}
         onCameraReady={() => {
           repCounter.start();
@@ -184,7 +190,7 @@ export default function ChallengeScreen() {
         exerciseType={challenge.exercise_type}
         targetReps={challenge.target_reps}
         onStart={startWorkout}
-        onCancel={() => router.back()}
+        onCancel={handleLeave}
       />
     </SafeAreaView>
   );

@@ -39,6 +39,7 @@ import {
   isFriendChallengeWaitingOnOpponent,
 } from '@/types/friends';
 import { formatUserError } from '@/lib/errors';
+import { leaveScreen } from '@/lib/navigation';
 import { supportsNativePoseDetection } from '@/lib/runtime';
 import { useDrainNativeCameraOnLeave } from '@/hooks/use-drain-native-camera-on-leave';
 import { useRouteParam } from '@/hooks/use-route-param';
@@ -107,6 +108,10 @@ export default function FriendChallengeScreen() {
     (workoutStarted || Boolean(overlayVariant));
   const cameraActive = useDrainNativeCameraOnLeave(showWorkout);
 
+  const handleLeave = useCallback(() => {
+    leaveScreen(router, '/(tabs)/friends');
+  }, [router]);
+
   const handleTimerExpire = useCallback(() => {
     setIsTimedOut(true);
     void refresh({ silent: true });
@@ -140,12 +145,12 @@ export default function FriendChallengeScreen() {
 
     try {
       await declineFriendChallenge(participantId);
-      router.back();
+      handleLeave();
     } catch (err) {
       setSyncError(formatUserError(err, 'Failed to decline challenge'));
       setIsPendingAction(false);
     }
-  }, [participantId, router]);
+  }, [handleLeave, participantId]);
 
   const { elapsedSeconds, secondsRemaining } = useFriendChallengeRaceTimer({
     startedAt: challenge?.startedAt ?? null,
@@ -245,7 +250,7 @@ export default function FriendChallengeScreen() {
           <Text style={StyleSheet.flatten([styles.error, { color: theme.danger }])}>
             {error ?? 'Challenge not found'}
           </Text>
-          <PrimaryButton label="Go Back" variant="secondary" onPress={() => router.back()} />
+          <PrimaryButton label="Go Back" variant="secondary" onPress={handleLeave} />
         </View>
       </SafeAreaView>
     );
@@ -304,7 +309,8 @@ export default function FriendChallengeScreen() {
           trackingStatus={trackingStatus}
           trackingMessage={trackingMessage}
           repPhase={posePhase}
-          cameraActive={cameraActive && canAttempt}
+          cameraActive={cameraActive && canAttempt && !overlayVariant}
+          onContinue={handleLeave}
           pullUpBarLineY={challenge.exerciseType === 'pull_ups' ? pullUpBarLineY : null}
           onCameraReady={handleCameraReady}
           onLandmarksDetected={processLandmarks}
@@ -340,7 +346,7 @@ export default function FriendChallengeScreen() {
             targetReps={challenge.targetReps}
             subtitle={`Speed race vs ${opponentName}`}
             onStart={startWorkout}
-            onCancel={() => router.back()}
+            onCancel={handleLeave}
           />
       </SafeAreaView>
     );
@@ -404,7 +410,7 @@ export default function FriendChallengeScreen() {
             <Text style={StyleSheet.flatten([styles.error, { color: theme.danger }])}>{syncError}</Text>
           ) : null}
 
-          <PrimaryButton label="Back" variant="secondary" onPress={() => router.back()} />
+          <PrimaryButton label="Back" variant="secondary" onPress={handleLeave} />
         </ScrollView>
     </SafeAreaView>
   );

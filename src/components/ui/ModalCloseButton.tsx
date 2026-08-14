@@ -3,13 +3,14 @@ import { Pressable, StyleSheet } from 'react-native';
 
 import { AppIcon } from '@/components/ui/AppIcon';
 import { Spacing } from '@/constants/theme';
+import { leaveScreen } from '@/lib/navigation';
 
 export function ModalCloseButton() {
   const router = useRouter();
 
   return (
     <Pressable
-      onPress={() => router.back()}
+      onPress={() => leaveScreen(router)}
       style={styles.button}
       accessibilityRole="button"
       accessibilityLabel="Close">

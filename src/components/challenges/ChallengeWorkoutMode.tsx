@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { CameraPreview } from '@/components/CameraPreview';
 import { ChallengeRepHud, type ChallengeRepHudRaceTimer } from '@/components/challenges/ChallengeRepHud';
 import { WorkoutHintPanel } from '@/components/challenges/WorkoutHintPanel';
+import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import type { ExerciseType } from '@/constants/challenges';
 import { Spacing } from '@/constants/theme';
 import type { ExercisePhase } from '@/features/challenges/poseDetection.types';
@@ -28,6 +29,7 @@ interface ChallengeWorkoutModeProps {
   onLandmarksDetected: (landmarks: PoseLandmark[]) => void;
   completed?: boolean;
   completeOverlay?: ReactNode;
+  onContinue?: () => void;
   raceTimer?: ChallengeRepHudRaceTimer | null;
   footer?: ReactNode;
 }
@@ -45,10 +47,12 @@ export function ChallengeWorkoutMode({
   onLandmarksDetected,
   completed = false,
   completeOverlay,
+  onContinue,
   raceTimer = null,
   footer,
 }: ChallengeWorkoutModeProps) {
   const theme = useTheme();
+  const showCompletionOnly = completed && Boolean(completeOverlay);
   const { isLandscape, hintPanelWidth } = useWorkoutLayout();
   const tips = getWorkoutSetupTips(exerciseType);
   const trackingReady = trackingStatus === 'ready';
@@ -57,7 +61,24 @@ export function ChallengeWorkoutMode({
     completed,
   });
 
-  useWorkoutOrientation(true);
+  useWorkoutOrientation(!showCompletionOnly);
+
+  if (showCompletionOnly) {
+    return (
+      <SafeAreaView
+        style={StyleSheet.flatten([styles.safeArea, { backgroundColor: theme.background }])}
+        edges={['top', 'bottom']}>
+        <View style={styles.completionRoot}>
+          <View style={styles.completionContent}>{completeOverlay}</View>
+          {onContinue ? (
+            <View style={styles.completionFooter}>
+              <PrimaryButton label="Continue" onPress={onContinue} />
+            </View>
+          ) : null}
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={StyleSheet.flatten([styles.safeArea, { backgroundColor: '#000000' }])} edges={['top', 'bottom']}>
@@ -85,7 +106,6 @@ export function ChallengeWorkoutMode({
               completed={completed}
               raceTimer={raceTimer}
             />
-            {completeOverlay}
           </View>
 
           {!isLandscape ? (
@@ -163,5 +183,16 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.two,
     paddingBottom: Spacing.two,
     gap: Spacing.two,
+  },
+  completionRoot: {
+    flex: 1,
+  },
+  completionContent: {
+    flex: 1,
+  },
+  completionFooter: {
+    paddingHorizontal: Spacing.three,
+    paddingTop: Spacing.two,
+    paddingBottom: Spacing.two,
   },
 });

@@ -2,9 +2,6 @@ import { useEffect } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, {
   Easing,
-  FadeIn,
-  FadeInUp,
-  ZoomIn,
   useAnimatedStyle,
   useSharedValue,
   withDelay,
@@ -15,7 +12,7 @@ import Animated, {
 
 import { EmoteDisplay } from '@/components/shop/EmoteDisplay';
 import { formatXpAndCoins } from '@/constants/coins';
-import { Radius, Spacing } from '@/constants/theme';
+import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 const CONFETTI_COLORS = ['#6366F1', '#10B981', '#F59E0B', '#F97316', '#818CF8', '#34D399'] as const;
@@ -132,63 +129,58 @@ export function DailyMissionCompleteOverlay({
   const theme = useTheme();
 
   return (
-    <Animated.View entering={FadeIn.duration(260)} style={styles.overlay} pointerEvents="none">
-      <View style={StyleSheet.flatten([styles.backdrop, { backgroundColor: `${theme.background}CC` }])} />
+    <View style={styles.overlay}>
+      <View style={StyleSheet.flatten([styles.backdrop, { backgroundColor: theme.background }])} />
 
-      <View style={styles.confettiLayer}>
+      <View style={styles.confettiLayer} pointerEvents="none">
         {Array.from({ length: CONFETTI_PIECES }, (_, index) => (
           <ConfettiPiece key={index} index={index} />
         ))}
       </View>
 
       <View style={styles.content}>
-        <Animated.View entering={ZoomIn.springify().damping(14).delay(120)} style={styles.iconStack}>
+        <View style={styles.iconStack}>
           <PulsingRing />
           <View style={StyleSheet.flatten([styles.iconCircle, { backgroundColor: theme.success, borderColor: theme.background }])}>
             <Text style={styles.checkmark}>✓</Text>
           </View>
-        </Animated.View>
+        </View>
 
-        <Animated.Text
-          entering={FadeInUp.springify().damping(16).delay(220)}
-          style={StyleSheet.flatten([styles.eyebrow, { color: theme.textSecondary }])}>
+        <Text style={StyleSheet.flatten([styles.eyebrow, { color: theme.textSecondary }])}>
           MISSION COMPLETE
-        </Animated.Text>
+        </Text>
 
-        <Animated.Text
-          entering={FadeInUp.springify().damping(16).delay(300)}
-          style={StyleSheet.flatten([styles.title, { color: theme.text }])}>
+        <Text style={StyleSheet.flatten([styles.title, { color: theme.text }])}>
           {targetReps} {exerciseLabel}
-        </Animated.Text>
+        </Text>
 
-        <Animated.View entering={FadeInUp.springify().damping(16).delay(380)} style={styles.emoteWrap}>
+        <View style={styles.emoteWrap}>
           <EmoteDisplay emoji={emote} />
-        </Animated.View>
+        </View>
 
-        <Animated.Text
-          entering={FadeInUp.springify().damping(16).delay(460)}
-          style={StyleSheet.flatten([styles.reward, { color: theme.xp }])}>
+        <Text style={StyleSheet.flatten([styles.reward, { color: theme.xp }])}>
           {formatXpAndCoins(xp, coins)} earned
-        </Animated.Text>
+        </Text>
       </View>
-    </Animated.View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   overlay: {
-    ...StyleSheet.absoluteFillObject,
-    borderRadius: Radius.lg,
+    flex: 1,
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
   },
   backdrop: {
     ...StyleSheet.absoluteFillObject,
+    zIndex: 1,
   },
   confettiLayer: {
     ...StyleSheet.absoluteFillObject,
     overflow: 'hidden',
+    zIndex: 2,
   },
   confetti: {
     position: 'absolute',
@@ -198,6 +190,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: Spacing.two,
     paddingHorizontal: Spacing.four,
+    zIndex: 3,
   },
   iconStack: {
     width: 96,
