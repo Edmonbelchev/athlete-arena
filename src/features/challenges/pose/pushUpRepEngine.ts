@@ -45,6 +45,11 @@ export class PushUpRepEngine {
     const detectedViewMode = detectPushUpViewMode(landmarks);
     const inPlank = isPushUpPlankPosture(landmarks, this.viewMode ?? detectedViewMode);
 
+    if (this.isArmed && !inPlank) {
+      this.releaseSet();
+      return false;
+    }
+
     if (inPlank) {
       this.readyFrames += 1;
 
@@ -60,13 +65,15 @@ export class PushUpRepEngine {
       return false;
     }
 
-    if (!inPlank) {
-      // Lost plank mid-set - reset rep cycle so standing arm motion cannot finish a rep.
-      this.elbowEngine.reset();
-      return false;
-    }
-
     return this.elbowEngine.update(landmarks);
+  }
+
+  /** No longer in a push-up plank - stop counting until a new plank is held. */
+  private releaseSet(): void {
+    this.elbowEngine.reset();
+    this.readyFrames = 0;
+    this.isArmed = false;
+    this.viewMode = null;
   }
 
   reset(): void {
