@@ -1,4 +1,7 @@
-import { POSE_LANDMARK_SMOOTH_ALPHA } from '@/constants/poseDetection';
+import {
+  POSE_LANDMARK_SMOOTH_ALPHA,
+  POSE_LANDMARK_WARMUP,
+} from '@/constants/poseDetection';
 
 import { PoseLandmarkIndex, type PoseLandmark } from './landmarks';
 
@@ -17,6 +20,10 @@ const SMOOTH_INDICES = [
   PoseLandmarkIndex.RIGHT_WRIST,
   PoseLandmarkIndex.LEFT_HIP,
   PoseLandmarkIndex.RIGHT_HIP,
+  PoseLandmarkIndex.LEFT_KNEE,
+  PoseLandmarkIndex.RIGHT_KNEE,
+  PoseLandmarkIndex.LEFT_ANKLE,
+  PoseLandmarkIndex.RIGHT_ANKLE,
 ] as const;
 
 const SMOOTH_INDEX_SET = new Set<number>(SMOOTH_INDICES);
@@ -24,6 +31,7 @@ const SMOOTH_INDEX_SET = new Set<number>(SMOOTH_INDICES);
 /** Exponential moving average to reduce MediaPipe jitter on native camera. */
 export class PoseLandmarkSmoother {
   private previous: PoseLandmark[] | null = null;
+  private warmupFramesRemaining = 0;
 
   constructor(private readonly alpha: number = POSE_LANDMARK_SMOOTH_ALPHA) {}
 
@@ -32,8 +40,11 @@ export class PoseLandmarkSmoother {
       return landmarks;
     }
 
+    const effectiveAlpha = this.getEffectiveAlpha();
+
     if (!this.previous || this.previous.length !== landmarks.length) {
       this.previous = landmarks.map((landmark) => ({ ...landmark }));
+      this.warmupFramesRemaining = POSE_LANDMARK_WARMUP.frames;
       return landmarks;
     }
 
@@ -45,16 +56,35 @@ export class PoseLandmarkSmoother {
       const prev = this.previous![index];
       return {
         ...landmark,
-        x: this.alpha * landmark.x + (1 - this.alpha) * prev.x,
-        y: this.alpha * landmark.y + (1 - this.alpha) * prev.y,
+        x: effectiveAlpha * landmark.x + (1 - effectiveAlpha) * prev.x,
+        y: effectiveAlpha * landmark.y + (1 - effectiveAlpha) * prev.y,
       };
     });
 
     this.previous = smoothed.map((landmark) => ({ ...landmark }));
+    if (this.warmupFramesRemaining > 0) {
+      this.warmupFramesRemaining -= 1;
+    }
+
     return smoothed;
   }
 
   reset(): void {
     this.previous = null;
+    this.warmupFramesRemaining = POSE_LANDMARK_WARMUP.frames;
+  }
+
+  private getEffectiveAlpha(): number {
+    if (this.warmupFramesRemaining <= 0) {
+      return this.alpha;
+    }
+
+    const progress =
+      1 - this.warmupFramesRemaining / Math.max(1, POSE_LANDMARK_WARMUP.frames);
+
+    return (
+      POSE_LANDMARK_WARMUP.startAlpha +
+      (this.alpha - POSE_LANDMARK_WARMUP.startAlpha) * progress
+    );
   }
 }

@@ -27,6 +27,30 @@ export const POSE_QUALITY = {
   skeletonMinVisibility: isNativeMobile ? 0.4 : 0.5,
 } as const;
 
+/** Stricter tracking warmup when the preview is wider than tall. */
+export const POSE_QUALITY_LANDSCAPE = {
+  minVisibleTrackingPoints: isNativeMobile ? 3 : 3,
+  stableFramesRequired: isNativeMobile ? 6 : 4,
+  /** Average landmark movement per frame above this resets the warmup. */
+  maxWarmupJitter: isNativeMobile ? 0.036 : 0.03,
+  /** Consecutive low-jitter frames required before reps can count. */
+  calmFramesRequired: isNativeMobile ? 4 : 3,
+  /** Extra frames after the quality gate first passes in landscape. */
+  readyHoldFrames: isNativeMobile ? 3 : 2,
+} as const;
+
+/** Ignore mapped landmarks briefly after the preview layout changes. */
+export const POSE_VIEW_SETTLE_MS = isNativeMobile ? 700 : 500;
+
+/** Drop additional frames after layout settle in landscape previews. */
+export const POSE_LANDSCAPE_POST_SETTLE_FRAMES = isNativeMobile ? 4 : 3;
+
+/** Ramp landmark smoothing from heavy to normal after each reset. */
+export const POSE_LANDMARK_WARMUP = {
+  frames: isNativeMobile ? 20 : 14,
+  startAlpha: isNativeMobile ? 0.24 : 0.32,
+} as const;
+
 export const PUSH_UP_THRESHOLDS = {
   /** Elbow angle (degrees) - arms extended at top of rep. */
   upAngle: 150,

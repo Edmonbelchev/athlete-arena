@@ -1,17 +1,35 @@
 import type { ExerciseType } from '@/constants/challenges';
 import { POSE_GUIDANCE } from '@/constants/poseDetection';
 import type { ExercisePhase } from '@/features/challenges/poseDetection.types';
-import type { PoseTrackingStatus } from '@/features/challenges/pose/poseQuality';
+import type { PoseQualityResult, PoseTrackingStatus } from '@/features/challenges/pose/poseQuality';
 
 export function getTrackingStatusLabel(status: PoseTrackingStatus): string {
   switch (status) {
     case 'ready':
       return 'Tracking active — reps count automatically';
+    case 'awaiting_hang':
+      return 'Hang from the bar with arms extended to start counting';
     case 'stabilizing':
-      return 'Hold still — calibrating your position';
+      return 'Hold still — tracking is locking on';
     default:
       return 'Move into frame so your full body is visible';
   }
+}
+
+/** Pull-ups: green only when the bar is armed; amber while visible but not hanging yet. */
+export function resolvePullUpTrackingStatus(
+  quality: Pick<PoseQualityResult, 'status' | 'shouldResetEngine'>,
+  armed: boolean,
+): PoseTrackingStatus {
+  if (armed && !quality.shouldResetEngine) {
+    return 'ready';
+  }
+
+  if (quality.status === 'ready') {
+    return 'awaiting_hang';
+  }
+
+  return quality.status;
 }
 
 interface TrackingBorderColors {
@@ -43,6 +61,7 @@ export function getTrackingBorderColor(
   switch (status) {
     case 'ready':
       return colors.success;
+    case 'awaiting_hang':
     case 'stabilizing':
       return colors.accent;
     default:

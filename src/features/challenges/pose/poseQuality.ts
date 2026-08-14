@@ -1,8 +1,9 @@
 import type { ExerciseType } from '@/constants/challenges';
 import {
-    POSE_QUALITY,
-    POSE_REP_MIN_VISIBILITY,
-    POSE_REP_MIN_VISIBILITY_ARMED,
+  POSE_QUALITY,
+  POSE_QUALITY_LANDSCAPE,
+  POSE_REP_MIN_VISIBILITY,
+  POSE_REP_MIN_VISIBILITY_ARMED,
 } from '@/constants/poseDetection';
 
 import { PoseLandmarkIndex, type PoseLandmark } from './landmarks';
@@ -11,7 +12,7 @@ import { hasPullUpTrackingLandmarks } from './pullUpPosture';
 import { hasPushUpTrackingLandmarks } from './pushUpPosture';
 import { hasBothSquatLegChains } from './squatPosture';
 
-export type PoseTrackingStatus = 'ready' | 'stabilizing' | 'partial';
+export type PoseTrackingStatus = 'ready' | 'stabilizing' | 'partial' | 'awaiting_hang';
 
 export interface PoseQualityResult {
   status: PoseTrackingStatus;
@@ -23,6 +24,36 @@ export interface PoseQualityResult {
 export interface PoseQualityOptions {
   /** Pull-up engine is armed - only arms need to stay visible (head may leave frame mid-rep). */
   pullUpArmed?: boolean;
+  /** Wider-than-tall preview - use stricter visibility and warmup gates. */
+  isLandscape?: boolean;
+}
+
+interface QualityThresholds {
+  minVisibleTrackingPoints: number;
+  stableFramesRequired: number;
+  maxWarmupJitter: number | null;
+  calmFramesRequired: number;
+  readyHoldFrames: number;
+}
+
+function getQualityThresholds(isLandscape: boolean): QualityThresholds {
+  if (!isLandscape) {
+    return {
+      minVisibleTrackingPoints: POSE_QUALITY.minVisibleTrackingPoints,
+      stableFramesRequired: POSE_QUALITY.stableFramesRequired,
+      maxWarmupJitter: null,
+      calmFramesRequired: 0,
+      readyHoldFrames: 0,
+    };
+  }
+
+  return {
+    minVisibleTrackingPoints: POSE_QUALITY_LANDSCAPE.minVisibleTrackingPoints,
+    stableFramesRequired: POSE_QUALITY_LANDSCAPE.stableFramesRequired,
+    maxWarmupJitter: POSE_QUALITY_LANDSCAPE.maxWarmupJitter,
+    calmFramesRequired: POSE_QUALITY_LANDSCAPE.calmFramesRequired,
+    readyHoldFrames: POSE_QUALITY_LANDSCAPE.readyHoldFrames,
+  };
 }
 
 function isRepLandmarkVisible(
@@ -157,9 +188,37 @@ function countVisibleLandmarks(landmarks: PoseLandmark[], indices: number[]): nu
   return indices.filter((index) => isRepLandmarkVisible(landmarks[index])).length;
 }
 
+function measureAverageJitter(
+  previous: PoseLandmark[],
+  current: PoseLandmark[],
+  indices: number[],
+): number | null {
+  let total = 0;
+  let count = 0;
+
+  for (const index of indices) {
+    const prev = previous[index];
+    const next = current[index];
+
+    if (!isRepLandmarkVisible(prev) || !isRepLandmarkVisible(next)) {
+      continue;
+    }
+
+    total += Math.hypot(next.x - prev.x, next.y - prev.y);
+    count += 1;
+  }
+
+  if (count === 0) {
+    return null;
+  }
+
+  return total / count;
+}
+
 function checkRequiredLandmarks(
   landmarks: PoseLandmark[],
   exerciseType: ExerciseType,
+  minVisibleTrackingPoints: number,
   options?: PoseQualityOptions,
 ): { ok: boolean; message: string | null } {
   const trackingIndices = getTrackingIndices(exerciseType);
@@ -184,10 +243,12 @@ function checkRequiredLandmarks(
       };
     }
 
-    if (visibleCount < POSE_QUALITY.minVisibleTrackingPoints) {
+    if (visibleCount < minVisibleTrackingPoints) {
       return {
         ok: false,
-        message: 'Keep your head and at least one full arm (shoulder, elbow, wrist) in frame',
+        message: options?.isLandscape
+          ? 'Step back - keep your head, arms, and torso fully in frame'
+          : 'Keep your head and at least one full arm (shoulder, elbow, wrist) in frame',
       };
     }
 
@@ -202,10 +263,12 @@ function checkRequiredLandmarks(
       };
     }
 
-    if (visibleCount < POSE_QUALITY.minVisibleTrackingPoints) {
+    if (visibleCount < minVisibleTrackingPoints) {
       return {
         ok: false,
-        message: 'Move back - keep your upper body and hips in frame',
+        message: options?.isLandscape
+          ? 'Step back - keep your full upper body in frame'
+          : 'Move back - keep your upper body and hips in frame',
       };
     }
 
@@ -220,10 +283,12 @@ function checkRequiredLandmarks(
       };
     }
 
-    if (visibleCount < POSE_QUALITY.minVisibleTrackingPoints) {
+    if (visibleCount < minVisibleTrackingPoints) {
       return {
         ok: false,
-        message: 'Move back - keep your full body in frame',
+        message: options?.isLandscape
+          ? 'Step back - keep your full body visible head to toe'
+          : 'Move back - keep your full body in frame',
       };
     }
 
@@ -238,10 +303,12 @@ function checkRequiredLandmarks(
       };
     }
 
-    if (visibleCount < POSE_QUALITY.minVisibleTrackingPoints) {
+    if (visibleCount < minVisibleTrackingPoints) {
       return {
         ok: false,
-        message: 'Step back - keep both legs in frame',
+        message: options?.isLandscape
+          ? 'Step back - keep both legs fully in frame'
+          : 'Step back - keep both legs in frame',
       };
     }
 
@@ -257,7 +324,7 @@ function checkRequiredLandmarks(
     };
   }
 
-  if (visibleCount < POSE_QUALITY.minVisibleTrackingPoints) {
+  if (visibleCount < minVisibleTrackingPoints) {
     return {
       ok: false,
       message: 'Step back - keep your legs in frame',
@@ -270,15 +337,34 @@ function checkRequiredLandmarks(
 export class PoseQualityGate {
   private stableFrames = 0;
   private partialFrames = 0;
+  private calmFrames = 0;
+  private readyHoldFrames = 0;
+  private landscapePrimed = false;
+  private previousLandmarks: PoseLandmark[] | null = null;
+  private readonly trackingIndices: number[];
 
-  constructor(private readonly exerciseType: ExerciseType) {}
+  constructor(private readonly exerciseType: ExerciseType) {
+    this.trackingIndices = getTrackingIndices(exerciseType);
+  }
 
   evaluate(landmarks: PoseLandmark[], options?: PoseQualityOptions): PoseQualityResult {
-    const required = checkRequiredLandmarks(landmarks, this.exerciseType, options);
+    const isLandscape = options?.isLandscape === true;
+    const useLandscapeWarmup = isLandscape && !this.landscapePrimed;
+    const thresholds = getQualityThresholds(useLandscapeWarmup);
+
+    const required = checkRequiredLandmarks(
+      landmarks,
+      this.exerciseType,
+      thresholds.minVisibleTrackingPoints,
+      options,
+    );
 
     if (!required.ok) {
       this.stableFrames = 0;
+      this.calmFrames = 0;
+      this.readyHoldFrames = 0;
       this.partialFrames += 1;
+      this.previousLandmarks = landmarks.map((landmark) => ({ ...landmark }));
 
       const resetThreshold =
         options?.pullUpArmed === true
@@ -296,14 +382,52 @@ export class PoseQualityGate {
     this.partialFrames = 0;
     this.stableFrames += 1;
 
-    if (this.stableFrames < POSE_QUALITY.stableFramesRequired) {
+    if (thresholds.maxWarmupJitter !== null && this.previousLandmarks) {
+      const jitter = measureAverageJitter(this.previousLandmarks, landmarks, this.trackingIndices);
+
+      if (jitter !== null && jitter > thresholds.maxWarmupJitter) {
+        this.stableFrames = 0;
+        this.calmFrames = 0;
+        this.readyHoldFrames = 0;
+      } else if (jitter !== null) {
+        this.calmFrames += 1;
+      } else {
+        this.calmFrames = 0;
+      }
+    }
+
+    this.previousLandmarks = landmarks.map((landmark) => ({ ...landmark }));
+
+    const warmupComplete =
+      !useLandscapeWarmup ||
+      (this.stableFrames >= thresholds.stableFramesRequired &&
+        this.calmFrames >= thresholds.calmFramesRequired);
+
+    if (!warmupComplete) {
+      this.readyHoldFrames = 0;
       return {
         status: 'stabilizing',
         canCountReps: false,
-        message: null,
+        message: isLandscape
+          ? 'Keep your full body in frame and hold still'
+          : null,
         shouldResetEngine: false,
       };
     }
+
+    if (useLandscapeWarmup && thresholds.readyHoldFrames > 0) {
+      this.readyHoldFrames += 1;
+      if (this.readyHoldFrames < thresholds.readyHoldFrames) {
+        return {
+          status: 'stabilizing',
+          canCountReps: false,
+          message: 'Hold still — tracking is locking on',
+          shouldResetEngine: false,
+        };
+      }
+    }
+
+    this.landscapePrimed = isLandscape || this.landscapePrimed;
 
     return {
       status: 'ready',
@@ -316,5 +440,9 @@ export class PoseQualityGate {
   reset(): void {
     this.stableFrames = 0;
     this.partialFrames = 0;
+    this.calmFrames = 0;
+    this.readyHoldFrames = 0;
+    this.landscapePrimed = false;
+    this.previousLandmarks = null;
   }
 }

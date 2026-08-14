@@ -57,7 +57,7 @@ export function ChallengeWorkoutSetup({
         <PoseGuidanceBanner exerciseType={exerciseType} />
 
         <Text style={StyleSheet.flatten([styles.landscapeNote, { color: theme.primary }])}>
-          Landscape + a prop works best, but portrait is fine too.
+          Landscape + a prop works best. Hold still for a moment while tracking locks on.
         </Text>
       </ScrollView>
 

@@ -7,6 +7,7 @@ import {
   FriendChallengeCompleteOverlay,
   type FriendChallengeCompleteVariant,
 } from '@/components/challenges/FriendChallengeCompleteOverlay';
+import type { PosePreviewLayoutState } from '@/components/CameraPreview.types';
 import { ChallengeWorkoutMode } from '@/components/challenges/ChallengeWorkoutMode';
 import { ChallengeWorkoutSetup } from '@/components/challenges/ChallengeWorkoutSetup';
 import { EmoteDisplay } from '@/components/shop/EmoteDisplay';
@@ -86,6 +87,10 @@ export default function FriendChallengeScreen() {
   const { workoutStarted, startWorkout } = useWorkoutSession('friend', participantId);
   const isSyncingRef = useRef(false);
   const challengeRef = useRef(challenge);
+  const posePreviewLayoutRef = useRef<PosePreviewLayoutState>({
+    isLandscape: false,
+    settled: false,
+  });
 
   challengeRef.current = challenge;
 
@@ -223,6 +228,7 @@ export default function FriendChallengeScreen() {
   } = useExercisePoseDetection({
     exerciseType: challenge?.exerciseType ?? 'push_ups',
     enabled: canAttempt && cameraActive && showWorkout,
+    posePreviewLayoutRef,
     onRepDetected: () => {
       repCounter.simulateRep();
     },
@@ -312,6 +318,7 @@ export default function FriendChallengeScreen() {
           cameraActive={cameraActive && canAttempt && !overlayVariant}
           onContinue={handleLeave}
           pullUpBarLineY={challenge.exerciseType === 'pull_ups' ? pullUpBarLineY : null}
+          posePreviewLayoutRef={posePreviewLayoutRef}
           onCameraReady={handleCameraReady}
           onLandmarksDetected={processLandmarks}
           completed={Boolean(overlayVariant)}

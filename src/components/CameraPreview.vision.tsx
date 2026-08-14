@@ -21,7 +21,10 @@ import {
 } from '@/features/challenges/pose/displayFrameThrottle';
 import { mapLandmarksToViewNormalized } from '@/features/challenges/pose/mapLandmarksToView';
 import type { PoseLandmark } from '@/features/challenges/pose/landmarks';
+import { arePoseLandmarksPlausible } from '@/features/challenges/pose/poseLandmarkSanity';
+import { PoseViewSettleGate } from '@/features/challenges/pose/poseViewSettle';
 import { PoseLandmarkSmoother } from '@/features/challenges/pose/smoothPoseLandmarks';
+import { POSE_LANDSCAPE_POST_SETTLE_FRAMES } from '@/constants/poseDetection';
 import { POSE_DETECTOR_RELEASE_DELAY_MS } from '@/lib/mediapipe/delayedPoseDetectorRelease';
 import { useCameraDebugOverlaysAccess } from '@/features/settings/cameraDebugAccess';
 import { useUserSettings } from '@/features/settings/UserSettingsProvider';
@@ -55,6 +58,7 @@ type ActiveVisionCameraProps = Omit<CameraPreviewProps, 'active'> & {
 function VisionCameraPreviewActive({
   onCameraReady,
   onLandmarksDetected,
+  posePreviewLayoutRef,
   pullUpBarLineY = null,
   exerciseType = 'push_ups',
   repPhase = 'UP',
@@ -81,6 +85,8 @@ function VisionCameraPreviewActive({
   const [viewBarLineY, setViewBarLineY] = useState<number | null>(null);
   const pullUpBarLineYRef = useRef(pullUpBarLineY);
   const landmarkSmootherRef = useRef(new PoseLandmarkSmoother());
+  const viewSettleGateRef = useRef(new PoseViewSettleGate());
+  const postSettleFramesRef = useRef(0);
   const lastDisplayFrameAtRef = useRef(0);
   const lastBarLineYRef = useRef<number | null>(null);
 
@@ -105,6 +111,36 @@ function VisionCameraPreviewActive({
       onLandmarksRef.current = undefined;
     };
   }, []);
+
+  useEffect(() => {
+    const gate = viewSettleGateRef.current;
+    gate.setOnSettled(() => {
+      landmarkSmootherRef.current.reset();
+      postSettleFramesRef.current = gate.isLandscape() ? POSE_LANDSCAPE_POST_SETTLE_FRAMES : 0;
+      if (!cameraReadyRef.current) {
+        cameraReadyRef.current = true;
+        onCameraReadyRef.current?.();
+      }
+    });
+
+    return () => {
+      gate.dispose();
+    };
+  }, []);
+
+  const syncPreviewLayoutState = useCallback(
+    (settled: boolean) => {
+      if (!posePreviewLayoutRef) {
+        return;
+      }
+
+      posePreviewLayoutRef.current = {
+        isLandscape: viewSettleGateRef.current.isLandscape(),
+        settled,
+      };
+    },
+    [posePreviewLayoutRef],
+  );
 
   const handleResults = useCallback(
     (
@@ -131,6 +167,23 @@ function VisionCameraPreviewActive({
         ),
       );
 
+      if (!viewSettleGateRef.current.isSettled()) {
+        syncPreviewLayoutState(false);
+        return;
+      }
+
+      if (postSettleFramesRef.current > 0) {
+        postSettleFramesRef.current -= 1;
+        syncPreviewLayoutState(false);
+        return;
+      }
+
+      if (!arePoseLandmarksPlausible(viewLandmarks)) {
+        syncPreviewLayoutState(true);
+        return;
+      }
+
+      syncPreviewLayoutState(true);
       onLandmarksRef.current?.(viewLandmarks);
 
       const now = performance.now();
@@ -146,7 +199,7 @@ function VisionCameraPreviewActive({
         }
       }
     },
-    [],
+    [syncPreviewLayoutState],
   );
 
   const onPoseResults = useCallback(
@@ -207,14 +260,17 @@ function VisionCameraPreviewActive({
 
   viewDimensionsRef.current = poseDetection.cameraViewDimensions;
 
-  useEffect(() => {
-    if (!cameraReadyRef.current) {
-      cameraReadyRef.current = true;
-      onCameraReadyRef.current?.();
-    }
-  }, []);
+  const cameraViewWidth = poseDetection.cameraViewDimensions.width;
+  const cameraViewHeight = poseDetection.cameraViewDimensions.height;
 
   useEffect(() => {
+    viewSettleGateRef.current.update(cameraViewWidth, cameraViewHeight);
+    syncPreviewLayoutState(viewSettleGateRef.current.isSettled());
+  }, [cameraViewHeight, cameraViewWidth, syncPreviewLayoutState]);
+
+  useEffect(() => {
+    viewSettleGateRef.current.reset();
+    postSettleFramesRef.current = 0;
     landmarkSmootherRef.current.reset();
     setLatestLandmarks(null);
     setViewBarLineY(null);
@@ -222,7 +278,8 @@ function VisionCameraPreviewActive({
     lastDisplayFrameAtRef.current = 0;
     lastBarLineYRef.current = null;
     cameraReadyRef.current = false;
-  }, [facing]);
+    syncPreviewLayoutState(false);
+  }, [facing, syncPreviewLayoutState]);
 
   return (
     <View
@@ -289,6 +346,7 @@ export function VisionCameraPreview({
   active = true,
   onCameraReady,
   onLandmarksDetected,
+  posePreviewLayoutRef,
   pullUpBarLineY = null,
   exerciseType = 'push_ups',
   repPhase = 'UP',
@@ -362,6 +420,7 @@ export function VisionCameraPreview({
       onFlipCamera={() => setFacing((current) => (current === 'front' ? 'back' : 'front'))}
       onCameraReady={onCameraReady}
       onLandmarksDetected={onLandmarksDetected}
+      posePreviewLayoutRef={posePreviewLayoutRef}
       pullUpBarLineY={pullUpBarLineY}
       exerciseType={exerciseType}
       repPhase={repPhase}

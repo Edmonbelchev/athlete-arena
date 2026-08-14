@@ -4,6 +4,7 @@ import { ActivityIndicator, Platform, StyleSheet, Text, View } from 'react-nativ
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { DailyMissionCompleteOverlay } from '@/components/challenges/DailyMissionCompleteOverlay';
+import type { PosePreviewLayoutState } from '@/components/CameraPreview.types';
 import { ChallengeWorkoutMode } from '@/components/challenges/ChallengeWorkoutMode';
 import { ChallengeWorkoutSetup } from '@/components/challenges/ChallengeWorkoutSetup';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
@@ -39,6 +40,10 @@ export default function ChallengeScreen() {
   const [isSyncing, setIsSyncing] = useState(false);
   const isSyncingRef = useRef(false);
   const challengeRef = useRef(challenge);
+  const posePreviewLayoutRef = useRef<PosePreviewLayoutState>({
+    isLandscape: false,
+    settled: false,
+  });
   const isCompleted = challenge?.status === 'completed';
   const targetReps = challenge?.target_reps ?? 0;
   const inWorkout = Boolean(challenge) && (workoutStarted || isCompleted);
@@ -95,6 +100,7 @@ export default function ChallengeScreen() {
   } = useExercisePoseDetection({
     exerciseType: challenge?.exercise_type ?? 'push_ups',
     enabled: Boolean(challenge) && !isCompleted && cameraActive && inWorkout,
+    posePreviewLayoutRef,
     onRepDetected: () => {
       repCounter.simulateRep();
     },
@@ -160,6 +166,7 @@ export default function ChallengeScreen() {
         cameraActive={!isCompleted && cameraActive}
         onContinue={handleLeave}
         pullUpBarLineY={challenge.exercise_type === 'pull_ups' ? pullUpBarLineY : null}
+        posePreviewLayoutRef={posePreviewLayoutRef}
         onCameraReady={() => {
           repCounter.start();
         }}

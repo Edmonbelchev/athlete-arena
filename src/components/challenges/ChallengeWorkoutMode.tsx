@@ -1,8 +1,10 @@
 import type { ReactNode } from 'react';
+import type { MutableRefObject } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { CameraPreview } from '@/components/CameraPreview';
+import type { PosePreviewLayoutState } from '@/components/CameraPreview.types';
 import { ChallengeRepHud, type ChallengeRepHudRaceTimer } from '@/components/challenges/ChallengeRepHud';
 import { WorkoutHintPanel } from '@/components/challenges/WorkoutHintPanel';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
@@ -25,6 +27,7 @@ interface ChallengeWorkoutModeProps {
   repPhase: ExercisePhase;
   cameraActive: boolean;
   pullUpBarLineY: number | null;
+  posePreviewLayoutRef?: MutableRefObject<PosePreviewLayoutState>;
   onCameraReady: () => void;
   onLandmarksDetected: (landmarks: PoseLandmark[]) => void;
   completed?: boolean;
@@ -43,6 +46,7 @@ export function ChallengeWorkoutMode({
   repPhase,
   cameraActive,
   pullUpBarLineY,
+  posePreviewLayoutRef,
   onCameraReady,
   onLandmarksDetected,
   completed = false,
@@ -93,6 +97,7 @@ export function ChallengeWorkoutMode({
               active={cameraActive}
               fullscreen
               hideStatusOverlay
+              posePreviewLayoutRef={posePreviewLayoutRef}
               pullUpBarLineY={pullUpBarLineY}
               exerciseType={exerciseType}
               repPhase={repPhase}
