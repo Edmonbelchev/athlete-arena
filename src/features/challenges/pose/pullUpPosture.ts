@@ -58,6 +58,26 @@ export function getAverageElbowY(landmarks: PoseLandmark[]): number | null {
   );
 }
 
+export function getAverageHipY(landmarks: PoseLandmark[]): number | null {
+  return averageVisibleY(
+    landmarks,
+    PoseLandmarkIndex.LEFT_HIP,
+    PoseLandmarkIndex.RIGHT_HIP,
+  );
+}
+
+/** Wrists sit below the waist/hip line - hands are not on an overhead bar. */
+export function areWristsBelowWaist(landmarks: PoseLandmark[]): boolean {
+  const wristY = getAverageWristY(landmarks);
+  const hipY = getAverageHipY(landmarks);
+
+  if (wristY === null || hipY === null) {
+    return false;
+  }
+
+  return wristY > hipY + PULL_UP_POSTURE.minWristBelowHipMargin;
+}
+
 /** Approximate bar height from visible wrists (y grows downward). */
 export function getBarLineY(landmarks: PoseLandmark[]): number | null {
   return getAverageWristY(landmarks);

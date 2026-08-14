@@ -5,6 +5,7 @@ import { pushUpElbowAngle, type PoseLandmark } from './landmarks';
 import {
   getBarLineY,
   getPullUpHangHint,
+  areWristsBelowWaist,
   isPullUpDeadHangPosture,
   isPullUpTopPosture,
 } from './pullUpPosture';
@@ -49,6 +50,11 @@ export class PullUpRepEngine {
   }
 
   update(landmarks: PoseLandmark[]): boolean {
+    if (areWristsBelowWaist(landmarks)) {
+      this.releaseBar();
+      return false;
+    }
+
     const elbowAngle = pushUpElbowAngle(landmarks);
     if (elbowAngle === null) {
       this.lastTopPosture = false;
@@ -129,6 +135,18 @@ export class PullUpRepEngine {
     }
 
     return repCompleted;
+  }
+
+  /** Hands dropped to waist level or below - clear the bar and stop counting. */
+  private releaseBar(): void {
+    this.capturedBarLineY = null;
+    this.isArmed = false;
+    this.readyFrames = 0;
+    this.blockedUntilHang = false;
+    this.hasPulledThisRep = false;
+    this.topPostureHoldFrames = 0;
+    this.lastTopPosture = false;
+    this.phase = 'UP';
   }
 
   reset(): void {

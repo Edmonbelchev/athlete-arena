@@ -88,6 +88,8 @@ export const PULL_UP_POSTURE = {
   readyFramesRequired: isNativeMobile ? 3 : 4,
   /** Consecutive top-posture frames before a rep registers. */
   topPostureHoldFrames: isNativeMobile ? 2 : 3,
+  /** Wrists below hips by at least this much before the bar line is dropped (y grows down). */
+  minWristBelowHipMargin: isNativeMobile ? 0.02 : 0.025,
 } as const;
 
 export const SQUAT_THRESHOLDS = {
