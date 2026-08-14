@@ -1,8 +1,13 @@
 import type { SquatPhase } from '@/features/challenges/poseDetection.types';
-import { SQUAT_THRESHOLDS } from '@/constants/poseDetection';
+import { SQUAT_POSTURE, SQUAT_THRESHOLDS } from '@/constants/poseDetection';
 
 import type { PoseLandmark } from './landmarks';
-import { getSquatKneeAngles, isValidSquatStance } from './squatPosture';
+import {
+  getSquatKneeAngles,
+  getSquatStanceHint,
+  isSquatStandingReady,
+  isValidSquatStance,
+} from './squatPosture';
 import { isInHighZone, isInLowZone, isInMidZone, type AngleThresholdConfig } from './repEngineUtils';
 
 function getSquatZones(): AngleThresholdConfig {
@@ -15,11 +20,42 @@ function getSquatZones(): AngleThresholdConfig {
 
 export class SquatRepEngine {
   phase: SquatPhase = 'STANDING';
+  private readyFrames = 0;
+  private isArmed = false;
   private reachedBottom = false;
+  private bottomHoldFrames = 0;
+
+  get armed(): boolean {
+    return this.isArmed;
+  }
+
+  getReadyHint(landmarks: PoseLandmark[]): string | null {
+    if (this.isArmed) {
+      return null;
+    }
+
+    return getSquatStanceHint(landmarks) ?? 'Stand upright with both feet flat to start counting';
+  }
 
   update(landmarks: PoseLandmark[]): boolean {
-    if (!isValidSquatStance(landmarks)) {
-      this.reset();
+    const inStance = isValidSquatStance(landmarks);
+
+    if (this.isArmed && !inStance) {
+      this.releaseSet();
+      return false;
+    }
+
+    if (isSquatStandingReady(landmarks)) {
+      this.readyFrames += 1;
+
+      if (!this.isArmed && this.readyFrames >= SQUAT_POSTURE.readyFramesRequired) {
+        this.isArmed = true;
+      }
+    } else if (!this.isArmed) {
+      this.readyFrames = 0;
+    }
+
+    if (!this.isArmed) {
       return false;
     }
 
@@ -41,30 +77,50 @@ export class SquatRepEngine {
       }
       this.phase = 'STANDING';
       this.reachedBottom = false;
+      this.bottomHoldFrames = 0;
     } else if (bothLow) {
+      this.bottomHoldFrames += 1;
+
       if (this.phase === 'STANDING' || this.phase === 'DESCENDING') {
         this.phase = 'BOTTOM';
       } else if (this.phase === 'ASCENDING') {
         this.phase = 'BOTTOM';
         this.reachedBottom = false;
+        this.bottomHoldFrames = 0;
       }
 
-      if (this.phase === 'BOTTOM') {
+      if (this.phase === 'BOTTOM' && this.bottomHoldFrames >= SQUAT_POSTURE.bottomHoldFrames) {
         this.reachedBottom = true;
       }
-    } else if (eitherMid) {
-      if (this.phase === 'STANDING') {
-        this.phase = 'DESCENDING';
-      } else if (this.phase === 'BOTTOM' || this.phase === 'ASCENDING') {
-        this.phase = 'ASCENDING';
+    } else {
+      this.bottomHoldFrames = 0;
+
+      if (eitherMid) {
+        if (this.phase === 'STANDING') {
+          this.phase = 'DESCENDING';
+        } else if (this.phase === 'BOTTOM' || this.phase === 'ASCENDING') {
+          this.phase = 'ASCENDING';
+        }
       }
     }
 
     return repCompleted;
   }
 
+  /** Walking, one-legged poses, and other non-squat stances end the set. */
+  private releaseSet(): void {
+    this.phase = 'STANDING';
+    this.reachedBottom = false;
+    this.bottomHoldFrames = 0;
+    this.readyFrames = 0;
+    this.isArmed = false;
+  }
+
   reset(): void {
     this.phase = 'STANDING';
     this.reachedBottom = false;
+    this.bottomHoldFrames = 0;
+    this.readyFrames = 0;
+    this.isArmed = false;
   }
 }

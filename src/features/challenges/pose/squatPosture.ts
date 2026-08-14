@@ -1,4 +1,4 @@
-import { POSE_REP_MIN_VISIBILITY, SQUAT_POSTURE } from '@/constants/poseDetection';
+import { POSE_REP_MIN_VISIBILITY, SQUAT_POSTURE, SQUAT_THRESHOLDS } from '@/constants/poseDetection';
 
 import { getKneeAngle, PoseLandmarkIndex, type PoseLandmark } from './landmarks';
 
@@ -108,4 +108,21 @@ export function getSquatStanceHint(landmarks: PoseLandmark[]): string | null {
   }
 
   return null;
+}
+
+/** Upright start position - both knees extended before the set arms. */
+export function isSquatStandingReady(landmarks: PoseLandmark[]): boolean {
+  if (!isValidSquatStance(landmarks)) {
+    return false;
+  }
+
+  const { left, right } = getSquatKneeAngles(landmarks);
+  if (left === null || right === null) {
+    return false;
+  }
+
+  const standingAngle = SQUAT_THRESHOLDS.standingAngle;
+  const hysteresis = SQUAT_THRESHOLDS.hysteresis;
+
+  return left >= standingAngle - hysteresis && right >= standingAngle - hysteresis;
 }

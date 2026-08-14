@@ -108,6 +108,10 @@ export const SQUAT_POSTURE = {
   maxKneeAngleAsymmetry: 40,
   /** Left and right knees stay near the same depth while squatting. */
   maxKneeYDelta: isNativeMobile ? 0.14 : 0.12,
+  /** Frames standing in a valid stance before rep counting begins. */
+  readyFramesRequired: isNativeMobile ? 3 : 4,
+  /** Consecutive frames at squat depth before bottom counts toward a rep. */
+  bottomHoldFrames: isNativeMobile ? 2 : 3,
 } as const;
 
 export const BURPEE_THRESHOLDS = {

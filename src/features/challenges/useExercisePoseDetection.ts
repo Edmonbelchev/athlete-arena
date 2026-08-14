@@ -8,7 +8,7 @@ import { createRepEngine } from './pose/createRepEngine';
 import type { PoseLandmark } from './pose/landmarks';
 import { PullUpRepEngine } from './pose/pullUpRepEngine';
 import { PushUpRepEngine } from './pose/pushUpRepEngine';
-import { getSquatStanceHint } from './pose/squatPosture';
+import { SquatRepEngine } from './pose/squatRepEngine';
 import { getBurpeeStanceHint } from './pose/burpeePosture';
 import { PoseQualityGate, type PoseTrackingStatus } from './pose/poseQuality';
 
@@ -65,6 +65,8 @@ export function useExercisePoseDetection({
 
       const pullUpArmed =
         exerciseType === 'pull_ups' && (engineRef.current as PullUpRepEngine).armed;
+      const squatArmed =
+        exerciseType === 'squats' && (engineRef.current as SquatRepEngine).armed;
 
       const quality = qualityGateRef.current.evaluate(landmarks, {
         pullUpArmed: exerciseType === 'pull_ups' ? pullUpArmed : undefined,
@@ -86,6 +88,9 @@ export function useExercisePoseDetection({
           !quality.shouldResetEngine) ||
         (exerciseType === 'push_ups' &&
           (engineRef.current as PushUpRepEngine).armed &&
+          !quality.shouldResetEngine) ||
+        (exerciseType === 'squats' &&
+          squatArmed &&
           !quality.shouldResetEngine);
 
       if (!quality.canCountReps && !keepUpdatingWhileArmed) {
@@ -119,9 +124,9 @@ export function useExercisePoseDetection({
       }
 
       if (exerciseType === 'squats') {
-        const squatHint = getSquatStanceHint(landmarks);
-        if (squatHint) {
-          setTrackingMessage(squatHint);
+        const squatEngine = engineRef.current as SquatRepEngine;
+        if (!squatEngine.armed) {
+          setTrackingMessage(squatEngine.getReadyHint(landmarks));
         } else if (quality.message) {
           setTrackingMessage(quality.message);
         } else {
