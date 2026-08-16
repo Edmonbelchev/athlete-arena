@@ -26,11 +26,13 @@ import { useTheme } from '@/hooks/use-theme';
 interface FriendChallengesWithFriendContentProps {
   friendId: string;
   friendName: string;
+  friendUsername?: string;
 }
 
 export function FriendChallengesWithFriendContent({
   friendId,
   friendName,
+  friendUsername,
 }: FriendChallengesWithFriendContentProps) {
   const theme = useTheme();
   const router = useRouter();
@@ -64,6 +66,17 @@ export function FriendChallengesWithFriendContent({
   );
 
   useChallengeNotificationRefresh(handleRefresh);
+
+  function handleCreateChallenge() {
+    router.push({
+      pathname: '/friends/challenge/create',
+      params: {
+        friendId,
+        username: friendUsername ?? friendName,
+        displayName: friendName,
+      },
+    });
+  }
 
   async function handleAcceptChallenge(participantId: string) {
     setBusyId(participantId);
@@ -129,6 +142,8 @@ export function FriendChallengesWithFriendContent({
       }>
       <Text style={StyleSheet.flatten([styles.subtitle, { color: theme.textSecondary }])}>{subtitle}</Text>
 
+      <PrimaryButton label={`Challenge ${friendName}`} onPress={handleCreateChallenge} />
+
       {displayError ? (
         <View style={styles.errorBlock}>
           <Text style={StyleSheet.flatten([styles.error, { color: theme.danger }])}>{displayError}</Text>
@@ -168,7 +183,7 @@ export function FriendChallengesWithFriendContent({
             { backgroundColor: theme.backgroundElement, borderColor: theme.border },
           ])}>
           <Text style={StyleSheet.flatten([styles.emptyCopy, { color: theme.textSecondary }])}>
-            Challenge {friendName} from their profile to start your first race.
+            No races with {friendName} yet. Tap the button above to start one.
           </Text>
         </View>
       ) : null}

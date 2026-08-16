@@ -29,19 +29,28 @@ import { getOwnedEmotes } from '@/features/shop/shopUtils';
 import { useTheme } from '@/hooks/use-theme';
 import { formatUserError } from '@/lib/errors';
 import { createFriendChallenge } from '@/services/friendChallengeService';
+import type { FriendSummary } from '@/types/friends';
 
 export default function CreateFriendChallengeScreen() {
   const theme = useTheme();
   const router = useRouter();
-  const { friendId: initialFriendId, username: initialUsername } = useLocalSearchParams<{
+  const {
+    friendId: initialFriendId,
+    username: initialUsername,
+    displayName: initialDisplayName,
+  } = useLocalSearchParams<{
     friendId?: string;
     username?: string;
+    displayName?: string;
   }>();
+  const isFriendLocked = Boolean(initialFriendId);
   const { friends, isLoading: isFriendsLoading, refresh: refreshFriends } = useFriends();
 
   useEffect(() => {
-    void refreshFriends({ loadFriends: true, loadRequests: false });
-  }, [refreshFriends]);
+    if (!isFriendLocked) {
+      void refreshFriends({ loadFriends: true, loadRequests: false });
+    }
+  }, [isFriendLocked, refreshFriends]);
   const [selectedFriendId, setSelectedFriendId] = useState<string | null>(initialFriendId ?? null);
   const [exerciseType, setExerciseType] = useState<ExerciseType>('push_ups');
   const [targetReps, setTargetReps] = useState(getDefaultRepsForExercise('push_ups'));
@@ -57,13 +66,70 @@ export default function CreateFriendChallengeScreen() {
     () => friends.find((friend) => friend.friendId === selectedFriendId) ?? null,
     [friends, selectedFriendId],
   );
-  const selectedUsername = selectedFriend?.username ?? initialUsername;
+  const lockedFriend = useMemo((): FriendSummary | null => {
+    if (!initialFriendId) {
+      return null;
+    }
+
+    if (selectedFriend) {
+      return selectedFriend;
+    }
+
+    return {
+      friendshipId: '',
+      friendId: initialFriendId,
+      username: initialUsername ?? 'friend',
+      displayName: initialDisplayName?.trim() || null,
+      level: 0,
+      currentStreak: 0,
+      avatarUrl: null,
+      avatar: null,
+      frame: null,
+    };
+  }, [initialDisplayName, initialFriendId, initialUsername, selectedFriend]);
+  const displayFriend = isFriendLocked ? lockedFriend : selectedFriend;
+  const selectedUsername = displayFriend?.username ?? initialUsername;
+  const selectedDisplayName = displayFriend?.displayName ?? displayFriend?.username ?? initialDisplayName;
 
   useEffect(() => {
     if (initialFriendId) {
       setSelectedFriendId(initialFriendId);
     }
   }, [initialFriendId]);
+
+  function renderFriendRow(friend: FriendSummary, selected: boolean, onPress?: () => void) {
+    const displayName = friend.displayName ?? friend.username;
+
+    return (
+      <Pressable
+        key={friend.friendId}
+        accessibilityRole={onPress ? 'button' : 'text'}
+        accessibilityState={onPress ? { selected } : undefined}
+        disabled={!onPress}
+        onPress={onPress}
+        style={StyleSheet.flatten([
+          styles.friendRow,
+          {
+            backgroundColor: selected ? theme.backgroundSelected : theme.backgroundElement,
+            borderColor: selected ? theme.primary : theme.border,
+          },
+        ])}>
+        <ProfileAvatar
+          uri={friend.avatarUrl}
+          name={displayName}
+          size={40}
+          shopAvatar={friend.avatar}
+          frame={friend.frame}
+        />
+        <View style={styles.friendInfo}>
+          <Text style={StyleSheet.flatten([styles.friendName, { color: theme.text }])}>{displayName}</Text>
+          <Text style={StyleSheet.flatten([styles.friendMeta, { color: theme.textSecondary }])}>
+            @{friend.username}
+          </Text>
+        </View>
+      </Pressable>
+    );
+  }
 
   const repPresets = FRIEND_CHALLENGE_REP_PRESETS[exerciseType];
 
@@ -112,17 +178,30 @@ export default function CreateFriendChallengeScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ title: 'Challenge Friend', headerShown: true }} />
+      <Stack.Screen
+        options={{
+          title: isFriendLocked && selectedDisplayName ? `Challenge ${selectedDisplayName}` : 'Challenge Friend',
+          headerShown: true,
+        }}
+      />
       <SafeAreaView
         style={StyleSheet.flatten([styles.safeArea, { backgroundColor: theme.background }])}
         edges={['bottom']}>
         <ScrollView contentContainerStyle={styles.content}>
           <Text style={StyleSheet.flatten([styles.subtitle, { color: theme.textSecondary }])}>
-            Create a custom challenge{selectedUsername ? ` for @${selectedUsername}` : ''}
+            {isFriendLocked
+              ? `Set up a speed race with ${selectedDisplayName ?? 'your friend'}`
+              : `Create a custom challenge${selectedUsername ? ` for @${selectedUsername}` : ''}`}
           </Text>
 
           <Text style={StyleSheet.flatten([styles.label, { color: theme.textSecondary }])}>FRIEND</Text>
-          {isFriendsLoading ? (
+          {isFriendLocked ? (
+            lockedFriend ? (
+              renderFriendRow(lockedFriend, true)
+            ) : (
+              <ActivityIndicator color={theme.primary} />
+            )
+          ) : isFriendsLoading ? (
             <ActivityIndicator color={theme.primary} />
           ) : friends.length === 0 ? (
             <Text style={StyleSheet.flatten([styles.help, { color: theme.textSecondary }])}>
@@ -130,41 +209,11 @@ export default function CreateFriendChallengeScreen() {
             </Text>
           ) : (
             <View style={styles.friendList}>
-              {friends.map((friend) => {
-                const selected = selectedFriendId === friend.friendId;
-                const displayName = friend.displayName ?? friend.username;
-
-                return (
-                  <Pressable
-                    key={friend.friendId}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected }}
-                    onPress={() => setSelectedFriendId(friend.friendId)}
-                    style={StyleSheet.flatten([
-                      styles.friendRow,
-                      {
-                        backgroundColor: selected ? theme.backgroundSelected : theme.backgroundElement,
-                        borderColor: selected ? theme.primary : theme.border,
-                      },
-                    ])}>
-                    <ProfileAvatar
-                      uri={friend.avatarUrl}
-                      name={displayName}
-                      size={40}
-                      shopAvatar={friend.avatar}
-                      frame={friend.frame}
-                    />
-                    <View style={styles.friendInfo}>
-                      <Text style={StyleSheet.flatten([styles.friendName, { color: theme.text }])}>
-                        {displayName}
-                      </Text>
-                      <Text style={StyleSheet.flatten([styles.friendMeta, { color: theme.textSecondary }])}>
-                        @{friend.username}
-                      </Text>
-                    </View>
-                  </Pressable>
-                );
-              })}
+              {friends.map((friend) =>
+                renderFriendRow(friend, selectedFriendId === friend.friendId, () =>
+                  setSelectedFriendId(friend.friendId),
+                ),
+              )}
             </View>
           )}
 

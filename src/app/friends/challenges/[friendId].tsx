@@ -29,7 +29,11 @@ export default function FriendChallengesWithFriendScreen() {
         style={StyleSheet.flatten([styles.safeArea, { backgroundColor: theme.background }])}>
         <View style={styles.content}>
           {friendId ? (
-            <FriendChallengesWithFriendContent friendId={friendId} friendName={friendName} />
+            <FriendChallengesWithFriendContent
+              friendId={friendId}
+              friendName={friendName}
+              friendUsername={username}
+            />
           ) : null}
         </View>
       </SafeAreaView>

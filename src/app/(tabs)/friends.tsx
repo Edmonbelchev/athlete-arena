@@ -144,7 +144,11 @@ export default function FriendsScreen() {
                 onChallenge={() =>
                   router.push({
                     pathname: '/friends/challenge/create',
-                    params: { friendId: friend.friendId, username: friend.username },
+                    params: {
+                      friendId: friend.friendId,
+                      username: friend.username,
+                      displayName: friend.displayName ?? friend.username,
+                    },
                   })
                 }
               />

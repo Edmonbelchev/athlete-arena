@@ -74,7 +74,11 @@ export default function FriendProfileScreen() {
 
     router.push({
       pathname: '/friends/challenge/create',
-      params: { friendId: profile.userId, username: profile.username },
+      params: {
+        friendId: profile.userId,
+        username: profile.username,
+        displayName: profile.displayName ?? profile.username,
+      },
     });
   }
 
