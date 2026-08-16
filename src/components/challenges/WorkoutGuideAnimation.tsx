@@ -1,17 +1,11 @@
 import { Image } from 'expo-image';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import Animated, {
-  Easing,
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
-} from 'react-native-reanimated';
 
 import type { ExerciseType } from '@/constants/challenges';
 import { Radius, Spacing } from '@/constants/theme';
 import { VISUAL_GUIDE_FRAME_INTERVAL_MS } from '@/constants/visualGuides';
-import { getVisualGuideFrameUrls } from '@/lib/visualGuideUrls';
+import { useVisualGuideFrameUrls } from '@/hooks/use-visual-guide-frame-urls';
 import { useTheme } from '@/hooks/use-theme';
 
 interface WorkoutGuideAnimationProps {
@@ -20,42 +14,52 @@ interface WorkoutGuideAnimationProps {
   variant?: 'setup' | 'overlay';
 }
 
+const CROSSFADE_MS = 320;
+
 /** Two-frame loop from Supabase Storage (`visual_guides/{exercise}/frame1|2.webp`). */
 export function WorkoutGuideAnimation({ exerciseType, variant = 'setup' }: WorkoutGuideAnimationProps) {
   const theme = useTheme();
   const isOverlay = variant === 'overlay';
-  const frameUrls = useMemo(() => getVisualGuideFrameUrls(exerciseType), [exerciseType]);
-  const frame1Opacity = useSharedValue(1);
-  const frame2Opacity = useSharedValue(0);
+  const frameUrls = useVisualGuideFrameUrls(exerciseType);
+  const [activeFrame, setActiveFrame] = useState<'frame1' | 'frame2'>('frame1');
+  const [frame2Ready, setFrame2Ready] = useState(false);
 
   useEffect(() => {
     if (!frameUrls) {
+      setFrame2Ready(false);
+      setActiveFrame('frame1');
       return;
     }
 
-    let showingFirst = true;
+    let cancelled = false;
+    setFrame2Ready(false);
+    setActiveFrame('frame1');
+
+    void Promise.all([
+      Image.prefetch(frameUrls.frame1, { cachePolicy: 'memory-disk' }),
+      Image.prefetch(frameUrls.frame2, { cachePolicy: 'memory-disk' }),
+    ]).then(([, frame2Loaded]) => {
+      if (!cancelled) {
+        setFrame2Ready(frame2Loaded);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [frameUrls]);
+
+  useEffect(() => {
+    if (!frame2Ready || !frameUrls) {
+      return;
+    }
+
     const interval = setInterval(() => {
-      showingFirst = !showingFirst;
-      frame1Opacity.value = withTiming(showingFirst ? 1 : 0, {
-        duration: 320,
-        easing: Easing.inOut(Easing.quad),
-      });
-      frame2Opacity.value = withTiming(showingFirst ? 0 : 1, {
-        duration: 320,
-        easing: Easing.inOut(Easing.quad),
-      });
+      setActiveFrame((current) => (current === 'frame1' ? 'frame2' : 'frame1'));
     }, VISUAL_GUIDE_FRAME_INTERVAL_MS);
 
     return () => clearInterval(interval);
-  }, [frame1Opacity, frame2Opacity, frameUrls]);
-
-  const frame1Style = useAnimatedStyle(() => ({
-    opacity: frame1Opacity.value,
-  }));
-
-  const frame2Style = useAnimatedStyle(() => ({
-    opacity: frame2Opacity.value,
-  }));
+  }, [frameUrls, frame2Ready]);
 
   if (!frameUrls) {
     return (
@@ -79,6 +83,9 @@ export function WorkoutGuideAnimation({ exerciseType, variant = 'setup' }: Worko
     );
   }
 
+  const uri = activeFrame === 'frame1' ? frameUrls.frame1 : frameUrls.frame2;
+  const frameKey = `${frameUrls.cacheKey}-${activeFrame}`;
+
   return (
     <View
       style={StyleSheet.flatten([
@@ -88,31 +95,28 @@ export function WorkoutGuideAnimation({ exerciseType, variant = 'setup' }: Worko
           borderColor: isOverlay ? 'rgba(255, 255, 255, 0.25)' : theme.border,
         },
       ])}>
-      <Animated.View style={[styles.frameLayer, frame1Style]}>
-        <Image
-          source={{ uri: frameUrls.frame1 }}
-          style={styles.frameImage}
-          contentFit="contain"
-          transition={200}
-          cachePolicy={__DEV__ ? 'none' : 'memory-disk'}
-        />
-      </Animated.View>
-      <Animated.View style={[styles.frameLayer, frame2Style]}>
-        <Image
-          source={{ uri: frameUrls.frame2 }}
-          style={styles.frameImage}
-          contentFit="contain"
-          transition={200}
-          cachePolicy={__DEV__ ? 'none' : 'memory-disk'}
-        />
-      </Animated.View>
+      <Image
+        source={{ uri, cacheKey: frameKey }}
+        recyclingKey={frameKey}
+        style={styles.frameImage}
+        contentFit="contain"
+        cachePolicy="memory-disk"
+        transition={{
+          duration: CROSSFADE_MS,
+          effect: 'cross-dissolve',
+          timing: 'ease-in-out',
+        }}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   setup: {
-    minHeight: 220,
+    height: 200,
+    maxWidth: 280,
+    alignSelf: 'center',
+    width: '100%',
     borderRadius: Radius.lg,
     borderWidth: 1,
     overflow: 'hidden',
@@ -123,9 +127,6 @@ const styles = StyleSheet.create({
     borderRadius: Radius.md,
     borderWidth: 1,
     overflow: 'hidden',
-  },
-  frameLayer: {
-    ...StyleSheet.absoluteFillObject,
   },
   frameImage: {
     width: '100%',

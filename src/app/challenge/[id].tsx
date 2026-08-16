@@ -19,6 +19,7 @@ import { useExercisePoseDetection } from '@/features/challenges/useExercisePoseD
 import { useRepCounter } from '@/features/challenges/useRepCounter';
 import { useProfile } from '@/features/profile/useProfile';
 import { useShop } from '@/features/shop/ShopProvider';
+import { useWeeklyMissionStreak } from '@/features/streaks/useWeeklyMissionStreak';
 import { useDrainNativeCameraOnLeave } from '@/hooks/use-drain-native-camera-on-leave';
 import { useRouteParam } from '@/hooks/use-route-param';
 import { useTheme } from '@/hooks/use-theme';
@@ -27,6 +28,7 @@ import { formatUserError } from '@/lib/errors';
 import { leaveScreen } from '@/lib/navigation';
 import { supportsNativePoseDetection } from '@/lib/runtime';
 import { completeChallenge } from '@/services/challengeService';
+import { willCompleteWeeklyMissionStreak } from '@/types/weeklyStreak';
 
 export default function ChallengeScreen() {
   const theme = useTheme();
@@ -35,11 +37,14 @@ export default function ChallengeScreen() {
   const { challenge, isLoading, error, applyChallenge } = useChallenge(id);
   const { equippedEmote } = useShop();
   const { applyXpDelta, refresh: refreshProfile } = useProfile();
+  const { weeklyStreak, refresh: refreshWeeklyStreak } = useWeeklyMissionStreak();
   const { workoutStarted, startWorkout } = useWorkoutSession('daily', id);
   const [syncError, setSyncError] = useState<string | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [showWeeklyStreakComplete, setShowWeeklyStreakComplete] = useState(false);
   const isSyncingRef = useRef(false);
   const challengeRef = useRef(challenge);
+  const weeklyStreakRef = useRef(weeklyStreak);
   const posePreviewLayoutRef = useRef<PosePreviewLayoutState>({
     isLandscape: false,
     settled: false,
@@ -49,6 +54,7 @@ export default function ChallengeScreen() {
   const inWorkout = Boolean(challenge) && (workoutStarted || isCompleted);
 
   challengeRef.current = challenge;
+  weeklyStreakRef.current = weeklyStreak;
 
   const cameraActive = useDrainNativeCameraOnLeave(inWorkout);
 
@@ -67,11 +73,17 @@ export default function ChallengeScreen() {
       setIsSyncing(true);
       setSyncError(null);
 
+      const completesWeeklyStreak = willCompleteWeeklyMissionStreak(weeklyStreakRef.current);
+
       try {
         const updated = await completeChallenge(activeChallenge.id, repCount);
         applyChallenge(updated);
         applyXpDelta(DAILY_MISSION_XP_REWARD);
+        if (completesWeeklyStreak) {
+          setShowWeeklyStreakComplete(true);
+        }
         void refreshProfile();
+        void refreshWeeklyStreak();
       } catch (err) {
         setSyncError(formatUserError(err, 'Failed to complete challenge'));
       } finally {
@@ -79,7 +91,7 @@ export default function ChallengeScreen() {
         setIsSyncing(false);
       }
     },
-    [applyChallenge, applyXpDelta, refreshProfile],
+    [applyChallenge, applyXpDelta, refreshProfile, refreshWeeklyStreak],
   );
 
   const repCounter = useRepCounter({
@@ -177,9 +189,11 @@ export default function ChallengeScreen() {
             <DailyMissionCompleteOverlay
               targetReps={challenge.target_reps}
               exerciseLabel={formatExerciseLabel(challenge.exercise_type, true)}
+              exerciseType={challenge.exercise_type}
               xp={earnedXp}
               coins={earnedCoins}
               emote={equippedEmote}
+              showWeeklyStreakComplete={showWeeklyStreakComplete}
             />
           ) : null
         }

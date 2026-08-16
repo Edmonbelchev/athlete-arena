@@ -14,13 +14,100 @@ import { PushUpRepEngine } from './pose/pushUpRepEngine';
 import { SquatRepEngine } from './pose/squatRepEngine';
 import { getBurpeeStanceHint } from './pose/burpeePosture';
 import { PoseQualityGate, type PoseQualityResult, type PoseTrackingStatus } from './pose/poseQuality';
-import { resolvePullUpTrackingStatus } from './workoutGuidance';
+import {
+  resolveBurpeeTrackingStatus,
+  resolvePullUpTrackingStatus,
+  resolvePushUpTrackingStatus,
+  resolveSquatTrackingStatus,
+} from './workoutGuidance';
 
 interface UseExercisePoseDetectionOptions {
   exerciseType: ExerciseType;
   enabled: boolean;
   onRepDetected: () => void;
   posePreviewLayoutRef?: MutableRefObject<PosePreviewLayoutState>;
+}
+
+type RepEngine = ReturnType<typeof createRepEngine>;
+
+function getEngineArmed(engine: RepEngine, exerciseType: ExerciseType): boolean {
+  switch (exerciseType) {
+    case 'pull_ups':
+      return (engine as PullUpRepEngine).armed;
+    case 'push_ups':
+      return (engine as PushUpRepEngine).armed;
+    case 'squats':
+      return (engine as SquatRepEngine).armed;
+    default:
+      return false;
+  }
+}
+
+function resolveExerciseTrackingStatus(
+  exerciseType: ExerciseType,
+  quality: PoseQualityResult,
+  engine: RepEngine,
+): PoseTrackingStatus {
+  switch (exerciseType) {
+    case 'pull_ups':
+      return resolvePullUpTrackingStatus(quality, (engine as PullUpRepEngine).armed);
+    case 'push_ups':
+      return resolvePushUpTrackingStatus(
+        quality,
+        (engine as PushUpRepEngine).armed,
+        (engine as PushUpRepEngine).repCountingActive,
+      );
+    case 'squats':
+      return resolveSquatTrackingStatus(quality, (engine as SquatRepEngine).armed);
+    case 'burpees':
+      return resolveBurpeeTrackingStatus(quality);
+    default:
+      return quality.status;
+  }
+}
+
+function getExerciseFormMessage(
+  exerciseType: ExerciseType,
+  engine: RepEngine,
+  landmarks: PoseLandmark[],
+  quality: PoseQualityResult,
+): string | null {
+  if (!quality.canCountReps) {
+    return quality.message;
+  }
+
+  switch (exerciseType) {
+    case 'pull_ups': {
+      const pullUpEngine = engine as PullUpRepEngine;
+      if (!pullUpEngine.armed) {
+        return pullUpEngine.getHangHint(landmarks);
+      }
+      return quality.message;
+    }
+    case 'push_ups': {
+      const pushUpEngine = engine as PushUpRepEngine;
+      if (!pushUpEngine.repCountingActive) {
+        if (pushUpEngine.armed) {
+          return 'Hold at the top of the push-up to start counting';
+        }
+        return pushUpEngine.getPlankHint(landmarks);
+      }
+      return quality.message;
+    }
+    case 'squats': {
+      const squatEngine = engine as SquatRepEngine;
+      if (!squatEngine.armed) {
+        return squatEngine.getReadyHint(landmarks);
+      }
+      return quality.message;
+    }
+    case 'burpees': {
+      const burpeeHint = getBurpeeStanceHint(landmarks);
+      return burpeeHint ?? quality.message;
+    }
+    default:
+      return quality.message;
+  }
 }
 
 export function useExercisePoseDetection({
@@ -66,21 +153,15 @@ export function useExercisePoseDetection({
     }
   }, [enabled, exerciseType, setPhase, setPullUpBarLineY, setTrackingMessage, setTrackingStatus]);
 
-  const applyTrackingStatus = useCallback(
-    (quality: PoseQualityResult, armed: boolean) => {
-      if (exerciseType === 'pull_ups') {
-        setTrackingStatus(resolvePullUpTrackingStatus(quality, armed));
+  const processLandmarks = useCallback(
+    (landmarks: PoseLandmark[]) => {
+      if (!enabled) {
         return;
       }
 
-      setTrackingStatus(quality.status);
-    },
-    [exerciseType, setTrackingStatus],
-  );
-
-  const processLandmarks = useCallback(
-    (landmarks: PoseLandmark[]) => {
-      if (!enabled || landmarks.length === 0) {
+      if (landmarks.length === 0) {
+        setTrackingStatus('partial');
+        setTrackingMessage('Step into frame');
         return;
       }
 
@@ -89,18 +170,12 @@ export function useExercisePoseDetection({
 
       if (previewLayout && !previewLayout.settled) {
         setTrackingStatus('stabilizing');
-        setTrackingMessage(
-          isLandscape
-            ? 'Keep your full body in frame and hold still'
-            : 'Hold still — tracking is locking on',
-        );
+        setTrackingMessage('Hold still — tracking is locking on');
         return;
       }
 
       const pullUpArmed =
         exerciseType === 'pull_ups' && (engineRef.current as PullUpRepEngine).armed;
-      const squatArmed =
-        exerciseType === 'squats' && (engineRef.current as SquatRepEngine).armed;
 
       const quality = qualityGateRef.current.evaluate(landmarks, {
         pullUpArmed: exerciseType === 'pull_ups' ? pullUpArmed : undefined,
@@ -115,82 +190,40 @@ export function useExercisePoseDetection({
         }
       }
 
-      const pullUpArmedNow =
-        exerciseType === 'pull_ups' && (engineRef.current as PullUpRepEngine).armed;
+      const engine = engineRef.current;
+      const armedBeforeUpdate = getEngineArmed(engine, exerciseType);
 
-      const keepUpdatingWhileArmed =
-        (exerciseType === 'pull_ups' &&
-          pullUpArmedNow &&
-          !quality.shouldResetEngine) ||
-        (exerciseType === 'push_ups' &&
-          (engineRef.current as PushUpRepEngine).armed &&
-          !quality.shouldResetEngine) ||
-        (exerciseType === 'squats' &&
-          squatArmed &&
-          !quality.shouldResetEngine);
+      if (!quality.canCountReps) {
+        if (armedBeforeUpdate) {
+          engine.update(landmarks);
+          setPhase(engine.phase);
+        }
 
-      if (!quality.canCountReps && !keepUpdatingWhileArmed) {
-        applyTrackingStatus(quality, pullUpArmedNow);
-        setTrackingMessage(quality.message);
+        setTrackingStatus(resolveExerciseTrackingStatus(exerciseType, quality, engine));
+        setTrackingMessage(getExerciseFormMessage(exerciseType, engine, landmarks, quality));
+
+        if (exerciseType === 'pull_ups') {
+          setPullUpBarLineY((engine as PullUpRepEngine).barLineY);
+        }
+
         return;
       }
 
-      const repCompleted = engineRef.current.update(landmarks);
-      setPhase(engineRef.current.phase);
+      const repCompleted = engine.update(landmarks);
+      setPhase(engine.phase);
+
+      setTrackingStatus(resolveExerciseTrackingStatus(exerciseType, quality, engine));
+      setTrackingMessage(getExerciseFormMessage(exerciseType, engine, landmarks, quality));
 
       if (exerciseType === 'pull_ups') {
-        const pullUpEngine = engineRef.current as PullUpRepEngine;
-        setPullUpBarLineY(pullUpEngine.barLineY);
-        applyTrackingStatus(quality, pullUpEngine.armed);
-        if (!pullUpEngine.armed) {
-          setTrackingMessage(pullUpEngine.getHangHint(landmarks));
-        } else if (quality.message) {
-          setTrackingMessage(quality.message);
-        } else {
-          setTrackingMessage(null);
-        }
-      } else {
-        applyTrackingStatus(quality, false);
-      }
-
-      if (exerciseType === 'push_ups') {
-        const pushUpEngine = engineRef.current as PushUpRepEngine;
-        if (!pushUpEngine.armed) {
-          setTrackingMessage(pushUpEngine.getPlankHint(landmarks));
-        } else if (quality.message) {
-          setTrackingMessage(quality.message);
-        } else {
-          setTrackingMessage(null);
-        }
-      }
-
-      if (exerciseType === 'squats') {
-        const squatEngine = engineRef.current as SquatRepEngine;
-        if (!squatEngine.armed) {
-          setTrackingMessage(squatEngine.getReadyHint(landmarks));
-        } else if (quality.message) {
-          setTrackingMessage(quality.message);
-        } else {
-          setTrackingMessage(null);
-        }
-      }
-
-      if (exerciseType === 'burpees') {
-        const burpeeHint = getBurpeeStanceHint(landmarks);
-        if (burpeeHint) {
-          setTrackingMessage(burpeeHint);
-        } else if (quality.message) {
-          setTrackingMessage(quality.message);
-        } else {
-          setTrackingMessage(null);
-        }
+        setPullUpBarLineY((engine as PullUpRepEngine).barLineY);
       }
 
       if (repCompleted) {
         onRepDetectedRef.current();
       }
     },
-    [applyTrackingStatus, enabled, exerciseType, height, setPhase, setPullUpBarLineY, setTrackingMessage, setTrackingStatus, width],
+    [enabled, exerciseType, height, setPhase, setPullUpBarLineY, setTrackingMessage, setTrackingStatus, width],
   );
 
   return {

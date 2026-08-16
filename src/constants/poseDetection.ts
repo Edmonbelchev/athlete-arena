@@ -70,6 +70,8 @@ export const PUSH_UP_POSTURE = {
   minWristBelowShoulder: isNativeMobile ? 0.02 : 0.025,
   /** Frames in a valid plank before rep counting begins. */
   readyFramesRequired: isNativeMobile ? 3 : 4,
+  /** Consecutive frames at arm extension before rep counting begins. */
+  topHoldFramesBeforeReps: isNativeMobile ? 3 : 2,
   /** Both shoulders visible across the frame when facing the camera. */
   minShoulderWidthFront: isNativeMobile ? 0.12 : 0.14,
   /** Shoulders sit above hips when facing the camera. */

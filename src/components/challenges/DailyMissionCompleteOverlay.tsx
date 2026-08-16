@@ -10,7 +10,9 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
+import { WorkoutGuideAnimation } from '@/components/challenges/WorkoutGuideAnimation';
 import { EmoteDisplay } from '@/components/shop/EmoteDisplay';
+import type { ExerciseType } from '@/constants/challenges';
 import { formatXpAndCoins } from '@/constants/coins';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -21,9 +23,11 @@ const CONFETTI_PIECES = 14;
 interface DailyMissionCompleteOverlayProps {
   targetReps: number;
   exerciseLabel: string;
+  exerciseType: ExerciseType;
   xp: number;
   coins: number;
   emote: string | null | undefined;
+  showWeeklyStreakComplete?: boolean;
 }
 
 function ConfettiPiece({ index }: { index: number }) {
@@ -122,9 +126,11 @@ function PulsingRing() {
 export function DailyMissionCompleteOverlay({
   targetReps,
   exerciseLabel,
+  exerciseType,
   xp,
   coins,
   emote,
+  showWeeklyStreakComplete = false,
 }: DailyMissionCompleteOverlayProps) {
   const theme = useTheme();
 
@@ -153,6 +159,15 @@ export function DailyMissionCompleteOverlay({
         <Text style={StyleSheet.flatten([styles.title, { color: theme.text }])}>
           {targetReps} {exerciseLabel}
         </Text>
+
+        {showWeeklyStreakComplete ? (
+          <View style={styles.weeklyStreakGuide}>
+            <Text style={StyleSheet.flatten([styles.weeklyStreakLabel, { color: theme.streak }])}>
+              Weekly streak complete!
+            </Text>
+            <WorkoutGuideAnimation exerciseType={exerciseType} variant="setup" />
+          </View>
+        ) : null}
 
         <View style={styles.emoteWrap}>
           <EmoteDisplay emoji={emote} />
@@ -227,6 +242,16 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 28,
+    fontWeight: '900',
+    textAlign: 'center',
+  },
+  weeklyStreakGuide: {
+    width: '100%',
+    alignItems: 'center',
+    gap: Spacing.two,
+  },
+  weeklyStreakLabel: {
+    fontSize: 16,
     fontWeight: '900',
     textAlign: 'center',
   },

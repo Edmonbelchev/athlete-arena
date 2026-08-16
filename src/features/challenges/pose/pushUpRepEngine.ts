@@ -2,7 +2,7 @@ import { PUSH_UP_POSTURE, PUSH_UP_THRESHOLDS } from '@/constants/poseDetection';
 import type { PushUpPhase } from '@/features/challenges/poseDetection.types';
 
 import { ElbowRepEngine } from './elbowRepEngine';
-import type { PoseLandmark } from './landmarks';
+import { pushUpElbowAngle, type PoseLandmark } from './landmarks';
 import {
   detectPushUpViewMode,
   getPushUpPlankHint,
@@ -10,6 +10,7 @@ import {
   type PushUpViewMode,
 } from './pushUpPosture';
 import type { AngleThresholdConfig } from './repEngineUtils';
+import { isInHighZone } from './repEngineUtils';
 
 function toPushUpThresholds(): AngleThresholdConfig {
   return {
@@ -22,6 +23,8 @@ function toPushUpThresholds(): AngleThresholdConfig {
 export class PushUpRepEngine {
   private readonly elbowEngine = new ElbowRepEngine(toPushUpThresholds());
   private readyFrames = 0;
+  private topHoldFrames = 0;
+  private repCountingEnabled = false;
   private isArmed = false;
   private viewMode: PushUpViewMode | null = null;
 
@@ -31,6 +34,10 @@ export class PushUpRepEngine {
 
   get armed(): boolean {
     return this.isArmed;
+  }
+
+  get repCountingActive(): boolean {
+    return this.isArmed && this.repCountingEnabled;
   }
 
   getPlankHint(landmarks: PoseLandmark[]): string | null {
@@ -56,6 +63,10 @@ export class PushUpRepEngine {
       if (!this.isArmed && this.readyFrames >= PUSH_UP_POSTURE.readyFramesRequired) {
         this.isArmed = true;
         this.viewMode = detectedViewMode;
+        this.elbowEngine.reset();
+        this.topHoldFrames = 0;
+        this.repCountingEnabled = false;
+        return false;
       }
     } else if (!this.isArmed) {
       this.readyFrames = 0;
@@ -65,6 +76,27 @@ export class PushUpRepEngine {
       return false;
     }
 
+    if (!this.repCountingEnabled) {
+      const elbowAngle = pushUpElbowAngle(landmarks);
+      if (elbowAngle === null) {
+        this.topHoldFrames = 0;
+        return false;
+      }
+
+      if (isInHighZone(elbowAngle, toPushUpThresholds())) {
+        this.topHoldFrames += 1;
+      } else {
+        this.topHoldFrames = 0;
+      }
+
+      if (this.topHoldFrames < PUSH_UP_POSTURE.topHoldFramesBeforeReps) {
+        return false;
+      }
+
+      this.repCountingEnabled = true;
+      this.elbowEngine.reset();
+    }
+
     return this.elbowEngine.update(landmarks);
   }
 
@@ -72,6 +104,8 @@ export class PushUpRepEngine {
   private releaseSet(): void {
     this.elbowEngine.reset();
     this.readyFrames = 0;
+    this.topHoldFrames = 0;
+    this.repCountingEnabled = false;
     this.isArmed = false;
     this.viewMode = null;
   }
@@ -79,6 +113,8 @@ export class PushUpRepEngine {
   reset(): void {
     this.elbowEngine.reset();
     this.readyFrames = 0;
+    this.topHoldFrames = 0;
+    this.repCountingEnabled = false;
     this.isArmed = false;
     this.viewMode = null;
   }

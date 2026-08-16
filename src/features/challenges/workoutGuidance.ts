@@ -18,9 +18,13 @@ export function getTrackingStatusLabel(status: PoseTrackingStatus): string {
 
 /** Pull-ups: green only when the bar is armed; amber while visible but not hanging yet. */
 export function resolvePullUpTrackingStatus(
-  quality: Pick<PoseQualityResult, 'status' | 'shouldResetEngine'>,
+  quality: Pick<PoseQualityResult, 'status' | 'shouldResetEngine' | 'canCountReps'>,
   armed: boolean,
 ): PoseTrackingStatus {
+  if (!quality.canCountReps) {
+    return quality.status === 'stabilizing' ? 'stabilizing' : 'partial';
+  }
+
   if (armed && !quality.shouldResetEngine) {
     return 'ready';
   }
@@ -30,6 +34,54 @@ export function resolvePullUpTrackingStatus(
   }
 
   return quality.status;
+}
+
+/** Push-ups: green only in an active plank set; amber when visible but standing / settling. */
+export function resolvePushUpTrackingStatus(
+  quality: Pick<PoseQualityResult, 'status' | 'canCountReps'>,
+  armed: boolean,
+  repCountingActive: boolean,
+): PoseTrackingStatus {
+  if (!quality.canCountReps) {
+    return quality.status === 'stabilizing' ? 'stabilizing' : 'partial';
+  }
+
+  if (repCountingActive) {
+    return 'ready';
+  }
+
+  if (armed) {
+    return 'stabilizing';
+  }
+
+  return 'awaiting_hang';
+}
+
+/** Squats: green only when armed in a valid stance; amber when visible but not ready. */
+export function resolveSquatTrackingStatus(
+  quality: Pick<PoseQualityResult, 'status' | 'canCountReps'>,
+  armed: boolean,
+): PoseTrackingStatus {
+  if (!quality.canCountReps) {
+    return quality.status === 'stabilizing' ? 'stabilizing' : 'partial';
+  }
+
+  if (armed) {
+    return 'ready';
+  }
+
+  return 'awaiting_hang';
+}
+
+/** Burpees: green when body is tracked; red when out of frame. */
+export function resolveBurpeeTrackingStatus(
+  quality: Pick<PoseQualityResult, 'status' | 'canCountReps'>,
+): PoseTrackingStatus {
+  if (!quality.canCountReps) {
+    return quality.status === 'stabilizing' ? 'stabilizing' : 'partial';
+  }
+
+  return 'ready';
 }
 
 interface TrackingBorderColors {
