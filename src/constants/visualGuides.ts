@@ -3,26 +3,42 @@ import type { ExerciseType } from '@/constants/challenges';
 /** Supabase Storage bucket for remote setup guide frames. */
 export const VISUAL_GUIDES_BUCKET = 'visual_guides';
 
-export const VISUAL_GUIDE_FRAME_FILES = {
-  frame1: 'frame1.webp',
-  frame2: 'frame2.webp',
-} as const;
-
-/** Folder names inside the bucket (kebab-case). */
-export const VISUAL_GUIDE_FOLDERS: Record<ExerciseType, string> = {
-  push_ups: 'push-ups',
-  pull_ups: 'pull-ups',
-  squats: 'squats',
-  burpees: 'default',
-};
-
-/** Crossfade interval for the two-frame loop. */
-export const VISUAL_GUIDE_FRAME_INTERVAL_MS = 900;
-
-export function getVisualGuideFolder(exerciseType: ExerciseType): string {
-  return VISUAL_GUIDE_FOLDERS[exerciseType];
+export interface VisualGuideExerciseConfig {
+  folder: string;
+  frameFiles: readonly string[];
 }
 
-export function getVisualGuideStoragePath(exerciseType: ExerciseType, frame: 'frame1' | 'frame2'): string {
-  return `${getVisualGuideFolder(exerciseType)}/${VISUAL_GUIDE_FRAME_FILES[frame]}`;
+export const VISUAL_GUIDE_BY_EXERCISE: Record<ExerciseType, VisualGuideExerciseConfig> = {
+  push_ups: {
+    folder: 'push-ups',
+    frameFiles: ['frame1.webp', 'frame2.webp'],
+  },
+  pull_ups: {
+    folder: 'pull-ups',
+    frameFiles: ['frame1.webp', 'frame2.webp'],
+  },
+  squats: {
+    folder: 'squats',
+    frameFiles: ['frame1.webp', 'frame2.webp'],
+  },
+  burpees: {
+    folder: 'burpees',
+    frameFiles: ['frame1.webp', 'frame2.webp', 'frame3.webp', 'frame4.webp', 'frame5.webp'],
+  },
+};
+
+/** Crossfade interval between frames in the loop. */
+export const VISUAL_GUIDE_FRAME_INTERVAL_MS = 900;
+
+export function getVisualGuideConfig(exerciseType: ExerciseType): VisualGuideExerciseConfig {
+  return VISUAL_GUIDE_BY_EXERCISE[exerciseType];
+}
+
+export function getVisualGuideFolder(exerciseType: ExerciseType): string {
+  return getVisualGuideConfig(exerciseType).folder;
+}
+
+export function getVisualGuideFramePaths(exerciseType: ExerciseType): string[] {
+  const config = getVisualGuideConfig(exerciseType);
+  return config.frameFiles.map((file) => `${config.folder}/${file}`);
 }

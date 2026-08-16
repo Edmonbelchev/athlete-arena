@@ -5,13 +5,13 @@ import { env } from '@/lib/env';
 import {
   fetchVisualGuideFrameUrls,
   getVisualGuideFrameUrls,
-  type VisualGuideFrameUrls,
+  type VisualGuideFrames,
 } from '@/lib/visualGuideUrls';
 
 /** Remote guide frame URLs with automatic cache bust from Supabase file timestamps. */
-export function useVisualGuideFrameUrls(exerciseType: ExerciseType): VisualGuideFrameUrls | null {
+export function useVisualGuideFrameUrls(exerciseType: ExerciseType): VisualGuideFrames | null {
   const cacheVersion = env.visualGuideCacheVersion;
-  const [frameUrls, setFrameUrls] = useState<VisualGuideFrameUrls | null>(() =>
+  const [frameUrls, setFrameUrls] = useState<VisualGuideFrames | null>(() =>
     getVisualGuideFrameUrls(exerciseType),
   );
 

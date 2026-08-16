@@ -5,8 +5,8 @@ import { StyleSheet, Text, View } from 'react-native';
 import type { ExerciseType } from '@/constants/challenges';
 import { Radius, Spacing } from '@/constants/theme';
 import { VISUAL_GUIDE_FRAME_INTERVAL_MS } from '@/constants/visualGuides';
-import { useVisualGuideFrameUrls } from '@/hooks/use-visual-guide-frame-urls';
 import { useTheme } from '@/hooks/use-theme';
+import { useVisualGuideFrameUrls } from '@/hooks/use-visual-guide-frame-urls';
 
 interface WorkoutGuideAnimationProps {
   exerciseType: ExerciseType;
@@ -14,54 +14,53 @@ interface WorkoutGuideAnimationProps {
   variant?: 'setup' | 'overlay';
 }
 
-const CROSSFADE_MS = 320;
+const CROSSFADE_MS = 300;
 
-/** Two-frame loop from Supabase Storage (`visual_guides/{exercise}/frame1|2.webp`). */
+/** Frame loop from Supabase Storage (`visual_guides/{exercise}/frameN.webp`). */
 export function WorkoutGuideAnimation({ exerciseType, variant = 'setup' }: WorkoutGuideAnimationProps) {
   const theme = useTheme();
   const isOverlay = variant === 'overlay';
-  const frameUrls = useVisualGuideFrameUrls(exerciseType);
-  const [activeFrame, setActiveFrame] = useState<'frame1' | 'frame2'>('frame1');
-  const [frame2Ready, setFrame2Ready] = useState(false);
+  const guideFrames = useVisualGuideFrameUrls(exerciseType);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [framesReady, setFramesReady] = useState(false);
 
   useEffect(() => {
-    if (!frameUrls) {
-      setFrame2Ready(false);
-      setActiveFrame('frame1');
+    if (!guideFrames || guideFrames.frames.length === 0) {
+      setFramesReady(false);
+      setActiveIndex(0);
       return;
     }
 
     let cancelled = false;
-    setFrame2Ready(false);
-    setActiveFrame('frame1');
+    setFramesReady(false);
+    setActiveIndex(0);
 
-    void Promise.all([
-      Image.prefetch(frameUrls.frame1, { cachePolicy: 'memory-disk' }),
-      Image.prefetch(frameUrls.frame2, { cachePolicy: 'memory-disk' }),
-    ]).then(([, frame2Loaded]) => {
+    void Promise.all(
+      guideFrames.frames.map((uri) => Image.prefetch(uri, { cachePolicy: 'memory-disk' })),
+    ).then((results) => {
       if (!cancelled) {
-        setFrame2Ready(frame2Loaded);
+        setFramesReady(results.every(Boolean));
       }
     });
 
     return () => {
       cancelled = true;
     };
-  }, [frameUrls]);
+  }, [guideFrames]);
 
   useEffect(() => {
-    if (!frame2Ready || !frameUrls) {
+    if (!framesReady || !guideFrames || guideFrames.frames.length < 2) {
       return;
     }
 
     const interval = setInterval(() => {
-      setActiveFrame((current) => (current === 'frame1' ? 'frame2' : 'frame1'));
+      setActiveIndex((current) => (current + 1) % guideFrames.frames.length);
     }, VISUAL_GUIDE_FRAME_INTERVAL_MS);
 
     return () => clearInterval(interval);
-  }, [frameUrls, frame2Ready]);
+  }, [framesReady, guideFrames]);
 
-  if (!frameUrls) {
+  if (!guideFrames || guideFrames.frames.length === 0) {
     return (
       <View
         style={StyleSheet.flatten([
@@ -83,8 +82,8 @@ export function WorkoutGuideAnimation({ exerciseType, variant = 'setup' }: Worko
     );
   }
 
-  const uri = activeFrame === 'frame1' ? frameUrls.frame1 : frameUrls.frame2;
-  const frameKey = `${frameUrls.cacheKey}-${activeFrame}`;
+  const uri = guideFrames.frames[activeIndex] ?? guideFrames.frames[0];
+  const frameKey = `${guideFrames.cacheKey}-frame-${activeIndex}`;
 
   return (
     <View

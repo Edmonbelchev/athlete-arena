@@ -1,16 +1,14 @@
 import type { ExerciseType } from '@/constants/challenges';
 import {
+  getVisualGuideConfig,
   getVisualGuideFolder,
-  getVisualGuideStoragePath,
-  VISUAL_GUIDE_FRAME_FILES,
   VISUAL_GUIDES_BUCKET,
 } from '@/constants/visualGuides';
 import { env } from '@/lib/env';
 import { supabase } from '@/lib/supabase';
 
-export interface VisualGuideFrameUrls {
-  frame1: string;
-  frame2: string;
+export interface VisualGuideFrames {
+  frames: string[];
   /** Passed to expo-image so cache invalidates when Supabase files change. */
   cacheKey: string;
 }
@@ -25,20 +23,19 @@ function buildRevision(storageRevision: string | null): string {
   return parts.join('-') || 'default';
 }
 
-async function getStorageRevision(folder: string): Promise<string | null> {
-  const { data, error } = await supabase.storage.from(VISUAL_GUIDES_BUCKET).list(folder, {
-    limit: 10,
+async function getStorageRevision(exerciseType: ExerciseType): Promise<string | null> {
+  const config = getVisualGuideConfig(exerciseType);
+  const { data, error } = await supabase.storage.from(VISUAL_GUIDES_BUCKET).list(config.folder, {
+    limit: 20,
   });
 
   if (error || !data?.length) {
     return null;
   }
 
+  const frameNames = new Set(config.frameFiles);
   const timestamps = data
-    .filter(
-      (file) =>
-        file.name === VISUAL_GUIDE_FRAME_FILES.frame1 || file.name === VISUAL_GUIDE_FRAME_FILES.frame2,
-    )
+    .filter((file) => frameNames.has(file.name))
     .map((file) => file.updated_at ?? file.created_at ?? file.id)
     .filter(Boolean)
     .sort();
@@ -50,28 +47,28 @@ async function getStorageRevision(folder: string): Promise<string | null> {
   return timestamps.join('-');
 }
 
-function buildFrameUrls(exerciseType: ExerciseType, revision: string): VisualGuideFrameUrls | null {
-  const frame1Path = getVisualGuideStoragePath(exerciseType, 'frame1');
-  const frame2Path = getVisualGuideStoragePath(exerciseType, 'frame2');
+function buildFrameUrls(exerciseType: ExerciseType, revision: string): VisualGuideFrames | null {
+  const config = getVisualGuideConfig(exerciseType);
+  const frames = config.frameFiles
+    .map((file) => {
+      const path = `${config.folder}/${file}`;
+      const { data } = supabase.storage.from(VISUAL_GUIDES_BUCKET).getPublicUrl(path);
+      return data.publicUrl ? withVisualGuideCacheBust(data.publicUrl, revision) : null;
+    })
+    .filter((url): url is string => Boolean(url));
 
-  const { data: frame1 } = supabase.storage.from(VISUAL_GUIDES_BUCKET).getPublicUrl(frame1Path);
-  const { data: frame2 } = supabase.storage.from(VISUAL_GUIDES_BUCKET).getPublicUrl(frame2Path);
-
-  if (!frame1.publicUrl || !frame2.publicUrl) {
+  if (frames.length !== config.frameFiles.length) {
     return null;
   }
 
-  const folder = getVisualGuideFolder(exerciseType);
-
   return {
-    frame1: withVisualGuideCacheBust(frame1.publicUrl, revision),
-    frame2: withVisualGuideCacheBust(frame2.publicUrl, revision),
-    cacheKey: `${folder}-${revision}`,
+    frames,
+    cacheKey: `${getVisualGuideFolder(exerciseType)}-${revision}`,
   };
 }
 
 /** Sync fallback — env revision only (used before storage metadata loads). */
-export function getVisualGuideFrameUrls(exerciseType: ExerciseType): VisualGuideFrameUrls | null {
+export function getVisualGuideFrameUrls(exerciseType: ExerciseType): VisualGuideFrames | null {
   if (!env.isSupabaseConfigured) {
     return null;
   }
@@ -82,13 +79,11 @@ export function getVisualGuideFrameUrls(exerciseType: ExerciseType): VisualGuide
 /** Loads Supabase `updated_at` timestamps so replaced files bust local + CDN cache. */
 export async function fetchVisualGuideFrameUrls(
   exerciseType: ExerciseType,
-): Promise<VisualGuideFrameUrls | null> {
+): Promise<VisualGuideFrames | null> {
   if (!env.isSupabaseConfigured) {
     return null;
   }
 
-  const folder = getVisualGuideFolder(exerciseType);
-  const storageRevision = await getStorageRevision(folder);
-
+  const storageRevision = await getStorageRevision(exerciseType);
   return buildFrameUrls(exerciseType, buildRevision(storageRevision));
 }
