@@ -1,5 +1,5 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -28,6 +28,10 @@ export default function FriendProfileScreen() {
   const { userId, username } = useLocalSearchParams<{ userId: string; username?: string }>();
   const { profile, isLoading, error, refresh } = useFriendProfile(userId);
   const { friends, refresh: refreshFriends } = useFriends();
+
+  useEffect(() => {
+    void refreshFriends({ loadFriends: true, loadRequests: false, silent: true });
+  }, [refreshFriends]);
   const [isAddingFriend, setIsAddingFriend] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);

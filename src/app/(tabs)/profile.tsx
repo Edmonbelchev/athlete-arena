@@ -21,12 +21,11 @@ import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { StatCard } from '@/components/ui/StatCard';
 import { TabScreenHeader } from '@/components/sidebar/TabScreenHeader';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
-import { useAchievements } from '@/features/achievements/useAchievements';
+import { useAchievementPreview } from '@/features/achievements/useAchievementPreview';
 import { getAuthErrorMessage } from '@/features/auth/authErrors';
 import { useAuth } from '@/features/auth';
 import { useProfile } from '@/features/profile/useProfile';
 import { useProfileStats } from '@/features/profile/useProfileStats';
-import { useShop } from '@/features/shop/ShopProvider';
 import { xpProgressInCurrentLevel } from '@/features/xp/levelUtils';
 import { formatUserError } from '@/lib/errors';
 import { deleteMyAccount } from '@/services/accountService';
@@ -49,8 +48,7 @@ export default function ProfileScreen() {
     isLoading: isAchievementsLoading,
     error: achievementsError,
     refresh: refreshAchievements,
-  } = useAchievements({ syncOnLoad: false });
-  const { summary, equippedAvatar, equippedFrame, refresh: refreshShop } = useShop();
+  } = useAchievementPreview();
   const [logoutError, setLogoutError] = useState<string | null>(null);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
@@ -61,8 +59,8 @@ export default function ProfileScreen() {
   const error = profileError ?? statsError;
 
   const handleRefresh = useCallback(async () => {
-    await Promise.all([refreshProfile(), refreshStats(), refreshShop(), refreshAchievements()]);
-  }, [refreshProfile, refreshStats, refreshShop, refreshAchievements]);
+    await Promise.all([refreshProfile(), refreshStats(), refreshAchievements()]);
+  }, [refreshProfile, refreshStats, refreshAchievements]);
 
   useFocusEffect(
     useCallback(() => {
@@ -195,10 +193,8 @@ export default function ProfileScreen() {
           displayName={displayName}
           username={username}
           level={profile?.level ?? xpProgress.level}
-          coinBalance={summary.coinBalance}
+          coinBalance={profile?.coin_balance ?? 0}
           avatarUrl={profile?.avatar_url}
-          shopAvatar={equippedAvatar}
-          frame={equippedFrame}
           onEdit={() => router.push('/profile/edit')}
         />
 

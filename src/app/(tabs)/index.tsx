@@ -1,5 +1,5 @@
 import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -13,14 +13,10 @@ import { TabScreenHeader } from '@/components/sidebar/TabScreenHeader';
 import { DailySpinCard } from '@/components/spin/DailySpinCard';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
-import { useAchievementUnlock } from '@/features/achievements/AchievementUnlockProvider';
 import { useDailyChallenge } from '@/features/challenges/useDailyChallenge';
-import { isActiveFriendChallenge } from '@/features/friends/friendChallengeGroups';
-import { useFriendChallenges } from '@/features/friends/useFriendChallenges';
-import { useUserGoals } from '@/features/goals/useUserGoals';
+import { useActiveFriendChallengeCount } from '@/features/friends/useActiveFriendChallengeCount';
 import { useChallengeNotificationRefresh } from '@/features/notifications/useChallengeNotificationRefresh';
 import { useProfile } from '@/features/profile/useProfile';
-import { useShop } from '@/features/shop/ShopProvider';
 import { useDailySpin } from '@/features/spin/useDailySpin';
 import { useWeeklyMissionStreak } from '@/features/streaks/useWeeklyMissionStreak';
 import { xpProgressInCurrentLevel } from '@/features/xp/levelUtils';
@@ -45,16 +41,15 @@ export default function HomeScreen() {
     error: challengeError,
     refresh: refreshChallenge,
   } = useDailyChallenge();
-  const { challenges: friendChallenges, refresh: refreshFriendChallenges } = useFriendChallenges();
-  const { goals: userGoals, refresh: refreshGoals } = useUserGoals();
+  const { count: activeFriendChallengeCount, refresh: refreshActiveFriendChallengeCount } =
+    useActiveFriendChallengeCount();
   const [startingMissionIndex, setStartingMissionIndex] = useState<number | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
-  const { syncAndCelebrate } = useAchievementUnlock();
-  const { refresh: refreshShop } = useShop();
   const { status: spinStatus, refresh: refreshSpin } = useDailySpin();
   const { weeklyStreak, refresh: refreshWeeklyStreak } = useWeeklyMissionStreak();
 
-  const isLoading = isProfileLoading || isChallengeLoading;
+  const isInitialLoading =
+    (isProfileLoading && !profile) || (isChallengeLoading && missions.length === 0);
   const error = profileError ?? challengeError ?? actionError;
 
   const displayName = profile?.display_name ?? profile?.username ?? 'Athlete';
@@ -62,29 +57,22 @@ export default function HomeScreen() {
   const currentStreak = profile?.current_streak ?? 0;
   const xpProgress = xpProgressInCurrentLevel(totalXp);
 
-  const activeFriendChallengeCount = useMemo(
-    () => friendChallenges.filter(isActiveFriendChallenge).length,
-    [friendChallenges],
-  );
-
-  const activeGoalCount = useMemo(
-    () => userGoals.filter((goal) => goal.status === 'active').length,
-    [userGoals],
-  );
-
-  async function handleRefresh() {
+  const handleRefresh = useCallback(async () => {
     setActionError(null);
     await Promise.all([
       refreshProfile(),
-      refreshChallenge(),
-      refreshFriendChallenges(),
-      refreshGoals(),
+      refreshChallenge({ silent: true }),
+      refreshActiveFriendChallengeCount(),
       refreshWeeklyStreak(),
-      syncAndCelebrate().catch(() => []),
-      refreshShop().catch(() => undefined),
       refreshSpin().catch(() => undefined),
     ]);
-  }
+  }, [
+    refreshActiveFriendChallengeCount,
+    refreshChallenge,
+    refreshProfile,
+    refreshSpin,
+    refreshWeeklyStreak,
+  ]);
 
   useChallengeNotificationRefresh(handleRefresh);
 
@@ -123,10 +111,10 @@ export default function HomeScreen() {
   useFocusEffect(
     useCallback(() => {
       void handleRefresh();
-    }, [refreshProfile, refreshChallenge]),
+    }, [handleRefresh]),
   );
 
-  if (isLoading) {
+  if (isInitialLoading) {
     return (
       <View style={StyleSheet.flatten([styles.loading, { backgroundColor: theme.background }])}>
         <ActivityIndicator size="large" color={theme.primary} />
@@ -197,7 +185,6 @@ export default function HomeScreen() {
               description="Set daily and weekly rep targets"
               icon="target"
               accentColor={theme.primary}
-              badge={activeGoalCount}
               onPress={() => router.push('/profile/goals')}
             />
             <HomeLinkBlock
@@ -205,7 +192,7 @@ export default function HomeScreen() {
               description="Race a friend to the finish"
               icon="swords"
               accentColor={theme.streak}
-              badge={activeFriendChallengeCount}
+              badge={activeFriendChallengeCount > 0 ? activeFriendChallengeCount : undefined}
               onPress={() => router.push('/(tabs)/challenges')}
             />
           </View>

@@ -1,5 +1,5 @@
 import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
   ScrollView,
@@ -13,8 +13,7 @@ import { FriendListItem } from '@/components/ui/FriendListItem';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { TabScreenHeader } from '@/components/sidebar/TabScreenHeader';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
-import { isActiveFriendChallenge } from '@/features/friends/friendChallengeGroups';
-import { useFriendChallenges } from '@/features/friends/useFriendChallenges';
+import { useActiveFriendChallengeCount } from '@/features/friends/useActiveFriendChallengeCount';
 import { useFriends } from '@/features/friends/useFriends';
 import { useChallengeNotificationRefresh } from '@/features/notifications/useChallengeNotificationRefresh';
 import { respondFriendRequest } from '@/services/friendsService';
@@ -24,19 +23,15 @@ import { useTheme } from '@/hooks/use-theme';
 export default function FriendsScreen() {
   const theme = useTheme();
   const { friends, requests, isLoading, error, refresh } = useFriends();
-  const { challenges, refresh: refreshChallenges } = useFriendChallenges();
+  const { count: activeChallengeCount, refresh: refreshActiveChallengeCount } =
+    useActiveFriendChallengeCount();
   const [actionError, setActionError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
 
-  const activeChallengeCount = useMemo(
-    () => challenges.filter(isActiveFriendChallenge).length,
-    [challenges],
-  );
-
   const handleRefresh = useCallback(async () => {
     setActionError(null);
-    await Promise.all([refresh(), refreshChallenges()]);
-  }, [refresh, refreshChallenges]);
+    await Promise.all([refresh(), refreshActiveChallengeCount()]);
+  }, [refresh, refreshActiveChallengeCount]);
 
   useFocusEffect(
     useCallback(() => {

@@ -120,6 +120,13 @@ function RootNavigator() {
             }}
           />
           <Stack.Screen
+            name="friends/challenges/[friendId]"
+            options={{
+              headerShown: true,
+              title: 'Friend Challenges',
+            }}
+          />
+          <Stack.Screen
             name="friends/challenges"
             options={{
               headerShown: true,

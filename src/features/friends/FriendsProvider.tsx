@@ -2,7 +2,6 @@ import {
   createContext,
   useCallback,
   useContext,
-  useEffect,
   useMemo,
   useState,
   type ReactNode,
@@ -13,12 +12,18 @@ import { formatUserError } from '@/lib/errors';
 import { getFriendsList, getIncomingFriendRequests } from '@/services/friendsService';
 import type { FriendRequest, FriendSummary } from '@/types/friends';
 
+interface FriendsRefreshOptions {
+  silent?: boolean;
+  loadFriends?: boolean;
+  loadRequests?: boolean;
+}
+
 interface FriendsContextValue {
   friends: FriendSummary[];
   requests: FriendRequest[];
   isLoading: boolean;
   error: string | null;
-  refresh: (options?: { silent?: boolean }) => Promise<void>;
+  refresh: (options?: FriendsRefreshOptions) => Promise<void>;
 }
 
 const FriendsContext = createContext<FriendsContextValue | null>(null);
@@ -27,15 +32,22 @@ export function FriendsProvider({ children }: { children: ReactNode }) {
   const { session } = useAuth();
   const [friends, setFriends] = useState<FriendSummary[]>([]);
   const [requests, setRequests] = useState<FriendRequest[]>([]);
-  const [isLoading, setIsLoading] = useState(Boolean(session));
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const refresh = useCallback(async (options?: { silent?: boolean }) => {
+  const refresh = useCallback(async (options?: FriendsRefreshOptions) => {
     if (!session?.user.id) {
       setFriends([]);
       setRequests([]);
       setIsLoading(false);
       setError(null);
+      return;
+    }
+
+    const loadFriends = options?.loadFriends ?? true;
+    const loadRequests = options?.loadRequests ?? true;
+
+    if (!loadFriends && !loadRequests) {
       return;
     }
 
@@ -46,11 +58,17 @@ export function FriendsProvider({ children }: { children: ReactNode }) {
 
     try {
       const [friendsList, incomingRequests] = await Promise.all([
-        getFriendsList(),
-        getIncomingFriendRequests(),
+        loadFriends ? getFriendsList() : Promise.resolve(null),
+        loadRequests ? getIncomingFriendRequests() : Promise.resolve(null),
       ]);
-      setFriends(friendsList);
-      setRequests(incomingRequests);
+
+      if (friendsList) {
+        setFriends(friendsList);
+      }
+
+      if (incomingRequests) {
+        setRequests(incomingRequests);
+      }
     } catch (err) {
       setError(formatUserError(err, 'Failed to load friends'));
     } finally {
@@ -59,10 +77,6 @@ export function FriendsProvider({ children }: { children: ReactNode }) {
       }
     }
   }, [session?.user.id]);
-
-  useEffect(() => {
-    void refresh();
-  }, [refresh]);
 
   const value = useMemo(
     () => ({

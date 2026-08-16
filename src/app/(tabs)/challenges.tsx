@@ -1,23 +1,13 @@
-import { useFocusEffect } from 'expo-router';
-import { useCallback } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { FriendChallengesScreenContent } from '@/components/friends/FriendChallengesScreenContent';
 import { TabScreenHeader } from '@/components/sidebar/TabScreenHeader';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
-import { useFriendChallenges } from '@/features/friends/useFriendChallenges';
 import { useTheme } from '@/hooks/use-theme';
 
 export default function ChallengesTabScreen() {
   const theme = useTheme();
-  const { refresh } = useFriendChallenges();
-
-  useFocusEffect(
-    useCallback(() => {
-      void refresh();
-    }, [refresh]),
-  );
 
   return (
     <SafeAreaView

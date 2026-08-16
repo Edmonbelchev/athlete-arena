@@ -1,5 +1,5 @@
-import { useRouter } from 'expo-router';
-import { useCallback, useMemo, useState } from 'react';
+import { useFocusEffect } from 'expo-router';
+import { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
   RefreshControl,
@@ -9,20 +9,11 @@ import {
   View,
 } from 'react-native';
 
-import { FriendChallengesByFriend } from '@/components/friends/FriendChallengesByFriend';
+import { FriendsWithActiveChallengesList } from '@/components/friends/FriendsWithActiveChallengesList';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
-import {
-  groupChallengesByFriend,
-  isActiveFriendChallenge,
-} from '@/features/friends/friendChallengeGroups';
-import { useFriendChallenges } from '@/features/friends/useFriendChallenges';
+import { useFriendsWithActiveChallenges } from '@/features/friends/useFriendsWithActiveChallenges';
 import { useChallengeNotificationRefresh } from '@/features/notifications/useChallengeNotificationRefresh';
-import { formatUserError } from '@/lib/errors';
-import {
-  acceptFriendChallenge,
-  declineFriendChallenge,
-} from '@/services/friendChallengeService';
 import { useTheme } from '@/hooks/use-theme';
 
 interface FriendChallengesScreenContentProps {
@@ -31,68 +22,28 @@ interface FriendChallengesScreenContentProps {
 
 export function FriendChallengesScreenContent({ onRefresh }: FriendChallengesScreenContentProps) {
   const theme = useTheme();
-  const router = useRouter();
-  const {
-    challenges,
-    isLoading,
-    error: challengesError,
-    refresh: refreshChallenges,
-  } = useFriendChallenges();
-  const [actionError, setActionError] = useState<string | null>(null);
-  const [busyId, setBusyId] = useState<string | null>(null);
+  const { friends, isLoading, error, refresh } = useFriendsWithActiveChallenges();
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const activeChallenges = useMemo(
-    () => challenges.filter(isActiveFriendChallenge),
-    [challenges],
-  );
-  const groups = useMemo(() => groupChallengesByFriend(activeChallenges), [activeChallenges]);
-
   const handleRefresh = useCallback(async () => {
-    setActionError(null);
     setIsRefreshing(true);
     try {
-      await refreshChallenges();
+      await refresh();
       onRefresh?.();
     } finally {
       setIsRefreshing(false);
     }
-  }, [onRefresh, refreshChallenges]);
+  }, [onRefresh, refresh]);
 
   useChallengeNotificationRefresh(handleRefresh);
 
-  async function handleAcceptChallenge(participantId: string) {
-    setBusyId(participantId);
-    setActionError(null);
-    try {
-      await acceptFriendChallenge(participantId);
-      router.push({
-        pathname: '/challenge/friend/[participantId]',
-        params: { participantId },
-      });
-    } catch (err) {
-      setActionError(formatUserError(err, 'Failed to accept challenge'));
-    } finally {
-      setBusyId(null);
-    }
-  }
+  useFocusEffect(
+    useCallback(() => {
+      void refresh();
+    }, [refresh]),
+  );
 
-  async function handleDeclineChallenge(participantId: string) {
-    setBusyId(participantId);
-    setActionError(null);
-    try {
-      await declineFriendChallenge(participantId);
-      await refreshChallenges();
-    } catch (err) {
-      setActionError(formatUserError(err, 'Failed to decline challenge'));
-    } finally {
-      setBusyId(null);
-    }
-  }
-
-  const displayError = challengesError ?? actionError;
-
-  if (isLoading && challenges.length === 0) {
+  if (isLoading && friends.length === 0) {
     return (
       <View style={StyleSheet.flatten([styles.loading, { backgroundColor: theme.background }])}>
         <ActivityIndicator size="large" color={theme.primary} />
@@ -111,23 +62,17 @@ export function FriendChallengesScreenContent({ onRefresh }: FriendChallengesScr
         />
       }>
       <Text style={StyleSheet.flatten([styles.subtitle, { color: theme.textSecondary }])}>
-        Active speed races grouped by friend. Swipe within each section to browse races with the same
-        person.
+        Friends with active speed races. Open a friend to view races and history.
       </Text>
 
-      {displayError ? (
+      {error ? (
         <View style={styles.errorBlock}>
-          <Text style={StyleSheet.flatten([styles.error, { color: theme.danger }])}>{displayError}</Text>
+          <Text style={StyleSheet.flatten([styles.error, { color: theme.danger }])}>{error}</Text>
           <PrimaryButton label="Try Again" variant="secondary" onPress={() => void handleRefresh()} />
         </View>
       ) : null}
 
-      <FriendChallengesByFriend
-        groups={groups}
-        busyChallengeId={busyId}
-        onAccept={(participantId) => void handleAcceptChallenge(participantId)}
-        onDecline={(participantId) => void handleDeclineChallenge(participantId)}
-      />
+      <FriendsWithActiveChallengesList friends={friends} />
     </ScrollView>
   );
 }

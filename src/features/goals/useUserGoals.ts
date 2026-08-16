@@ -24,11 +24,11 @@ interface UseUserGoalsResult {
   logProgress: (goalId: string, amount: number) => Promise<void>;
 }
 
-export function useUserGoals(): UseUserGoalsResult {
+export function useUserGoals(options?: { autoLoad?: boolean }): UseUserGoalsResult {
   const { session } = useAuth();
   const [goals, setGoals] = useState<UserGoal[]>([]);
   const [activities, setActivities] = useState<GoalActivityCatalogItem[]>([]);
-  const [isLoading, setIsLoading] = useState(Boolean(session));
+  const [isLoading, setIsLoading] = useState(Boolean(session) && options?.autoLoad !== false);
   const [error, setError] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
@@ -60,8 +60,12 @@ export function useUserGoals(): UseUserGoalsResult {
   }, [session]);
 
   useEffect(() => {
+    if (options?.autoLoad === false) {
+      return;
+    }
+
     void refresh();
-  }, [refresh]);
+  }, [options?.autoLoad, refresh]);
 
   const createGoal = useCallback(
     async (activityId: string, period: GoalPeriod, targetValue: number) => {

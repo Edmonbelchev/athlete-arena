@@ -798,6 +798,24 @@ export interface Database {
         Args: Record<string, never>;
         Returns: FriendChallengeRpcRow[];
       };
+      get_active_friend_challenge_count: {
+        Args: Record<string, never>;
+        Returns: number;
+      };
+      get_friends_with_active_friend_challenges: {
+        Args: Record<string, never>;
+        Returns: {
+          friend_id: string;
+          friend_username: string;
+          friend_display_name: string | null;
+          active_count: number;
+          latest_created_at: string;
+        }[];
+      };
+      get_friend_challenges_with_user: {
+        Args: { p_friend_id: string };
+        Returns: FriendChallengeRpcRow[];
+      };
       get_friend_challenge_detail: {
         Args: { p_participant_id: string };
         Returns: FriendChallengeRpcRow[];
@@ -858,6 +876,12 @@ export interface Database {
           unlocked: boolean;
           unlocked_at: string | null;
         }[];
+      };
+      get_my_achievement_preview: {
+        Args: {
+          p_limit?: number;
+        };
+        Returns: Json;
       };
       get_xp_leaderboard: {
         Args: {

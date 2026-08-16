@@ -24,6 +24,7 @@ type ProfilePatch = Partial<
     | 'display_name'
     | 'username'
     | 'avatar_url'
+    | 'coin_balance'
   >
 >;
 

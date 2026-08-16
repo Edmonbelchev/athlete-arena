@@ -37,7 +37,11 @@ export default function CreateFriendChallengeScreen() {
     friendId?: string;
     username?: string;
   }>();
-  const { friends, isLoading: isFriendsLoading } = useFriends();
+  const { friends, isLoading: isFriendsLoading, refresh: refreshFriends } = useFriends();
+
+  useEffect(() => {
+    void refreshFriends({ loadFriends: true, loadRequests: false });
+  }, [refreshFriends]);
   const [selectedFriendId, setSelectedFriendId] = useState<string | null>(initialFriendId ?? null);
   const [exerciseType, setExerciseType] = useState<ExerciseType>('push_ups');
   const [targetReps, setTargetReps] = useState(getDefaultRepsForExercise('push_ups'));

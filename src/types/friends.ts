@@ -44,6 +44,14 @@ export interface UserSearchResult {
   displayName: string | null;
 }
 
+export interface FriendWithActiveChallengesSummary {
+  friendId: string;
+  username: string;
+  displayName: string | null;
+  activeCount: number;
+  latestCreatedAt: string;
+}
+
 export interface FriendChallenge {
   participantId: string;
   challengeId: string;

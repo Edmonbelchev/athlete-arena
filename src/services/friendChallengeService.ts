@@ -1,6 +1,6 @@
 import { assertSupabaseConfigured, supabase } from '@/lib/supabase';
 import type { ExerciseType } from '@/constants/challenges';
-import type { ChallengeStatus, FriendChallenge } from '@/types/friends';
+import type { ChallengeStatus, FriendChallenge, FriendWithActiveChallengesSummary } from '@/types/friends';
 import type { FriendChallengeRpcRow } from '@/types/database';
 
 function mapFriendChallenge(row: FriendChallengeRpcRow): FriendChallenge {
@@ -35,6 +35,101 @@ function mapFriendChallenge(row: FriendChallengeRpcRow): FriendChallenge {
     creatorEmoteId: row.creator_emote_id ?? null,
     creatorEmoteEmoji: row.creator_emote_emoji ?? null,
   };
+}
+
+export async function getActiveFriendChallengeCount(): Promise<number> {
+  assertSupabaseConfigured();
+
+  const { data, error } = await supabase.rpc('get_active_friend_challenge_count');
+
+  if (error) {
+    const challenges = await getMyFriendChallenges();
+    return challenges.filter(
+      (challenge) =>
+        challenge.status !== 'declined' &&
+        challenge.status !== 'expired' &&
+        challenge.resolvedAt === null,
+    ).length;
+  }
+
+  return typeof data === 'number' ? data : 0;
+}
+
+interface FriendWithActiveChallengesRow {
+  friend_id: string;
+  friend_username: string;
+  friend_display_name: string | null;
+  active_count: number;
+  latest_created_at: string;
+}
+
+export async function getFriendsWithActiveFriendChallenges(): Promise<FriendWithActiveChallengesSummary[]> {
+  assertSupabaseConfigured();
+
+  const { data, error } = await supabase.rpc('get_friends_with_active_friend_challenges');
+
+  if (error) {
+    const challenges = await getMyFriendChallenges();
+    const grouped = new Map<string, FriendWithActiveChallengesSummary>();
+
+    for (const challenge of challenges) {
+      if (
+        challenge.status === 'declined' ||
+        challenge.status === 'expired' ||
+        challenge.resolvedAt !== null
+      ) {
+        continue;
+      }
+
+      const existing = grouped.get(challenge.opponentId);
+      if (existing) {
+        existing.activeCount += 1;
+        if (challenge.createdAt > existing.latestCreatedAt) {
+          existing.latestCreatedAt = challenge.createdAt;
+        }
+        continue;
+      }
+
+      grouped.set(challenge.opponentId, {
+        friendId: challenge.opponentId,
+        username: challenge.opponentUsername,
+        displayName: challenge.opponentDisplayName,
+        activeCount: 1,
+        latestCreatedAt: challenge.createdAt,
+      });
+    }
+
+    return [...grouped.values()].sort(
+      (left, right) =>
+        new Date(right.latestCreatedAt).getTime() - new Date(left.latestCreatedAt).getTime(),
+    );
+  }
+
+  return (data ?? []).map((row) => {
+    const record = row as FriendWithActiveChallengesRow;
+    return {
+      friendId: record.friend_id,
+      username: record.friend_username,
+      displayName: record.friend_display_name,
+      activeCount: record.active_count,
+      latestCreatedAt: record.latest_created_at,
+    };
+  });
+}
+
+export async function getFriendChallengesWithUser(friendId: string): Promise<FriendChallenge[]> {
+  assertSupabaseConfigured();
+
+  const { data, error } = await supabase.rpc('get_friend_challenges_with_user', {
+    p_friend_id: friendId,
+  });
+
+  if (error) {
+    const challenges = await getMyFriendChallenges();
+    return challenges.filter((challenge) => challenge.opponentId === friendId);
+  }
+
+  return (data ?? []).map(mapFriendChallenge);
 }
 
 export async function getMyFriendChallenges(): Promise<FriendChallenge[]> {

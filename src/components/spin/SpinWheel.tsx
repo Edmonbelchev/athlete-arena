@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import Animated, {
   Easing,
   runOnJS,
@@ -7,11 +7,10 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
-import Svg, { Circle, Path } from 'react-native-svg';
+import Svg, { Circle, Path, Text as SvgText } from 'react-native-svg';
 
 import { CoinIcon } from '@/components/ui/CoinIcon';
 import { getSegmentShortLabel, SPIN_RARITY_COLORS } from '@/constants/spinWheel';
-import { Fonts } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import type { SpinSegment } from '@/types/spin';
 
@@ -107,31 +106,27 @@ export function SpinWheel({ segments, size = 280, target, onSpinEnd }: SpinWheel
               strokeWidth={2}
             />
           ))}
-        </Svg>
 
-        {segments.map((segment, index) => {
-          const labelAngle = index * step + step / 2;
-          const labelPoint = polarToCartesian(center, center, radius * 0.64, labelAngle);
+          {segments.map((segment, index) => {
+            const labelAngle = index * step + step / 2;
+            const labelPoint = polarToCartesian(center, center, radius * 0.64, labelAngle);
 
-          return (
-            <View
-              key={`${segment.rewardId}-label`}
-              pointerEvents="none"
-              style={[
-                styles.labelAnchor,
-                { left: labelPoint.x, top: labelPoint.y },
-              ]}>
-              <Text
-                style={[
-                  styles.segmentLabel,
-                  segment.grantsMultiplier ? styles.segmentLabelMultiplier : null,
-                  { transform: [{ rotate: `${labelAngle}deg` }] },
-                ]}>
+            return (
+              <SvgText
+                key={`${segment.rewardId}-label`}
+                x={labelPoint.x}
+                y={labelPoint.y}
+                fill="#FFFFFF"
+                fontSize={segment.grantsMultiplier ? 22 : 20}
+                fontWeight="900"
+                textAnchor="middle"
+                alignmentBaseline="middle"
+                transform={`rotate(${labelAngle}, ${labelPoint.x}, ${labelPoint.y})`}>
                 {getSegmentShortLabel(segment)}
-              </Text>
-            </View>
-          );
-        })}
+              </SvgText>
+            );
+          })}
+        </Svg>
       </Animated.View>
 
       <View
@@ -171,29 +166,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
-  },
-  labelAnchor: {
-    position: 'absolute',
-    width: 0,
-    height: 0,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  segmentLabel: {
-    fontFamily: Fonts.display,
-    fontSize: 20,
-    fontWeight: '900',
-    color: '#FFFFFF',
-    letterSpacing: 0.6,
-    textAlign: 'center',
-    includeFontPadding: false,
-    textShadowColor: 'rgba(15, 23, 42, 0.35)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
-  },
-  segmentLabelMultiplier: {
-    fontSize: 22,
-    letterSpacing: 0.2,
   },
   pointer: {
     position: 'absolute',

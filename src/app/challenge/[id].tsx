@@ -25,6 +25,10 @@ import { useRouteParam } from '@/hooks/use-route-param';
 import { useTheme } from '@/hooks/use-theme';
 import { useWorkoutSession } from '@/hooks/use-workout-session';
 import { formatUserError } from '@/lib/errors';
+import {
+  applyDailyMissionPatch,
+  notifyDailyChallengeRefresh,
+} from '@/lib/dailyChallengeSync';
 import { leaveScreen } from '@/lib/navigation';
 import { supportsNativePoseDetection } from '@/lib/runtime';
 import { completeChallenge } from '@/services/challengeService';
@@ -78,6 +82,15 @@ export default function ChallengeScreen() {
       try {
         const updated = await completeChallenge(activeChallenge.id, repCount);
         applyChallenge(updated);
+        applyDailyMissionPatch({
+          userChallengeId: updated.id,
+          exerciseType: updated.exercise_type,
+          missionIndex: updated.mission_index,
+          status: 'completed',
+          completedReps: updated.completed_reps,
+          completedAt: updated.completed_at,
+        });
+        notifyDailyChallengeRefresh();
         applyXpDelta(DAILY_MISSION_XP_REWARD);
         if (completesWeeklyStreak) {
           setShowWeeklyStreakComplete(true);
@@ -124,8 +137,11 @@ export default function ChallengeScreen() {
   const earnedCoins = challenge && isCompleted ? DAILY_MISSION_COIN_REWARD : 0;
 
   const handleLeave = useCallback(() => {
+    if (isCompleted) {
+      notifyDailyChallengeRefresh();
+    }
     leaveScreen(router, '/(tabs)');
-  }, [router]);
+  }, [isCompleted, router]);
 
   if (isLoading) {
     return (

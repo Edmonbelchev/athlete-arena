@@ -3,8 +3,10 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-nati
 
 import { AppIcon } from '@/components/ui/AppIcon';
 import { Radius, Spacing } from '@/constants/theme';
-import type { ShopAvatarDisplay, ShopFrameDisplay } from '@/types/shop';
+import { getAvatarInitials } from '@/features/profile/avatarInitials';
 import { useTheme } from '@/hooks/use-theme';
+
+import type { ShopAvatarDisplay, ShopFrameDisplay } from '@/types/shop';
 
 interface ProfileAvatarProps {
   uri?: string | null;
@@ -23,7 +25,8 @@ export function ProfileAvatar({
 }: ProfileAvatarProps) {
   const theme = useTheme();
   const radius = size >= 96 ? Radius.xl : size / 2;
-  const fontSize = Math.round(size * 0.42);
+  const initials = getAvatarInitials(name);
+  const fontSize = Math.round(size * (initials.length > 1 ? 0.34 : 0.42));
   const frameWidth = frame?.borderWidth ?? 0;
   const outerSize = size + frameWidth * 2;
 
@@ -69,7 +72,9 @@ export function ProfileAvatar({
           backgroundColor: theme.primary,
         },
       ])}>
-      <Text style={[styles.initial, { fontSize }]}>{name.charAt(0).toUpperCase()}</Text>
+      <Text style={[styles.initial, { fontSize, letterSpacing: initials.length > 1 ? -0.5 : 0 }]}>
+        {initials}
+      </Text>
     </View>
   );
 

@@ -35,6 +35,24 @@ export function isActiveFriendChallenge(challenge: FriendChallenge): boolean {
   return true;
 }
 
+export function splitFriendChallenges(challenges: FriendChallenge[]): {
+  active: FriendChallenge[];
+  history: FriendChallenge[];
+} {
+  const active: FriendChallenge[] = [];
+  const history: FriendChallenge[] = [];
+
+  for (const challenge of challenges) {
+    if (isActiveFriendChallenge(challenge)) {
+      active.push(challenge);
+    } else {
+      history.push(challenge);
+    }
+  }
+
+  return { active, history };
+}
+
 export function groupChallengesByFriend(challenges: FriendChallenge[]): FriendChallengeGroup[] {
   const groups = new Map<string, FriendChallengeGroup>();
 

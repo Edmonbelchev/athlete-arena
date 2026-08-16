@@ -1,9 +1,11 @@
 import { assertSupabaseConfigured, supabase } from '@/lib/supabase';
 import {
+  getRecentUnlockedAchievements,
+  getUnlockedAchievements,
   parseAchievementRequirement,
   resolveAchievementIcon,
 } from '@/features/achievements/achievementUtils';
-import type { AchievementRecord, FriendAchievementSummary } from '@/types/achievements';
+import type { AchievementPreview, AchievementRecord, FriendAchievementSummary } from '@/types/achievements';
 
 interface AchievementRpcRow {
   id: string;
@@ -49,6 +51,53 @@ export async function syncUserAchievements(): Promise<number> {
   }
 
   return data ?? 0;
+}
+
+interface AchievementPreviewRpcRow {
+  id: string;
+  title: string;
+  description: string;
+  image_url: string | null;
+  icon: string;
+  requirements: unknown;
+  xp_reward: number;
+  coin_reward: number;
+  sort_order: number;
+  unlocked: boolean;
+  unlocked_at: string | null;
+}
+
+interface AchievementPreviewRpcResult {
+  unlocked_count: number;
+  total_count: number;
+  recent_unlocked: AchievementPreviewRpcRow[] | null;
+}
+
+export async function getMyAchievementPreview(limit = 3): Promise<AchievementPreview> {
+  assertSupabaseConfigured();
+
+  const { data, error } = await supabase.rpc('get_my_achievement_preview', {
+    p_limit: limit,
+  });
+
+  if (error) {
+    const all = await getMyAchievements();
+    return {
+      unlockedCount: getUnlockedAchievements(all).length,
+      totalCount: all.length,
+      recentUnlocked: getRecentUnlockedAchievements(all, limit),
+    };
+  }
+
+  const payload = (data ?? {}) as AchievementPreviewRpcResult;
+
+  return {
+    unlockedCount: payload.unlocked_count ?? 0,
+    totalCount: payload.total_count ?? 0,
+    recentUnlocked: (payload.recent_unlocked ?? [])
+      .map((row) => mapAchievement(row))
+      .filter((achievement): achievement is AchievementRecord => achievement !== null),
+  };
 }
 
 export async function getMyAchievements(): Promise<AchievementRecord[]> {

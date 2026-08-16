@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router';
-import { useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
 import { AppState } from 'react-native';
 
 import { CustomTabBar, type CustomTabBarNavigation } from '@/components/navigation/CustomTabBar';
@@ -26,17 +26,23 @@ function TabsLayoutContent() {
   const { requests, refresh } = useFriends();
   const pendingRequestCount = requests.length;
 
-  useChallengeNotificationRefresh(refresh);
+  const refreshRequests = useCallback(() => {
+    return refresh({ loadFriends: false, loadRequests: true, silent: true });
+  }, [refresh]);
+
+  useChallengeNotificationRefresh(refreshRequests);
 
   useEffect(() => {
+    void refreshRequests();
+
     const subscription = AppState.addEventListener('change', (state) => {
       if (state === 'active') {
-        void refresh();
+        void refreshRequests();
       }
     });
 
     return () => subscription.remove();
-  }, [refresh]);
+  }, [refreshRequests]);
 
   return (
     <Tabs

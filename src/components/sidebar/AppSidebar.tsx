@@ -18,14 +18,13 @@ import { ProfileAvatar } from '@/components/profile/ProfileAvatar';
 import { BetaBadge } from '@/components/ui/BetaBadge';
 import { AppIcon } from '@/components/ui/AppIcon';
 import { XPProgressBar } from '@/components/ui/XPProgressBar';
-import { getNextAchievements, getRecentUnlockedAchievements } from '@/features/achievements/achievementUtils';
-import { useAchievements } from '@/features/achievements/useAchievements';
+import { getRecentUnlockedAchievements } from '@/features/achievements/achievementUtils';
+import { useAchievementPreview } from '@/features/achievements/useAchievementPreview';
 import type { AppIconName } from '@/constants/icons';
 import { Radius, Spacing } from '@/constants/theme';
 import { getAuthErrorMessage } from '@/features/auth/authErrors';
 import { useAuth } from '@/features/auth';
 import { useProfile } from '@/features/profile/useProfile';
-import { useShop } from '@/features/shop/ShopProvider';
 import { useSidebar } from '@/features/sidebar/SidebarProvider';
 import { xpProgressInCurrentLevel } from '@/features/xp/levelUtils';
 import { useTheme } from '@/hooks/use-theme';
@@ -75,8 +74,7 @@ export function AppSidebar() {
   const { isOpen, close } = useSidebar();
   const { signOut } = useAuth();
   const { profile, refresh: refreshProfile } = useProfile();
-  const { summary, equippedAvatar, equippedFrame } = useShop();
-  const { achievements } = useAchievements({ syncOnLoad: false });
+  const { achievements, refresh: refreshAchievements } = useAchievementPreview();
   const [logoutError, setLogoutError] = useState<string | null>(null);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const sidebarWidth = Math.min(width * 0.86, 340);
@@ -84,7 +82,12 @@ export function AppSidebar() {
   const totalXp = profile?.total_xp ?? 0;
   const xpProgress = xpProgressInCurrentLevel(totalXp);
   const unlockedAchievements = getRecentUnlockedAchievements(achievements);
-  const upcomingAchievements = getNextAchievements(achievements);
+
+  useEffect(() => {
+    if (isOpen) {
+      void refreshAchievements();
+    }
+  }, [isOpen, refreshAchievements]);
 
   const navigate = useCallback(
     (href: Href) => {
@@ -140,8 +143,6 @@ export function AppSidebar() {
                   uri={profile?.avatar_url}
                   name={displayName}
                   size={48}
-                  shopAvatar={equippedAvatar}
-                  frame={equippedFrame}
                 />
 
                 <View style={styles.greetingBlock}>
@@ -149,7 +150,7 @@ export function AppSidebar() {
                   <Text style={StyleSheet.flatten([styles.displayName, { color: theme.textSecondary }])}>
                     {displayName}
                   </Text>
-                  <CoinBadge amount={summary.coinBalance} />
+                  <CoinBadge amount={profile?.coin_balance ?? 0} />
                   <BetaBadge showVersion />
                 </View>
               </View>
@@ -213,7 +214,7 @@ export function AppSidebar() {
 
             <AchievementBadges
               unlocked={unlockedAchievements}
-              upcoming={upcomingAchievements}
+              upcoming={[]}
               onViewAll={() => navigate('/profile/achievements')}
             />
 

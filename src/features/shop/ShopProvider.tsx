@@ -64,13 +64,26 @@ export function ShopProvider({ children }: { children: ReactNode }) {
   const { session } = useAuth();
   const [items, setItems] = useState<ShopItemRecord[]>([]);
   const [summary, setSummary] = useState<ShopSummary>(emptySummary);
-  const [isLoading, setIsLoading] = useState(Boolean(session));
+  const [isLoading, setIsLoading] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const patchSummary = useCallback((patch: ShopSummaryPatch) => {
     setSummary((current) => ({ ...current, ...patch }));
   }, []);
+
+  useEffect(() => {
+    if (!session?.user.id) {
+      setItems([]);
+      setSummary(emptySummary);
+      setIsLoading(false);
+      setError(null);
+      return;
+    }
+
+    setIsLoading(false);
+    setError(null);
+  }, [session?.user.id]);
 
   const refresh = useCallback(async () => {
     if (!session?.user.id) {
@@ -132,10 +145,6 @@ export function ShopProvider({ children }: { children: ReactNode }) {
     },
     [refresh],
   );
-
-  useEffect(() => {
-    void refresh();
-  }, [refresh]);
 
   const equippedAvatarItem = getEquippedItem(items, summary.equipped, 'avatar');
   const equippedFrameItem = getEquippedItem(items, summary.equipped, 'frame');

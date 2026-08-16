@@ -1,5 +1,5 @@
-import { Stack, useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { Stack, useFocusEffect, useRouter } from 'expo-router';
+import { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -37,7 +37,13 @@ export default function GoalsScreen() {
     refresh,
     createGoal,
     cancelGoal,
-  } = useUserGoals();
+  } = useUserGoals({ autoLoad: false });
+
+  useFocusEffect(
+    useCallback(() => {
+      void refresh();
+    }, [refresh]),
+  );
 
   const [activePeriod, setActivePeriod] = useState<GoalPeriod>('daily');
   const [isCreateOpen, setIsCreateOpen] = useState(false);

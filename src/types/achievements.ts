@@ -49,3 +49,11 @@ export interface FriendAchievementSummary {
   sortOrder: number;
   unlockedAt: string;
 }
+
+export const ACHIEVEMENT_PREVIEW_LIMIT = 3;
+
+export interface AchievementPreview {
+  recentUnlocked: AchievementRecord[];
+  unlockedCount: number;
+  totalCount: number;
+}

@@ -35,13 +35,7 @@ export function ProfileAchievementSection({
   onViewAll,
 }: ProfileAchievementSectionProps) {
   const theme = useTheme();
-  const unlocked = achievements
-    .filter((achievement) => achievement.unlocked)
-    .sort((a, b) => {
-      const aTime = a.unlockedAt ? new Date(a.unlockedAt).getTime() : 0;
-      const bTime = b.unlockedAt ? new Date(b.unlockedAt).getTime() : 0;
-      return bTime - aTime;
-    });
+  const unlocked = achievements.slice(0, 3);
 
   return (
     <HomeSection
