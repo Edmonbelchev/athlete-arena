@@ -85,7 +85,7 @@ export function useExercisePoseDetection({
       }
 
       const previewLayout = previewLayoutRef.current?.current;
-      const isLandscape = previewLayout?.isLandscape ?? width > height;
+      const isLandscape = false;
 
       if (previewLayout && !previewLayout.settled) {
         setTrackingStatus('stabilizing');

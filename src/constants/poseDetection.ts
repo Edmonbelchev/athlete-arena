@@ -178,7 +178,7 @@ export const POSE_GUIDANCE: Record<ExerciseType, { title: string; tips: readonly
   push_ups: {
     title: 'Push-up setup',
     tips: [
-      'Face the camera or use a side view - both work',
+      'Face the camera in portrait with your phone propped low',
       'Keep shoulders, hips, elbows, and wrists in frame',
       'Rep counting starts once you hold a plank with hands on the floor',
     ],
@@ -186,26 +186,24 @@ export const POSE_GUIDANCE: Record<ExerciseType, { title: string; tips: readonly
   squats: {
     title: 'Squat setup',
     tips: [
-      'Keep both legs in frame from hips down to ankles',
+      'Prop your phone in portrait and step back until both legs are visible',
       'Squat with both feet on the floor - one-legged moves will not count',
-      'Face the camera or stand at a slight angle',
+      'Face the camera and stand tall before you start',
     ],
   },
   pull_ups: {
     title: 'Pull-up setup',
     tips: [
+      'Prop your phone in portrait where you can see the bar and your upper body',
       'Reach up and hang from the bar with arms fully extended',
-      'Keep your head and arms in frame - the bar line sets from your hands at the hang',
-      'Rep counting starts only in a dead hang; standing or flailing will not count',
-      'Pull until your chin clears the bar, then lower back to a full hang',
+      'Rep counting starts only in a dead hang; pull until your chin clears the bar',
     ],
   },
   burpees: {
     title: 'Burpee setup',
     tips: [
-      'Face the camera or use a side view - both work',
-      'Keep your full body in frame - at least one leg or arm chain visible',
-      'Stand tall, drop into a partial squat, then kick back to the floor',
+      'Prop your phone in portrait and keep your full body in frame',
+      'Stand tall to start, then drop, kick back, and jump up',
       'Chest-to-floor counts - you do not need a push-up at the bottom',
     ],
   },

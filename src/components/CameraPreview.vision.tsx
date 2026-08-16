@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Platform, StyleSheet, Text, View } from 'react-native';
 import {
   Delegate,
   MediapipeCamera,
@@ -10,26 +10,26 @@ import {
 } from 'react-native-mediapipe-posedetection';
 import { useCameraPermission } from 'react-native-vision-camera';
 
+import type { CameraPreviewProps } from '@/components/CameraPreview.types';
 import { RepCycleProgressBar } from '@/components/challenges/RepCycleProgressBar';
 import { PoseSkeletonOverlay } from '@/components/settings/PoseSkeletonOverlay';
 import { PullUpBarLineOverlay } from '@/components/settings/PullUpBarLineOverlay';
-import type { CameraFacing, CameraPreviewProps } from '@/components/CameraPreview.types';
+import { POSE_LANDSCAPE_POST_SETTLE_FRAMES } from '@/constants/poseDetection';
+import { Radius, Spacing } from '@/constants/theme';
 import {
   isDisplayFrameStale,
   POSE_DISPLAY_STALE_MS,
   shouldEmitDisplayFrame,
 } from '@/features/challenges/pose/displayFrameThrottle';
-import { mapLandmarksToViewNormalized } from '@/features/challenges/pose/mapLandmarksToView';
 import type { PoseLandmark } from '@/features/challenges/pose/landmarks';
+import { mapLandmarksToViewNormalized } from '@/features/challenges/pose/mapLandmarksToView';
 import { arePoseLandmarksPlausible } from '@/features/challenges/pose/poseLandmarkSanity';
 import { PoseViewSettleGate } from '@/features/challenges/pose/poseViewSettle';
 import { PoseLandmarkSmoother } from '@/features/challenges/pose/smoothPoseLandmarks';
-import { POSE_LANDSCAPE_POST_SETTLE_FRAMES } from '@/constants/poseDetection';
-import { POSE_DETECTOR_RELEASE_DELAY_MS } from '@/lib/mediapipe/delayedPoseDetectorRelease';
 import { useCameraDebugOverlaysAccess } from '@/features/settings/cameraDebugAccess';
 import { useUserSettings } from '@/features/settings/UserSettingsProvider';
-import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { POSE_DETECTOR_RELEASE_DELAY_MS } from '@/lib/mediapipe/delayedPoseDetectorRelease';
 
 const POSE_MODEL = 'pose_landmarker_lite.task';
 
@@ -46,9 +46,7 @@ const POSE_DETECTION_OPTIONS = {
 };
 
 type ActiveVisionCameraProps = Omit<CameraPreviewProps, 'active'> & {
-  facing: CameraFacing;
   cameraLive: boolean;
-  onFlipCamera: () => void;
 };
 
 /**
@@ -65,9 +63,7 @@ function VisionCameraPreviewActive({
   repTrackingReady = false,
   fullscreen = false,
   hideStatusOverlay = false,
-  facing,
   cameraLive,
-  onFlipCamera,
 }: ActiveVisionCameraProps) {
   const theme = useTheme();
   const { preferences } = useUserSettings();
@@ -279,7 +275,7 @@ function VisionCameraPreviewActive({
     lastBarLineYRef.current = null;
     cameraReadyRef.current = false;
     syncPreviewLayoutState(false);
-  }, [facing, syncPreviewLayoutState]);
+  }, [syncPreviewLayoutState]);
 
   return (
     <View
@@ -293,7 +289,7 @@ function VisionCameraPreviewActive({
         <MediapipeCamera
           style={StyleSheet.flatten([styles.camera, fullscreen ? styles.cameraFullscreen : null])}
           solution={poseDetection}
-          activeCamera={facing}
+          activeCamera="front"
         />
       ) : (
         <View style={StyleSheet.flatten([styles.camera, fullscreen ? styles.cameraFullscreen : null])} />
@@ -302,17 +298,6 @@ function VisionCameraPreviewActive({
       <PoseSkeletonOverlay landmarks={latestLandmarks} visible={showPoseSkeleton && cameraLive} />
 
       <PullUpBarLineOverlay barLineY={viewBarLineY} visible={cameraLive && viewBarLineY !== null} />
-
-      <View style={styles.topOverlay}>
-        <Pressable
-          accessibilityLabel="Flip camera"
-          accessibilityRole="button"
-          style={styles.flipButton}
-          onPress={onFlipCamera}
-          disabled={!cameraLive}>
-          <Text style={styles.flipButtonText}>Flip</Text>
-        </Pressable>
-      </View>
 
       <View style={styles.bottomOverlay}>
         <RepCycleProgressBar
@@ -356,7 +341,6 @@ export function VisionCameraPreview({
 }: CameraPreviewProps) {
   const theme = useTheme();
   const { hasPermission, requestPermission } = useCameraPermission();
-  const [facing, setFacing] = useState<CameraFacing>('front');
   const [sessionMounted, setSessionMounted] = useState(active);
   const [cameraLive, setCameraLive] = useState(active);
 
@@ -414,10 +398,7 @@ export function VisionCameraPreview({
 
   return (
     <VisionCameraPreviewActive
-      key={facing}
-      facing={facing}
       cameraLive={cameraLive}
-      onFlipCamera={() => setFacing((current) => (current === 'front' ? 'back' : 'front'))}
       onCameraReady={onCameraReady}
       onLandmarksDetected={onLandmarksDetected}
       posePreviewLayoutRef={posePreviewLayoutRef}

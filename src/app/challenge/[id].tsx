@@ -3,10 +3,10 @@ import { useCallback, useRef, useState } from 'react';
 import { ActivityIndicator, Platform, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { DailyMissionCompleteOverlay } from '@/components/challenges/DailyMissionCompleteOverlay';
 import type { PosePreviewLayoutState } from '@/components/CameraPreview.types';
 import { ChallengeWorkoutMode } from '@/components/challenges/ChallengeWorkoutMode';
 import { ChallengeWorkoutSetup } from '@/components/challenges/ChallengeWorkoutSetup';
+import { DailyMissionCompleteOverlay } from '@/components/challenges/DailyMissionCompleteOverlay';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { formatExerciseLabel } from '@/constants/challenges';
 import {
@@ -21,8 +21,8 @@ import { useProfile } from '@/features/profile/useProfile';
 import { useShop } from '@/features/shop/ShopProvider';
 import { useDrainNativeCameraOnLeave } from '@/hooks/use-drain-native-camera-on-leave';
 import { useRouteParam } from '@/hooks/use-route-param';
-import { useWorkoutSession } from '@/hooks/use-workout-session';
 import { useTheme } from '@/hooks/use-theme';
+import { useWorkoutSession } from '@/hooks/use-workout-session';
 import { formatUserError } from '@/lib/errors';
 import { leaveScreen } from '@/lib/navigation';
 import { supportsNativePoseDetection } from '@/lib/runtime';

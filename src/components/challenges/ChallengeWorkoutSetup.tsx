@@ -1,11 +1,14 @@
-import { useEffect } from 'react';
-import { Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import * as ScreenOrientation from 'expo-screen-orientation';
+import { useEffect } from 'react';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Platform } from 'react-native';
 
-import { PoseGuidanceBanner } from '@/components/PoseGuidanceBanner';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
+import { WorkoutGuideAnimation } from '@/components/challenges/WorkoutGuideAnimation';
 import type { ExerciseType } from '@/constants/challenges';
+import { POSE_GUIDANCE } from '@/constants/poseDetection';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { getWorkoutSetupTitle } from '@/features/challenges/workoutGuidance';
 import { useTheme } from '@/hooks/use-theme';
 
 interface ChallengeWorkoutSetupProps {
@@ -17,7 +20,7 @@ interface ChallengeWorkoutSetupProps {
   onCancel: () => void;
 }
 
-/** Keep setup in portrait so the pre-workout sheet stays scrollable and tappable. */
+/** Keep setup in portrait before the live camera workout. */
 function useSetupPortraitLock(): void {
   useEffect(() => {
     if (Platform.OS === 'web') {
@@ -37,6 +40,7 @@ export function ChallengeWorkoutSetup({
   onCancel,
 }: ChallengeWorkoutSetupProps) {
   const theme = useTheme();
+  const guidance = POSE_GUIDANCE[exerciseType];
 
   useSetupPortraitLock();
 
@@ -47,18 +51,25 @@ export function ChallengeWorkoutSetup({
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled">
-        <Text style={StyleSheet.flatten([styles.eyebrow, { color: theme.textSecondary }])}>WORKOUT SETUP</Text>
+        <Text style={StyleSheet.flatten([styles.eyebrow, { color: theme.textSecondary }])}>
+          WORKOUT SETUP
+        </Text>
         <Text style={StyleSheet.flatten([styles.title, { color: theme.text }])}>{exerciseLabel}</Text>
         <Text style={StyleSheet.flatten([styles.target, { color: theme.text }])}>{targetReps} reps</Text>
         {subtitle ? (
           <Text style={StyleSheet.flatten([styles.subtitle, { color: theme.textSecondary }])}>{subtitle}</Text>
         ) : null}
 
-        <PoseGuidanceBanner exerciseType={exerciseType} />
+        <WorkoutGuideAnimation exerciseType={exerciseType} variant="setup" />
 
-        <Text style={StyleSheet.flatten([styles.landscapeNote, { color: theme.primary }])}>
-          Landscape + a prop works best. Hold still for a moment while tracking locks on.
+        <Text style={StyleSheet.flatten([styles.guideTitle, { color: theme.text }])}>
+          {getWorkoutSetupTitle(exerciseType)}
         </Text>
+        {guidance.tips.map((tip) => (
+          <Text key={tip} style={StyleSheet.flatten([styles.tip, { color: theme.textSecondary }])}>
+            • {tip}
+          </Text>
+        ))}
       </ScrollView>
 
       <View style={StyleSheet.flatten([styles.footer, { borderTopColor: theme.border }])}>
@@ -84,6 +95,14 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     width: '100%',
     paddingBottom: Spacing.two,
+  },
+  guideTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  tip: {
+    fontSize: 14,
+    lineHeight: 20,
   },
   footer: {
     paddingHorizontal: Spacing.four,
@@ -115,12 +134,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
     fontWeight: '600',
-    textAlign: 'center',
-  },
-  landscapeNote: {
-    fontSize: 12,
-    lineHeight: 17,
-    fontWeight: '700',
     textAlign: 'center',
   },
 });

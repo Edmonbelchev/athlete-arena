@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
-import type { CameraFacing, CameraPreviewProps } from '@/components/CameraPreview.types';
+import type { CameraPreviewProps } from '@/components/CameraPreview.types';
 import { RepCycleProgressBar } from '@/components/challenges/RepCycleProgressBar';
 import {
   clearPoseSkeleton,
@@ -64,7 +64,6 @@ export function CameraPreview({
   const lastDisplayFrameAtRef = useRef(0);
   const lastDrawAtRef = useRef(0);
   const isDetectingRef = useRef(false);
-  const [facing, setFacing] = useState<CameraFacing>('front');
   const [status, setStatus] = useState<'loading' | 'ready' | 'error' | 'permission_denied'>('loading');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [trackingBody, setTrackingBody] = useState(false);
@@ -100,7 +99,7 @@ export function CameraPreview({
 
         const stream = await navigator.mediaDevices.getUserMedia({
           video: {
-            facingMode: facing === 'front' ? 'user' : 'environment',
+            facingMode: 'user',
             width: { ideal: 640 },
             height: { ideal: 480 },
           },
@@ -241,7 +240,7 @@ export function CameraPreview({
       landmarkerRef.current?.close();
       landmarkerRef.current = null;
     };
-  }, [active, facing]);
+  }, [active]);
 
   if (!active) {
     return (
@@ -300,7 +299,7 @@ export function CameraPreview({
         styles.cameraContainer,
         { borderColor: theme.border },
       ])}>
-      <div style={facing === 'front' ? mirrorStageStyle : stageStyle}>
+      <div style={mirrorStageStyle}>
         {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
         <video ref={videoRef} playsInline muted style={videoStyle} />
         <canvas ref={canvasRef} style={canvasStyle} />
@@ -312,14 +311,6 @@ export function CameraPreview({
           <Text style={styles.overlayText}>Starting camera…</Text>
         </View>
       ) : null}
-
-      <View style={styles.topOverlay}>
-        <Pressable
-          style={styles.flipButton}
-          onPress={() => setFacing((current) => (current === 'front' ? 'back' : 'front'))}>
-          <Text style={styles.flipButtonText}>Flip</Text>
-        </Pressable>
-      </View>
 
       <View style={styles.bottomOverlay}>
         <RepCycleProgressBar

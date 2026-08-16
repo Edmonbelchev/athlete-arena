@@ -1,9 +1,11 @@
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL?.trim() ?? '';
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY?.trim() ?? '';
+const visualGuideCacheVersion = process.env.EXPO_PUBLIC_VISUAL_GUIDE_CACHE_VERSION?.trim() ?? '';
 
 export const env = {
   supabaseUrl,
   supabaseAnonKey,
+  visualGuideCacheVersion,
   isSupabaseConfigured: Boolean(supabaseUrl && supabaseAnonKey),
 } as const;
 

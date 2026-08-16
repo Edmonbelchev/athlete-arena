@@ -3,49 +3,49 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import {
-  FriendChallengeCompleteOverlay,
-  type FriendChallengeCompleteVariant,
-} from '@/components/challenges/FriendChallengeCompleteOverlay';
 import type { PosePreviewLayoutState } from '@/components/CameraPreview.types';
 import { ChallengeWorkoutMode } from '@/components/challenges/ChallengeWorkoutMode';
 import { ChallengeWorkoutSetup } from '@/components/challenges/ChallengeWorkoutSetup';
+import {
+    FriendChallengeCompleteOverlay,
+    type FriendChallengeCompleteVariant,
+} from '@/components/challenges/FriendChallengeCompleteOverlay';
 import { EmoteDisplay } from '@/components/shop/EmoteDisplay';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { formatExerciseLabel } from '@/constants/challenges';
 import { getFriendChallengeCoinReward } from '@/constants/coins';
 import {
-  FRIEND_RACE_TIMER_START_HINT,
+    FRIEND_RACE_TIMER_START_HINT,
 } from '@/constants/friendChallenges';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { useAuth } from '@/features/auth';
 import { useExercisePoseDetection } from '@/features/challenges/useExercisePoseDetection';
 import { useRepCounter } from '@/features/challenges/useRepCounter';
-import { useAuth } from '@/features/auth';
 import { useFriendChallenge } from '@/features/friends/useFriendChallenge';
 import { useFriendChallengeRaceTimer } from '@/features/friends/useFriendChallengeRaceTimer';
 import { useProfile } from '@/features/profile/useProfile';
 import { useShop } from '@/features/shop/ShopProvider';
-import {
-  acceptFriendChallenge,
-  completeFriendChallenge,
-  declineFriendChallenge,
-} from '@/services/friendChallengeService';
-import {
-  didIWinFriendChallenge,
-  getCreatorDisplayName,
-  getOpponentDisplayName,
-  getOpponentRaceSeconds,
-  hasFriendChallengeStarted,
-  isFriendChallengeResolved,
-  isFriendChallengeWaitingOnOpponent,
-} from '@/types/friends';
+import { useDrainNativeCameraOnLeave } from '@/hooks/use-drain-native-camera-on-leave';
+import { useRouteParam } from '@/hooks/use-route-param';
+import { useTheme } from '@/hooks/use-theme';
+import { useWorkoutSession } from '@/hooks/use-workout-session';
 import { formatUserError } from '@/lib/errors';
 import { leaveScreen } from '@/lib/navigation';
 import { supportsNativePoseDetection } from '@/lib/runtime';
-import { useDrainNativeCameraOnLeave } from '@/hooks/use-drain-native-camera-on-leave';
-import { useRouteParam } from '@/hooks/use-route-param';
-import { useWorkoutSession } from '@/hooks/use-workout-session';
-import { useTheme } from '@/hooks/use-theme';
+import {
+    acceptFriendChallenge,
+    completeFriendChallenge,
+    declineFriendChallenge,
+} from '@/services/friendChallengeService';
+import {
+    didIWinFriendChallenge,
+    getCreatorDisplayName,
+    getOpponentDisplayName,
+    getOpponentRaceSeconds,
+    hasFriendChallengeStarted,
+    isFriendChallengeResolved,
+    isFriendChallengeWaitingOnOpponent,
+} from '@/types/friends';
 
 function getFriendChallengeOverlayVariant(
   waitingOnOpponent: boolean,
@@ -227,7 +227,7 @@ export default function FriendChallengeScreen() {
     processLandmarks,
   } = useExercisePoseDetection({
     exerciseType: challenge?.exerciseType ?? 'push_ups',
-    enabled: canAttempt && cameraActive && showWorkout,
+    enabled: canAttempt && cameraActive && showWorkout && !overlayVariant,
     posePreviewLayoutRef,
     onRepDetected: () => {
       repCounter.simulateRep();

@@ -75,11 +75,6 @@ export function WorkoutHintPanel({
         </Text>
       ))}
 
-      {!compact ? (
-        <Text style={StyleSheet.flatten([styles.rotateHint, { color: theme.textSecondary }])}>
-          Rotate to landscape and prop your phone for the widest view.
-        </Text>
-      ) : null}
     </ScrollView>
   );
 }

@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { CameraPreview } from '@/components/CameraPreview';
 import type { PosePreviewLayoutState } from '@/components/CameraPreview.types';
 import { ChallengeRepHud, type ChallengeRepHudRaceTimer } from '@/components/challenges/ChallengeRepHud';
+import { WorkoutGuideAnimation } from '@/components/challenges/WorkoutGuideAnimation';
 import { WorkoutHintPanel } from '@/components/challenges/WorkoutHintPanel';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import type { ExerciseType } from '@/constants/challenges';
@@ -14,7 +15,7 @@ import type { ExercisePhase } from '@/features/challenges/poseDetection.types';
 import { getWorkoutSetupTips, getTrackingBorderColor } from '@/features/challenges/workoutGuidance';
 import type { PoseLandmark } from '@/features/challenges/pose/landmarks';
 import type { PoseTrackingStatus } from '@/features/challenges/pose/poseQuality';
-import { useWorkoutLayout } from '@/hooks/use-workout-layout';
+import { useWorkoutGuideAnimationVisible } from '@/hooks/use-workout-guide-animation-visible';
 import { useWorkoutOrientation } from '@/hooks/use-workout-orientation';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -57,9 +58,12 @@ export function ChallengeWorkoutMode({
 }: ChallengeWorkoutModeProps) {
   const theme = useTheme();
   const showCompletionOnly = completed && Boolean(completeOverlay);
-  const { isLandscape, hintPanelWidth } = useWorkoutLayout();
   const tips = getWorkoutSetupTips(exerciseType);
   const trackingReady = trackingStatus === 'ready';
+  const showGuideAnimation = useWorkoutGuideAnimationVisible(
+    trackingStatus,
+    cameraActive && !completed,
+  );
   const trackingBorderColor = getTrackingBorderColor(trackingStatus, theme, {
     inactive: !cameraActive,
     completed,
@@ -86,7 +90,7 @@ export function ChallengeWorkoutMode({
 
   return (
     <SafeAreaView style={StyleSheet.flatten([styles.safeArea, { backgroundColor: '#000000' }])} edges={['top', 'bottom']}>
-      <View style={isLandscape ? styles.landscapeRow : styles.portraitColumn}>
+      <View style={styles.portraitColumn}>
         <View style={styles.cameraColumn}>
           <View
             style={StyleSheet.flatten([
@@ -105,6 +109,11 @@ export function ChallengeWorkoutMode({
               onCameraReady={onCameraReady}
               onLandmarksDetected={onLandmarksDetected}
             />
+            {showGuideAnimation ? (
+              <View style={styles.guideOverlay} pointerEvents="none">
+                <WorkoutGuideAnimation exerciseType={exerciseType} variant="overlay" />
+              </View>
+            ) : null}
             <ChallengeRepHud
               currentReps={currentReps}
               targetReps={targetReps}
@@ -113,27 +122,7 @@ export function ChallengeWorkoutMode({
             />
           </View>
 
-          {!isLandscape ? (
-            <View style={StyleSheet.flatten([styles.portraitHintWrap, { backgroundColor: theme.background }])}>
-              <WorkoutHintPanel
-                exerciseType={exerciseType}
-                tips={tips}
-                trackingStatus={trackingStatus}
-                trackingMessage={trackingMessage}
-                repPhase={repPhase}
-                trackingReady={trackingReady}
-                compact
-              />
-            </View>
-          ) : null}
-        </View>
-
-        {isLandscape ? (
-          <View
-            style={StyleSheet.flatten([
-              styles.landscapeHintWrap,
-              { width: hintPanelWidth, backgroundColor: theme.background },
-            ])}>
+          <View style={StyleSheet.flatten([styles.portraitHintWrap, { backgroundColor: theme.background }])}>
             <WorkoutHintPanel
               exerciseType={exerciseType}
               tips={tips}
@@ -141,9 +130,10 @@ export function ChallengeWorkoutMode({
               trackingMessage={trackingMessage}
               repPhase={repPhase}
               trackingReady={trackingReady}
+              compact
             />
           </View>
-        ) : null}
+        </View>
       </View>
 
       {footer ? (
@@ -159,10 +149,6 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
   },
-  landscapeRow: {
-    flex: 1,
-    flexDirection: 'row',
-  },
   portraitColumn: {
     flex: 1,
   },
@@ -174,14 +160,13 @@ const styles = StyleSheet.create({
     position: 'relative',
     backgroundColor: '#000000',
   },
+  guideOverlay: {
+    position: 'absolute',
+    right: Spacing.three,
+    bottom: Spacing.three,
+  },
   portraitHintWrap: {
     maxHeight: 220,
-  },
-  landscapeHintWrap: {
-    borderLeftWidth: StyleSheet.hairlineWidth,
-    borderLeftColor: 'rgba(255,255,255,0.08)',
-    paddingTop: Spacing.two,
-    paddingHorizontal: Spacing.two,
   },
   footer: {
     paddingHorizontal: Spacing.three,
