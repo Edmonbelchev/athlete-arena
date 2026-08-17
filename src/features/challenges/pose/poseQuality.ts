@@ -8,7 +8,7 @@ import {
 
 import { PoseLandmarkIndex, type PoseLandmark } from './landmarks';
 import { hasBurpeeTrackingLandmarks } from './burpeePosture';
-import { hasPullUpTrackingLandmarks } from './pullUpPosture';
+import { hasPullUpActiveTrackingLandmarks, hasPullUpTrackingLandmarks } from './pullUpPosture';
 import { hasPushUpTrackingLandmarks } from './pushUpPosture';
 import { hasBothSquatLegChains } from './squatPosture';
 
@@ -232,6 +232,13 @@ function checkRequiredLandmarks(
       };
     }
 
+    if (!hasPullUpActiveTrackingLandmarks(landmarks)) {
+      return {
+        ok: false,
+        message: 'Keep your head or hands in frame',
+      };
+    }
+
     return { ok: true, message: null };
   }
 
@@ -367,8 +374,8 @@ export class PoseQualityGate {
       this.previousLandmarks = landmarks.map((landmark) => ({ ...landmark }));
 
       const resetThreshold =
-        options?.pullUpArmed === true
-          ? POSE_QUALITY.partialFramesBeforeResetArmed
+        this.exerciseType === 'pull_ups' && options?.pullUpArmed === true
+          ? POSE_QUALITY.partialFramesBeforeResetPullUpArmed
           : POSE_QUALITY.partialFramesBeforeReset;
 
       return {

@@ -1,4 +1,4 @@
-import { POSE_REP_MIN_VISIBILITY, PULL_UP_POSTURE, PULL_UP_THRESHOLDS } from '@/constants/poseDetection';
+import { POSE_REP_MIN_VISIBILITY, POSE_REP_MIN_VISIBILITY_ARMED, PULL_UP_POSTURE, PULL_UP_THRESHOLDS } from '@/constants/poseDetection';
 
 import {
     PoseLandmarkIndex,
@@ -185,6 +185,42 @@ export function hasEarLandmarks(landmarks: PoseLandmark[]): boolean {
   );
 }
 
+/** Head or at least one wrist - minimum to stay "actively tracking" mid-set. */
+export function hasPullUpActiveTrackingLandmarks(landmarks: PoseLandmark[]): boolean {
+  const minVisibility = POSE_REP_MIN_VISIBILITY_ARMED;
+
+  const headVisible =
+    (landmarks[PoseLandmarkIndex.NOSE]?.visibility ?? 0) >= minVisibility ||
+    (landmarks[PoseLandmarkIndex.MOUTH_LEFT]?.visibility ?? 0) >= minVisibility ||
+    (landmarks[PoseLandmarkIndex.MOUTH_RIGHT]?.visibility ?? 0) >= minVisibility ||
+    (landmarks[PoseLandmarkIndex.LEFT_EAR]?.visibility ?? 0) >= minVisibility ||
+    (landmarks[PoseLandmarkIndex.RIGHT_EAR]?.visibility ?? 0) >= minVisibility;
+
+  if (headVisible) {
+    return true;
+  }
+
+  return (
+    (landmarks[PoseLandmarkIndex.LEFT_WRIST]?.visibility ?? 0) >= minVisibility ||
+    (landmarks[PoseLandmarkIndex.RIGHT_WRIST]?.visibility ?? 0) >= minVisibility
+  );
+}
+
+/** Hands no longer on an overhead bar - standing, walking, or arms at sides. */
+export function hasLeftOverheadBar(landmarks: PoseLandmark[], barLineY: number | null): boolean {
+  if (!areWristsAboveShoulders(landmarks) || !areArmsRaisedTowardBar(landmarks)) {
+    return true;
+  }
+
+  const wristY = getAverageWristY(landmarks);
+
+  if (wristY !== null && barLineY !== null) {
+    return wristY > barLineY + PULL_UP_POSTURE.leftBarWristDropMargin;
+  }
+
+  return false;
+}
+
 /** Chin has cleared the bar line (at or above wrist/bar height). */
 export function isChinOverBar(landmarks: PoseLandmark[], barLineY: number | null): boolean {
   const chinY = getChinY(landmarks);
@@ -287,9 +323,17 @@ export function isPullUpTopPosture(
     return false;
   }
 
-  const wristsNearBar = Math.abs(wristY - barLineY) <= PULL_UP_POSTURE.topWristNearBarMargin;
+  const effectiveBarY = Math.min(barLineY, wristY);
 
-  return wristsNearBar && isHeadOverBar(landmarks, barLineY);
+  if (!areWristsAboveShoulders(landmarks) || !areArmsRaisedTowardBar(landmarks)) {
+    return false;
+  }
+
+  if (Math.abs(wristY - barLineY) > PULL_UP_POSTURE.topWristNearBarMargin) {
+    return false;
+  }
+
+  return isHeadOverBar(landmarks, effectiveBarY);
 }
 
 export function hasPullUpTrackingLandmarks(landmarks: PoseLandmark[]): boolean {

@@ -12,12 +12,13 @@ import {
 
 import { LeaderboardListItem } from '@/components/leaderboard/LeaderboardListItem';
 import { LeaderboardPodium } from '@/components/leaderboard/LeaderboardPodium';
+import { ProfileAvatar } from '@/components/profile/ProfileAvatar';
 import { TabScreenHeader } from '@/components/sidebar/TabScreenHeader';
 import { AppIcon } from '@/components/ui/AppIcon';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
-import { ProfileAvatar } from '@/components/profile/ProfileAvatar';
 import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { useLeaderboard } from '@/features/leaderboard/useLeaderboard';
+import { useTheme } from '@/hooks/use-theme';
 import {
   getLeaderboardPeriodLabel,
   getLeaderboardScopeLabel,
@@ -26,7 +27,6 @@ import {
   type LeaderboardPeriod,
   type LeaderboardScope,
 } from '@/types/leaderboard';
-import { useTheme } from '@/hooks/use-theme';
 
 const PERIODS: LeaderboardPeriod[] = ['weekly', 'all_time'];
 const SCOPES: LeaderboardScope[] = ['global', 'friends'];
@@ -438,7 +438,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   heroTitle: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '900',
   },
   heroXp: {

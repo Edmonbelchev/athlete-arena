@@ -61,6 +61,14 @@ export function getAverageHipY(landmarks: PoseLandmark[]): number | null {
   );
 }
 
+export function getAverageAnkleY(landmarks: PoseLandmark[]): number | null {
+  return averageVisibleY(
+    landmarks,
+    PoseLandmarkIndex.LEFT_ANKLE,
+    PoseLandmarkIndex.RIGHT_ANKLE,
+  );
+}
+
 export function getShoulderWidth(landmarks: PoseLandmark[]): number | null {
   const left = landmarks[PoseLandmarkIndex.LEFT_SHOULDER];
   const right = landmarks[PoseLandmarkIndex.RIGHT_SHOULDER];
@@ -120,6 +128,80 @@ export function areWristsBelowShoulders(landmarks: PoseLandmark[]): boolean {
   return wristY - shoulderY >= PUSH_UP_POSTURE.minWristBelowShoulder;
 }
 
+/**
+ * Floor contact at arming: wrists below shoulders and anchored to the ground.
+ * Uses ankles when visible; otherwise falls back to the hip band.
+ */
+export function areHandsOnFloor(landmarks: PoseLandmark[]): boolean {
+  const wristY = getAverageWristY(landmarks);
+  const ankleY = getAverageAnkleY(landmarks);
+  const hipY = getAverageHipY(landmarks);
+
+  if (!areWristsBelowShoulders(landmarks) || wristY === null) {
+    return false;
+  }
+
+  if (ankleY !== null) {
+    return wristY >= ankleY - PUSH_UP_POSTURE.maxWristAboveAnkleForFloor;
+  }
+
+  if (hipY === null) {
+    return false;
+  }
+
+  return wristY >= hipY - PUSH_UP_POSTURE.maxWristAboveHipForFloor;
+}
+
+/** Wrists sit far above the feet while ankles are visible - standing, not a floor plank. */
+export function isStandingArmSwingWithFeetVisible(landmarks: PoseLandmark[]): boolean {
+  const wristY = getAverageWristY(landmarks);
+  const ankleY = getAverageAnkleY(landmarks);
+
+  if (wristY === null || ankleY === null) {
+    return false;
+  }
+
+  return wristY < ankleY - PUSH_UP_POSTURE.maxWristAboveAnkleForFloor;
+}
+
+/** Hands left the floor - standing, bent-over arm swings, or wrists lifting up. */
+export function hasLeftPushUpFloor(
+  landmarks: PoseLandmark[],
+  capturedFloorWristY: number | null,
+): boolean {
+  const hipY = getAverageHipY(landmarks);
+  const wristY = getAverageWristY(landmarks);
+
+  if (wristY === null) {
+    return true;
+  }
+
+  if (!areWristsBelowShoulders(landmarks)) {
+    return true;
+  }
+
+  if (isStandingArmSwingWithFeetVisible(landmarks)) {
+    return true;
+  }
+
+  if (hipY !== null && wristY < hipY - PUSH_UP_POSTURE.maxWristAboveHipForFloor) {
+    return true;
+  }
+
+  if (isBentOverArmSwingFront(landmarks)) {
+    return true;
+  }
+
+  if (
+    capturedFloorWristY !== null &&
+    wristY < capturedFloorWristY - PUSH_UP_POSTURE.maxWristDriftUpFromFloor
+  ) {
+    return true;
+  }
+
+  return false;
+}
+
 function isUprightStandingFront(landmarks: PoseLandmark[]): boolean {
   const shoulderY = getAverageShoulderY(landmarks);
   const hipY = getAverageHipY(landmarks);
@@ -142,6 +224,36 @@ function isUprightStandingFront(landmarks: PoseLandmark[]): boolean {
   return wristY <= hipY + PUSH_UP_POSTURE.maxStandingWristAboveHip;
 }
 
+/**
+ * Bent-over standing facing the camera - hips far below shoulders with hands not on the floor.
+ * Blocks mid-air arm swings that still pass relaxed wrist-below-shoulder checks.
+ */
+export function isBentOverArmSwingFront(landmarks: PoseLandmark[]): boolean {
+  if (isStandingArmSwingWithFeetVisible(landmarks)) {
+    return true;
+  }
+
+  const shoulderY = getAverageShoulderY(landmarks);
+  const hipY = getAverageHipY(landmarks);
+  const wristY = getAverageWristY(landmarks);
+  const shoulderWidth = getShoulderWidth(landmarks);
+
+  if (shoulderY === null || hipY === null || wristY === null || shoulderWidth === null) {
+    return false;
+  }
+
+  if (shoulderWidth < PUSH_UP_POSTURE.minShoulderWidthFront) {
+    return false;
+  }
+
+  const torsoSpan = hipY - shoulderY;
+  if (torsoSpan <= PUSH_UP_POSTURE.maxShoulderAboveHipFrontActive) {
+    return false;
+  }
+
+  return wristY < hipY + PUSH_UP_POSTURE.minWristBelowHipForPlank;
+}
+
 /** Side-view floor plank - shoulders and hips stay near the same height. */
 export function isSideViewPushUpPlank(landmarks: PoseLandmark[]): boolean {
   const torsoAngle = getTorsoAngleFromHorizontal(landmarks);
@@ -154,13 +266,19 @@ export function isSideViewPushUpPlank(landmarks: PoseLandmark[]): boolean {
   return (
     torsoAngle <= PUSH_UP_POSTURE.maxTorsoFromHorizontal &&
     shoulderHipDelta <= PUSH_UP_POSTURE.maxShoulderHipYDelta &&
-    areWristsBelowShoulders(landmarks)
+    areWristsBelowShoulders(landmarks) &&
+    areHandsOnFloor(landmarks)
   );
 }
 
 /** Front-view floor plank - shoulders stack above hips with hands on the floor. */
 export function isFrontViewPushUpPlank(landmarks: PoseLandmark[]): boolean {
-  if (!areWristsBelowShoulders(landmarks) || isUprightStandingFront(landmarks)) {
+  if (
+    !areWristsBelowShoulders(landmarks) ||
+    !areHandsOnFloor(landmarks) ||
+    isUprightStandingFront(landmarks) ||
+    isBentOverArmSwingFront(landmarks)
+  ) {
     return false;
   }
 
@@ -178,7 +296,10 @@ export function isFrontViewPushUpPlank(landmarks: PoseLandmark[]): boolean {
   }
 
   const torsoSpan = hipY - shoulderY;
-  if (torsoSpan < PUSH_UP_POSTURE.minShoulderAboveHipFront) {
+  if (
+    torsoSpan < PUSH_UP_POSTURE.minShoulderAboveHipFront ||
+    torsoSpan > PUSH_UP_POSTURE.maxShoulderAboveHipFrontPlank
+  ) {
     return false;
   }
 
@@ -190,25 +311,60 @@ export function isFrontViewPushUpPlank(landmarks: PoseLandmark[]): boolean {
   return true;
 }
 
-/** Relaxed front-view check while reps are in progress (bottom of rep drops shoulders toward wrists). */
+/** Relaxed front-view check while reps are in progress (shoulders move; wrists stay on floor). */
 export function isFrontViewPushUpActive(landmarks: PoseLandmark[]): boolean {
-  if (!hasPushUpTrackingLandmarks(landmarks) || isUprightStandingFront(landmarks)) {
+  if (
+    !hasPushUpTrackingLandmarks(landmarks) ||
+    !areHandsOnFloor(landmarks) ||
+    isUprightStandingFront(landmarks) ||
+    isBentOverArmSwingFront(landmarks)
+  ) {
     return false;
   }
 
   const shoulderY = getAverageShoulderY(landmarks);
-  const hipY = getAverageHipY(landmarks);
   const wristY = getAverageWristY(landmarks);
 
-  if (shoulderY === null || hipY === null || wristY === null) {
-    return false;
-  }
-
-  if (wristY < hipY - PUSH_UP_POSTURE.maxWristAboveHipWhenActive) {
+  if (shoulderY === null || wristY === null) {
     return false;
   }
 
   return wristY - shoulderY >= PUSH_UP_POSTURE.minWristBelowShoulderActive;
+}
+
+/** Shoulders dropped enough from the top of the rep - works across camera angles. */
+export function isPushUpDeepEnough(
+  landmarks: PoseLandmark[],
+  topShoulderY: number | null,
+): boolean {
+  const shoulderY = getAverageShoulderY(landmarks);
+
+  if (shoulderY === null) {
+    return false;
+  }
+
+  if (topShoulderY !== null) {
+    return shoulderY - topShoulderY >= PUSH_UP_POSTURE.minShoulderDropAtBottom;
+  }
+
+  const wristY = getAverageWristY(landmarks);
+  if (wristY === null) {
+    return false;
+  }
+
+  return wristY - shoulderY <= PUSH_UP_POSTURE.maxShoulderAboveWristAtBottom;
+}
+
+export function isValidPushUpRepCompletion(
+  landmarks: PoseLandmark[],
+  capturedFloorWristY: number | null,
+): boolean {
+  return (
+    areHandsOnFloor(landmarks) &&
+    !hasLeftPushUpFloor(landmarks, capturedFloorWristY) &&
+    !isUprightStandingFront(landmarks) &&
+    !isBentOverArmSwingFront(landmarks)
+  );
 }
 
 export function detectPushUpViewMode(landmarks: PoseLandmark[]): PushUpViewMode | null {
@@ -267,8 +423,19 @@ export function getPushUpPlankHint(landmarks: PoseLandmark[]): string | null {
     return 'Get into a plank with your hands on the floor';
   }
 
+  if (!areHandsOnFloor(landmarks)) {
+    const ankleY = getAverageAnkleY(landmarks);
+    return ankleY !== null
+      ? 'Keep your hands on the floor near your feet'
+      : 'Place your hands flat on the floor before counting reps';
+  }
+
   if (isUprightStandingFront(landmarks)) {
     return 'Lower into a plank - standing arm motion will not count';
+  }
+
+  if (isBentOverArmSwingFront(landmarks)) {
+    return 'Lower into a plank with your hands on the floor';
   }
 
   const shoulderWidth = getShoulderWidth(landmarks);
@@ -288,6 +455,10 @@ export function getPushUpPlankHint(landmarks: PoseLandmark[]): string | null {
 
     if (torsoSpan < PUSH_UP_POSTURE.minShoulderAboveHipFront) {
       return 'Keep your shoulders above your hips in the plank';
+    }
+
+    if (torsoSpan > PUSH_UP_POSTURE.maxShoulderAboveHipFrontPlank) {
+      return 'Lower into a plank - standing or bent-over arm motion will not count';
     }
 
     if (armDrop / torsoSpan < PUSH_UP_POSTURE.minArmDropToTorsoRatioFront) {

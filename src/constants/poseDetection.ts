@@ -21,8 +21,8 @@ export const POSE_QUALITY = {
   stableFramesRequired: isNativeMobile ? 1 : 2,
   /** Partial-tracking frames before resetting rep-engine state. */
   partialFramesBeforeReset: isNativeMobile ? 30 : 15,
-  /** Longer leash once pull-ups are armed - avoids jitter resets mid-set. */
-  partialFramesBeforeResetArmed: isNativeMobile ? 50 : 25,
+  /** Partial-tracking frames before resetting an armed pull-up set. */
+  partialFramesBeforeResetPullUpArmed: isNativeMobile ? 8 : 6,
   /** Skeleton overlay visibility - slightly higher to reduce flicker. */
   skeletonMinVisibility: isNativeMobile ? 0.4 : 0.5,
 } as const;
@@ -53,11 +53,11 @@ export const POSE_LANDMARK_WARMUP = {
 
 export const PUSH_UP_THRESHOLDS = {
   /** Elbow angle (degrees) - arms extended at top of rep. */
-  upAngle: 150,
+  upAngle: 152,
   /** Elbow angle (degrees) - chest near floor at bottom. */
-  downAngle: 105,
+  downAngle: 98,
   /** Degrees of slack between phases to reduce jitter. */
-  hysteresis: isNativeMobile ? 15 : 20,
+  hysteresis: isNativeMobile ? 14 : 16,
 } as const;
 
 /** Push-up rep validation - horizontal plank with hands on the floor. */
@@ -72,18 +72,38 @@ export const PUSH_UP_POSTURE = {
   readyFramesRequired: isNativeMobile ? 3 : 4,
   /** Consecutive frames at arm extension before rep counting begins. */
   topHoldFramesBeforeReps: isNativeMobile ? 3 : 2,
+  /** Consecutive frames in the bottom zone before depth counts. */
+  bottomHoldFrames: 1,
+  /** Consecutive frames at full extension before a rep registers (0 = first frame). */
+  topHoldFramesForRep: 0,
+  /** Shoulder drop from the last top position required at the bottom. */
+  minShoulderDropAtBottom: isNativeMobile ? 0.042 : 0.048,
+  /** Fallback chest-depth check when top shoulder baseline is unavailable. */
+  maxShoulderAboveWristAtBottom: isNativeMobile ? 0.16 : 0.14,
   /** Both shoulders visible across the frame when facing the camera. */
   minShoulderWidthFront: isNativeMobile ? 0.12 : 0.14,
   /** Shoulders sit above hips when facing the camera. */
   minShoulderAboveHipFront: isNativeMobile ? 0.04 : 0.05,
-  /** Wrists extend past the hip line relative to torso length (hands on floor). */
-  minArmDropToTorsoRatioFront: isNativeMobile ? 1.05 : 1.1,
-  /** Wrists stay near floor level while a front-view set is active. */
-  maxWristAboveHipWhenActive: isNativeMobile ? 0.05 : 0.04,
-  /** Minimum wrist drop from shoulders while a front-view set is active. */
-  minWristBelowShoulderActive: isNativeMobile ? 0.008 : 0.01,
+  /** Wrists extend clearly below shoulders relative to torso depth (front-view arming). */
+  minArmDropToTorsoRatioFront: isNativeMobile ? 0.55 : 0.65,
   /** Wrists at hip height while upright - standing, not a floor push-up. */
   maxStandingWristAboveHip: isNativeMobile ? 0.03 : 0.025,
+  /** Wrists may sit above the hip line in front-view camera perspective and still be on the floor. */
+  maxWristAboveHipForFloor: isNativeMobile ? 0.06 : 0.05,
+  /** Front-view plank: hips too far below shoulders means standing/bent-over, not a floor plank. */
+  maxShoulderAboveHipFrontPlank: isNativeMobile ? 0.15 : 0.13,
+  /** Above this shoulder-hip span in front view, wrists must sit clearly below hips (floor). */
+  maxShoulderAboveHipFrontActive: isNativeMobile ? 0.13 : 0.11,
+  /** Required wrist drop below hips when the torso looks bent-over (y grows down). */
+  minWristBelowHipForPlank: isNativeMobile ? 0.015 : 0.018,
+  /** Wrists must stay near ankle height when feet are visible (strong floor anchor). */
+  maxWristAboveAnkleForFloor: isNativeMobile ? 0.1 : 0.08,
+  /** Frames with hands off the floor before the set disarms. */
+  offFloorFramesBeforeRelease: isNativeMobile ? 4 : 5,
+  /** Active reps: max upward drift from the floor line captured at arming (y grows down). */
+  maxWristDriftUpFromFloor: isNativeMobile ? 0.04 : 0.035,
+  /** Minimum wrist drop from shoulders while a front-view set is active. */
+  minWristBelowShoulderActive: isNativeMobile ? 0.012 : 0.015,
 } as const;
 
 export const PULL_UP_THRESHOLDS = {
@@ -97,23 +117,31 @@ export const PULL_UP_THRESHOLDS = {
 /** Pull-up rep validation - dead hang on bar + chin/head over bar at top. */
 export const PULL_UP_POSTURE = {
   /** Chin (lower face) at or above the bar line (y grows downward). */
-  chinOverBarMargin: isNativeMobile ? 0.03 : 0.01,
+  chinOverBarMargin: isNativeMobile ? 0.055 : 0.025,
   /** Ear height proxy when filming from behind. */
-  earOverBarMargin: isNativeMobile ? 0.045 : 0.03,
+  earOverBarMargin: isNativeMobile ? 0.055 : 0.035,
   /** Shoulder-at-bar fallback when no face/ears are visible. */
-  shoulderNearBarMargin: isNativeMobile ? 0.18 : 0.15,
+  shoulderNearBarMargin: isNativeMobile ? 0.2 : 0.16,
   /** Wrists stay near the captured bar line through the rep. */
-  topWristNearBarMargin: isNativeMobile ? 0.14 : 0.08,
+  topWristNearBarMargin: isNativeMobile ? 0.2 : 0.1,
   /** Wrist Y must be at or above shoulders (negative = wrists higher on screen). */
   maxWristShoulderYDelta: isNativeMobile ? -0.01 : -0.015,
   /** Wrist → elbow → shoulder chain when reaching up to the bar. */
   armRaisedChainMargin: isNativeMobile ? 0.045 : 0.035,
   /** Head/chin must sit below the bar line on a dead hang. */
-  minHeadBelowBar: isNativeMobile ? 0.015 : 0.02,
+  minHeadBelowBar: isNativeMobile ? 0.012 : 0.018,
   /** Frames in a valid dead hang before counting begins. */
-  readyFramesRequired: isNativeMobile ? 3 : 4,
-  /** Consecutive top-posture frames before a rep registers. */
-  topPostureHoldFrames: isNativeMobile ? 2 : 3,
+  readyFramesRequired: isNativeMobile ? 2 : 3,
+  /** Consecutive top-posture frames before a rep registers (fallback; edge trigger is primary). */
+  topPostureHoldFrames: 1,
+  /** Frames to ignore a second top trigger after a rep (fast-rep cadence). */
+  repCooldownFrames: isNativeMobile ? 10 : 12,
+  /** Frames below the bar between reps before the next top can count. */
+  minClearOfTopFrames: isNativeMobile ? 2 : 3,
+  /** Wrists this far below the captured bar line means hands left the bar (y grows down). */
+  leftBarWristDropMargin: isNativeMobile ? 0.06 : 0.05,
+  /** Frames off-bar before the set disarms. */
+  offBarFramesBeforeRelease: isNativeMobile ? 4 : 5,
   /** Wrists below hips by at least this much before the bar line is dropped (y grows down). */
   minWristBelowHipMargin: isNativeMobile ? 0.02 : 0.025,
 } as const;
@@ -175,6 +203,9 @@ export const BURPEE_POSTURE = {
 
 /** EMA smoothing for native camera landmarks (0 = frozen, 1 = raw). */
 export const POSE_LANDMARK_SMOOTH_ALPHA = isNativeMobile ? 0.52 : 1;
+
+/** Faster landmark follow for pull-ups so quick peaks are not smoothed away. */
+export const POSE_LANDMARK_SMOOTH_ALPHA_PULL_UP = isNativeMobile ? 0.68 : 1;
 
 export const POSE_GUIDANCE: Record<ExerciseType, { title: string; tips: readonly string[] }> = {
   push_ups: {

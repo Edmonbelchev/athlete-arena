@@ -6,9 +6,13 @@ import { pushUpElbowAngle, type PoseLandmark } from './landmarks';
 import {
   detectPushUpViewMode,
   getPushUpPlankHint,
+  hasLeftPushUpFloor,
+  isPushUpDeepEnough,
   isPushUpPlankPosture,
+  isValidPushUpRepCompletion,
   type PushUpViewMode,
 } from './pushUpPosture';
+import { getAverageShoulderY, getAverageWristY } from './pullUpPosture';
 import type { AngleThresholdConfig } from './repEngineUtils';
 import { isInHighZone } from './repEngineUtils';
 
@@ -21,12 +25,23 @@ function toPushUpThresholds(): AngleThresholdConfig {
 }
 
 export class PushUpRepEngine {
-  private readonly elbowEngine = new ElbowRepEngine(toPushUpThresholds());
+  private readonly elbowEngine: ElbowRepEngine;
   private readyFrames = 0;
   private topHoldFrames = 0;
   private repCountingEnabled = false;
   private isArmed = false;
   private viewMode: PushUpViewMode | null = null;
+  private capturedFloorWristY: number | null = null;
+  private repTopShoulderY: number | null = null;
+  private offFloorFrames = 0;
+
+  constructor() {
+    this.elbowEngine = new ElbowRepEngine(toPushUpThresholds(), {
+      bottomHoldFrames: PUSH_UP_POSTURE.bottomHoldFrames,
+      topHoldFrames: PUSH_UP_POSTURE.topHoldFramesForRep,
+      isValidBottom: (landmarks) => isPushUpDeepEnough(landmarks, this.repTopShoulderY),
+    });
+  }
 
   get phase(): PushUpPhase {
     return this.elbowEngine.phase;
@@ -52,6 +67,16 @@ export class PushUpRepEngine {
     const detectedViewMode = detectPushUpViewMode(landmarks);
     const inPlank = isPushUpPlankPosture(landmarks, this.viewMode ?? detectedViewMode);
 
+    if (this.isArmed && hasLeftPushUpFloor(landmarks, this.capturedFloorWristY)) {
+      this.offFloorFrames += 1;
+      if (this.offFloorFrames >= PUSH_UP_POSTURE.offFloorFramesBeforeRelease) {
+        this.releaseSet();
+      }
+      return false;
+    }
+
+    this.offFloorFrames = 0;
+
     if (this.isArmed && !inPlank) {
       this.releaseSet();
       return false;
@@ -63,6 +88,9 @@ export class PushUpRepEngine {
       if (!this.isArmed && this.readyFrames >= PUSH_UP_POSTURE.readyFramesRequired) {
         this.isArmed = true;
         this.viewMode = detectedViewMode;
+        this.capturedFloorWristY = getAverageWristY(landmarks);
+        this.repTopShoulderY = getAverageShoulderY(landmarks);
+        this.offFloorFrames = 0;
         this.elbowEngine.reset();
         this.topHoldFrames = 0;
         this.repCountingEnabled = false;
@@ -85,6 +113,10 @@ export class PushUpRepEngine {
 
       if (isInHighZone(elbowAngle, toPushUpThresholds())) {
         this.topHoldFrames += 1;
+        const shoulderY = getAverageShoulderY(landmarks);
+        if (shoulderY !== null) {
+          this.repTopShoulderY = shoulderY;
+        }
       } else {
         this.topHoldFrames = 0;
       }
@@ -97,7 +129,28 @@ export class PushUpRepEngine {
       this.elbowEngine.reset();
     }
 
-    return this.elbowEngine.update(landmarks);
+    this.trackRepTopShoulder(landmarks);
+
+    const repCompleted = this.elbowEngine.update(landmarks);
+
+    if (!repCompleted) {
+      return false;
+    }
+
+    return isValidPushUpRepCompletion(landmarks, this.capturedFloorWristY);
+  }
+
+  private trackRepTopShoulder(landmarks: PoseLandmark[]): void {
+    const elbowAngle = pushUpElbowAngle(landmarks);
+    const shoulderY = getAverageShoulderY(landmarks);
+
+    if (
+      shoulderY !== null &&
+      elbowAngle !== null &&
+      isInHighZone(elbowAngle, toPushUpThresholds())
+    ) {
+      this.repTopShoulderY = shoulderY;
+    }
   }
 
   /** No longer in a push-up plank - stop counting until a new plank is held. */
@@ -108,6 +161,9 @@ export class PushUpRepEngine {
     this.repCountingEnabled = false;
     this.isArmed = false;
     this.viewMode = null;
+    this.capturedFloorWristY = null;
+    this.repTopShoulderY = null;
+    this.offFloorFrames = 0;
   }
 
   reset(): void {
@@ -117,5 +173,8 @@ export class PushUpRepEngine {
     this.repCountingEnabled = false;
     this.isArmed = false;
     this.viewMode = null;
+    this.capturedFloorWristY = null;
+    this.repTopShoulderY = null;
+    this.offFloorFrames = 0;
   }
 }

@@ -16,7 +16,7 @@ export function getTrackingStatusLabel(status: PoseTrackingStatus): string {
   }
 }
 
-/** Pull-ups: green only when the bar is armed; amber while visible but not hanging yet. */
+/** Pull-ups: green only when armed and actively tracking head or hands. */
 export function resolvePullUpTrackingStatus(
   quality: Pick<PoseQualityResult, 'status' | 'shouldResetEngine' | 'canCountReps'>,
   armed: boolean,
@@ -25,7 +25,7 @@ export function resolvePullUpTrackingStatus(
     return quality.status === 'stabilizing' ? 'stabilizing' : 'partial';
   }
 
-  if (armed && !quality.shouldResetEngine) {
+  if (armed) {
     return 'ready';
   }
 

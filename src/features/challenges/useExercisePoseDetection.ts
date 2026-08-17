@@ -160,7 +160,25 @@ export function useExercisePoseDetection({
       }
 
       if (landmarks.length === 0) {
-        setTrackingStatus('partial');
+        const pullUpArmedEmpty =
+          exerciseType === 'pull_ups' && (engineRef.current as PullUpRepEngine).armed;
+
+        const quality = qualityGateRef.current.evaluate([], {
+          pullUpArmed: exerciseType === 'pull_ups' ? pullUpArmedEmpty : undefined,
+          isLandscape: false,
+        });
+
+        if (quality.shouldResetEngine) {
+          engineRef.current.reset();
+          setPhase(getInitialExercisePhase(exerciseType));
+          if (exerciseType === 'pull_ups') {
+            setPullUpBarLineY(null);
+          }
+        }
+
+        setTrackingStatus(
+          resolveExerciseTrackingStatus(exerciseType, quality, engineRef.current),
+        );
         setTrackingMessage('Step into frame');
         return;
       }
