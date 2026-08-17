@@ -29,6 +29,7 @@ interface FriendChallengeCompleteOverlayProps {
   xp: number;
   coins: number;
   emote: string | null | undefined;
+  opponentForfeited?: boolean;
 }
 
 function ConfettiPiece({
@@ -132,6 +133,7 @@ function getOverlayCopy(
   raceTimeSeconds: number | null,
   opponentName: string,
   opponentTimeSeconds: number | null,
+  opponentForfeited: boolean,
 ): { eyebrow: string; title: string; subtitle: string | null } {
   const myTimeLabel = raceTimeSeconds !== null ? formatRaceTime(raceTimeSeconds) : '--:--';
   const opponentTimeLabel =
@@ -146,9 +148,11 @@ function getOverlayCopy(
       };
     case 'winner':
       return {
-        eyebrow: 'YOU WON THE RACE',
+        eyebrow: opponentForfeited ? 'OPPONENT FORFEITED' : 'YOU WON THE RACE',
         title: myTimeLabel,
-        subtitle: `You ${myTimeLabel} · ${opponentName} ${opponentTimeLabel}`,
+        subtitle: opponentForfeited
+          ? `${opponentName} forfeited`
+          : `You ${myTimeLabel} · ${opponentName} ${opponentTimeLabel}`,
       };
     case 'lost':
       return {
@@ -173,9 +177,16 @@ export function FriendChallengeCompleteOverlay({
   xp,
   coins,
   emote,
+  opponentForfeited = false,
 }: FriendChallengeCompleteOverlayProps) {
   const theme = useTheme();
-  const copy = getOverlayCopy(variant, raceTimeSeconds, opponentName, opponentTimeSeconds);
+  const copy = getOverlayCopy(
+    variant,
+    raceTimeSeconds,
+    opponentName,
+    opponentTimeSeconds,
+    opponentForfeited,
+  );
   const confettiCount = variant === 'winner' ? 20 : 12;
   const accentColor =
     variant === 'winner' ? theme.streak : variant === 'lost' ? theme.primary : theme.success;

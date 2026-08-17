@@ -1,12 +1,12 @@
-import { assertSupabaseConfigured, supabase } from '@/lib/supabase';
-import { formatExerciseLabel } from '@/constants/challenges';
 import type { ExerciseType } from '@/constants/challenges';
-import { getFriendChallengeByParticipantId, getMyFriendChallenges } from '@/services/friendChallengeService';
+import { formatExerciseLabel } from '@/constants/challenges';
 import {
   challengeNotificationId,
   type ChallengeNotification,
   type ChallengeNotificationType,
 } from '@/features/notifications/types';
+import { assertSupabaseConfigured, supabase } from '@/lib/supabase';
+import { getFriendChallengeByParticipantId, getMyFriendChallenges } from '@/services/friendChallengeService';
 import { getCreatorDisplayName, getOpponentDisplayName, type FriendChallenge } from '@/types/friends';
 
 interface NotificationCopy {
@@ -97,7 +97,7 @@ async function loadChallengeSummaryByChallengeId(
   return {
     participantId: mine.id,
     targetReps: challenge.target_reps,
-    exerciseType: challenge.exercise_type,
+    exerciseType: challenge.exercise_type as ExerciseType,
     creatorUsername: creatorProfile.username,
     creatorDisplayName: creatorProfile.display_name,
     opponentUsername: opponentProfile.username,
@@ -132,6 +132,18 @@ function buildCopyFromChallenge(
     }
     case 'challenge_declined': {
       const opponent = getOpponentDisplayName(challenge);
+      if (
+        challenge.isCreator &&
+        challenge.status === 'completed' &&
+        challenge.opponentStatus === 'declined'
+      ) {
+        return {
+          participantId: challenge.participantId,
+          title: 'Opponent forfeited',
+          message: `${opponent} forfeited your ${repLabel} race`,
+        };
+      }
+
       return {
         participantId: challenge.participantId,
         title: 'Challenge declined',

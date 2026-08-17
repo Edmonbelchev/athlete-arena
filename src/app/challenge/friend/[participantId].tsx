@@ -96,16 +96,31 @@ export default function FriendChallengeScreen() {
 
   const isCompleted = challenge?.status === 'completed';
   const isPending = challenge?.status === 'pending';
+  const isDeclined = challenge?.status === 'declined';
+  const opponentDeclined = challenge?.opponentStatus === 'declined';
   const isExpired = challenge?.status === 'expired' || isTimedOut;
   const isResolved = challenge ? isFriendChallengeResolved(challenge) : false;
   const waitingOnOpponent = challenge ? isFriendChallengeWaitingOnOpponent(challenge) : false;
   const targetReps = challenge?.targetReps ?? 0;
   const raceStarted = challenge ? hasFriendChallengeStarted(challenge) : false;
   const myUserId = session?.user.id ?? '';
+  const winResult = challenge ? didIWinFriendChallenge(challenge, myUserId) : null;
   const canAttempt =
-    Boolean(challenge) && !isCompleted && !isPending && !isExpired && !waitingOnOpponent;
+    Boolean(challenge) &&
+    !isCompleted &&
+    !isPending &&
+    !isDeclined &&
+    !opponentDeclined &&
+    !isExpired &&
+    !waitingOnOpponent;
+  const opponentForfeited =
+    Boolean(challenge) &&
+    challenge.isCreator &&
+    isCompleted &&
+    opponentDeclined &&
+    winResult === true;
   const overlayVariant = challenge
-    ? getFriendChallengeOverlayVariant(waitingOnOpponent, isCompleted, isResolved, didIWinFriendChallenge(challenge, myUserId))
+    ? getFriendChallengeOverlayVariant(waitingOnOpponent, isCompleted, isResolved, winResult)
     : null;
   const showWorkout =
     Boolean(challenge) &&
@@ -185,7 +200,9 @@ export default function FriendChallengeScreen() {
         !participantId ||
         activeChallenge.status === 'completed' ||
         activeChallenge.status === 'pending' ||
+        activeChallenge.status === 'declined' ||
         activeChallenge.status === 'expired' ||
+        activeChallenge.opponentStatus === 'declined' ||
         isTimedOut ||
         isSyncingRef.current
       ) {
@@ -265,7 +282,6 @@ export default function FriendChallengeScreen() {
   const opponentName = getOpponentDisplayName(challenge);
   const myTime = isCompleted || waitingOnOpponent ? elapsedSeconds : raceStarted ? elapsedSeconds : null;
   const opponentTime = getOpponentRaceSeconds(challenge);
-  const winResult = didIWinFriendChallenge(challenge, myUserId);
   const earnedXp = challenge.xpEarned ?? 0;
   const earnedCoins = getFriendChallengeCoinReward(
     challenge.resolvedAt,
@@ -334,6 +350,7 @@ export default function FriendChallengeScreen() {
                 xp={earnedXp}
                 coins={earnedCoins}
                 emote={equippedEmote}
+                opponentForfeited={opponentForfeited}
               />
             ) : null
           }
@@ -410,6 +427,16 @@ export default function FriendChallengeScreen() {
           ) : isExpired ? (
             <Text style={StyleSheet.flatten([styles.pending, { color: theme.danger }])}>
               You hit the time cap before finishing. Head back and try again.
+            </Text>
+          ) : isDeclined ? (
+            <Text style={StyleSheet.flatten([styles.pending, { color: theme.textSecondary }])}>
+              {challenge.isCreator
+                ? `${opponentName} declined this challenge.`
+                : 'You declined this challenge.'}
+            </Text>
+          ) : opponentDeclined ? (
+            <Text style={StyleSheet.flatten([styles.pending, { color: theme.textSecondary }])}>
+              {opponentName} declined this challenge.
             </Text>
           ) : null}
 

@@ -94,10 +94,6 @@ export function getChallengeNotificationTypeFromChange(
   }
 
   if (row.status === 'declined' && oldRow.status !== 'declined') {
-    if (row.user_id === currentUserId && oldRow.status === 'in_progress') {
-      return 'challenge_declined';
-    }
-
     if (row.user_id !== currentUserId && oldRow.status === 'pending') {
       return 'challenge_declined';
     }
