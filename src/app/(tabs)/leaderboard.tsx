@@ -1,9 +1,7 @@
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { LeaderboardScreenContent } from '@/components/leaderboard/LeaderboardScreenContent';
-import { TabScreenHeader } from '@/components/sidebar/TabScreenHeader';
-import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
 export default function LeaderboardTabScreen() {
@@ -13,9 +11,6 @@ export default function LeaderboardTabScreen() {
     <SafeAreaView
       edges={['left', 'right', 'bottom']}
       style={StyleSheet.flatten([styles.safeArea, { backgroundColor: theme.background }])}>
-      <View style={styles.header}>
-        <TabScreenHeader title="Leaderboard" subtitle="Compete for the top spot" />
-      </View>
       <LeaderboardScreenContent />
     </SafeAreaView>
   );
@@ -24,13 +19,5 @@ export default function LeaderboardTabScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-  },
-  header: {
-    paddingHorizontal: Spacing.four,
-    paddingTop: Spacing.four,
-    maxWidth: MaxContentWidth,
-    alignSelf: 'center',
-    width: '100%',
-    marginBottom: Spacing.two,
   },
 });

@@ -21,6 +21,7 @@ export function LeaderboardListItem({ entry, xpLabel = 'XP', onPress }: Leaderbo
   const displayName = entry.displayName ?? entry.username;
   const rankAccent = getRankAccentColor(entry.rank);
   const rankIcon = getRankIcon(entry.rank);
+  const isTopTen = entry.rank <= 10;
 
   return (
     <Pressable
@@ -29,44 +30,55 @@ export function LeaderboardListItem({ entry, xpLabel = 'XP', onPress }: Leaderbo
       style={({ pressed }) => [
         styles.row,
         {
-          backgroundColor: entry.isCurrentUser ? theme.backgroundSelected : theme.backgroundElement,
+          backgroundColor: entry.isCurrentUser ? `${theme.primary}12` : theme.backgroundElement,
           borderColor: entry.isCurrentUser ? theme.primary : theme.border,
-          opacity: pressed ? 0.85 : 1,
+          opacity: pressed ? 0.88 : 1,
         },
+        entry.isCurrentUser ? styles.rowCurrentUser : null,
       ]}>
-      <View style={styles.rankColumn}>
+      <View
+        style={[
+          styles.rankBadge,
+          {
+            backgroundColor: rankAccent ? `${rankAccent}18` : theme.backgroundSelected,
+            borderColor: rankAccent ? `${rankAccent}44` : theme.border,
+          },
+        ]}>
         {rankIcon ? (
-          <AppIcon name={rankIcon} size={18} color={rankAccent ?? theme.primary} />
-        ) : null}
-        <Text
-          style={[
-            styles.rank,
-            { color: rankAccent ?? theme.textSecondary },
-            entry.rank <= 3 ? styles.rankTop : null,
-          ]}>
-          #{entry.rank}
-        </Text>
+          <AppIcon name={rankIcon} size={14} color={rankAccent ?? theme.primary} weight="bold" />
+        ) : (
+          <Text style={[styles.rank, { color: rankAccent ?? theme.textSecondary }]}>
+            {entry.rank}
+          </Text>
+        )}
       </View>
 
       <ProfileAvatar
         uri={entry.avatarUrl}
         name={displayName}
-        size={44}
+        size={46}
         shopAvatar={entry.avatar}
         frame={entry.frame}
       />
 
       <View style={styles.info}>
-        <Text style={[styles.name, { color: theme.text }]}>
-          {displayName}
-          {entry.isCurrentUser ? ' (You)' : ''}
-        </Text>
+        <View style={styles.nameRow}>
+          <Text style={[styles.name, { color: theme.text }]} numberOfLines={1}>
+            {displayName}
+          </Text>
+          {entry.isCurrentUser ? (
+            <View style={[styles.youChip, { backgroundColor: theme.primary }]}>
+              <Text style={styles.youChipText}>YOU</Text>
+            </View>
+          ) : null}
+        </View>
         <Text style={[styles.meta, { color: theme.textSecondary }]}>
           @{entry.username} · Lvl {entry.level}
         </Text>
       </View>
 
-      <View style={styles.xpBlock}>
+      <View style={[styles.xpBlock, { backgroundColor: isTopTen ? `${theme.xp}14` : theme.backgroundSelected }]}>
+        <AppIcon name="bolt" size={13} color={theme.xp} weight="bold" />
         <Text style={[styles.xpValue, { color: theme.text }]}>{entry.xpAmount.toLocaleString()}</Text>
         <Text style={[styles.xpLabel, { color: theme.textSecondary }]}>{xpLabel}</Text>
       </View>
@@ -78,46 +90,73 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: Spacing.three,
+    paddingVertical: Spacing.two,
+    paddingHorizontal: Spacing.three,
     borderRadius: Radius.lg,
     borderWidth: 1,
     gap: Spacing.two,
   },
-  rankColumn: {
-    width: 44,
+  rowCurrentUser: {
+    borderWidth: 1.5,
+  },
+  rankBadge: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 1,
     alignItems: 'center',
-    gap: Spacing.half,
+    justifyContent: 'center',
   },
   rank: {
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  rankTop: {
     fontSize: 14,
+    fontWeight: '900',
   },
   info: {
     flex: 1,
-    gap: Spacing.half,
+    gap: 2,
+    minWidth: 0,
+  },
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.one,
   },
   name: {
-    fontSize: 16,
-    fontWeight: '700',
+    flexShrink: 1,
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  youChip: {
+    borderRadius: Radius.sm,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  youChipText: {
+    color: '#FFFFFF',
+    fontSize: 9,
+    fontWeight: '900',
+    letterSpacing: 0.5,
   },
   meta: {
     fontSize: 12,
     fontWeight: '500',
   },
   xpBlock: {
-    alignItems: 'flex-end',
-    minWidth: 56,
+    alignItems: 'center',
+    minWidth: 72,
+    borderRadius: Radius.md,
+    paddingVertical: Spacing.one,
+    paddingHorizontal: Spacing.two,
+    gap: 1,
   },
   xpValue: {
-    fontSize: 16,
-    fontWeight: '800',
+    fontSize: 15,
+    fontWeight: '900',
   },
   xpLabel: {
-    fontSize: 11,
-    fontWeight: '600',
+    fontSize: 9,
+    fontWeight: '700',
     textTransform: 'uppercase',
+    letterSpacing: 0.3,
   },
 });
