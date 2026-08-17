@@ -49,3 +49,21 @@ export async function getXpLeaderboard(
 
   return (data ?? []).map(mapLeaderboardEntry);
 }
+
+export async function getFriendsXpLeaderboard(
+  period: LeaderboardPeriod,
+  limit = 50,
+): Promise<LeaderboardEntry[]> {
+  assertSupabaseConfigured();
+
+  const { data, error } = await supabase.rpc('get_friends_xp_leaderboard', {
+    p_period: period,
+    p_limit: limit,
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  return (data ?? []).map(mapLeaderboardEntry);
+}

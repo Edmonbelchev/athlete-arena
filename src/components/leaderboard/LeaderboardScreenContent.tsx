@@ -17,19 +17,23 @@ import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { useLeaderboard } from '@/features/leaderboard/useLeaderboard';
 import {
   getLeaderboardPeriodLabel,
-  getLeaderboardPeriodSubtitle,
+  getLeaderboardScopeLabel,
+  getLeaderboardScopeSubtitle,
   getLeaderboardXpLabel,
   type LeaderboardPeriod,
+  type LeaderboardScope,
 } from '@/types/leaderboard';
 import { useTheme } from '@/hooks/use-theme';
 
 const PERIODS: LeaderboardPeriod[] = ['weekly', 'all_time'];
+const SCOPES: LeaderboardScope[] = ['global', 'friends'];
 
 export function LeaderboardScreenContent() {
   const theme = useTheme();
   const router = useRouter();
+  const [scope, setScope] = useState<LeaderboardScope>('global');
   const [period, setPeriod] = useState<LeaderboardPeriod>('weekly');
-  const { entries, isLoading, error, refresh } = useLeaderboard(period);
+  const { entries, isLoading, error, refresh } = useLeaderboard(period, scope);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   useFocusEffect(
@@ -98,6 +102,33 @@ export function LeaderboardScreenContent() {
       refreshControl={
         <RefreshControl refreshing={isRefreshing} onRefresh={() => void handleRefresh()} />
       }>
+      <View style={styles.scopeSwitcher}>
+        {SCOPES.map((option) => {
+          const isActive = option === scope;
+
+          return (
+            <Pressable
+              key={option}
+              onPress={() => setScope(option)}
+              style={[
+                styles.scopeButton,
+                {
+                  backgroundColor: isActive ? theme.accent : theme.backgroundElement,
+                  borderColor: isActive ? theme.accent : theme.border,
+                },
+              ]}>
+              <Text
+                style={[
+                  styles.scopeLabel,
+                  { color: isActive ? '#FFFFFF' : theme.text },
+                ]}>
+                {getLeaderboardScopeLabel(option)}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+
       <View style={styles.periodSwitcher}>
         {PERIODS.map((option) => {
           const isActive = option === period;
@@ -126,7 +157,7 @@ export function LeaderboardScreenContent() {
       </View>
 
       <Text style={[styles.helperText, { color: theme.textSecondary }]}>
-        {getLeaderboardPeriodSubtitle(period)}
+        {getLeaderboardScopeSubtitle(scope, period)}
       </Text>
 
       {isLoading && dedupedEntries.length === 0 ? (
@@ -147,10 +178,21 @@ export function LeaderboardScreenContent() {
         <View style={[styles.messageCard, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
           <Text style={[styles.messageTitle, { color: theme.text }]}>No rankings yet</Text>
           <Text style={[styles.messageBody, { color: theme.textSecondary }]}>
-            {period === 'weekly'
-              ? 'Complete a challenge this week to appear on the board.'
-              : 'Earn XP from daily challenges, friend races, and achievements to climb the board.'}
+            {scope === 'friends'
+              ? period === 'weekly'
+                ? 'You and your friends have not earned XP this week yet. Complete a challenge to get on the board.'
+                : 'Add friends and earn XP together to see who leads your crew.'
+              : period === 'weekly'
+                ? 'Complete a challenge this week to appear on the board.'
+                : 'Earn XP from daily challenges, friend races, and achievements to climb the board.'}
           </Text>
+          {scope === 'friends' ? (
+            <PrimaryButton
+              label="Find friends"
+              variant="secondary"
+              onPress={() => router.push('/friends/add')}
+            />
+          ) : null}
         </View>
       ) : null}
 
@@ -195,6 +237,21 @@ const styles = StyleSheet.create({
     maxWidth: MaxContentWidth,
     alignSelf: 'center',
     width: '100%',
+  },
+  scopeSwitcher: {
+    flexDirection: 'row',
+    gap: Spacing.two,
+  },
+  scopeButton: {
+    flex: 1,
+    borderWidth: 1,
+    borderRadius: Radius.lg,
+    paddingVertical: Spacing.two,
+    alignItems: 'center',
+  },
+  scopeLabel: {
+    fontSize: 14,
+    fontWeight: '800',
   },
   periodSwitcher: {
     flexDirection: 'row',

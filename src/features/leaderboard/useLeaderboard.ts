@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 
-import { getXpLeaderboard } from '@/services/leaderboardService';
-import type { LeaderboardEntry, LeaderboardPeriod } from '@/types/leaderboard';
+import { getFriendsXpLeaderboard, getXpLeaderboard } from '@/services/leaderboardService';
+import type { LeaderboardEntry, LeaderboardPeriod, LeaderboardScope } from '@/types/leaderboard';
 
 interface UseLeaderboardResult {
   entries: LeaderboardEntry[];
@@ -10,7 +10,10 @@ interface UseLeaderboardResult {
   refresh: () => Promise<void>;
 }
 
-export function useLeaderboard(period: LeaderboardPeriod): UseLeaderboardResult {
+export function useLeaderboard(
+  period: LeaderboardPeriod,
+  scope: LeaderboardScope = 'global',
+): UseLeaderboardResult {
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -20,7 +23,8 @@ export function useLeaderboard(period: LeaderboardPeriod): UseLeaderboardResult 
     setError(null);
 
     try {
-      const nextEntries = await getXpLeaderboard(period);
+      const fetchLeaderboard = scope === 'friends' ? getFriendsXpLeaderboard : getXpLeaderboard;
+      const nextEntries = await fetchLeaderboard(period);
       setEntries(nextEntries);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'Failed to load leaderboard');
@@ -28,7 +32,7 @@ export function useLeaderboard(period: LeaderboardPeriod): UseLeaderboardResult 
     } finally {
       setIsLoading(false);
     }
-  }, [period]);
+  }, [period, scope]);
 
   useEffect(() => {
     void refresh();

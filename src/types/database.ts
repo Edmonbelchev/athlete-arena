@@ -903,6 +903,26 @@ export interface Database {
           is_current_user: boolean;
         }[];
       };
+      get_friends_xp_leaderboard: {
+        Args: {
+          p_period?: string;
+          p_limit?: number;
+        };
+        Returns: {
+          rank: number;
+          user_id: string;
+          username: string;
+          display_name: string | null;
+          level: number;
+          xp_amount: number;
+          avatar_url: string | null;
+          avatar_icon: string | null;
+          avatar_background: string | null;
+          frame_border_color: string | null;
+          frame_border_width: number | null;
+          is_current_user: boolean;
+        }[];
+      };
       delete_my_account: {
         Args: {
           p_reason?: string | null;

@@ -2,6 +2,7 @@ import type { AppIconName } from '@/constants/icons';
 import type { ShopAvatarDisplay, ShopFrameDisplay } from '@/types/shop';
 
 export type LeaderboardPeriod = 'weekly' | 'all_time';
+export type LeaderboardScope = 'global' | 'friends';
 
 export interface LeaderboardEntry {
   rank: number;
@@ -26,6 +27,22 @@ export function getLeaderboardPeriodSubtitle(period: LeaderboardPeriod): string 
   }
 
   return 'Ranked by XP earned this week · Resets every Monday (UTC)';
+}
+
+export function getLeaderboardScopeLabel(scope: LeaderboardScope): string {
+  return scope === 'global' ? 'Global' : 'Friends';
+}
+
+export function getLeaderboardScopeSubtitle(scope: LeaderboardScope, period: LeaderboardPeriod): string {
+  if (scope === 'friends') {
+    if (period === 'all_time') {
+      return 'Ranked by total XP among your friends';
+    }
+
+    return 'Ranked by XP earned this week among your friends · Resets every Monday (UTC)';
+  }
+
+  return getLeaderboardPeriodSubtitle(period);
 }
 
 export function getLeaderboardXpLabel(period: LeaderboardPeriod): string {
