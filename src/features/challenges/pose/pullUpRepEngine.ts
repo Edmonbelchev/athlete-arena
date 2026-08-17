@@ -11,7 +11,7 @@ import {
   isPullUpTopPosture,
 } from './pullUpPosture';
 import type { AngleThresholdConfig } from './repEngineUtils';
-import { isInHangZone, isInHighZone, isInLowZone, isInMidZone } from './repEngineUtils';
+import { isInHighZone, isInLowZone, isInMidZone } from './repEngineUtils';
 
 function toPullUpThresholds(): AngleThresholdConfig {
   return {
@@ -30,8 +30,6 @@ export class PullUpRepEngine {
   private lastTopPosture = false;
   private topPostureHoldFrames = 0;
   private hasPulledThisRep = false;
-  /** Cleared after each rep; set again on the next extended-arm frame at the bottom. */
-  private sawHangSinceLastRep = true;
   private repCooldown = 0;
   /** Blocks a second count until the athlete leaves the top zone. */
   private awaitingTopClear = false;
@@ -95,7 +93,6 @@ export class PullUpRepEngine {
       if (!this.isArmed && this.readyFrames >= PULL_UP_POSTURE.readyFramesRequired) {
         this.isArmed = true;
         this.phase = 'UP';
-        this.sawHangSinceLastRep = true;
       }
     } else if (!this.isArmed) {
       this.readyFrames = 0;
@@ -128,10 +125,7 @@ export class PullUpRepEngine {
       this.topPostureHoldFrames = 0;
     }
 
-    if (isInHangZone(elbowAngle, this.thresholds, PULL_UP_POSTURE.hangAngleSlack)) {
-      this.sawHangSinceLastRep = true;
-      this.hasPulledThisRep = false;
-    } else {
+    if (!isInHighZone(elbowAngle, this.thresholds)) {
       this.hasPulledThisRep = true;
     }
 
@@ -139,7 +133,6 @@ export class PullUpRepEngine {
 
     const canCountTop =
       topEdge &&
-      this.sawHangSinceLastRep &&
       this.hasPulledThisRep &&
       !this.awaitingTopClear &&
       this.repCooldown === 0;
@@ -150,11 +143,11 @@ export class PullUpRepEngine {
       this.awaitingTopClear = true;
       this.clearOfTopFrames = 0;
       this.repCooldown = PULL_UP_POSTURE.repCooldownFrames;
-      this.sawHangSinceLastRep = false;
       this.hasPulledThisRep = false;
       this.topPostureHoldFrames = 0;
     } else if (isInHighZone(elbowAngle, this.thresholds)) {
       this.phase = 'UP';
+      this.hasPulledThisRep = false;
       if (inDeadHang) {
         this.capturedBarLineY = getBarLineY(landmarks);
       }
@@ -183,7 +176,6 @@ export class PullUpRepEngine {
     this.clearOfTopFrames = 0;
     this.offBarFrames = 0;
     this.hasPulledThisRep = false;
-    this.sawHangSinceLastRep = true;
     this.topPostureHoldFrames = 0;
     this.lastTopPosture = false;
     this.phase = 'UP';
@@ -197,7 +189,6 @@ export class PullUpRepEngine {
     this.lastTopPosture = false;
     this.topPostureHoldFrames = 0;
     this.hasPulledThisRep = false;
-    this.sawHangSinceLastRep = true;
     this.repCooldown = 0;
     this.awaitingTopClear = false;
     this.clearOfTopFrames = 0;
