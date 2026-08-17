@@ -144,6 +144,12 @@ export const PULL_UP_POSTURE = {
   repCooldownFrames: isNativeMobile ? 10 : 12,
   /** Frames below the bar between reps before the next top can count. */
   minClearOfTopFrames: isNativeMobile ? 2 : 3,
+  /** Extra elbow slack for hang-between-reps (far / floor camera reads arms less extended). */
+  hangAngleSlack: isNativeMobile ? 14 : 8,
+  /** Chin clearly above the bar when elbows look extended at the top (camera angle). */
+  minChinClearAtTop: isNativeMobile ? 0.022 : 0.016,
+  /** Looser chin margin at the top vs arming (low camera angle). */
+  topChinOverBarMargin: isNativeMobile ? 0.075 : 0.04,
   /** Wrists this far below the captured bar line means hands left the bar (y grows down). */
   leftBarWristDropMargin: isNativeMobile ? 0.06 : 0.05,
   /** Frames off-bar before the set disarms. */

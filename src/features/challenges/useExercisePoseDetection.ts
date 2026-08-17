@@ -249,8 +249,10 @@ export function useExercisePoseDetection({
 
       const pushUpCounting =
         exerciseType === 'push_ups' && (engine as PushUpRepEngine).repCountingActive;
+      const pullUpCounting =
+        exerciseType === 'pull_ups' && (engine as PullUpRepEngine).armed;
 
-      if (repCompleted && (quality.canCountReps || pushUpCounting)) {
+      if (repCompleted && (quality.canCountReps || pushUpCounting || pullUpCounting)) {
         onRepDetectedRef.current();
       }
     },

@@ -75,7 +75,16 @@
         }
       ],
       "expo-screen-orientation",
-      "expo-audio"
+      "expo-audio",
+      "./plugins/withAndroidCameraX.js",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "extraProguardRules": "-keep class androidx.camera.** { *; }\n-keepclassmembers class androidx.camera.** { *; }\n-keep class androidx.camera.camera2.internal.** { *; }\n-dontwarn androidx.camera.**\n-keep class com.mrousavy.camera.** { *; }\n-keep class com.facebook.react.turbomodule.** { *; }\n-keep class com.facebook.jni.** { *; }"
+          }
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

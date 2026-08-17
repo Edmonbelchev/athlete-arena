@@ -222,14 +222,18 @@ export function hasLeftOverheadBar(landmarks: PoseLandmark[], barLineY: number |
 }
 
 /** Chin has cleared the bar line (at or above wrist/bar height). */
-export function isChinOverBar(landmarks: PoseLandmark[], barLineY: number | null): boolean {
+export function isChinOverBar(
+  landmarks: PoseLandmark[],
+  barLineY: number | null,
+  margin: number = PULL_UP_POSTURE.chinOverBarMargin,
+): boolean {
   const chinY = getChinY(landmarks);
 
   if (chinY === null || barLineY === null) {
     return false;
   }
 
-  return chinY <= barLineY + PULL_UP_POSTURE.chinOverBarMargin;
+  return chinY <= barLineY + margin;
 }
 
 /** Ears have risen to bar height - back-camera proxy for chin-over-bar. */
@@ -253,7 +257,7 @@ export function isHeadOverBar(landmarks: PoseLandmark[], barLineY: number | null
   }
 
   if (hasFrontFaceLandmarks(landmarks)) {
-    return isChinOverBar(landmarks, barLineY);
+    return isChinOverBar(landmarks, barLineY, PULL_UP_POSTURE.topChinOverBarMargin);
   }
 
   if (hasEarLandmarks(landmarks)) {
@@ -314,12 +318,7 @@ export function isPullUpTopPosture(
   const wristY = getAverageWristY(landmarks);
   const elbowAngle = pushUpElbowAngle(landmarks);
 
-  if (
-    wristY === null ||
-    elbowAngle === null ||
-    barLineY === null ||
-    isInHighZone(elbowAngle, elbowThresholds)
-  ) {
+  if (wristY === null || elbowAngle === null || barLineY === null) {
     return false;
   }
 
@@ -333,7 +332,17 @@ export function isPullUpTopPosture(
     return false;
   }
 
-  return isHeadOverBar(landmarks, effectiveBarY);
+  if (!isInHighZone(elbowAngle, elbowThresholds)) {
+    return isHeadOverBar(landmarks, effectiveBarY);
+  }
+
+  // Far / floor camera: elbows can look extended at the top even on a valid rep.
+  const chinY = getChinY(landmarks);
+  if (chinY === null) {
+    return false;
+  }
+
+  return chinY <= effectiveBarY + PULL_UP_POSTURE.minChinClearAtTop;
 }
 
 export function hasPullUpTrackingLandmarks(landmarks: PoseLandmark[]): boolean {
