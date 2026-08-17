@@ -23,6 +23,8 @@ export const POSE_QUALITY = {
   partialFramesBeforeReset: isNativeMobile ? 30 : 15,
   /** Partial-tracking frames before resetting an armed pull-up set. */
   partialFramesBeforeResetPullUpArmed: isNativeMobile ? 8 : 6,
+  /** Partial-tracking frames before resetting an armed push-up set. */
+  partialFramesBeforeResetPushUpArmed: isNativeMobile ? 45 : 30,
   /** Skeleton overlay visibility - slightly higher to reduce flicker. */
   skeletonMinVisibility: isNativeMobile ? 0.4 : 0.5,
 } as const;
@@ -70,8 +72,8 @@ export const PUSH_UP_POSTURE = {
   minWristBelowShoulder: isNativeMobile ? 0.02 : 0.025,
   /** Frames in a valid plank before rep counting begins. */
   readyFramesRequired: isNativeMobile ? 3 : 4,
-  /** Consecutive frames at arm extension before rep counting begins. */
-  topHoldFramesBeforeReps: isNativeMobile ? 3 : 2,
+  /** Consecutive frames at arm extension before rep counting begins (also counted during arming). */
+  topHoldFramesBeforeReps: 1,
   /** Consecutive frames in the bottom zone before depth counts. */
   bottomHoldFrames: 1,
   /** Consecutive frames at full extension before a rep registers (0 = first frame). */
@@ -98,8 +100,12 @@ export const PUSH_UP_POSTURE = {
   minWristBelowHipForPlank: isNativeMobile ? 0.015 : 0.018,
   /** Wrists must stay near ankle height when feet are visible (strong floor anchor). */
   maxWristAboveAnkleForFloor: isNativeMobile ? 0.1 : 0.08,
-  /** Frames with hands off the floor before the set disarms. */
+  /** Frames with hands off the floor before the set disarms (pre-counting). */
   offFloorFramesBeforeRelease: isNativeMobile ? 4 : 5,
+  /** Out-of-plank frames before disarming an active counting set (~0.5s). */
+  plankBreakFramesBeforeRelease: isNativeMobile ? 15 : 12,
+  /** Longer grace while resuming after a counted set (~1.5s). */
+  plankBreakFramesBeforeReleaseActive: isNativeMobile ? 45 : 36,
   /** Active reps: max upward drift from the floor line captured at arming (y grows down). */
   maxWristDriftUpFromFloor: isNativeMobile ? 0.04 : 0.035,
   /** Minimum wrist drop from shoulders while a front-view set is active. */

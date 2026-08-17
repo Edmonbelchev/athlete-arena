@@ -36,18 +36,18 @@ export function resolvePullUpTrackingStatus(
   return quality.status;
 }
 
-/** Push-ups: green only in an active plank set; amber when visible but standing / settling. */
+/** Push-ups: green when counting; amber when visible but standing / settling. */
 export function resolvePushUpTrackingStatus(
   quality: Pick<PoseQualityResult, 'status' | 'canCountReps'>,
   armed: boolean,
   repCountingActive: boolean,
 ): PoseTrackingStatus {
-  if (!quality.canCountReps) {
-    return quality.status === 'stabilizing' ? 'stabilizing' : 'partial';
+  if (repCountingActive) {
+    return quality.canCountReps ? 'ready' : 'stabilizing';
   }
 
-  if (repCountingActive) {
-    return 'ready';
+  if (!quality.canCountReps) {
+    return quality.status === 'stabilizing' ? 'stabilizing' : 'partial';
   }
 
   if (armed) {

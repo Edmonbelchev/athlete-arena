@@ -162,13 +162,18 @@ export function useExercisePoseDetection({
       if (landmarks.length === 0) {
         const pullUpArmedEmpty =
           exerciseType === 'pull_ups' && (engineRef.current as PullUpRepEngine).armed;
+        const pushUpArmedEmpty =
+          exerciseType === 'push_ups' &&
+          ((engineRef.current as PushUpRepEngine).armed ||
+            (engineRef.current as PushUpRepEngine).hasStartedSet);
 
         const quality = qualityGateRef.current.evaluate([], {
           pullUpArmed: exerciseType === 'pull_ups' ? pullUpArmedEmpty : undefined,
+          pushUpArmed: exerciseType === 'push_ups' ? pushUpArmedEmpty : undefined,
           isLandscape: false,
         });
 
-        if (quality.shouldResetEngine) {
+        if (quality.shouldResetEngine && !pullUpArmedEmpty && !pushUpArmedEmpty) {
           engineRef.current.reset();
           setPhase(getInitialExercisePhase(exerciseType));
           if (exerciseType === 'pull_ups') {
@@ -194,13 +199,19 @@ export function useExercisePoseDetection({
 
       const pullUpArmed =
         exerciseType === 'pull_ups' && (engineRef.current as PullUpRepEngine).armed;
+      const pushUpEngine =
+        exerciseType === 'push_ups' ? (engineRef.current as PushUpRepEngine) : null;
+      const pushUpArmed = Boolean(
+        pushUpEngine && (pushUpEngine.armed || pushUpEngine.hasStartedSet),
+      );
 
       const quality = qualityGateRef.current.evaluate(landmarks, {
         pullUpArmed: exerciseType === 'pull_ups' ? pullUpArmed : undefined,
+        pushUpArmed: exerciseType === 'push_ups' ? pushUpArmed : undefined,
         isLandscape,
       });
 
-      if (quality.shouldResetEngine) {
+      if (quality.shouldResetEngine && !pullUpArmed && !(pushUpEngine?.hasStartedSet ?? false)) {
         engineRef.current.reset();
         setPhase(getInitialExercisePhase(exerciseType));
         if (exerciseType === 'pull_ups') {
@@ -210,13 +221,12 @@ export function useExercisePoseDetection({
 
       const engine = engineRef.current;
       const armedBeforeUpdate = getEngineArmed(engine, exerciseType);
+      const shouldUpdateEngine =
+        quality.canCountReps ||
+        armedBeforeUpdate ||
+        (exerciseType === 'push_ups' && landmarks.length > 0);
 
-      if (!quality.canCountReps) {
-        if (armedBeforeUpdate) {
-          engine.update(landmarks);
-          setPhase(engine.phase);
-        }
-
+      if (!shouldUpdateEngine) {
         setTrackingStatus(resolveExerciseTrackingStatus(exerciseType, quality, engine));
         setTrackingMessage(getExerciseFormMessage(exerciseType, engine, landmarks, quality));
 
@@ -237,7 +247,10 @@ export function useExercisePoseDetection({
         setPullUpBarLineY((engine as PullUpRepEngine).barLineY);
       }
 
-      if (repCompleted) {
+      const pushUpCounting =
+        exerciseType === 'push_ups' && (engine as PushUpRepEngine).repCountingActive;
+
+      if (repCompleted && (quality.canCountReps || pushUpCounting)) {
         onRepDetectedRef.current();
       }
     },

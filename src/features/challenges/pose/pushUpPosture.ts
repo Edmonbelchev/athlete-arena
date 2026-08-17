@@ -380,6 +380,25 @@ export function detectPushUpViewMode(landmarks: PoseLandmark[]): PushUpViewMode 
 }
 
 /**
+ * Relaxed posture for an active or resuming set (after the first reps have counted).
+ * Uses the same checks as mid-rep tracking, not the strict arming pose.
+ */
+export function isPushUpResumePosture(
+  landmarks: PoseLandmark[],
+  viewMode: PushUpViewMode | null = null,
+): boolean {
+  if (viewMode === 'side') {
+    return isSideViewPushUpPlank(landmarks);
+  }
+
+  if (viewMode === 'front') {
+    return isFrontViewPushUpActive(landmarks);
+  }
+
+  return isSideViewPushUpPlank(landmarks) || isFrontViewPushUpActive(landmarks);
+}
+
+/**
  * True when the body is in a floor push-up plank.
  * Supports both side profile and facing-the-camera setups.
  */

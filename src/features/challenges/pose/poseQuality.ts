@@ -24,6 +24,8 @@ export interface PoseQualityResult {
 export interface PoseQualityOptions {
   /** Pull-up engine is armed - only arms need to stay visible (head may leave frame mid-rep). */
   pullUpArmed?: boolean;
+  /** Push-up engine is armed - tolerate brief partial tracking without resetting the set. */
+  pushUpArmed?: boolean;
   /** Wider-than-tall preview - use stricter visibility and warmup gates. */
   isLandscape?: boolean;
 }
@@ -270,6 +272,10 @@ function checkRequiredLandmarks(
       };
     }
 
+    if (options?.pushUpArmed) {
+      return { ok: true, message: null };
+    }
+
     if (visibleCount < minVisibleTrackingPoints) {
       return {
         ok: false,
@@ -376,7 +382,9 @@ export class PoseQualityGate {
       const resetThreshold =
         this.exerciseType === 'pull_ups' && options?.pullUpArmed === true
           ? POSE_QUALITY.partialFramesBeforeResetPullUpArmed
-          : POSE_QUALITY.partialFramesBeforeReset;
+          : this.exerciseType === 'push_ups' && options?.pushUpArmed === true
+            ? POSE_QUALITY.partialFramesBeforeResetPushUpArmed
+            : POSE_QUALITY.partialFramesBeforeReset;
 
       return {
         status: 'partial',

@@ -9,6 +9,7 @@ import {
   hasLeftPushUpFloor,
   isPushUpDeepEnough,
   isPushUpPlankPosture,
+  isPushUpResumePosture,
   isValidPushUpRepCompletion,
   type PushUpViewMode,
 } from './pushUpPosture';
@@ -34,6 +35,9 @@ export class PushUpRepEngine {
   private capturedFloorWristY: number | null = null;
   private repTopShoulderY: number | null = null;
   private offFloorFrames = 0;
+  private plankBreakFrames = 0;
+  /** True once rep counting has started - resume uses relaxed posture + instant re-arm. */
+  private hadActiveSet = false;
 
   constructor() {
     this.elbowEngine = new ElbowRepEngine(toPushUpThresholds(), {
@@ -55,6 +59,11 @@ export class PushUpRepEngine {
     return this.isArmed && this.repCountingEnabled;
   }
 
+  /** True after the first rep has counted in this workout. */
+  get hasStartedSet(): boolean {
+    return this.hadActiveSet;
+  }
+
   getPlankHint(landmarks: PoseLandmark[]): string | null {
     if (this.isArmed) {
       return null;
@@ -65,9 +74,12 @@ export class PushUpRepEngine {
 
   update(landmarks: PoseLandmark[]): boolean {
     const detectedViewMode = detectPushUpViewMode(landmarks);
-    const inPlank = isPushUpPlankPosture(landmarks, this.viewMode ?? detectedViewMode);
+    const resolvedViewMode = this.viewMode ?? detectedViewMode;
+    const inSetPosture = this.usesResumePosture()
+      ? isPushUpResumePosture(landmarks, resolvedViewMode)
+      : isPushUpPlankPosture(landmarks, resolvedViewMode);
 
-    if (this.isArmed && hasLeftPushUpFloor(landmarks, this.capturedFloorWristY)) {
+    if (this.isArmed && !this.repCountingEnabled && hasLeftPushUpFloor(landmarks, this.capturedFloorWristY)) {
       this.offFloorFrames += 1;
       if (this.offFloorFrames >= PUSH_UP_POSTURE.offFloorFramesBeforeRelease) {
         this.releaseSet();
@@ -77,27 +89,37 @@ export class PushUpRepEngine {
 
     this.offFloorFrames = 0;
 
-    if (this.isArmed && !inPlank) {
-      this.releaseSet();
-      return false;
+    if (this.isArmed && !inSetPosture) {
+      const midRep = this.repCountingEnabled && this.phase !== 'UP';
+
+      if (!midRep) {
+        this.plankBreakFrames += 1;
+        if (this.plankBreakFrames >= this.plankBreakFramesBeforeRelease()) {
+          this.releaseSet();
+        }
+        return false;
+      }
+    } else {
+      this.plankBreakFrames = 0;
     }
 
-    if (inPlank) {
+    if (inSetPosture) {
+      if (!this.isArmed) {
+        this.accumulateTopHoldFrames(landmarks);
+      }
+
       this.readyFrames += 1;
 
-      if (!this.isArmed && this.readyFrames >= PUSH_UP_POSTURE.readyFramesRequired) {
-        this.isArmed = true;
-        this.viewMode = detectedViewMode;
-        this.capturedFloorWristY = getAverageWristY(landmarks);
-        this.repTopShoulderY = getAverageShoulderY(landmarks);
-        this.offFloorFrames = 0;
-        this.elbowEngine.reset();
-        this.topHoldFrames = 0;
-        this.repCountingEnabled = false;
-        return false;
+      if (!this.isArmed && this.readyFrames >= this.readyFramesRequired()) {
+        this.armSet(landmarks, resolvedViewMode ?? 'front');
+
+        if (!this.repCountingEnabled) {
+          return false;
+        }
       }
     } else if (!this.isArmed) {
       this.readyFrames = 0;
+      this.topHoldFrames = 0;
     }
 
     if (!this.isArmed) {
@@ -105,31 +127,21 @@ export class PushUpRepEngine {
     }
 
     if (!this.repCountingEnabled) {
-      const elbowAngle = pushUpElbowAngle(landmarks);
-      if (elbowAngle === null) {
-        this.topHoldFrames = 0;
-        return false;
-      }
-
-      if (isInHighZone(elbowAngle, toPushUpThresholds())) {
-        this.topHoldFrames += 1;
-        const shoulderY = getAverageShoulderY(landmarks);
-        if (shoulderY !== null) {
-          this.repTopShoulderY = shoulderY;
-        }
+      if (this.hadActiveSet) {
+        this.enableRepCounting();
       } else {
-        this.topHoldFrames = 0;
-      }
+        this.accumulateTopHoldFrames(landmarks);
 
-      if (this.topHoldFrames < PUSH_UP_POSTURE.topHoldFramesBeforeReps) {
-        return false;
-      }
+        if (this.topHoldFrames < PUSH_UP_POSTURE.topHoldFramesBeforeReps) {
+          return false;
+        }
 
-      this.repCountingEnabled = true;
-      this.elbowEngine.reset();
+        this.enableRepCounting();
+      }
     }
 
-    this.trackRepTopShoulder(landmarks);
+    this.recalibrateFloorAtTop(landmarks);
+    this.syncRepTopBaseline(landmarks);
 
     const repCompleted = this.elbowEngine.update(landmarks);
 
@@ -140,15 +152,105 @@ export class PushUpRepEngine {
     return isValidPushUpRepCompletion(landmarks, this.capturedFloorWristY);
   }
 
-  private trackRepTopShoulder(landmarks: PoseLandmark[]): void {
+  private usesResumePosture(): boolean {
+    return this.repCountingEnabled || this.hadActiveSet;
+  }
+
+  private readyFramesRequired(): number {
+    return this.hadActiveSet ? 1 : PUSH_UP_POSTURE.readyFramesRequired;
+  }
+
+  private plankBreakFramesBeforeRelease(): number {
+    return this.hadActiveSet
+      ? PUSH_UP_POSTURE.plankBreakFramesBeforeReleaseActive
+      : PUSH_UP_POSTURE.plankBreakFramesBeforeRelease;
+  }
+
+  private armSet(landmarks: PoseLandmark[], viewMode: PushUpViewMode): void {
+    this.isArmed = true;
+    this.viewMode = viewMode;
+    this.capturedFloorWristY = getAverageWristY(landmarks);
+    this.repTopShoulderY = getAverageShoulderY(landmarks);
+    this.offFloorFrames = 0;
+    this.plankBreakFrames = 0;
+    this.elbowEngine.reset();
+
+    if (this.hadActiveSet) {
+      this.enableRepCounting();
+      return;
+    }
+
+    if (this.topHoldFrames >= PUSH_UP_POSTURE.topHoldFramesBeforeReps) {
+      this.enableRepCounting();
+      return;
+    }
+
+    this.repCountingEnabled = false;
+  }
+
+  private enableRepCounting(): void {
+    this.repCountingEnabled = true;
+    this.hadActiveSet = true;
+    this.elbowEngine.reset();
+  }
+
+  /** Track arm extension while arming or waiting to enable rep counting. */
+  private accumulateTopHoldFrames(landmarks: PoseLandmark[]): void {
     const elbowAngle = pushUpElbowAngle(landmarks);
-    const shoulderY = getAverageShoulderY(landmarks);
+    if (elbowAngle === null) {
+      this.topHoldFrames = 0;
+      return;
+    }
+
+    if (isInHighZone(elbowAngle, toPushUpThresholds())) {
+      this.topHoldFrames += 1;
+      const shoulderY = getAverageShoulderY(landmarks);
+      if (shoulderY !== null) {
+        this.repTopShoulderY = shoulderY;
+      }
+      return;
+    }
+
+    this.topHoldFrames = 0;
+  }
+
+  /** Pose smoothing drifts wrist height during holds - refresh the floor line at the top. */
+  private recalibrateFloorAtTop(landmarks: PoseLandmark[]): void {
+    const elbowAngle = pushUpElbowAngle(landmarks);
+    const wristY = getAverageWristY(landmarks);
 
     if (
-      shoulderY !== null &&
-      elbowAngle !== null &&
-      isInHighZone(elbowAngle, toPushUpThresholds())
+      wristY === null ||
+      elbowAngle === null ||
+      !isInHighZone(elbowAngle, toPushUpThresholds())
     ) {
+      return;
+    }
+
+    this.capturedFloorWristY = wristY;
+  }
+
+  /**
+   * Depth is measured as shoulder drop from the top of the rep. While resting at the top
+   * (including pauses), keep the baseline synced so sagging during a hold does not block reps.
+   */
+  private syncRepTopBaseline(landmarks: PoseLandmark[]): void {
+    if (!this.repCountingEnabled) {
+      return;
+    }
+
+    const shoulderY = getAverageShoulderY(landmarks);
+    if (shoulderY === null) {
+      return;
+    }
+
+    if (this.phase === 'UP') {
+      this.repTopShoulderY = shoulderY;
+      return;
+    }
+
+    const elbowAngle = pushUpElbowAngle(landmarks);
+    if (elbowAngle !== null && isInHighZone(elbowAngle, toPushUpThresholds())) {
       this.repTopShoulderY = shoulderY;
     }
   }
@@ -160,10 +262,11 @@ export class PushUpRepEngine {
     this.topHoldFrames = 0;
     this.repCountingEnabled = false;
     this.isArmed = false;
-    this.viewMode = null;
     this.capturedFloorWristY = null;
     this.repTopShoulderY = null;
     this.offFloorFrames = 0;
+    this.plankBreakFrames = 0;
+    // Keep viewMode after the first counted set so resume uses relaxed posture checks.
   }
 
   reset(): void {
@@ -176,5 +279,7 @@ export class PushUpRepEngine {
     this.capturedFloorWristY = null;
     this.repTopShoulderY = null;
     this.offFloorFrames = 0;
+    this.plankBreakFrames = 0;
+    this.hadActiveSet = false;
   }
 }
