@@ -148,6 +148,8 @@ export const PULL_UP_POSTURE = {
   hangAngleSlack: isNativeMobile ? 12 : 8,
   /** Relaxed head-below-bar margin for between-rep hang (stricter at arming). */
   minHeadBelowBarBetweenReps: isNativeMobile ? 0.006 : 0.01,
+  /** Chin z ahead of wrist z by this much = head swung toward camera, not over bar. */
+  maxChinForwardOfWristZ: isNativeMobile ? 0.035 : 0.028,
   /** Wrists this far below the captured bar line means hands left the bar (y grows down). */
   leftBarWristDropMargin: isNativeMobile ? 0.06 : 0.05,
   /** Frames off-bar before the set disarms. */

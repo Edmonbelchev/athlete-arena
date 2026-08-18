@@ -1,9 +1,9 @@
 import { POSE_REP_MIN_VISIBILITY, POSE_REP_MIN_VISIBILITY_ARMED, PULL_UP_POSTURE, PULL_UP_THRESHOLDS } from '@/constants/poseDetection';
 
 import {
-    PoseLandmarkIndex,
-    pushUpElbowAngle,
-    type PoseLandmark,
+  PoseLandmarkIndex,
+  pushUpElbowAngle,
+  type PoseLandmark,
 } from './landmarks';
 import type { AngleThresholdConfig } from './repEngineUtils';
 import { isInHangZone, isInHighZone } from './repEngineUtils';
@@ -34,6 +34,27 @@ function averageVisibleY(
   return values.reduce((sum, value) => sum + value, 0) / values.length;
 }
 
+function averageVisibleZ(
+  landmarks: PoseLandmark[],
+  leftIndex: number,
+  rightIndex: number,
+): number | null {
+  const values: number[] = [];
+
+  for (const index of [leftIndex, rightIndex]) {
+    const landmark = landmarks[index];
+    if (isVisible(landmark) && landmark.z !== undefined) {
+      values.push(landmark.z);
+    }
+  }
+
+  if (values.length === 0) {
+    return null;
+  }
+
+  return values.reduce((sum, value) => sum + value, 0) / values.length;
+}
+
 export function getAverageShoulderY(landmarks: PoseLandmark[]): number | null {
   return averageVisibleY(
     landmarks,
@@ -44,6 +65,14 @@ export function getAverageShoulderY(landmarks: PoseLandmark[]): number | null {
 
 export function getAverageWristY(landmarks: PoseLandmark[]): number | null {
   return averageVisibleY(
+    landmarks,
+    PoseLandmarkIndex.LEFT_WRIST,
+    PoseLandmarkIndex.RIGHT_WRIST,
+  );
+}
+
+export function getAverageWristZ(landmarks: PoseLandmark[]): number | null {
+  return averageVisibleZ(
     landmarks,
     PoseLandmarkIndex.LEFT_WRIST,
     PoseLandmarkIndex.RIGHT_WRIST,
@@ -151,6 +180,39 @@ export function getChinY(landmarks: PoseLandmark[]): number | null {
   }
 
   return Math.max(...candidates);
+}
+
+/** Lower-face depth — smaller z is closer to the camera (MediaPipe). */
+export function getChinZ(landmarks: PoseLandmark[]): number | null {
+  const candidates: number[] = [];
+
+  for (const landmark of [
+    landmarks[PoseLandmarkIndex.NOSE],
+    landmarks[PoseLandmarkIndex.MOUTH_LEFT],
+    landmarks[PoseLandmarkIndex.MOUTH_RIGHT],
+  ]) {
+    if (isVisible(landmark) && landmark.z !== undefined) {
+      candidates.push(landmark.z);
+    }
+  }
+
+  if (candidates.length === 0) {
+    return null;
+  }
+
+  return candidates.reduce((sum, value) => sum + value, 0) / candidates.length;
+}
+
+/** Head thrust toward the camera, past the bar (wrist) depth plane. */
+export function isChinForwardOfBarPlane(landmarks: PoseLandmark[]): boolean {
+  const chinZ = getChinZ(landmarks);
+  const wristZ = getAverageWristZ(landmarks);
+
+  if (chinZ === null || wristZ === null) {
+    return false;
+  }
+
+  return chinZ < wristZ - PULL_UP_POSTURE.maxChinForwardOfWristZ;
 }
 
 /** Highest visible ear y - rear-camera proxy for chin-over-bar. */
@@ -363,6 +425,10 @@ export function isPullUpTopPosture(
   }
 
   if (Math.abs(wristY - barLineY) > PULL_UP_POSTURE.topWristNearBarMargin) {
+    return false;
+  }
+
+  if (isChinForwardOfBarPlane(landmarks)) {
     return false;
   }
 

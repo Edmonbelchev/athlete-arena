@@ -1,14 +1,14 @@
-import type { PushUpPhase } from '@/features/challenges/poseDetection.types';
 import { PULL_UP_POSTURE, PULL_UP_THRESHOLDS } from '@/constants/poseDetection';
+import type { PushUpPhase } from '@/features/challenges/poseDetection.types';
 
 import { pushUpElbowAngle, type PoseLandmark } from './landmarks';
 import {
+  areWristsBelowWaist,
   getBarLineY,
   getPullUpHangHint,
-  areWristsBelowWaist,
   hasLeftOverheadBar,
-  isPullUpDeadHangPosture,
   isAtBottomBetweenReps,
+  isPullUpDeadHangPosture,
   isPullUpTopPosture,
 } from './pullUpPosture';
 import type { AngleThresholdConfig } from './repEngineUtils';
