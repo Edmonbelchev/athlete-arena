@@ -4,8 +4,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import type { ExerciseType } from '@/constants/challenges';
 import { Radius, Spacing } from '@/constants/theme';
-import { VISUAL_GUIDE_FRAME_INTERVAL_MS } from '@/constants/visualGuides';
-import { useTheme } from '@/hooks/use-theme';
+import { VISUAL_GUIDE_FRAME_INTERVAL_MS, VISUAL_GUIDE_CANVAS_BORDER, VISUAL_GUIDE_CANVAS_COLOR, VISUAL_GUIDE_CANVAS_MUTED_TEXT } from '@/constants/visualGuides';
 import { useVisualGuideFrameUrls } from '@/hooks/use-visual-guide-frame-urls';
 
 interface WorkoutGuideAnimationProps {
@@ -18,7 +17,6 @@ const CROSSFADE_MS = 300;
 
 /** Frame loop from Supabase Storage (`visual_guides/{exercise}/frameN.webp`). */
 export function WorkoutGuideAnimation({ exerciseType, variant = 'setup' }: WorkoutGuideAnimationProps) {
-  const theme = useTheme();
   const isOverlay = variant === 'overlay';
   const guideFrames = useVisualGuideFrameUrls(exerciseType);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -60,6 +58,18 @@ export function WorkoutGuideAnimation({ exerciseType, variant = 'setup' }: Worko
     return () => clearInterval(interval);
   }, [framesReady, guideFrames]);
 
+  const guideSurface = isOverlay
+    ? {
+        backgroundColor: 'rgba(0, 0, 0, 0.55)',
+        borderColor: 'rgba(255, 255, 255, 0.25)',
+        fallbackTextColor: '#FFFFFF',
+      }
+    : {
+        backgroundColor: VISUAL_GUIDE_CANVAS_COLOR,
+        borderColor: VISUAL_GUIDE_CANVAS_BORDER,
+        fallbackTextColor: VISUAL_GUIDE_CANVAS_MUTED_TEXT,
+      };
+
   if (!guideFrames || guideFrames.frames.length === 0) {
     return (
       <View
@@ -67,14 +77,14 @@ export function WorkoutGuideAnimation({ exerciseType, variant = 'setup' }: Worko
           isOverlay ? styles.overlay : styles.setup,
           styles.fallback,
           {
-            backgroundColor: isOverlay ? 'rgba(0, 0, 0, 0.55)' : theme.backgroundElement,
-            borderColor: isOverlay ? 'rgba(255, 255, 255, 0.25)' : theme.border,
+            backgroundColor: guideSurface.backgroundColor,
+            borderColor: guideSurface.borderColor,
           },
         ])}>
         <Text
           style={StyleSheet.flatten([
             styles.fallbackText,
-            { color: isOverlay ? '#FFFFFF' : theme.textSecondary },
+            { color: guideSurface.fallbackTextColor },
           ])}>
           Guide unavailable
         </Text>
@@ -90,8 +100,8 @@ export function WorkoutGuideAnimation({ exerciseType, variant = 'setup' }: Worko
       style={StyleSheet.flatten([
         isOverlay ? styles.overlay : styles.setup,
         {
-          backgroundColor: isOverlay ? 'rgba(0, 0, 0, 0.55)' : theme.backgroundElement,
-          borderColor: isOverlay ? 'rgba(255, 255, 255, 0.25)' : theme.border,
+          backgroundColor: guideSurface.backgroundColor,
+          borderColor: guideSurface.borderColor,
         },
       ])}>
       <Image

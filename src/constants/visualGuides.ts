@@ -30,6 +30,11 @@ export const VISUAL_GUIDE_BY_EXERCISE: Record<ExerciseType, VisualGuideExerciseC
 /** Crossfade interval between frames in the loop. */
 export const VISUAL_GUIDE_FRAME_INTERVAL_MS = 900;
 
+/** White line-art frames — use a dark canvas in setup so they stay visible in light mode. */
+export const VISUAL_GUIDE_CANVAS_COLOR = '#111827';
+export const VISUAL_GUIDE_CANVAS_BORDER = 'rgba(255, 255, 255, 0.12)';
+export const VISUAL_GUIDE_CANVAS_MUTED_TEXT = '#94A3B8';
+
 export function getVisualGuideConfig(exerciseType: ExerciseType): VisualGuideExerciseConfig {
   return VISUAL_GUIDE_BY_EXERCISE[exerciseType];
 }
