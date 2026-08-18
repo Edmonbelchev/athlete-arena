@@ -144,6 +144,10 @@ export const PULL_UP_POSTURE = {
   repCooldownFrames: isNativeMobile ? 10 : 12,
   /** Frames below the bar between reps before the next top can count. */
   minClearOfTopFrames: isNativeMobile ? 2 : 3,
+  /** Extra elbow slack when re-arming hang between reps (bottom flag only). */
+  hangAngleSlack: isNativeMobile ? 12 : 8,
+  /** Relaxed head-below-bar margin for between-rep hang (stricter at arming). */
+  minHeadBelowBarBetweenReps: isNativeMobile ? 0.006 : 0.01,
   /** Wrists this far below the captured bar line means hands left the bar (y grows down). */
   leftBarWristDropMargin: isNativeMobile ? 0.06 : 0.05,
   /** Frames off-bar before the set disarms. */

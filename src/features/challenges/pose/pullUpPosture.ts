@@ -6,7 +6,7 @@ import {
     type PoseLandmark,
 } from './landmarks';
 import type { AngleThresholdConfig } from './repEngineUtils';
-import { isInHighZone } from './repEngineUtils';
+import { isInHangZone, isInHighZone } from './repEngineUtils';
 
 function isVisible(landmark: PoseLandmark | undefined): landmark is PoseLandmark {
   return Boolean(landmark && (landmark.visibility ?? 1) >= POSE_REP_MIN_VISIBILITY);
@@ -110,14 +110,18 @@ export function areArmsRaisedTowardBar(landmarks: PoseLandmark[]): boolean {
 }
 
 /** Head/chin sits below the bar on a dead hang (y grows downward). */
-export function isHeadBelowBar(landmarks: PoseLandmark[], barLineY: number | null): boolean {
+export function isHeadBelowBar(
+  landmarks: PoseLandmark[],
+  barLineY: number | null,
+  margin: number = PULL_UP_POSTURE.minHeadBelowBar,
+): boolean {
   const chinY = getChinY(landmarks);
 
   if (chinY === null || barLineY === null) {
     return false;
   }
 
-  return chinY >= barLineY + PULL_UP_POSTURE.minHeadBelowBar;
+  return chinY >= barLineY + margin;
 }
 
 /**
@@ -300,6 +304,35 @@ export function isPullUpDeadHangPosture(
 
   const barLineY = getBarLineY(landmarks);
   return barLineY !== null && isHeadBelowBar(landmarks, barLineY);
+}
+
+/**
+ * Bottom between reps: extended arms (with camera slack) + head below bar + hands on bar.
+ * Looser than arming dead hang so fast reps still register without allowing head-bob half reps.
+ */
+export function isAtBottomBetweenReps(
+  landmarks: PoseLandmark[],
+  elbowThresholds: AngleThresholdConfig,
+  barLineY: number | null,
+): boolean {
+  if (barLineY === null) {
+    return false;
+  }
+
+  if (!areWristsAboveShoulders(landmarks) || !areArmsRaisedTowardBar(landmarks)) {
+    return false;
+  }
+
+  const elbowAngle = pushUpElbowAngle(landmarks);
+  if (elbowAngle === null) {
+    return false;
+  }
+
+  if (!isInHangZone(elbowAngle, elbowThresholds, PULL_UP_POSTURE.hangAngleSlack)) {
+    return false;
+  }
+
+  return isHeadBelowBar(landmarks, barLineY, PULL_UP_POSTURE.minHeadBelowBarBetweenReps);
 }
 
 /**

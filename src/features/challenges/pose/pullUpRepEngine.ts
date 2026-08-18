@@ -8,6 +8,7 @@ import {
   areWristsBelowWaist,
   hasLeftOverheadBar,
   isPullUpDeadHangPosture,
+  isAtBottomBetweenReps,
   isPullUpTopPosture,
 } from './pullUpPosture';
 import type { AngleThresholdConfig } from './repEngineUtils';
@@ -30,6 +31,8 @@ export class PullUpRepEngine {
   private lastTopPosture = false;
   private topPostureHoldFrames = 0;
   private hasPulledThisRep = false;
+  /** Cleared after each rep; set again at the next dead hang (extended arms + head below bar). */
+  private sawHangSinceLastRep = true;
   private repCooldown = 0;
   /** Blocks a second count until the athlete leaves the top zone. */
   private awaitingTopClear = false;
@@ -93,6 +96,7 @@ export class PullUpRepEngine {
       if (!this.isArmed && this.readyFrames >= PULL_UP_POSTURE.readyFramesRequired) {
         this.isArmed = true;
         this.phase = 'UP';
+        this.sawHangSinceLastRep = true;
       }
     } else if (!this.isArmed) {
       this.readyFrames = 0;
@@ -103,6 +107,11 @@ export class PullUpRepEngine {
       this.lastTopPosture = false;
       this.topPostureHoldFrames = 0;
       return false;
+    }
+
+    // Option A + B: extended arms and head below bar before the next rep can count.
+    if (isAtBottomBetweenReps(landmarks, this.thresholds, this.capturedBarLineY)) {
+      this.sawHangSinceLastRep = true;
     }
 
     const topPosture = isPullUpTopPosture(landmarks, this.thresholds, this.capturedBarLineY);
@@ -133,6 +142,7 @@ export class PullUpRepEngine {
 
     const canCountTop =
       topEdge &&
+      this.sawHangSinceLastRep &&
       this.hasPulledThisRep &&
       !this.awaitingTopClear &&
       this.repCooldown === 0;
@@ -143,6 +153,7 @@ export class PullUpRepEngine {
       this.awaitingTopClear = true;
       this.clearOfTopFrames = 0;
       this.repCooldown = PULL_UP_POSTURE.repCooldownFrames;
+      this.sawHangSinceLastRep = false;
       this.hasPulledThisRep = false;
       this.topPostureHoldFrames = 0;
     } else if (isInHighZone(elbowAngle, this.thresholds)) {
@@ -176,6 +187,7 @@ export class PullUpRepEngine {
     this.clearOfTopFrames = 0;
     this.offBarFrames = 0;
     this.hasPulledThisRep = false;
+    this.sawHangSinceLastRep = true;
     this.topPostureHoldFrames = 0;
     this.lastTopPosture = false;
     this.phase = 'UP';
@@ -189,6 +201,7 @@ export class PullUpRepEngine {
     this.lastTopPosture = false;
     this.topPostureHoldFrames = 0;
     this.hasPulledThisRep = false;
+    this.sawHangSinceLastRep = true;
     this.repCooldown = 0;
     this.awaitingTopClear = false;
     this.clearOfTopFrames = 0;
