@@ -189,7 +189,7 @@ export const BURPEE_THRESHOLDS = {
   hysteresis: isNativeMobile ? 15 : 20,
 } as const;
 
-/** Burpee rep validation - partial squat drop + horizontal body on floor (plank or chest-down). */
+/** Burpee rep validation - body down to the floor (chest/lying), not a high plank hold. */
 export const BURPEE_POSTURE = {
   /** Front view: torso near horizontal on the floor. */
   maxTorsoFromHorizontalFront: isNativeMobile ? 55 : 50,
@@ -211,6 +211,30 @@ export const BURPEE_POSTURE = {
   maxKneeAngleAsymmetry: 45,
   /** Frames to ignore new rep progress after a rep registers. */
   repCooldownFrames: isNativeMobile ? 12 : 10,
+  /** Hip/ankle rise from standing baseline required to count the jump (y grows down). */
+  minJumpBodyRise: isNativeMobile ? 0.025 : 0.02,
+  /** Elbow angle (degrees) at or above this with hands down = high plank only (not enough). */
+  minPlankElbowAngle: 145,
+  /** Elbow angle (degrees) at or below this = at least mid push-up depth. */
+  maxMidPushUpElbowAngle: 125,
+  /** Wrist-shoulder gap at mid push-up depth (y grows down). */
+  maxShoulderAboveWristMidPushUp: isNativeMobile ? 0.07 : 0.065,
+  /** Shoulder drop from plank top required for mid push-up depth (y grows down). */
+  minShoulderDropForMidPushUp: isNativeMobile ? 0.04 : 0.044,
+  /** Wrist-shoulder gap backup for high-plank detection (y grows down). */
+  minPlankShoulderAboveWrist: isNativeMobile ? 0.075 : 0.065,
+  /** Shoulders and hips level while lying flat on the floor (side view). */
+  maxShoulderHipYDeltaLying: isNativeMobile ? 0.12 : 0.11,
+  /** Front floor: minimum shoulder-above-hip span for a kickback (not a standing bend). */
+  minKickbackTorsoSpanFront: isNativeMobile ? 0.05 : 0.055,
+  /** Front floor: maximum shoulder-above-hip span for a kickback plank. */
+  maxKickbackTorsoSpanFront: isNativeMobile ? 0.15 : 0.13,
+  /** Front floor: wrists must drop relative to torso depth in a kickback. */
+  minArmDropToTorsoRatioFront: isNativeMobile ? 0.5 : 0.55,
+  /** Front floor: straight legs + hands down = standing bend, not a burpee. */
+  minStandingLegKneeAngle: 152,
+  /** Wrists at or below hip line while upright and facing the camera. */
+  maxStandingWristAboveHip: isNativeMobile ? 0.04 : 0.035,
 } as const;
 
 /** EMA smoothing for native camera landmarks (0 = frozen, 1 = raw). */
@@ -248,8 +272,9 @@ export const POSE_GUIDANCE: Record<ExerciseType, { title: string; tips: readonly
     title: 'Burpee setup',
     tips: [
       'Prop your phone in portrait and keep your full body in frame',
-      'Stand tall to start, then drop, kick back, and jump up',
-      'Chest-to-floor counts - you do not need a push-up at the bottom',
+      'Drop straight down - no strict squat or push-up required',
+      'Chest or body must touch the floor; a plank alone will not count',
+      'Stand back up and jump to finish each rep',
     ],
   },
 };

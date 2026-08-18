@@ -41,11 +41,11 @@ export function getRepCycleProgress(
       case 'STANDING':
         return 0.05;
       case 'DROP':
-        return 0.35;
-      case 'PLANK':
-        return 0.65;
+        return 0.25;
+      case 'FLOOR':
+        return 0.55;
       case 'JUMP':
-        return 0.9;
+        return 0.85;
       default:
         return 0;
     }

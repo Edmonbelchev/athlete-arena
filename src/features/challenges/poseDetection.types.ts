@@ -7,7 +7,7 @@ export type PushUpPhase = 'UP' | 'DESCENDING' | 'DOWN' | 'ASCENDING';
 export type SquatPhase = 'STANDING' | 'DESCENDING' | 'BOTTOM' | 'ASCENDING';
 
 /** Burpee pose phases - compound squat + plank + jump. */
-export type BurpeePhase = 'STANDING' | 'DROP' | 'PLANK' | 'JUMP';
+export type BurpeePhase = 'STANDING' | 'DROP' | 'FLOOR' | 'JUMP';
 
 export type ExercisePhase = PushUpPhase | SquatPhase | BurpeePhase;
 

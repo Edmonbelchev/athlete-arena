@@ -3,13 +3,17 @@ import type { BurpeePhase } from '@/features/challenges/poseDetection.types';
 
 import {
   detectBurpeeViewMode,
-  isBurpeeGroundPhase,
-  isBurpeeUprightStandingSide,
+  getAverageAnkleY,
+  getAverageHipY,
+  isBurpeeHighPlank,
+  isBurpeeMidPushUpDepth,
+  isBurpeeOnFloor,
+  isBurpeeStanding,
   type BurpeeViewMode,
 } from './burpeePosture';
 import type { PoseLandmark } from './landmarks';
-import { isInHighZone, isInLowZone, type AngleThresholdConfig } from './repEngineUtils';
-import { getSquatKneeAngles } from './squatPosture';
+import { getAverageShoulderY } from './pullUpPosture';
+import type { AngleThresholdConfig } from './repEngineUtils';
 
 function getBurpeeDropZones(): AngleThresholdConfig {
   return {
@@ -20,14 +24,16 @@ function getBurpeeDropZones(): AngleThresholdConfig {
 }
 
 /**
- * Full burpee cycle: stand → partial squat → floor → jump back to standing.
- * Rep counts when returning to standing after both a squat drop and floor contact.
+ * Burpee cycle: stand → kickback plank → mid push-up depth → stand → jump.
  */
 export class BurpeeRepEngine {
   phase: BurpeePhase = 'STANDING';
-  private reachedDrop = false;
-  private reachedGround = false;
-  private leftGround = false;
+  private sawStanding = true;
+  private reachedValidFloor = false;
+  private reachedStandAfterFloor = false;
+  private sawHighPlank = false;
+  private plankShoulderY: number | null = null;
+  private jumpBaselineY: number | null = null;
   private repCooldown = 0;
   private lockedViewMode: BurpeeViewMode | null = null;
 
@@ -37,12 +43,95 @@ export class BurpeeRepEngine {
     }
 
     const viewMode = this.resolveViewMode(landmarks);
+    const dropZones = getBurpeeDropZones();
+    const onFloor = isBurpeeOnFloor(landmarks, viewMode);
+    const onHighPlank = isBurpeeHighPlank(landmarks, viewMode);
+    const standing = isBurpeeStanding(landmarks, viewMode, dropZones);
 
-    if (viewMode === 'side') {
-      return this.updateSideView(landmarks);
+    if (this.reachedStandAfterFloor) {
+      this.phase = 'JUMP';
+      if (onFloor) {
+        this.clearCycleState();
+        this.sawStanding = true;
+        return false;
+      }
+      const canFinishJump = viewMode === 'side' || this.sawHighPlank;
+      if (canFinishJump && this.isJumping(landmarks)) {
+        return this.finishRep();
+      }
+      return false;
     }
 
-    return this.updateFrontView(landmarks);
+    if (this.reachedValidFloor && !onFloor) {
+      this.phase = 'JUMP';
+      if (standing) {
+        if (!this.reachedStandAfterFloor) {
+          this.reachedStandAfterFloor = true;
+          this.jumpBaselineY = this.getBodyReferenceY(landmarks);
+        }
+      }
+      const canFinishJump = viewMode === 'side' || this.sawHighPlank;
+      if (this.reachedStandAfterFloor && canFinishJump && this.isJumping(landmarks)) {
+        return this.finishRep();
+      }
+      return false;
+    }
+
+    if (onFloor && this.sawStanding && this.canStartNewRep()) {
+      this.lockViewMode(viewMode);
+      this.trackFloorDepth(landmarks, viewMode, onHighPlank);
+      this.phase = this.reachedValidFloor ? 'FLOOR' : onHighPlank ? 'DROP' : 'FLOOR';
+      return false;
+    }
+
+    if (standing && !this.reachedValidFloor) {
+      this.phase = 'STANDING';
+      this.sawStanding = true;
+      if (this.canStartNewRep()) {
+        this.clearCycleState();
+        this.sawStanding = true;
+      }
+      return false;
+    }
+
+    if (onHighPlank) {
+      this.phase = 'DROP';
+      return false;
+    }
+
+    if (!standing) {
+      this.phase = 'DROP';
+    }
+
+    return false;
+  }
+
+  private trackFloorDepth(
+    landmarks: PoseLandmark[],
+    viewMode: BurpeeViewMode,
+    onHighPlank: boolean,
+  ): void {
+    const shoulderY = getAverageShoulderY(landmarks);
+
+    if (onHighPlank) {
+      this.sawHighPlank = true;
+      if (shoulderY !== null && this.plankShoulderY === null) {
+        this.plankShoulderY = shoulderY;
+      }
+    }
+
+    if (this.reachedValidFloor) {
+      return;
+    }
+
+    const canLatchDepth = viewMode === 'side' || this.sawHighPlank;
+    if (!canLatchDepth) {
+      return;
+    }
+
+    if (isBurpeeMidPushUpDepth(landmarks, viewMode, this.plankShoulderY)) {
+      this.reachedValidFloor = true;
+    }
   }
 
   private resolveViewMode(landmarks: PoseLandmark[]): BurpeeViewMode {
@@ -60,15 +149,19 @@ export class BurpeeRepEngine {
   }
 
   private clearCycleState(): void {
-    this.reachedDrop = false;
-    this.reachedGround = false;
-    this.leftGround = false;
+    this.reachedValidFloor = false;
+    this.reachedStandAfterFloor = false;
+    this.sawHighPlank = false;
+    this.plankShoulderY = null;
+    this.jumpBaselineY = null;
     this.lockedViewMode = null;
     this.phase = 'STANDING';
+    this.sawStanding = false;
   }
 
   private finishRep(): boolean {
     this.clearCycleState();
+    this.sawStanding = true;
     this.repCooldown = BURPEE_POSTURE.repCooldownFrames;
     return true;
   }
@@ -77,107 +170,35 @@ export class BurpeeRepEngine {
     return this.repCooldown === 0;
   }
 
-  /** Front-facing: squat drop → floor → leave floor → stand (both legs required). */
-  private updateFrontView(landmarks: PoseLandmark[]): boolean {
-    const onGround = isBurpeeGroundPhase(landmarks, 'front');
+  private getBodyReferenceY(landmarks: PoseLandmark[]): number | null {
+    const hipY = getAverageHipY(landmarks);
+    const ankleY = getAverageAnkleY(landmarks);
+    const shoulderY = getAverageShoulderY(landmarks);
 
-    if (onGround) {
-      if (this.canStartNewRep() && this.reachedDrop) {
-        this.reachedGround = true;
-        this.lockViewMode('front');
-      }
-      this.leftGround = false;
-      this.phase = 'PLANK';
-      return false;
+    const values = [hipY, ankleY, shoulderY].filter((value): value is number => value !== null);
+    if (values.length === 0) {
+      return null;
     }
 
-    if (this.reachedGround) {
-      this.leftGround = true;
-    }
-
-    const { left, right } = getSquatKneeAngles(landmarks);
-    if (left === null || right === null) {
-      if (this.reachedGround) {
-        this.phase = 'JUMP';
-      }
-      return false;
-    }
-
-    const zones = getBurpeeDropZones();
-    const bothStanding = isInHighZone(left, zones) && isInHighZone(right, zones);
-    const bothDropped = isInLowZone(left, zones) && isInLowZone(right, zones);
-
-    if (bothStanding) {
-      if (this.canStartNewRep() && this.reachedDrop && this.reachedGround && this.leftGround) {
-        return this.finishRep();
-      }
-
-      this.phase = 'STANDING';
-      if (this.canStartNewRep()) {
-        this.clearCycleState();
-      }
-      return false;
-    }
-
-    if (bothDropped) {
-      if (this.canStartNewRep()) {
-        this.reachedDrop = true;
-        this.lockViewMode('front');
-      }
-      this.phase = 'DROP';
-      return false;
-    }
-
-    if (this.reachedGround) {
-      this.phase = 'JUMP';
-    } else if (this.reachedDrop) {
-      this.phase = 'DROP';
-    }
-
-    return false;
+    return Math.min(...values);
   }
 
-  /** Side profile: stand upright → floor → leave floor → stand upright. */
-  private updateSideView(landmarks: PoseLandmark[]): boolean {
-    const onGround = isBurpeeGroundPhase(landmarks, 'side');
-
-    if (onGround) {
-      if (this.canStartNewRep()) {
-        this.reachedGround = true;
-        this.lockViewMode('side');
-      }
-      this.leftGround = false;
-      this.phase = 'PLANK';
+  private isJumping(landmarks: PoseLandmark[]): boolean {
+    if (this.jumpBaselineY === null) {
       return false;
     }
 
-    if (this.reachedGround) {
-      this.leftGround = true;
-    }
-
-    if (isBurpeeUprightStandingSide(landmarks)) {
-      if (this.canStartNewRep() && this.reachedGround && this.leftGround) {
-        return this.finishRep();
-      }
-
-      this.phase = 'STANDING';
-      if (this.canStartNewRep()) {
-        this.clearCycleState();
-      }
+    const currentY = this.getBodyReferenceY(landmarks);
+    if (currentY === null) {
       return false;
     }
 
-    if (this.reachedGround) {
-      this.phase = 'JUMP';
-    } else {
-      this.phase = 'DROP';
-    }
-
-    return false;
+    return this.jumpBaselineY - currentY >= BURPEE_POSTURE.minJumpBodyRise;
   }
 
   reset(): void {
     this.clearCycleState();
+    this.sawStanding = true;
     this.repCooldown = 0;
   }
 }

@@ -1,7 +1,7 @@
 import type { ExerciseType } from '@/constants/challenges';
 import { POSE_GUIDANCE } from '@/constants/poseDetection';
-import type { ExercisePhase } from '@/features/challenges/poseDetection.types';
 import type { PoseQualityResult, PoseTrackingStatus } from '@/features/challenges/pose/poseQuality';
+import type { ExercisePhase } from '@/features/challenges/poseDetection.types';
 
 export function getTrackingStatusLabel(status: PoseTrackingStatus): string {
   switch (status) {
@@ -149,13 +149,13 @@ export function getRepPhaseHint(exerciseType: ExerciseType, phase: ExercisePhase
       return 'Stand tall with both legs in frame';
     case 'burpees':
       if (phase === 'DROP') {
-        return 'Drop into a squat';
+        return 'Drop down to the floor';
       }
-      if (phase === 'PLANK') {
-        return 'Kick back to the floor';
+      if (phase === 'FLOOR') {
+        return 'Drop to at least mid push-up depth';
       }
       if (phase === 'JUMP') {
-        return 'Jump back up to standing';
+        return 'Stand up and jump to finish the rep';
       }
       return 'Stand tall to start the rep';
     default:
