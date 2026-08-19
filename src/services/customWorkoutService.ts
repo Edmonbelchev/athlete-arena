@@ -1,0 +1,189 @@
+import type { ExerciseType } from '@/constants/challenges';
+import { assertSupabaseConfigured, supabase } from '@/lib/supabase';
+import type {
+  CustomWorkoutExerciseBreakdown,
+  AmrapWorkoutResult,
+  CustomWorkoutTemplateDetail,
+  CustomWorkoutTemplateSummary,
+} from '@/types/customWorkouts';
+
+function mapTemplateSummary(row: {
+  template_id: string;
+  title: string;
+  workout_type: 'amrap';
+  time_limit_seconds: number;
+  exercise_count: number;
+  created_at: string;
+  is_owner: boolean;
+  creator_username: string | null;
+  creator_display_name: string | null;
+  shared_at: string | null;
+}): CustomWorkoutTemplateSummary {
+  return {
+    templateId: row.template_id,
+    title: row.title,
+    workoutType: row.workout_type,
+    timeLimitSeconds: row.time_limit_seconds,
+    exerciseCount: row.exercise_count,
+    createdAt: row.created_at,
+    isOwner: row.is_owner,
+    creatorUsername: row.creator_username,
+    creatorDisplayName: row.creator_display_name,
+    sharedAt: row.shared_at,
+  };
+}
+
+export async function getMyCustomWorkoutTemplates(): Promise<CustomWorkoutTemplateSummary[]> {
+  assertSupabaseConfigured();
+
+  const { data, error } = await supabase.rpc('get_my_custom_workout_templates');
+
+  if (error) {
+    throw error;
+  }
+
+  return (data ?? []).map(mapTemplateSummary);
+}
+
+export async function getCustomWorkoutTemplateDetail(
+  templateId: string,
+): Promise<CustomWorkoutTemplateDetail> {
+  assertSupabaseConfigured();
+
+  const { data, error } = await supabase.rpc('get_custom_workout_template_detail', {
+    p_template_id: templateId,
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  if (!data || data.length === 0) {
+    throw new Error('Workout template not found');
+  }
+
+  const first = data[0];
+
+  return {
+    templateId: first.template_id,
+    title: first.title,
+    workoutType: first.workout_type,
+    timeLimitSeconds: first.time_limit_seconds,
+    creatorId: first.creator_id,
+    creatorUsername: first.creator_username,
+    creatorDisplayName: first.creator_display_name,
+    isOwner: first.is_owner,
+    exercises: data.map((row) => ({
+      exerciseType: row.exercise_type as ExerciseType,
+      targetReps: row.target_reps,
+    })),
+  };
+}
+
+export async function createCustomWorkoutTemplate(input: {
+  title: string;
+  workoutType: CustomWorkoutTemplateSummary['workoutType'];
+  timeLimitSeconds: number;
+  exercises: Array<{ exerciseType: ExerciseType; targetReps: number }>;
+}): Promise<string> {
+  assertSupabaseConfigured();
+
+  const { data, error } = await supabase.rpc('create_custom_workout_template', {
+    p_title: input.title,
+    p_workout_type: input.workoutType,
+    p_time_limit_seconds: input.timeLimitSeconds,
+    p_exercises: input.exercises.map((exercise) => ({
+      exercise_type: exercise.exerciseType,
+      target_reps: exercise.targetReps,
+    })),
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  return data as string;
+}
+
+export async function shareCustomWorkoutTemplate(
+  templateId: string,
+  friendId: string,
+): Promise<void> {
+  assertSupabaseConfigured();
+
+  const { error } = await supabase.rpc('share_custom_workout_template', {
+    p_template_id: templateId,
+    p_friend_id: friendId,
+  });
+
+  if (error) {
+    throw error;
+  }
+}
+
+export async function shareCustomWorkoutTemplateWithFriends(
+  templateId: string,
+  friendIds: string[],
+): Promise<void> {
+  const uniqueFriendIds = [...new Set(friendIds)];
+  await Promise.all(uniqueFriendIds.map((friendId) => shareCustomWorkoutTemplate(templateId, friendId)));
+}
+
+export async function dismissSharedWorkoutTemplate(templateId: string): Promise<void> {
+  assertSupabaseConfigured();
+
+  const { error } = await supabase.rpc('dismiss_shared_workout_template', {
+    p_template_id: templateId,
+  });
+
+  if (error) {
+    throw error;
+  }
+}
+
+export async function softDeleteCustomWorkoutTemplate(templateId: string): Promise<void> {
+  assertSupabaseConfigured();
+
+  const { error } = await supabase.rpc('soft_delete_custom_workout_template', {
+    p_template_id: templateId,
+  });
+
+  if (error) {
+    throw error;
+  }
+}
+
+export async function saveCustomWorkoutSession(result: AmrapWorkoutResult): Promise<string> {
+  assertSupabaseConfigured();
+
+  const { data, error } = await supabase.rpc('save_custom_workout_session', {
+    p_template_id: result.templateId,
+    p_title: result.title,
+    p_time_limit_seconds: result.timeLimitSeconds,
+    p_completed_rounds: result.completedRounds,
+    p_total_reps: result.totalReps,
+    p_exercise_breakdown: result.exerciseBreakdown.map((entry) => ({
+      exercise_type: entry.exerciseType,
+      target_reps: entry.targetReps,
+      total_reps: entry.totalReps,
+    })),
+    p_started_at: result.startedAt,
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  return data as string;
+}
+
+export function buildExerciseBreakdown(
+  exercises: Array<{ exerciseType: ExerciseType; targetReps: number }>,
+  totals: Record<string, number>,
+): CustomWorkoutExerciseBreakdown[] {
+  return exercises.map((exercise) => ({
+    exerciseType: exercise.exerciseType,
+    targetReps: exercise.targetReps,
+    totalReps: totals[exercise.exerciseType] ?? 0,
+  }));
+}

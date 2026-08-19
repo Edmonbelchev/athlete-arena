@@ -21,9 +21,12 @@ import {
   friendNotificationId,
   getChallengeNotificationTypeFromChange,
   getFriendNotificationTypeFromChange,
+  getWorkoutShareNotificationTypeFromChange,
   isFriendshipRow,
   isParticipantRow,
+  isWorkoutShareRow,
   type ChallengeNotification,
+  workoutShareNotificationId,
 } from '@/features/notifications/types';
 import { env } from '@/lib/env';
 
@@ -46,6 +49,7 @@ const MAX_INBOX = 50;
 
 type ParticipantChangePayload = { eventType: string; new: unknown; old: unknown };
 type FriendshipChangePayload = { eventType: string; new: unknown; old: unknown };
+type WorkoutShareChangePayload = { eventType: string; new: unknown; old: unknown };
 
 function mergeSyncedNotifications(
   current: ChallengeNotification[],
@@ -84,11 +88,13 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   const [isHydrated, setIsHydrated] = useState(false);
   const [realtimeKey, setRealtimeKey] = useState(0);
   const [friendRealtimeKey, setFriendRealtimeKey] = useState(0);
+  const [workoutShareRealtimeKey, setWorkoutShareRealtimeKey] = useState(0);
   const listenersRef = useRef(new Set<() => void>());
   const recentKeysRef = useRef(new Set<string>());
   const notificationsRef = useRef(notifications);
   const pendingEventsRef = useRef<ParticipantChangePayload[]>([]);
   const pendingFriendEventsRef = useRef<FriendshipChangePayload[]>([]);
+  const pendingWorkoutShareEventsRef = useRef<WorkoutShareChangePayload[]>([]);
   const isHydratedRef = useRef(false);
   const isSyncingRef = useRef(false);
   notificationsRef.current = notifications;
@@ -149,6 +155,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       setIsHydrated(false);
       pendingEventsRef.current = [];
       pendingFriendEventsRef.current = [];
+      pendingWorkoutShareEventsRef.current = [];
       return;
     }
 
@@ -308,6 +315,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
         type,
         participantId: copy.participantId,
         friendshipId: null,
+        templateId: null,
         title: copy.title,
         message: copy.message,
         createdAt: Date.now(),
@@ -367,6 +375,68 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
         type,
         participantId: null,
         friendshipId: copy.friendshipId,
+        templateId: null,
+        title: copy.title,
+        message: copy.message,
+        createdAt: Date.now(),
+        read: false,
+      });
+
+      notifyChallengeUpdate();
+    },
+    [userId, addNotification, notifyChallengeUpdate, refreshInbox],
+  );
+
+  const processWorkoutShareChange = useCallback(
+    async (payload: WorkoutShareChangePayload) => {
+      if (!userId || !isWorkoutShareRow(payload.new)) {
+        return;
+      }
+
+      const type = getWorkoutShareNotificationTypeFromChange(
+        payload.eventType,
+        payload.new,
+        userId,
+      );
+
+      if (!type) {
+        notifyChallengeUpdate();
+        return;
+      }
+
+      const dedupeKey = `${type}:${payload.new.template_id}`;
+      if (recentKeysRef.current.has(dedupeKey)) {
+        return;
+      }
+
+      recentKeysRef.current.add(dedupeKey);
+      setTimeout(() => {
+        recentKeysRef.current.delete(dedupeKey);
+      }, 3000);
+
+      const stableId = workoutShareNotificationId(payload.new.template_id);
+      if (notificationsRef.current.some((notification) => notification.id === stableId)) {
+        notifyChallengeUpdate();
+        return;
+      }
+
+      const { buildWorkoutShareNotificationCopyFromShare } = await import(
+        '@/services/customWorkoutNotificationService'
+      );
+      const copy = await buildWorkoutShareNotificationCopyFromShare(payload.new.template_id);
+
+      if (!copy) {
+        void refreshInbox();
+        notifyChallengeUpdate();
+        return;
+      }
+
+      addNotification({
+        id: stableId,
+        type,
+        participantId: null,
+        friendshipId: null,
+        templateId: copy.templateId,
         title: copy.title,
         message: copy.message,
         createdAt: Date.now(),
@@ -402,6 +472,18 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     [processFriendshipChange],
   );
 
+  const handleWorkoutShareChange = useCallback(
+    (payload: WorkoutShareChangePayload) => {
+      if (!isHydratedRef.current) {
+        pendingWorkoutShareEventsRef.current.push(payload);
+        return;
+      }
+
+      void processWorkoutShareChange(payload);
+    },
+    [processWorkoutShareChange],
+  );
+
   useEffect(() => {
     if (!isHydrated) {
       return;
@@ -416,7 +498,12 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     queuedFriendEvents.forEach((payload) => {
       void processFriendshipChange(payload);
     });
-  }, [isHydrated, processParticipantChange, processFriendshipChange]);
+
+    const queuedWorkoutShareEvents = pendingWorkoutShareEventsRef.current.splice(0);
+    queuedWorkoutShareEvents.forEach((payload) => {
+      void processWorkoutShareChange(payload);
+    });
+  }, [isHydrated, processParticipantChange, processFriendshipChange, processWorkoutShareChange]);
 
   const openNotification = useCallback(
     (notification: ChallengeNotification) => {
@@ -583,6 +670,64 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       void removeChannel?.();
     };
   }, [userId, friendRealtimeKey, handleFriendshipChange, refreshInbox]);
+
+  useEffect(() => {
+    const isWebSSR = Platform.OS === 'web' && typeof window === 'undefined';
+    if (!userId || !env.isSupabaseConfigured || isWebSSR) {
+      return;
+    }
+
+    let cancelled = false;
+    let removeChannel: (() => Promise<void>) | undefined;
+
+    void (async () => {
+      const { supabase } = await import('@/lib/supabase');
+      if (cancelled) {
+        return;
+      }
+
+      const channel = supabase
+        .channel(`workout-share-notifications:${userId}:${workoutShareRealtimeKey}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'custom_workout_template_shares',
+            filter: `shared_with_id=eq.${userId}`,
+          },
+          (payload) => {
+            handleWorkoutShareChange(payload);
+          },
+        )
+        .subscribe((status) => {
+          if (__DEV__) {
+            console.log('[notifications] workout share realtime status:', status);
+          }
+
+          if (status === 'SUBSCRIBED') {
+            void refreshInbox();
+          }
+
+          if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+            setTimeout(() => {
+              if (!cancelled) {
+                setWorkoutShareRealtimeKey((current) => current + 1);
+              }
+            }, 2000);
+          }
+        });
+
+      removeChannel = async () => {
+        await supabase.removeChannel(channel);
+      };
+    })();
+
+    return () => {
+      cancelled = true;
+      void removeChannel?.();
+    };
+  }, [userId, workoutShareRealtimeKey, handleWorkoutShareChange, refreshInbox]);
 
   const value = useMemo(
     () => ({

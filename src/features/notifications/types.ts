@@ -5,13 +5,19 @@ export type ChallengeNotificationType =
 
 export type FriendNotificationType = 'friend_request_received' | 'friend_request_accepted';
 
-export type InboxNotificationType = ChallengeNotificationType | FriendNotificationType;
+export type WorkoutNotificationType = 'workout_shared';
+
+export type InboxNotificationType =
+  | ChallengeNotificationType
+  | FriendNotificationType
+  | WorkoutNotificationType;
 
 export interface ChallengeNotification {
   id: string;
   type: InboxNotificationType;
   participantId: string | null;
   friendshipId: string | null;
+  templateId: string | null;
   title: string;
   message: string;
   createdAt: number;
@@ -30,6 +36,10 @@ export function isChallengeNotificationType(
 
 export function isFriendNotificationType(type: InboxNotificationType): type is FriendNotificationType {
   return type === 'friend_request_received' || type === 'friend_request_accepted';
+}
+
+export function isWorkoutNotificationType(type: InboxNotificationType): type is WorkoutNotificationType {
+  return type === 'workout_shared';
 }
 
 interface ParticipantRow {
@@ -155,4 +165,47 @@ export function getFriendNotificationTypeFromChange(
 
 export function friendNotificationId(type: FriendNotificationType, friendshipId: string): string {
   return `${type}-${friendshipId}`;
+}
+
+interface WorkoutShareRow {
+  id: string;
+  template_id: string;
+  owner_id: string;
+  shared_with_id: string;
+  created_at: string;
+}
+
+export function isWorkoutShareRow(value: unknown): value is WorkoutShareRow {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+
+  const row = value as Record<string, unknown>;
+  return (
+    typeof row.id === 'string' &&
+    typeof row.template_id === 'string' &&
+    typeof row.owner_id === 'string' &&
+    typeof row.shared_with_id === 'string' &&
+    typeof row.created_at === 'string'
+  );
+}
+
+export function getWorkoutShareNotificationTypeFromChange(
+  eventType: string,
+  row: WorkoutShareRow,
+  currentUserId: string,
+): WorkoutNotificationType | null {
+  if (eventType !== 'INSERT') {
+    return null;
+  }
+
+  if (row.shared_with_id !== currentUserId) {
+    return null;
+  }
+
+  return 'workout_shared';
+}
+
+export function workoutShareNotificationId(templateId: string): string {
+  return `workout_shared-${templateId}`;
 }

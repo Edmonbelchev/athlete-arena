@@ -36,6 +36,7 @@ interface ChallengeWorkoutModeProps {
   onContinue?: () => void;
   raceTimer?: ChallengeRepHudRaceTimer | null;
   footer?: ReactNode;
+  hudOverlay?: ReactNode;
 }
 
 export function ChallengeWorkoutMode({
@@ -55,6 +56,7 @@ export function ChallengeWorkoutMode({
   onContinue,
   raceTimer = null,
   footer,
+  hudOverlay,
 }: ChallengeWorkoutModeProps) {
   const theme = useTheme();
   const showCompletionOnly = completed && Boolean(completeOverlay);
@@ -114,12 +116,14 @@ export function ChallengeWorkoutMode({
                 <WorkoutGuideAnimation exerciseType={exerciseType} variant="overlay" />
               </View>
             ) : null}
-            <ChallengeRepHud
-              currentReps={currentReps}
-              targetReps={targetReps}
-              completed={completed}
-              raceTimer={raceTimer}
-            />
+            {hudOverlay ?? (
+              <ChallengeRepHud
+                currentReps={currentReps}
+                targetReps={targetReps}
+                completed={completed}
+                raceTimer={raceTimer}
+              />
+            )}
           </View>
 
           <View style={StyleSheet.flatten([styles.portraitHintWrap, { backgroundColor: theme.background }])}>

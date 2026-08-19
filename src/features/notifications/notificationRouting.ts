@@ -1,13 +1,21 @@
 import { router } from 'expo-router';
 
 import type { ChallengeNotification } from '@/features/notifications/types';
-import { isChallengeNotificationType } from '@/features/notifications/types';
+import { isChallengeNotificationType, isWorkoutNotificationType } from '@/features/notifications/types';
 
 function readString(value: unknown): string | null {
   return typeof value === 'string' && value.length > 0 ? value : null;
 }
 
 export function routeFromInboxNotification(notification: ChallengeNotification): void {
+  if (isWorkoutNotificationType(notification.type) && notification.templateId) {
+    router.push({
+      pathname: '/(tabs)/workouts',
+      params: { templateId: notification.templateId },
+    });
+    return;
+  }
+
   if (isChallengeNotificationType(notification.type) && notification.participantId) {
     router.push({
       pathname: '/challenge/friend/[participantId]',
@@ -22,6 +30,15 @@ export function routeFromInboxNotification(notification: ChallengeNotification):
 export function routeFromPushNotificationData(data: Record<string, unknown> | undefined): void {
   const type = readString(data?.type);
   const participantId = readString(data?.participantId);
+  const templateId = readString(data?.templateId);
+
+  if (type === 'workout_shared' && templateId) {
+    router.push({
+      pathname: '/(tabs)/workouts',
+      params: { templateId },
+    });
+    return;
+  }
 
   if (type?.startsWith('challenge_') && participantId) {
     router.push({

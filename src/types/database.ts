@@ -923,6 +923,80 @@ export interface Database {
           is_current_user: boolean;
         }[];
       };
+      create_custom_workout_template: {
+        Args: {
+          p_title: string;
+          p_time_limit_seconds: number;
+          p_exercises: Json;
+          p_workout_type?: string;
+        };
+        Returns: string;
+      };
+      get_my_custom_workout_templates: {
+        Args: Record<string, never>;
+        Returns: {
+          template_id: string;
+          title: string;
+          workout_type: 'amrap';
+          time_limit_seconds: number;
+          exercise_count: number;
+          created_at: string;
+          is_owner: boolean;
+          creator_username: string | null;
+          creator_display_name: string | null;
+          shared_at: string | null;
+        }[];
+      };
+      get_custom_workout_template_detail: {
+        Args: {
+          p_template_id: string;
+        };
+        Returns: {
+          template_id: string;
+          title: string;
+          workout_type: 'amrap';
+          time_limit_seconds: number;
+          creator_id: string;
+          creator_username: string;
+          creator_display_name: string | null;
+          is_owner: boolean;
+          exercise_id: string;
+          sort_order: number;
+          exercise_type: Database['public']['Enums']['exercise_type'];
+          target_reps: number;
+        }[];
+      };
+      share_custom_workout_template: {
+        Args: {
+          p_template_id: string;
+          p_friend_id: string;
+        };
+        Returns: undefined;
+      };
+      dismiss_shared_workout_template: {
+        Args: {
+          p_template_id: string;
+        };
+        Returns: undefined;
+      };
+      soft_delete_custom_workout_template: {
+        Args: {
+          p_template_id: string;
+        };
+        Returns: undefined;
+      };
+      save_custom_workout_session: {
+        Args: {
+          p_template_id: string | null;
+          p_title: string;
+          p_time_limit_seconds: number;
+          p_completed_rounds: number;
+          p_total_reps: number;
+          p_exercise_breakdown: Json;
+          p_started_at: string;
+        };
+        Returns: string;
+      };
       delete_my_account: {
         Args: {
           p_reason?: string | null;

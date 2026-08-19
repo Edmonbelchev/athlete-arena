@@ -195,6 +195,13 @@ export default function HomeScreen() {
               badge={activeFriendChallengeCount > 0 ? activeFriendChallengeCount : undefined}
               onPress={() => router.push('/(tabs)/challenges')}
             />
+            <HomeLinkBlock
+              title="Create Workout"
+              description="Build workouts and save templates"
+              icon="dumbbell"
+              accentColor={theme.success}
+              onPress={() => router.push('/(tabs)/workouts')}
+            />
           </View>
         </HomeSection>
 

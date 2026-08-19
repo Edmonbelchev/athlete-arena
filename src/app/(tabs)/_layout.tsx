@@ -103,6 +103,12 @@ function TabsLayoutContent() {
         }}
       />
       <Tabs.Screen
+        name="workouts"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
         name="shop"
         options={{
           href: null,

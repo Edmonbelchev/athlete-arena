@@ -2,6 +2,7 @@ import { assertSupabaseConfigured } from '@/lib/supabase';
 import type { ChallengeNotification } from '@/features/notifications/types';
 import { syncChallengeNotifications } from '@/services/challengeNotificationService';
 import { syncFriendNotifications } from '@/services/friendNotificationService';
+import { syncWorkoutShareNotifications } from '@/services/customWorkoutNotificationService';
 
 export async function syncAllNotifications(
   existing: ChallengeNotification[],
@@ -14,5 +15,6 @@ export async function syncAllNotifications(
   assertSupabaseConfigured();
 
   const afterChallenges = await syncChallengeNotifications(existing);
-  return syncFriendNotifications(afterChallenges, currentUserId);
+  const afterFriends = await syncFriendNotifications(afterChallenges, currentUserId);
+  return syncWorkoutShareNotifications(afterFriends, currentUserId);
 }

@@ -214,6 +214,13 @@ function RootNavigator() {
             }}
           />
           <Stack.Screen
+            name="workout/session"
+            options={{
+              headerShown: true,
+              title: 'Workout',
+            }}
+          />
+          <Stack.Screen
             name="spin"
             options={{
               presentation: 'modal',
