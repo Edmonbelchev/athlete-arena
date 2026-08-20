@@ -36,6 +36,7 @@ import {
   createCustomWorkoutTemplate,
   getCustomWorkoutTemplateDetail,
   shareCustomWorkoutTemplateWithFriends,
+  updateCustomWorkoutTemplate,
 } from '@/services/customWorkoutService';
 import type { CustomWorkoutExercise, CustomWorkoutType } from '@/types/customWorkouts';
 
@@ -189,14 +190,21 @@ export function CreateWorkoutModal({
     setIsSaving(true);
     setError(null);
 
+    const payload = {
+      title: title.trim(),
+      workoutType,
+      timeLimitSeconds,
+      exercises,
+    };
+
     try {
-      const nextTemplateId = await createCustomWorkoutTemplate({
-        title: title.trim(),
-        workoutType,
-        timeLimitSeconds,
-        exercises,
-      });
-      setSavedTemplateId(nextTemplateId);
+      if (savedTemplateId && isTemplateOwner) {
+        await updateCustomWorkoutTemplate(savedTemplateId, payload);
+      } else {
+        const nextTemplateId = await createCustomWorkoutTemplate(payload);
+        setSavedTemplateId(nextTemplateId);
+      }
+
       onSaved?.();
     } catch (err) {
       setError(formatUserError(err, 'Failed to save workout template'));
@@ -412,7 +420,7 @@ export function CreateWorkoutModal({
               />
               {isTemplateOwner ? (
                 <PrimaryButton
-                  label={savedTemplateId ? 'Save new template copy' : 'Save template'}
+                  label={savedTemplateId ? 'Save changes' : 'Save template'}
                   variant="secondary"
                   onPress={() => void handleSaveTemplate()}
                   loading={isSaving}

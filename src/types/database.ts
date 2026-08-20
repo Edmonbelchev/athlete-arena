@@ -932,6 +932,16 @@ export interface Database {
         };
         Returns: string;
       };
+      update_custom_workout_template: {
+        Args: {
+          p_template_id: string;
+          p_title: string;
+          p_time_limit_seconds: number;
+          p_exercises: Json;
+          p_workout_type?: string;
+        };
+        Returns: undefined;
+      };
       get_my_custom_workout_templates: {
         Args: Record<string, never>;
         Returns: {

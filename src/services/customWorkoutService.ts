@@ -105,6 +105,33 @@ export async function createCustomWorkoutTemplate(input: {
   return data as string;
 }
 
+export async function updateCustomWorkoutTemplate(
+  templateId: string,
+  input: {
+    title: string;
+    workoutType: CustomWorkoutTemplateSummary['workoutType'];
+    timeLimitSeconds: number;
+    exercises: Array<{ exerciseType: ExerciseType; targetReps: number }>;
+  },
+): Promise<void> {
+  assertSupabaseConfigured();
+
+  const { error } = await supabase.rpc('update_custom_workout_template', {
+    p_template_id: templateId,
+    p_title: input.title,
+    p_workout_type: input.workoutType,
+    p_time_limit_seconds: input.timeLimitSeconds,
+    p_exercises: input.exercises.map((exercise) => ({
+      exercise_type: exercise.exerciseType,
+      target_reps: exercise.targetReps,
+    })),
+  });
+
+  if (error) {
+    throw error;
+  }
+}
+
 export async function shareCustomWorkoutTemplate(
   templateId: string,
   friendId: string,
