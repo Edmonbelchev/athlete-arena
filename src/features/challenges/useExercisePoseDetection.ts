@@ -23,6 +23,8 @@ import {
 
 interface UseExercisePoseDetectionOptions {
   exerciseType: ExerciseType;
+  /** Resets rep engine when the active circuit step changes (e.g. AMRAP round). */
+  exerciseSessionKey?: number | string;
   enabled: boolean;
   onRepDetected: () => void;
   posePreviewLayoutRef?: MutableRefObject<PosePreviewLayoutState>;
@@ -112,6 +114,7 @@ function getExerciseFormMessage(
 
 export function useExercisePoseDetection({
   exerciseType,
+  exerciseSessionKey = 0,
   enabled,
   onRepDetected,
   posePreviewLayoutRef,
@@ -140,7 +143,7 @@ export function useExercisePoseDetection({
     setTrackingStatus('partial');
     setTrackingMessage('Move into frame to start counting');
     setPullUpBarLineY(null);
-  }, [exerciseType, setPhase, setPullUpBarLineY, setTrackingMessage, setTrackingStatus]);
+  }, [exerciseType, exerciseSessionKey, setPhase, setPullUpBarLineY, setTrackingMessage, setTrackingStatus]);
 
   useEffect(() => {
     if (!enabled) {
@@ -151,7 +154,7 @@ export function useExercisePoseDetection({
       setTrackingMessage(null);
       setPullUpBarLineY(null);
     }
-  }, [enabled, exerciseType, setPhase, setPullUpBarLineY, setTrackingMessage, setTrackingStatus]);
+  }, [enabled, exerciseType, exerciseSessionKey, setPhase, setPullUpBarLineY, setTrackingMessage, setTrackingStatus]);
 
   const processLandmarks = useCallback(
     (landmarks: PoseLandmark[]) => {

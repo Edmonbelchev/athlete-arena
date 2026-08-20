@@ -85,6 +85,10 @@ function AmrapWorkoutSession({ config }: { config: CustomWorkoutLaunchConfig }) 
   const showWorkout = workoutStarted || amrap.completed;
   const cameraActive = useDrainNativeCameraOnLeave(showWorkout && !amrap.completed);
 
+  const handleRepDetected = useCallback(() => {
+    amrap.registerRep();
+  }, [amrap.registerRep]);
+
   const {
     phase: posePhase,
     trackingStatus,
@@ -93,11 +97,10 @@ function AmrapWorkoutSession({ config }: { config: CustomWorkoutLaunchConfig }) 
     processLandmarks,
   } = useExercisePoseDetection({
     exerciseType: amrap.currentExercise?.exerciseType ?? 'push_ups',
+    exerciseSessionKey: amrap.currentExerciseIndex,
     enabled: canTrack && cameraActive,
     posePreviewLayoutRef,
-    onRepDetected: () => {
-      amrap.registerRep();
-    },
+    onRepDetected: handleRepDetected,
   });
 
   const autoRepCounting = Platform.OS === 'web' || supportsNativePoseDetection();
@@ -149,7 +152,6 @@ function AmrapWorkoutSession({ config }: { config: CustomWorkoutLaunchConfig }) 
   if (showWorkout) {
     return (
       <ChallengeWorkoutMode
-        key={`${amrap.currentExerciseIndex}-${amrap.currentExercise.exerciseType}`}
         exerciseType={amrap.currentExercise.exerciseType}
         currentReps={amrap.currentExerciseReps}
         targetReps={amrap.currentExercise.targetReps}
