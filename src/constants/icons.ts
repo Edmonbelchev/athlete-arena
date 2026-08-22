@@ -26,7 +26,8 @@ export type AppIconName =
   | 'camera'
   | 'chevronBack'
   | 'settings'
-  | 'support';
+  | 'support'
+  | 'swap';
 
 export const APP_ICONS: Record<AppIconName, SymbolViewProps['name']> = {
   home: { ios: 'house.fill', android: 'home', web: 'home' },
@@ -66,5 +67,10 @@ export const APP_ICONS: Record<AppIconName, SymbolViewProps['name']> = {
     ios: 'questionmark.bubble.fill',
     android: 'support_agent',
     web: 'support_agent',
+  },
+  swap: {
+    ios: 'arrow.triangle.2.circlepath',
+    android: 'swap_horiz',
+    web: 'swap_horiz',
   },
 };

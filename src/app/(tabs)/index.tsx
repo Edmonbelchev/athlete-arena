@@ -34,6 +34,7 @@ import {
 import {
   finalizeDailyMission,
   getOrCreateDailyChallenge,
+  rerollDailyMission,
   resolveMissionIndex,
 } from '@/services/challengeService';
 
@@ -57,6 +58,7 @@ export default function HomeScreen() {
   const { count: activeFriendChallengeCount, refresh: refreshActiveFriendChallengeCount } =
     useActiveFriendChallengeCount();
   const [startingMissionIndex, setStartingMissionIndex] = useState<number | null>(null);
+  const [rerollingMissionIndex, setRerollingMissionIndex] = useState<number | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const { status: spinStatus, refresh: refreshSpin } = useDailySpin();
   const { weeklyStreak, refresh: refreshWeeklyStreak } = useWeeklyMissionStreak();
@@ -162,6 +164,31 @@ export default function HomeScreen() {
     }
   }
 
+  async function handleRerollDailyMission(
+    mission: (typeof missions)[number],
+    listIndex: number,
+    exerciseType: (typeof missions)[number]['exerciseType'],
+  ) {
+    if (rerollingMissionIndex !== null || startingMissionIndex !== null) {
+      return;
+    }
+
+    const missionIndex = resolveMissionIndex(mission.exerciseType, mission.missionIndex, listIndex);
+
+    setRerollingMissionIndex(missionIndex);
+    setActionError(null);
+
+    try {
+      await rerollDailyMission(missionIndex, exerciseType);
+      await Promise.all([refreshChallenge({ silent: true }), refreshProfile()]);
+      notifyDailyChallengeRefresh();
+    } catch (err) {
+      setActionError(formatUserError(err, 'Failed to swap daily quest'));
+    } finally {
+      setRerollingMissionIndex(null);
+    }
+  }
+
   useFocusEffect(
     useCallback(() => {
       void handleRefresh();
@@ -201,13 +228,18 @@ export default function HomeScreen() {
         </HomeSection>
 
         <HomeSection
-          title="Daily Missions"
-          subtitle="Three exercises today — reps from any workout count toward each mission">
+          title="Daily Quests"
+          subtitle="Three quests today — swap one per day or let reps count from any workout">
           {missions.length > 0 ? (
             <DailyMissionsCarousel
               missions={missions}
               startingMissionIndex={startingMissionIndex}
+              rerollingMissionIndex={rerollingMissionIndex}
+              rerollUsedOn={profile?.daily_quest_reroll_used_on}
               onStartMission={(mission, index) => void handleStartDailyMission(mission, index)}
+              onRerollMission={(mission, index, exerciseType) =>
+                void handleRerollDailyMission(mission, index, exerciseType)
+              }
             />
           ) : (
             <View

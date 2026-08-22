@@ -9,6 +9,9 @@ import { useTheme } from '@/hooks/use-theme';
 type ExercisePickerModalProps = {
   visible: boolean;
   onClose: () => void;
+  allowedExerciseTypes?: ExerciseType[];
+  title?: string;
+  subtitle?: string;
 } & (
   | {
       mode: 'single';
@@ -22,22 +25,30 @@ type ExercisePickerModalProps = {
 );
 
 export function ExercisePickerModal(props: ExercisePickerModalProps) {
-  const { visible, onClose, mode } = props;
+  const { visible, onClose, mode, allowedExerciseTypes, title: titleOverride, subtitle: subtitleOverride } = props;
   const theme = useTheme();
   const [query, setQuery] = useState('');
   const [selectedTypes, setSelectedTypes] = useState<ExerciseType[]>([]);
 
+  const availableExercises = useMemo(
+    () =>
+      allowedExerciseTypes && allowedExerciseTypes.length > 0
+        ? allowedExerciseTypes
+        : EXERCISE_TYPES,
+    [allowedExerciseTypes],
+  );
+
   const filteredExercises = useMemo(() => {
     const normalized = query.trim().toLowerCase();
     if (!normalized) {
-      return EXERCISE_TYPES;
+      return availableExercises;
     }
 
-    return EXERCISE_TYPES.filter((exerciseType) => {
+    return availableExercises.filter((exerciseType) => {
       const label = EXERCISE_LABELS[exerciseType].toLowerCase();
       return label.includes(normalized) || exerciseType.replace(/_/g, ' ').includes(normalized);
     });
-  }, [query]);
+  }, [availableExercises, query]);
 
   useEffect(() => {
     if (!visible) {
@@ -86,7 +97,11 @@ export function ExercisePickerModal(props: ExercisePickerModalProps) {
     setSelectedTypes([]);
   }
 
-  const title = mode === 'multi' ? 'Add exercises' : 'Choose exercise';
+  const title =
+    titleOverride ?? (mode === 'multi' ? 'Add exercises' : 'Choose exercise');
+  const subtitle =
+    subtitleOverride ??
+    (mode === 'multi' ? 'Select one or more exercises, then tap Add.' : null);
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={handleClose}>
@@ -95,10 +110,8 @@ export function ExercisePickerModal(props: ExercisePickerModalProps) {
         <View style={[styles.sheet, { backgroundColor: theme.background, borderColor: theme.border }]}>
           <View style={[styles.handle, { backgroundColor: theme.border }]} />
           <Text style={[styles.title, { color: theme.text }]}>{title}</Text>
-          {mode === 'multi' ? (
-            <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
-              Select one or more exercises, then tap Add.
-            </Text>
+          {subtitle ? (
+            <Text style={[styles.subtitle, { color: theme.textSecondary }]}>{subtitle}</Text>
           ) : null}
 
           <TextInput

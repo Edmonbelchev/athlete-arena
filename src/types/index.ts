@@ -15,6 +15,7 @@ export interface Profile {
   longest_streak: number;
   coin_balance: number;
   preferences: Json;
+  daily_quest_reroll_used_on?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -46,4 +47,5 @@ export interface DailyChallengeHome {
   status: ChallengeStatus | 'not_started';
   completedReps: number;
   completedAt: string | null;
+  isRerolled?: boolean;
 }

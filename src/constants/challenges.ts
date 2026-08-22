@@ -22,12 +22,12 @@ export interface ChallengeTier {
   reps: number;
 }
 
-/** Rep targets for daily missions. Each completion earns flat XP/coins in dailyMissionRewards.ts / SQL. */
+/** Rep tiers for daily missions (min → max). Rewards are flat XP/coins in dailyMissionRewards.ts / SQL. */
 export const CHALLENGE_CONFIG: Record<ExerciseType, readonly ChallengeTier[]> = {
-  push_ups: [{ reps: 10 }, { reps: 25 }, { reps: 50 }, { reps: 100 }],
-  squats: [{ reps: 25 }, { reps: 50 }, { reps: 75 }, { reps: 100 }],
-  pull_ups: [{ reps: 5 }, { reps: 10 }, { reps: 20 }, { reps: 30 }],
-  burpees: [{ reps: 10 }, { reps: 20 }, { reps: 30 }, { reps: 40 }],
+  push_ups: [{ reps: 20 }, { reps: 30 }, { reps: 40 }, { reps: 50 }],
+  squats: [{ reps: 20 }, { reps: 30 }, { reps: 40 }, { reps: 50 }],
+  pull_ups: [{ reps: 10 }, { reps: 15 }, { reps: 20 }, { reps: 30 }],
+  burpees: [{ reps: 10 }, { reps: 15 }, { reps: 20 }, { reps: 30 }],
 } as const;
 
 export const EXERCISE_LABELS: Record<DisplayExerciseType, string> = {

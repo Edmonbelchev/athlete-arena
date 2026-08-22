@@ -18,6 +18,7 @@ type DailyChallengeHomeRow = {
   user_status: DailyChallenge['status'] | null;
   completed_reps: number;
   completed_at: string | null;
+  is_rerolled?: boolean;
 };
 
 type TemplateRow = {
@@ -34,9 +35,11 @@ type UserChallengeRow = {
   id: string;
   exercise_type: ExerciseType;
   mission_index?: number | null;
+  target_reps?: number;
   status: DailyChallenge['status'];
   completed_reps: number;
   completed_at: string | null;
+  is_rerolled?: boolean;
 };
 
 export function resolveMissionIndex(
@@ -74,6 +77,7 @@ function mapDailyChallengeHome(
     status: row.user_status ?? 'not_started',
     completedReps: row.completed_reps,
     completedAt: row.completed_at,
+    isRerolled: row.is_rerolled ?? false,
   };
 }
 
@@ -100,14 +104,15 @@ function buildMissionsFromTemplates(
         missionIndex,
         templateId: template.id,
         challengeDate: template.challenge_date,
-        exerciseType: template.exercise_type,
-        targetReps: template.target_reps,
+        exerciseType: userChallenge?.exercise_type ?? template.exercise_type,
+        targetReps: userChallenge?.target_reps ?? template.target_reps,
         xpReward: DAILY_MISSION_XP_REWARD,
         catalogSlot: template.catalog_slot,
         userChallengeId: userChallenge?.id ?? null,
         status: userChallenge?.status ?? 'not_started',
         completedReps: userChallenge?.completed_reps ?? 0,
         completedAt: userChallenge?.completed_at ?? null,
+        isRerolled: userChallenge?.is_rerolled ?? false,
       };
     })
     .sort((left, right) => left.missionIndex - right.missionIndex);
@@ -150,9 +155,18 @@ async function fetchTodayTemplates(today: string): Promise<TemplateRow[]> {
 }
 
 async function fetchTodayUserChallenges(today: string): Promise<UserChallengeRow[]> {
+  const fullSelect = await supabase
+    .from('daily_challenges')
+    .select('id, exercise_type, mission_index, target_reps, status, completed_reps, completed_at, is_rerolled')
+    .eq('challenge_date', today);
+
+  if (!fullSelect.error) {
+    return (fullSelect.data ?? []) as UserChallengeRow[];
+  }
+
   const withMissionIndex = await supabase
     .from('daily_challenges')
-    .select('id, exercise_type, mission_index, status, completed_reps, completed_at')
+    .select('id, exercise_type, mission_index, target_reps, status, completed_reps, completed_at')
     .eq('challenge_date', today);
 
   if (!withMissionIndex.error) {
@@ -316,4 +330,54 @@ export async function syncDailyMissionProgress(
   completedReps: number,
 ): Promise<DailyChallenge> {
   return completeChallenge(challengeId, completedReps);
+}
+
+export function getRerollEligibleExercises(missions: DailyChallengeHome[]): ExerciseType[] {
+  const assigned = new Set(missions.map((mission) => mission.exerciseType));
+  return EXERCISE_TYPES.filter((exerciseType) => !assigned.has(exerciseType));
+}
+
+export function canUseDailyQuestReroll(
+  rerollUsedOn: string | null | undefined,
+  today = todayDateString(),
+): boolean {
+  return rerollUsedOn !== today;
+}
+
+export function canRerollMission(
+  mission: DailyChallengeHome,
+  rerollUsedOn: string | null | undefined,
+  today = todayDateString(),
+): boolean {
+  if (!canUseDailyQuestReroll(rerollUsedOn, today)) {
+    return false;
+  }
+
+  if (mission.status === 'completed') {
+    return false;
+  }
+
+  return mission.completedReps === 0;
+}
+
+export async function rerollDailyMission(
+  missionIndex: number,
+  exerciseType: ExerciseType,
+): Promise<DailyChallenge> {
+  assertSupabaseConfigured();
+
+  const { data, error } = await supabase.rpc('reroll_daily_mission', {
+    p_mission_index: missionIndex,
+    p_exercise: exerciseType,
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  if (!data) {
+    throw new Error('Failed to re-roll daily quest');
+  }
+
+  return data as DailyChallengeRow;
 }
