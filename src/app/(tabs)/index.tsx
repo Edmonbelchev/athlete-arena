@@ -14,6 +14,8 @@ import { DailySpinCard } from '@/components/spin/DailySpinCard';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useDailyChallenge } from '@/features/challenges/useDailyChallenge';
+import { toDailyMissionCompletePayload } from '@/features/challenges/dailyMissionCelebration';
+import { useMissionComplete } from '@/features/challenges/MissionCompleteProvider';
 import { useActiveFriendChallengeCount } from '@/features/friends/useActiveFriendChallengeCount';
 import { useChallengeNotificationRefresh } from '@/features/notifications/useChallengeNotificationRefresh';
 import { useProfile } from '@/features/profile/useProfile';
@@ -21,8 +23,19 @@ import { useDailySpin } from '@/features/spin/useDailySpin';
 import { useWeeklyMissionStreak } from '@/features/streaks/useWeeklyMissionStreak';
 import { xpProgressInCurrentLevel } from '@/features/xp/levelUtils';
 import { useTheme } from '@/hooks/use-theme';
+import {
+  applyDailyMissionPatch,
+  notifyDailyChallengeRefresh,
+} from '@/lib/dailyChallengeSync';
 import { formatUserError } from '@/lib/errors';
-import { getOrCreateDailyChallenge, resolveMissionIndex } from '@/services/challengeService';
+import {
+  DAILY_MISSION_XP_REWARD,
+} from '@/constants/dailyMissionRewards';
+import {
+  finalizeDailyMission,
+  getOrCreateDailyChallenge,
+  resolveMissionIndex,
+} from '@/services/challengeService';
 
 function getGreeting(): string {
   const hour = new Date().getHours();
@@ -33,7 +46,7 @@ function getGreeting(): string {
 
 export default function HomeScreen() {
   const theme = useTheme();
-  const { profile, isLoading: isProfileLoading, error: profileError, refresh: refreshProfile } =
+  const { profile, isLoading: isProfileLoading, error: profileError, refresh: refreshProfile, applyXpDelta } =
     useProfile();
   const {
     missions,
@@ -47,6 +60,7 @@ export default function HomeScreen() {
   const [actionError, setActionError] = useState<string | null>(null);
   const { status: spinStatus, refresh: refreshSpin } = useDailySpin();
   const { weeklyStreak, refresh: refreshWeeklyStreak } = useWeeklyMissionStreak();
+  const { refreshMissionsAndCelebrate, celebrateMissionComplete } = useMissionComplete();
 
   const isInitialLoading =
     (isProfileLoading && !profile) || (isChallengeLoading && missions.length === 0);
@@ -61,7 +75,11 @@ export default function HomeScreen() {
     setActionError(null);
     await Promise.all([
       refreshProfile(),
-      refreshChallenge({ silent: true }),
+      refreshMissionsAndCelebrate()
+        .then(() => {
+          notifyDailyChallengeRefresh();
+        })
+        .catch(() => refreshChallenge({ silent: true })),
       refreshActiveFriendChallengeCount(),
       refreshWeeklyStreak(),
       refreshSpin().catch(() => undefined),
@@ -69,6 +87,7 @@ export default function HomeScreen() {
   }, [
     refreshActiveFriendChallengeCount,
     refreshChallenge,
+    refreshMissionsAndCelebrate,
     refreshProfile,
     refreshSpin,
     refreshWeeklyStreak,
@@ -87,6 +106,9 @@ export default function HomeScreen() {
     setActionError(null);
 
     try {
+      const isReadyToFinalize =
+        mission.status !== 'completed' && mission.completedReps >= mission.targetReps;
+
       const userChallenge =
         mission.userChallengeId === null
           ? await getOrCreateDailyChallenge(missionIndex)
@@ -95,6 +117,38 @@ export default function HomeScreen() {
 
       if (!challengeId) {
         throw new Error('Failed to start daily mission');
+      }
+
+      if (isReadyToFinalize) {
+        const updated = await finalizeDailyMission(challengeId);
+        applyDailyMissionPatch({
+          userChallengeId: updated.id,
+          exerciseType: updated.exercise_type,
+          missionIndex: updated.mission_index,
+          status: 'completed',
+          completedReps: updated.completed_reps,
+          completedAt: updated.completed_at,
+        });
+        notifyDailyChallengeRefresh();
+        celebrateMissionComplete(
+          toDailyMissionCompletePayload({
+            missionIndex: updated.mission_index,
+            exerciseType: updated.exercise_type,
+            targetReps: updated.target_reps,
+            templateId: mission.templateId,
+            challengeDate: mission.challengeDate,
+            xpReward: mission.xpReward,
+            catalogSlot: mission.catalogSlot,
+            userChallengeId: updated.id,
+            status: 'completed',
+            completedReps: updated.completed_reps,
+            completedAt: updated.completed_at,
+          }),
+        );
+        applyXpDelta(DAILY_MISSION_XP_REWARD);
+        void refreshProfile();
+        void refreshWeeklyStreak();
+        return;
       }
 
       router.push({
@@ -148,7 +202,7 @@ export default function HomeScreen() {
 
         <HomeSection
           title="Daily Missions"
-          subtitle="Three exercises today - complete all three to keep your streak alive">
+          subtitle="Three exercises today — reps from any workout count toward each mission">
           {missions.length > 0 ? (
             <DailyMissionsCarousel
               missions={missions}

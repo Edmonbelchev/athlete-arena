@@ -17,7 +17,9 @@ import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useExercisePoseDetection } from '@/features/challenges/useExercisePoseDetection';
 import { useFriendChallengeRaceTimer } from '@/features/friends/useFriendChallengeRaceTimer';
 import { consumePendingCustomWorkoutLaunch } from '@/features/workouts/customWorkoutLaunchStore';
+import { useMissionComplete } from '@/features/challenges/MissionCompleteProvider';
 import { useAmrapWorkout } from '@/features/workouts/useAmrapWorkout';
+import { useProfile } from '@/features/profile/useProfile';
 import { useDrainNativeCameraOnLeave } from '@/hooks/use-drain-native-camera-on-leave';
 import { useRepFeedback } from '@/hooks/use-rep-feedback';
 import { useWorkoutSession } from '@/hooks/use-workout-session';
@@ -33,6 +35,8 @@ function AmrapWorkoutSession({ config }: { config: CustomWorkoutLaunchConfig }) 
   const theme = useTheme();
   const router = useRouter();
   const { preferences } = useUserSettings();
+  const { refresh: refreshProfile } = useProfile();
+  const { refreshMissionsAndCelebrate } = useMissionComplete();
   const sessionKey = config.templateId ?? `${config.workoutType}:${config.title}`;
   const { workoutStarted, startWorkout: markWorkoutStarted } = useWorkoutSession(
     `custom-${config.workoutType}`,
@@ -62,12 +66,14 @@ function AmrapWorkoutSession({ config }: { config: CustomWorkoutLaunchConfig }) 
 
     try {
       await saveCustomWorkoutSession(result);
+      await refreshMissionsAndCelebrate();
+      void refreshProfile();
     } catch (err) {
       setSaveError(formatUserError(err, 'Failed to save workout result'));
     } finally {
       setIsSaving(false);
     }
-  }, []);
+  }, [refreshMissionsAndCelebrate, refreshProfile]);
 
   const handleTimerExpire = useCallback(() => {
     amrap.finishWorkout();

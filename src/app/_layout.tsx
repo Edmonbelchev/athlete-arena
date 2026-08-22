@@ -8,6 +8,7 @@ import { ActivityIndicator, Platform, StyleSheet, View } from 'react-native';
 import { AuthProvider, useAuth } from '@/features/auth';
 import { AuthDeepLinkHandler } from '@/features/auth/AuthDeepLinkHandler';
 import { AchievementUnlockProvider } from '@/features/achievements/AchievementUnlockProvider';
+import { MissionCompleteProvider } from '@/features/challenges/MissionCompleteProvider';
 import { FriendsProvider } from '@/features/friends/FriendsProvider';
 import { NotificationProvider } from '@/features/notifications/NotificationProvider';
 import { PushNotificationBootstrap } from '@/features/notifications/PushNotificationBootstrap';
@@ -38,15 +39,17 @@ export default function RootLayout() {
     <AuthProvider>
       <UserSettingsProvider>
         <AchievementUnlockProvider>
-          <ProfileProvider>
-            <ShopProvider>
-              <FriendsProvider>
-                <NotificationProvider>
-                  <ThemedRootNavigator />
-                </NotificationProvider>
-              </FriendsProvider>
-            </ShopProvider>
-          </ProfileProvider>
+          <MissionCompleteProvider>
+            <ProfileProvider>
+              <ShopProvider>
+                <FriendsProvider>
+                  <NotificationProvider>
+                    <ThemedRootNavigator />
+                  </NotificationProvider>
+                </FriendsProvider>
+              </ShopProvider>
+            </ProfileProvider>
+          </MissionCompleteProvider>
         </AchievementUnlockProvider>
       </UserSettingsProvider>
     </AuthProvider>

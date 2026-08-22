@@ -1,0 +1,133 @@
+import { router } from 'expo-router';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
+
+import {
+  MissionCompleteToast,
+  MISSION_COMPLETE_AUTO_DISMISS_MS,
+} from '@/components/challenges/MissionCompleteToast';
+import type { DailyMissionCompletePayload } from '@/features/challenges/dailyMissionCelebration';
+import { findNewlyCompletedMissions } from '@/features/challenges/dailyMissionCelebration';
+import { notifyDailyChallengeRefresh } from '@/lib/dailyChallengeSync';
+import { getDailyChallengeHome } from '@/services/challengeService';
+import type { DailyChallengeHome } from '@/types';
+
+interface MissionCompleteContextValue {
+  celebrateMissionComplete: (mission: DailyMissionCompletePayload) => void;
+  refreshMissionsAndCelebrate: () => Promise<DailyChallengeHome[]>;
+}
+
+const MissionCompleteContext = createContext<MissionCompleteContextValue | null>(null);
+
+export function MissionCompleteProvider({ children }: { children: ReactNode }) {
+  const [activeMission, setActiveMission] = useState<DailyMissionCompletePayload | null>(null);
+  const queueRef = useRef<DailyMissionCompletePayload[]>([]);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isShowingRef = useRef(false);
+  const missionsSnapshotRef = useRef<DailyChallengeHome[]>([]);
+
+  const showNextMission = useCallback(() => {
+    const next = queueRef.current.shift() ?? null;
+    setActiveMission(next);
+    isShowingRef.current = Boolean(next);
+
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+
+    if (next) {
+      timeoutRef.current = setTimeout(() => {
+        showNextMission();
+      }, MISSION_COMPLETE_AUTO_DISMISS_MS);
+    }
+  }, []);
+
+  const celebrateMissionComplete = useCallback(
+    (mission: DailyMissionCompletePayload) => {
+      queueRef.current.push(mission);
+
+      if (!isShowingRef.current) {
+        showNextMission();
+      }
+    },
+    [showNextMission],
+  );
+
+  const refreshMissionsAndCelebrate = useCallback(async () => {
+    const before = missionsSnapshotRef.current;
+    const after = await getDailyChallengeHome();
+    missionsSnapshotRef.current = after;
+
+    findNewlyCompletedMissions(before, after).forEach((mission) => {
+      celebrateMissionComplete(mission);
+    });
+
+    notifyDailyChallengeRefresh();
+
+    return after;
+  }, [celebrateMissionComplete]);
+
+  const dismissActiveMission = useCallback(() => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+
+    showNextMission();
+  }, [showNextMission]);
+
+  const handlePress = useCallback(() => {
+    dismissActiveMission();
+    router.push('/(tabs)');
+  }, [dismissActiveMission]);
+
+  useEffect(() => {
+    void getDailyChallengeHome()
+      .then((missions) => {
+        missionsSnapshotRef.current = missions;
+      })
+      .catch(() => {});
+
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
+
+  const value = useMemo(
+    () => ({
+      celebrateMissionComplete,
+      refreshMissionsAndCelebrate,
+    }),
+    [celebrateMissionComplete, refreshMissionsAndCelebrate],
+  );
+
+  return (
+    <MissionCompleteContext.Provider value={value}>
+      {children}
+      {activeMission ? (
+        <MissionCompleteToast mission={activeMission} onDismiss={dismissActiveMission} onPress={handlePress} />
+      ) : null}
+    </MissionCompleteContext.Provider>
+  );
+}
+
+export function useMissionComplete(): MissionCompleteContextValue {
+  const context = useContext(MissionCompleteContext);
+
+  if (!context) {
+    throw new Error('useMissionComplete must be used within MissionCompleteProvider');
+  }
+
+  return context;
+}

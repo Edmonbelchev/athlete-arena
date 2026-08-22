@@ -43,9 +43,17 @@ export function ChallengeCard({
 }: ChallengeCardProps) {
   const theme = useTheme();
   const isCompleted = status === 'completed';
-  const isInProgress = status === 'in_progress';
+  const hasProgress = completedReps > 0;
+  const isReadyToFinalize = !isCompleted && completedReps >= targetReps;
   const xpReward = DAILY_MISSION_XP_REWARD;
   const coinReward = DAILY_MISSION_COIN_REWARD;
+
+  let actionLabel = 'START MISSION';
+  if (isReadyToFinalize) {
+    actionLabel = 'COMPLETE MISSION';
+  } else if (hasProgress || status === 'in_progress') {
+    actionLabel = 'CONTINUE MISSION';
+  }
 
   return (
     <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}>
@@ -69,21 +77,19 @@ export function ChallengeCard({
           </>
         ) : (
           <>
-            {isInProgress ? (
+            {hasProgress || status === 'in_progress' ? (
               <Text style={[styles.progress, { color: theme.textSecondary }]}>
-                Progress: {completedReps} / {targetReps} reps
+                Progress: {Math.min(completedReps, targetReps)} / {targetReps} reps
               </Text>
             ) : (
-              <View style={styles.progressPlaceholder} />
+              <Text style={[styles.hint, { color: theme.textSecondary }]}>
+                Reps from workouts and challenges count toward this mission
+              </Text>
             )}
             <Text style={[styles.reward, { color: theme.xp }]}>
               {formatRewardPreview(xpReward, coinReward)}
             </Text>
-            <PrimaryButton
-              label={isInProgress ? 'CONTINUE MISSION' : 'START MISSION'}
-              loading={loading}
-              onPress={onStart}
-            />
+            <PrimaryButton label={actionLabel} loading={loading} onPress={onStart} />
           </>
         )}
       </View>
@@ -120,6 +126,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: ACTION_PROGRESS_HEIGHT,
     fontWeight: '600',
+  },
+  hint: {
+    fontSize: 13,
+    lineHeight: 18,
+    fontWeight: '500',
   },
   progressPlaceholder: {
     height: ACTION_PROGRESS_HEIGHT,

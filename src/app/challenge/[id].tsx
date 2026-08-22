@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Platform, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -31,7 +31,7 @@ import {
 } from '@/lib/dailyChallengeSync';
 import { leaveScreen } from '@/lib/navigation';
 import { supportsNativePoseDetection } from '@/lib/runtime';
-import { completeChallenge } from '@/services/challengeService';
+import { completeChallenge, syncDailyMissionProgress } from '@/services/challengeService';
 import { willCompleteWeeklyMissionStreak } from '@/types/weeklyStreak';
 
 export default function ChallengeScreen() {
@@ -47,6 +47,7 @@ export default function ChallengeScreen() {
   const [isSyncing, setIsSyncing] = useState(false);
   const [showWeeklyStreakComplete, setShowWeeklyStreakComplete] = useState(false);
   const isSyncingRef = useRef(false);
+  const lastSyncedRepsRef = useRef(0);
   const challengeRef = useRef(challenge);
   const weeklyStreakRef = useRef(weeklyStreak);
   const posePreviewLayoutRef = useRef<PosePreviewLayoutState>({
@@ -60,6 +61,10 @@ export default function ChallengeScreen() {
   challengeRef.current = challenge;
   weeklyStreakRef.current = weeklyStreak;
 
+  useEffect(() => {
+    lastSyncedRepsRef.current = challenge?.completed_reps ?? 0;
+  }, [challenge?.completed_reps, challenge?.id]);
+
   const cameraActive = useDrainNativeCameraOnLeave(inWorkout);
 
   const handleRepDetected = useCallback(
@@ -70,6 +75,24 @@ export default function ChallengeScreen() {
       }
 
       if (repCount < activeChallenge.target_reps) {
+        if (repCount > lastSyncedRepsRef.current) {
+          lastSyncedRepsRef.current = repCount;
+          try {
+            const updated = await syncDailyMissionProgress(activeChallenge.id, repCount);
+            applyChallenge(updated);
+            applyDailyMissionPatch({
+              userChallengeId: updated.id,
+              exerciseType: updated.exercise_type,
+              missionIndex: updated.mission_index,
+              status: updated.status,
+              completedReps: updated.completed_reps,
+              completedAt: updated.completed_at,
+            });
+            notifyDailyChallengeRefresh();
+          } catch {
+            // Ignore transient partial sync errors during the workout.
+          }
+        }
         return;
       }
 

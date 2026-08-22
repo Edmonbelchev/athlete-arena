@@ -292,3 +292,28 @@ export async function completeChallenge(
 
   return data as DailyChallengeRow;
 }
+
+export async function finalizeDailyMission(challengeId: string): Promise<DailyChallenge> {
+  assertSupabaseConfigured();
+
+  const { data, error } = await supabase.rpc('finalize_daily_mission', {
+    p_challenge_id: challengeId,
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  if (!data) {
+    throw new Error('Failed to finalize daily mission');
+  }
+
+  return data as DailyChallengeRow;
+}
+
+export async function syncDailyMissionProgress(
+  challengeId: string,
+  completedReps: number,
+): Promise<DailyChallenge> {
+  return completeChallenge(challengeId, completedReps);
+}

@@ -20,6 +20,7 @@ import {
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useAuth } from '@/features/auth';
 import { useExercisePoseDetection } from '@/features/challenges/useExercisePoseDetection';
+import { useMissionComplete } from '@/features/challenges/MissionCompleteProvider';
 import { useRepCounter } from '@/features/challenges/useRepCounter';
 import { useFriendChallenge } from '@/features/friends/useFriendChallenge';
 import { useFriendChallengeRaceTimer } from '@/features/friends/useFriendChallengeRaceTimer';
@@ -80,6 +81,7 @@ export default function FriendChallengeScreen() {
   const { challenge, isLoading, error, refresh } = useFriendChallenge(participantId);
   const { equippedEmote } = useShop();
   const { refresh: refreshProfile } = useProfile();
+  const { refreshMissionsAndCelebrate } = useMissionComplete();
   const [syncError, setSyncError] = useState<string | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
   const [isPendingAction, setIsPendingAction] = useState(false);
@@ -216,6 +218,7 @@ export default function FriendChallengeScreen() {
       try {
         await completeFriendChallenge(participantId, repCount);
         await refresh({ silent: true });
+        await refreshMissionsAndCelebrate();
         void refreshProfile();
       } catch (err) {
         setSyncError(formatUserError(err, 'Failed to sync repetition'));
@@ -224,7 +227,7 @@ export default function FriendChallengeScreen() {
         setIsSyncing(false);
       }
     },
-    [participantId, refresh, refreshProfile, isTimedOut],
+    [participantId, refresh, refreshMissionsAndCelebrate, refreshProfile, isTimedOut],
   );
 
   const repCounter = useRepCounter({
