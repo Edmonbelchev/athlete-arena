@@ -3,6 +3,7 @@ import type { ChallengeNotification } from '@/features/notifications/types';
 import { syncChallengeNotifications } from '@/services/challengeNotificationService';
 import { syncFriendNotifications } from '@/services/friendNotificationService';
 import { syncWorkoutShareNotifications } from '@/services/customWorkoutNotificationService';
+import { syncSystemMessageNotifications } from '@/services/systemMessageService';
 
 export async function syncAllNotifications(
   existing: ChallengeNotification[],
@@ -16,5 +17,6 @@ export async function syncAllNotifications(
 
   const afterChallenges = await syncChallengeNotifications(existing);
   const afterFriends = await syncFriendNotifications(afterChallenges, currentUserId);
-  return syncWorkoutShareNotifications(afterFriends, currentUserId);
+  const afterWorkouts = await syncWorkoutShareNotifications(afterFriends, currentUserId);
+  return syncSystemMessageNotifications(afterWorkouts);
 }

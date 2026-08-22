@@ -7,10 +7,13 @@ export type FriendNotificationType = 'friend_request_received' | 'friend_request
 
 export type WorkoutNotificationType = 'workout_shared';
 
+export type SystemNotificationType = 'system_message';
+
 export type InboxNotificationType =
   | ChallengeNotificationType
   | FriendNotificationType
-  | WorkoutNotificationType;
+  | WorkoutNotificationType
+  | SystemNotificationType;
 
 export interface ChallengeNotification {
   id: string;
@@ -18,6 +21,7 @@ export interface ChallengeNotification {
   participantId: string | null;
   friendshipId: string | null;
   templateId: string | null;
+  messageId: string | null;
   title: string;
   message: string;
   createdAt: number;
@@ -40,6 +44,36 @@ export function isFriendNotificationType(type: InboxNotificationType): type is F
 
 export function isWorkoutNotificationType(type: InboxNotificationType): type is WorkoutNotificationType {
   return type === 'workout_shared';
+}
+
+export function isSystemNotificationType(type: InboxNotificationType): type is SystemNotificationType {
+  return type === 'system_message';
+}
+
+export function systemMessageNotificationId(messageId: string): string {
+  return `system_message-${messageId}`;
+}
+
+interface SystemMessageRow {
+  id: string;
+  title: string;
+  summary: string | null;
+  body: string;
+  published_at: string;
+}
+
+export function isSystemMessageRow(value: unknown): value is SystemMessageRow {
+  if (!value || typeof value !== 'object') {
+    return false;
+  }
+
+  const row = value as Record<string, unknown>;
+  return (
+    typeof row.id === 'string' &&
+    typeof row.title === 'string' &&
+    typeof row.body === 'string' &&
+    typeof row.published_at === 'string'
+  );
 }
 
 interface ParticipantRow {

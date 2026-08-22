@@ -27,7 +27,8 @@ export type AppIconName =
   | 'chevronBack'
   | 'settings'
   | 'support'
-  | 'swap';
+  | 'swap'
+  | 'announcement';
 
 export const APP_ICONS: Record<AppIconName, SymbolViewProps['name']> = {
   home: { ios: 'house.fill', android: 'home', web: 'home' },
@@ -72,5 +73,10 @@ export const APP_ICONS: Record<AppIconName, SymbolViewProps['name']> = {
     ios: 'arrow.triangle.2.circlepath',
     android: 'swap_horiz',
     web: 'swap_horiz',
+  },
+  announcement: {
+    ios: 'megaphone.fill',
+    android: 'campaign',
+    web: 'campaign',
   },
 };

@@ -87,6 +87,7 @@ export async function syncWorkoutShareNotifications(
         participantId: null,
         friendshipId: null,
         templateId: template.templateId,
+        messageId: null,
         title: copy.title,
         message: copy.message,
         createdAt: template.sharedAt ? new Date(template.sharedAt).getTime() : Date.now(),

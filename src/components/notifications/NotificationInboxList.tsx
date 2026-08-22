@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { AppIcon } from '@/components/ui/AppIcon';
 import { Radius, Spacing } from '@/constants/theme';
 import { useNotifications } from '@/features/notifications/NotificationProvider';
 import type { ChallengeNotification } from '@/features/notifications/types';
+import { isSystemNotificationType } from '@/features/notifications/types';
 import { useTheme } from '@/hooks/use-theme';
 
 const PAGE_SIZE = 5;
@@ -85,7 +87,7 @@ export function NotificationInboxList({ showMarkAll = true, scrollable = true }:
 
       {notifications.length === 0 ? (
         <Text style={StyleSheet.flatten([styles.empty, { color: theme.textSecondary }])}>
-          No notifications yet. Friend requests and challenge updates will show up here.
+          No notifications yet. Friend updates, shared workouts, and system announcements will show up here.
         </Text>
       ) : scrollable ? (
         <ScrollView contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
@@ -106,6 +108,7 @@ function NotificationListItem({
   onPress: () => void;
 }) {
   const theme = useTheme();
+  const isSystemMessage = isSystemNotificationType(notification.type);
 
   return (
     <Pressable
@@ -114,15 +117,29 @@ function NotificationListItem({
         styles.item,
         {
           backgroundColor: notification.read ? theme.backgroundElement : theme.backgroundSelected,
-          borderColor: theme.border,
+          borderColor: isSystemMessage ? theme.primary : theme.border,
         },
       ])}>
       <View style={styles.itemHeader}>
-        <Text style={StyleSheet.flatten([styles.itemTitle, { color: theme.text }])}>{notification.title}</Text>
+        <View style={styles.itemTitleRow}>
+          {isSystemMessage ? (
+            <View
+              style={StyleSheet.flatten([
+                styles.typeIconWrap,
+                { backgroundColor: `${theme.primary}14`, borderColor: theme.primary },
+              ])}>
+              <AppIcon name="announcement" size={14} color={theme.primary} weight="semibold" />
+            </View>
+          ) : null}
+          <Text style={StyleSheet.flatten([styles.itemTitle, { color: theme.text }])}>{notification.title}</Text>
+        </View>
         {!notification.read ? (
           <View style={StyleSheet.flatten([styles.unreadDot, { backgroundColor: theme.primary }])} />
         ) : null}
       </View>
+      {isSystemMessage ? (
+        <Text style={StyleSheet.flatten([styles.systemLabel, { color: theme.primary }])}>System message</Text>
+      ) : null}
       <Text style={StyleSheet.flatten([styles.itemMessage, { color: theme.textSecondary }])}>
         {notification.message}
       </Text>
@@ -180,10 +197,30 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: Spacing.two,
   },
+  itemTitleRow: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+  },
+  typeIconWrap: {
+    width: 28,
+    height: 28,
+    borderRadius: Radius.sm,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   itemTitle: {
     flex: 1,
     fontSize: 14,
     fontWeight: '800',
+  },
+  systemLabel: {
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
   },
   unreadDot: {
     width: 8,

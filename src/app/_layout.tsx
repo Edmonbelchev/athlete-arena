@@ -232,6 +232,15 @@ function RootNavigator() {
               headerRight: () => <ModalCloseButton />,
             }}
           />
+          <Stack.Screen
+            name="system-message/[id]"
+            options={{
+              presentation: 'modal',
+              headerShown: true,
+              title: 'System Message',
+              headerRight: () => <ModalCloseButton />,
+            }}
+          />
           <Stack.Screen name="reset-password" options={{ headerShown: false }} />
         </Stack.Protected>
 

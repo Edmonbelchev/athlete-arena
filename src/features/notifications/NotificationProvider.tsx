@@ -24,7 +24,9 @@ import {
   getWorkoutShareNotificationTypeFromChange,
   isFriendshipRow,
   isParticipantRow,
+  isSystemMessageRow,
   isWorkoutShareRow,
+  systemMessageNotificationId,
   type ChallengeNotification,
   workoutShareNotificationId,
 } from '@/features/notifications/types';
@@ -50,6 +52,7 @@ const MAX_INBOX = 50;
 type ParticipantChangePayload = { eventType: string; new: unknown; old: unknown };
 type FriendshipChangePayload = { eventType: string; new: unknown; old: unknown };
 type WorkoutShareChangePayload = { eventType: string; new: unknown; old: unknown };
+type SystemMessageChangePayload = { eventType: string; new: unknown; old: unknown };
 
 function mergeSyncedNotifications(
   current: ChallengeNotification[],
@@ -59,7 +62,10 @@ function mergeSyncedNotifications(
 
   return synced.map((notification) => ({
     ...notification,
-    read: readById.get(notification.id) ?? notification.read,
+    read:
+      notification.type === 'system_message'
+        ? notification.read || (readById.get(notification.id) ?? false)
+        : readById.get(notification.id) ?? notification.read,
   }));
 }
 
@@ -89,12 +95,14 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   const [realtimeKey, setRealtimeKey] = useState(0);
   const [friendRealtimeKey, setFriendRealtimeKey] = useState(0);
   const [workoutShareRealtimeKey, setWorkoutShareRealtimeKey] = useState(0);
+  const [systemMessageRealtimeKey, setSystemMessageRealtimeKey] = useState(0);
   const listenersRef = useRef(new Set<() => void>());
   const recentKeysRef = useRef(new Set<string>());
   const notificationsRef = useRef(notifications);
   const pendingEventsRef = useRef<ParticipantChangePayload[]>([]);
   const pendingFriendEventsRef = useRef<FriendshipChangePayload[]>([]);
   const pendingWorkoutShareEventsRef = useRef<WorkoutShareChangePayload[]>([]);
+  const pendingSystemMessageEventsRef = useRef<SystemMessageChangePayload[]>([]);
   const isHydratedRef = useRef(false);
   const isSyncingRef = useRef(false);
   notificationsRef.current = notifications;
@@ -156,6 +164,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       pendingEventsRef.current = [];
       pendingFriendEventsRef.current = [];
       pendingWorkoutShareEventsRef.current = [];
+      pendingSystemMessageEventsRef.current = [];
       return;
     }
 
@@ -206,11 +215,17 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
 
   const markAsRead = useCallback(
     (id: string) => {
+      const notification = notificationsRef.current.find((item) => item.id === id);
+
       updateNotifications((current) =>
-        current.map((notification) =>
-          notification.id === id ? { ...notification, read: true } : notification,
-        ),
+        current.map((item) => (item.id === id ? { ...item, read: true } : item)),
       );
+
+      if (notification?.type === 'system_message' && notification.messageId) {
+        void import('@/services/systemMessageService').then(({ markSystemMessageRead }) =>
+          markSystemMessageRead(notification.messageId!),
+        );
+      }
     },
     [updateNotifications],
   );
@@ -237,7 +252,20 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   }, [bannerNotification, dismissBanner]);
 
   const markAllAsRead = useCallback(() => {
+    const unreadSystemMessageIds = notificationsRef.current
+      .filter(
+        (notification) =>
+          notification.type === 'system_message' && notification.messageId && !notification.read,
+      )
+      .map((notification) => notification.messageId!);
+
     updateNotifications((current) => current.map((notification) => ({ ...notification, read: true })));
+
+    if (unreadSystemMessageIds.length > 0) {
+      void import('@/services/systemMessageService').then(({ markSystemMessageRead }) =>
+        Promise.all(unreadSystemMessageIds.map((messageId) => markSystemMessageRead(messageId))),
+      );
+    }
   }, [updateNotifications]);
 
   const notifyChallengeUpdate = useCallback(() => {
@@ -316,6 +344,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
         participantId: copy.participantId,
         friendshipId: null,
         templateId: null,
+        messageId: null,
         title: copy.title,
         message: copy.message,
         createdAt: Date.now(),
@@ -376,6 +405,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
         participantId: null,
         friendshipId: copy.friendshipId,
         templateId: null,
+        messageId: null,
         title: copy.title,
         message: copy.message,
         createdAt: Date.now(),
@@ -437,6 +467,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
         participantId: null,
         friendshipId: null,
         templateId: copy.templateId,
+        messageId: null,
         title: copy.title,
         message: copy.message,
         createdAt: Date.now(),
@@ -446,6 +477,35 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       notifyChallengeUpdate();
     },
     [userId, addNotification, notifyChallengeUpdate, refreshInbox],
+  );
+
+  const processSystemMessageChange = useCallback(
+    async (payload: SystemMessageChangePayload) => {
+      if (payload.eventType !== 'INSERT' || !isSystemMessageRow(payload.new)) {
+        return;
+      }
+
+      const row = payload.new;
+      const stableId = systemMessageNotificationId(row.id);
+
+      if (notificationsRef.current.some((notification) => notification.id === stableId)) {
+        void refreshInbox();
+        return;
+      }
+
+      const { buildSystemMessageNotification } = await import('@/services/systemMessageService');
+
+      addNotification(
+        buildSystemMessageNotification({
+          id: row.id,
+          title: row.title,
+          summary: row.summary ?? row.body.slice(0, 140),
+          publishedAt: row.published_at,
+        }),
+      );
+      notifyChallengeUpdate();
+    },
+    [addNotification, notifyChallengeUpdate, refreshInbox],
   );
 
   const handleParticipantChange = useCallback(
@@ -484,6 +544,18 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     [processWorkoutShareChange],
   );
 
+  const handleSystemMessageChange = useCallback(
+    (payload: SystemMessageChangePayload) => {
+      if (!isHydratedRef.current) {
+        pendingSystemMessageEventsRef.current.push(payload);
+        return;
+      }
+
+      void processSystemMessageChange(payload);
+    },
+    [processSystemMessageChange],
+  );
+
   useEffect(() => {
     if (!isHydrated) {
       return;
@@ -503,7 +575,18 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     queuedWorkoutShareEvents.forEach((payload) => {
       void processWorkoutShareChange(payload);
     });
-  }, [isHydrated, processParticipantChange, processFriendshipChange, processWorkoutShareChange]);
+
+    const queuedSystemMessageEvents = pendingSystemMessageEventsRef.current.splice(0);
+    queuedSystemMessageEvents.forEach((payload) => {
+      void processSystemMessageChange(payload);
+    });
+  }, [
+    isHydrated,
+    processParticipantChange,
+    processFriendshipChange,
+    processWorkoutShareChange,
+    processSystemMessageChange,
+  ]);
 
   const openNotification = useCallback(
     (notification: ChallengeNotification) => {
@@ -728,6 +811,63 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       void removeChannel?.();
     };
   }, [userId, workoutShareRealtimeKey, handleWorkoutShareChange, refreshInbox]);
+
+  useEffect(() => {
+    const isWebSSR = Platform.OS === 'web' && typeof window === 'undefined';
+    if (!userId || !env.isSupabaseConfigured || isWebSSR) {
+      return;
+    }
+
+    let cancelled = false;
+    let removeChannel: (() => Promise<void>) | undefined;
+
+    void (async () => {
+      const { supabase } = await import('@/lib/supabase');
+      if (cancelled) {
+        return;
+      }
+
+      const channel = supabase
+        .channel(`system-message-notifications:${userId}:${systemMessageRealtimeKey}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'system_messages',
+          },
+          (payload) => {
+            handleSystemMessageChange(payload);
+          },
+        )
+        .subscribe((status) => {
+          if (__DEV__) {
+            console.log('[notifications] system message realtime status:', status);
+          }
+
+          if (status === 'SUBSCRIBED') {
+            void refreshInbox();
+          }
+
+          if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+            setTimeout(() => {
+              if (!cancelled) {
+                setSystemMessageRealtimeKey((current) => current + 1);
+              }
+            }, 2000);
+          }
+        });
+
+      removeChannel = async () => {
+        await supabase.removeChannel(channel);
+      };
+    })();
+
+    return () => {
+      cancelled = true;
+      void removeChannel?.();
+    };
+  }, [userId, systemMessageRealtimeKey, handleSystemMessageChange, refreshInbox]);
 
   const value = useMemo(
     () => ({

@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppIcon } from '@/components/ui/AppIcon';
 import { Spacing } from '@/constants/theme';
 import { useNotifications } from '@/features/notifications/NotificationProvider';
+import { isSystemNotificationType } from '@/features/notifications/types';
 import { useTheme } from '@/hooks/use-theme';
 
 const TOP_BAR_HEIGHT = 60;
@@ -16,6 +17,8 @@ export function ChallengeNotificationBanner() {
   if (!bannerNotification) {
     return null;
   }
+
+  const iconName = isSystemNotificationType(bannerNotification.type) ? 'announcement' : 'bell';
 
   return (
     <View
@@ -30,7 +33,7 @@ export function ChallengeNotificationBanner() {
           { backgroundColor: theme.backgroundElement, borderColor: theme.primary },
         ])}>
         <View style={StyleSheet.flatten([styles.iconWrap, { backgroundColor: theme.backgroundSelected }])}>
-          <AppIcon name="bell" size={20} color={theme.primary} />
+          <AppIcon name={iconName} size={20} color={theme.primary} />
         </View>
 
         <View style={styles.copy}>

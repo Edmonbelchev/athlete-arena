@@ -282,6 +282,7 @@ export async function syncChallengeNotifications(
           participantId: challenge.participantId,
           friendshipId: null,
           templateId: null,
+          messageId: null,
           title: copy.title,
           message: copy.message,
           createdAt: challenge.createdAt ? new Date(challenge.createdAt).getTime() : Date.now(),

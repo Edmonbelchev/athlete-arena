@@ -33,6 +33,7 @@ export async function loadNotificationInbox(userId: string): Promise<ChallengeNo
         participantId: typeof item.participantId === 'string' ? item.participantId : null,
         friendshipId: typeof item.friendshipId === 'string' ? item.friendshipId : null,
         templateId: typeof item.templateId === 'string' ? item.templateId : null,
+        messageId: typeof item.messageId === 'string' ? item.messageId : null,
         title: item.title,
         message: item.message,
         createdAt: item.createdAt,
