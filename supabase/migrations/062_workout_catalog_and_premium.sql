@@ -2,7 +2,13 @@
 
 alter type public.custom_workout_type add value if not exists 'emom';
 
-create type public.workout_leaderboard_metric as enum ('most_rounds');
+do $$
+begin
+  create type public.workout_leaderboard_metric as enum ('most_rounds');
+exception
+  when duplicate_object then null;
+end;
+$$;
 
 create table if not exists public.workout_catalog (
   id uuid primary key default gen_random_uuid(),
@@ -58,12 +64,14 @@ alter table public.workout_catalog enable row level security;
 alter table public.workout_catalog_exercises enable row level security;
 alter table public.user_subscriptions enable row level security;
 
+drop policy if exists "Authenticated users can read active catalog workouts" on public.workout_catalog;
 create policy "Authenticated users can read active catalog workouts"
   on public.workout_catalog
   for select
   to authenticated
   using (is_active = true);
 
+drop policy if exists "Authenticated users can read catalog workout exercises" on public.workout_catalog_exercises;
 create policy "Authenticated users can read catalog workout exercises"
   on public.workout_catalog_exercises
   for select
@@ -77,6 +85,7 @@ create policy "Authenticated users can read catalog workout exercises"
     )
   );
 
+drop policy if exists "Users can read own subscription" on public.user_subscriptions;
 create policy "Users can read own subscription"
   on public.user_subscriptions
   for select
@@ -807,7 +816,7 @@ begin
       jsonb_build_object(
         'type', 'workout_shared',
         'templateId', p_template_id,
-        'url', '/workouts'
+        'url', '/(tabs)/workouts/library?templateId=' || p_template_id::text
       )
     );
   end if;
@@ -822,15 +831,18 @@ insert into public.workout_catalog (
   leaderboard_metric,
   sort_order
 )
-values
-  (
-    'Cindy AMRAP',
-    'CrossFit benchmark: 5 pull-ups, 10 push-ups, 15 squats. Ranked by completed rounds, then reps when rounds are tied.',
-    'amrap',
-    1200,
-    'most_rounds',
-    1
-  );
+select
+  'Cindy AMRAP',
+  'CrossFit benchmark: 5 pull-ups, 10 push-ups, 15 squats. Ranked by completed rounds, then reps when rounds are tied.',
+  'amrap',
+  1200,
+  'most_rounds'::public.workout_leaderboard_metric,
+  1
+where not exists (
+  select 1
+  from public.workout_catalog wc
+  where wc.title = 'Cindy AMRAP'
+);
 
 insert into public.workout_catalog_exercises (catalog_workout_id, sort_order, exercise_type, target_reps)
 select wc.id, exercise.sort_order, exercise.exercise_type, exercise.target_reps
@@ -841,7 +853,12 @@ cross join (
     (1, 'push_ups'::public.exercise_type, 10),
     (2, 'squats'::public.exercise_type, 15)
 ) as exercise(sort_order, exercise_type, target_reps)
-where wc.title = 'Cindy AMRAP';
+where wc.title = 'Cindy AMRAP'
+  and not exists (
+    select 1
+    from public.workout_catalog_exercises wce
+    where wce.catalog_workout_id = wc.id
+  );
 
 grant execute on function public.user_has_premium_access(uuid) to authenticated;
 grant execute on function public.get_my_premium_status() to authenticated;

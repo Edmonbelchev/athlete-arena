@@ -1,14 +1,20 @@
 # Athlete Arena
 
-Daily fitness challenges with pose-based rep counting, XP, streaks, and profiles. Built with Expo (SDK 57), React Native, and Supabase.
+Daily fitness challenges with pose-based rep counting, XP, streaks, friend races, and custom workouts. Built with Expo (SDK 57), React Native, and Supabase.
 
 ## Features
 
-- Register / login with persistent sessions
-- One random daily challenge (push-ups or squats)
-- Automatic rep counting via MediaPipe pose detection
-- XP, levels, and streak tracking
-- Profile stats and editable display name
+- **Auth** — Register / login with persistent sessions
+- **Daily missions** — Three quests per day with rep accumulation, tiered targets, and one reroll per day
+- **Pose rep counting** — MediaPipe pose detection for push-ups, squats, pull-ups, burpees
+- **Friend challenges** — Custom rep races and timed speed races
+- **Workouts**
+  - **Official** — Arena catalog (e.g. Cindy AMRAP) with leaderboards ranked by rounds, then reps
+  - **My library** — Premium users can create, save, and share custom AMRAP templates
+- **XP, levels, streaks, coins, shop, achievements**
+- **Leaderboards** — Global and friends (weekly + all-time)
+- **System messages** — Global announcements via inbox + push
+- **Push notifications** — Friend requests, races, shared workouts, system messages
 
 ## Quick start
 
@@ -24,8 +30,6 @@ npm install
 cp .env.example .env
 ```
 
-Set your Supabase project values:
-
 ```env
 EXPO_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 EXPO_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
@@ -33,17 +37,25 @@ EXPO_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 
 ### 3. Set up Supabase
 
-In the [Supabase SQL Editor](https://supabase.com/dashboard), run:
+**Recommended** — apply all migrations with the CLI:
 
-1. **`supabase/setup.sql`** - core tables and daily challenges
-2. **`supabase/migrations/004_friends.sql`** - friends + custom friend challenges
-3. **`supabase/migrations/005_friend_challenge_timer.sql`** - optional timed friend challenges
+```bash
+npx supabase login
+npx supabase link --project-ref YOUR_PROJECT_REF
+npx supabase db push
+```
 
-Verify with `supabase/verify.sql`. See [supabase/README.md](./supabase/README.md) for details.
+Latest migrations include daily mission reroll (`059`), rep tiers (`060`), system messages (`061`), workout catalog + premium (`062`), Cindy AMRAP leaderboard (`063`), and workout share push URL fix (`064`).
+
+For a fresh project you can still run `supabase/setup.sql` first, then `db push` for everything after the baseline. See [supabase/README.md](./supabase/README.md).
 
 ### 4. Download the pose model (native builds)
 
-Required for on-device pose detection in iOS/Android dev builds:
+```bash
+npm run download:model
+```
+
+Or manually:
 
 ```bash
 mkdir -p assets/models
@@ -53,29 +65,11 @@ curl -L -o assets/models/pose_landmarker_lite.task \
 
 ### 5. Run the app
 
-**Web** (auto rep counting works immediately):
-
 ```bash
-npm run web
-```
-
-**Expo Go** (camera preview + manual simulate rep - no native pose):
-
-```bash
-npm start
-```
-
-**Development build** (full native pose detection):
-
-```bash
-# Install EAS CLI once: npm i -g eas-cli
-eas login
-eas build --profile development --platform ios   # or android
-
-# Or build locally:
-npx expo prebuild
-npx expo run:ios    # requires Xcode
-npx expo run:android
+npm start          # Expo Go
+npm run web        # Web (full pose counting)
+npm run ios        # Requires prebuild
+npm run android
 ```
 
 ## Platform matrix
@@ -86,9 +80,60 @@ npx expo run:android
 | Expo Go | Yes | Manual simulate only |
 | Dev / prod build | Yes | Yes (Vision Camera + MediaPipe) |
 
-## Push notifications (TestFlight)
+## Workouts
 
-Remote push for friend requests and speed races is configured via Expo Push + Supabase Edge Functions. See **[supabase/PUSH_NOTIFICATIONS.md](./supabase/PUSH_NOTIFICATIONS.md)** for APNs credentials, migration `039`, edge function deploy, and webhook setup.
+The **Workouts** tab is a hub with two sections:
+
+| Section | Who | What |
+|---------|-----|------|
+| **Official workouts** | Everyone | Catalog workouts (Cindy AMRAP, etc.) with per-workout leaderboards |
+| **My workouts** | Premium | Custom templates you create and share with friends |
+
+**Cindy AMRAP** — 20 minutes, 5 pull-ups / 10 push-ups / 15 squats per round. Leaderboard ranks by completed rounds, then total reps when rounds tie.
+
+Session history is always **per user** (your runs only, even on shared templates).
+
+### Test premium (manual)
+
+```sql
+insert into user_subscriptions (user_id, status, provider, expires_at)
+select id, 'active', 'manual', '2099-01-01'::timestamptz
+from auth.users
+where email = 'you@example.com'
+on conflict (user_id) do update
+  set status = 'active', provider = 'manual', expires_at = excluded.expires_at;
+```
+
+Mobile IAP will use RevenueCat later; `user_subscriptions` is the source of truth for now.
+
+### Seed demo Cindy sessions
+
+To populate history and leaderboard UI for testing:
+
+```sql
+-- Paste and run supabase/seed_cindy_demo_sessions.sql in the SQL Editor
+```
+
+Seeds sample runs for `edmon.cekov@gmail.com` (and optional demo leaderboard users if they exist).
+
+## System messages
+
+Publish a global announcement (service role / SQL Editor):
+
+```sql
+select publish_system_message(
+  'Title',
+  'Short summary for inbox',
+  'Full body shown on the detail screen.',
+  true  -- send push
+);
+```
+
+## Push notifications
+
+Remote push uses Expo Push + Supabase Edge Functions. See **[supabase/PUSH_NOTIFICATIONS.md](./supabase/PUSH_NOTIFICATIONS.md)** for APNs credentials, migration `039`, edge function deploy, and webhook setup.
+
+Shared workout pushes deep-link to `/(tabs)/workouts/library?templateId=...`.
 
 After changing push config, create a **new iOS build** for TestFlight (`eas build --profile production --platform ios`).
 
@@ -96,43 +141,39 @@ After changing push config, create a **new iOS build** for TestFlight (`eas buil
 
 ```
 src/
-  app/              Expo Router screens
-  components/       UI + camera previews
-  features/         Auth, challenges, profile, pose engines
-  lib/              Supabase, env, MediaPipe web loader
+  app/              Expo Router screens (tabs, workouts hub, catalog detail)
+  components/       UI, camera previews, workout cards
+  features/         Auth, challenges, pose, premium, notifications
   services/         Supabase RPC wrappers
-supabase/           SQL migrations and setup
+  constants/        Theme, pose thresholds, workout config
+supabase/
+  migrations/       Incremental SQL (001–064+)
+  seed_*.sql        Optional dev seed scripts
 assets/models/      MediaPipe .task model (native builds)
 ```
 
 ## Pose detection tuning
 
-Thresholds live in `src/constants/poseDetection.ts`:
-
-- Push-up elbow angles (up / down / hysteresis)
-- Squat knee angles
-- Minimum landmark visibility
-- Hold frames before rep completion
-
-Rep logic is in `src/features/challenges/pose/`.
+Thresholds live in `src/constants/poseDetection.ts`. Rep logic is in `src/features/challenges/pose/`.
 
 ## EAS Build profiles
 
 | Profile | Purpose |
 |---------|---------|
-| `development` | Dev client with native modules (pose detection) |
+| `development` | Dev client with native modules |
 | `preview` | Internal testing |
-| `production` | App Store / Play Store release |
+| `production` | App Store / Play Store |
 
 Configure in [eas.json](./eas.json).
 
 ## Production checklist
 
-- [ ] Run `supabase/setup.sql` on production Supabase project
-- [ ] Configure auth email template + SMTP in Supabase Dashboard
-- [ ] Set production env vars in EAS secrets
-- [ ] Test pose detection on real devices (lighting, distance, angles)
-- [ ] Build with `eas build --profile production`
+- [ ] `npx supabase db push` on production project (through latest migration)
+- [ ] Auth email template + SMTP in Supabase Dashboard
+- [ ] Production env vars in EAS secrets
+- [ ] Push notification edge function + webhook deployed
+- [ ] Test pose detection on real devices
+- [ ] `eas build --profile production`
 
 ## Scripts
 
@@ -143,10 +184,11 @@ Configure in [eas.json](./eas.json).
 | `npm run ios` | iOS simulator (requires prebuild) |
 | `npm run android` | Android emulator (requires prebuild) |
 | `npm run lint` | ESLint |
+| `npm run download:model` | Fetch MediaPipe pose model |
 
 ## Tech stack
 
 - Expo SDK 57, Expo Router, TypeScript
-- Supabase (auth, Postgres, RLS, RPCs)
+- Supabase (auth, Postgres, RLS, RPCs, Realtime)
 - MediaPipe Pose Landmarker (web CDN + native dev build)
 - react-native-vision-camera (native dev builds)

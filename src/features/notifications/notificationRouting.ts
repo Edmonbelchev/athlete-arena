@@ -7,6 +7,20 @@ function readString(value: unknown): string | null {
   return typeof value === 'string' && value.length > 0 ? value : null;
 }
 
+function readTemplateIdFromWorkoutLibraryUrl(url: string): string | null {
+  const match = url.match(/\/workouts\/library\?templateId=([^&]+)/i);
+  if (match?.[1]) {
+    return decodeURIComponent(match[1]);
+  }
+
+  try {
+    const parsed = new URL(url, 'https://athlete-arena.app');
+    return parsed.searchParams.get('templateId');
+  } catch {
+    return null;
+  }
+}
+
 export function routeFromInboxNotification(notification: ChallengeNotification): void {
   if (isSystemNotificationType(notification.type) && notification.messageId) {
     router.push({
@@ -67,6 +81,15 @@ export function routeFromPushNotificationData(data: Record<string, unknown> | un
 
   const url = readString(data?.url);
   if (url) {
+    const templateIdFromUrl = readTemplateIdFromWorkoutLibraryUrl(url);
+    if (templateIdFromUrl) {
+      router.push({
+        pathname: '/(tabs)/workouts/library',
+        params: { templateId: templateIdFromUrl },
+      });
+      return;
+    }
+
     router.push(url as never);
     return;
   }
