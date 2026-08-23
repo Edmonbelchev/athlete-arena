@@ -18,7 +18,7 @@ export function routeFromInboxNotification(notification: ChallengeNotification):
 
   if (isWorkoutNotificationType(notification.type) && notification.templateId) {
     router.push({
-      pathname: '/(tabs)/workouts',
+      pathname: '/(tabs)/workouts/library',
       params: { templateId: notification.templateId },
     });
     return;
@@ -51,7 +51,7 @@ export function routeFromPushNotificationData(data: Record<string, unknown> | un
 
   if (type === 'workout_shared' && templateId) {
     router.push({
-      pathname: '/(tabs)/workouts',
+      pathname: '/(tabs)/workouts/library',
       params: { templateId },
     });
     return;

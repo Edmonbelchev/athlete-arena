@@ -185,6 +185,7 @@ export async function saveCustomWorkoutSession(result: AmrapWorkoutResult): Prom
 
   const { data, error } = await supabase.rpc('save_custom_workout_session', {
     p_template_id: result.templateId,
+    p_catalog_workout_id: result.catalogWorkoutId,
     p_title: result.title,
     p_time_limit_seconds: result.timeLimitSeconds,
     p_completed_rounds: result.completedRounds,

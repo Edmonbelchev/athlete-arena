@@ -241,6 +241,13 @@ function RootNavigator() {
               headerRight: () => <ModalCloseButton />,
             }}
           />
+          <Stack.Screen
+            name="workouts/catalog/[id]"
+            options={{
+              headerShown: true,
+              title: 'Official Workout',
+            }}
+          />
           <Stack.Screen name="reset-password" options={{ headerShown: false }} />
         </Stack.Protected>
 

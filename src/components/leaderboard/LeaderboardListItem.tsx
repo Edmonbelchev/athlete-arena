@@ -13,10 +13,18 @@ import { useTheme } from '@/hooks/use-theme';
 interface LeaderboardListItemProps {
   entry: LeaderboardEntry;
   xpLabel?: string;
+  scoreDisplay?: string;
+  scoreSubLabel?: string;
   onPress?: () => void;
 }
 
-export function LeaderboardListItem({ entry, xpLabel = 'XP', onPress }: LeaderboardListItemProps) {
+export function LeaderboardListItem({
+  entry,
+  xpLabel = 'XP',
+  scoreDisplay,
+  scoreSubLabel,
+  onPress,
+}: LeaderboardListItemProps) {
   const theme = useTheme();
   const displayName = entry.displayName ?? entry.username;
   const rankAccent = getRankAccentColor(entry.rank);
@@ -78,9 +86,20 @@ export function LeaderboardListItem({ entry, xpLabel = 'XP', onPress }: Leaderbo
       </View>
 
       <View style={[styles.xpBlock, { backgroundColor: isTopTen ? `${theme.xp}14` : theme.backgroundSelected }]}>
-        <AppIcon name="bolt" size={13} color={theme.xp} weight="bold" />
-        <Text style={[styles.xpValue, { color: theme.text }]}>{entry.xpAmount.toLocaleString()}</Text>
-        <Text style={[styles.xpLabel, { color: theme.textSecondary }]}>{xpLabel}</Text>
+        {scoreDisplay ? (
+          <>
+            <Text style={[styles.xpValue, { color: theme.text }]}>{scoreDisplay}</Text>
+            {scoreSubLabel ? (
+              <Text style={[styles.xpLabel, { color: theme.textSecondary }]}>{scoreSubLabel}</Text>
+            ) : null}
+          </>
+        ) : (
+          <>
+            <AppIcon name="bolt" size={13} color={theme.xp} weight="bold" />
+            <Text style={[styles.xpValue, { color: theme.text }]}>{entry.xpAmount.toLocaleString()}</Text>
+            <Text style={[styles.xpLabel, { color: theme.textSecondary }]}>{xpLabel}</Text>
+          </>
+        )}
       </View>
     </Pressable>
   );

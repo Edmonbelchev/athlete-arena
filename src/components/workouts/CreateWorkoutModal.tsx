@@ -177,6 +177,7 @@ export function CreateWorkoutModal({
       workoutType,
       title: title.trim(),
       templateId: savedTemplateId,
+      catalogWorkoutId: null,
       timeLimitSeconds,
       exercises: cloneCustomWorkoutExercises(exercises),
     };

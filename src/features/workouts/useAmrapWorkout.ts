@@ -35,6 +35,7 @@ export function useAmrapWorkout({ config, onComplete }: UseAmrapWorkoutOptions) 
       workoutType: 'amrap',
       title: config.title,
       templateId: config.templateId,
+      catalogWorkoutId: config.catalogWorkoutId,
       timeLimitSeconds: config.timeLimitSeconds,
       completedRounds: snapshotRef.current.completedRounds,
       totalReps: snapshotRef.current.totalReps,
@@ -42,7 +43,7 @@ export function useAmrapWorkout({ config, onComplete }: UseAmrapWorkoutOptions) 
       startedAt,
       completedAt: new Date().toISOString(),
     };
-  }, [completed, config.templateId, config.timeLimitSeconds, config.title, exercises, startedAt]);
+  }, [completed, config.catalogWorkoutId, config.templateId, config.timeLimitSeconds, config.title, exercises, startedAt]);
 
   const finishWorkout = useCallback(() => {
     if (completedRef.current || !startedAt) {
@@ -56,6 +57,7 @@ export function useAmrapWorkout({ config, onComplete }: UseAmrapWorkoutOptions) 
       workoutType: 'amrap',
       title: config.title,
       templateId: config.templateId,
+      catalogWorkoutId: config.catalogWorkoutId,
       timeLimitSeconds: config.timeLimitSeconds,
       completedRounds: snapshotRef.current.completedRounds,
       totalReps: snapshotRef.current.totalReps,
@@ -65,7 +67,7 @@ export function useAmrapWorkout({ config, onComplete }: UseAmrapWorkoutOptions) 
     };
 
     onComplete?.(finalResult);
-  }, [config.templateId, config.timeLimitSeconds, config.title, exercises, onComplete, startedAt]);
+  }, [config.catalogWorkoutId, config.templateId, config.timeLimitSeconds, config.title, exercises, onComplete, startedAt]);
 
   const startWorkout = useCallback(() => {
     if (startedAt) {

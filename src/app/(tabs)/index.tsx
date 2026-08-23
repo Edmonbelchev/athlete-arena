@@ -282,8 +282,8 @@ export default function HomeScreen() {
               onPress={() => router.push('/(tabs)/challenges')}
             />
             <HomeLinkBlock
-              title="Create Workout"
-              description="Build workouts and save templates"
+              title="Workouts"
+              description="Official benchmarks and your personal library"
               icon="dumbbell"
               accentColor={theme.success}
               onPress={() => router.push('/(tabs)/workouts')}

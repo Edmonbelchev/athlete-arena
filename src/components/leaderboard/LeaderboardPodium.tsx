@@ -13,6 +13,8 @@ import { useTheme } from '@/hooks/use-theme';
 interface LeaderboardPodiumProps {
   entries: LeaderboardEntry[];
   period: LeaderboardPeriod;
+  scoreLabel?: string;
+  scoreDisplays?: Record<string, { value: string; subLabel?: string }>;
   onPress?: (entry: LeaderboardEntry) => void;
 }
 
@@ -29,9 +31,9 @@ const PODIUM_LAYOUT: Array<Omit<PodiumSlot, 'entry'>> = [
   { place: 3, pedestalHeight: 68, accentColor: '#D97706' },
 ];
 
-export function LeaderboardPodium({ entries, period, onPress }: LeaderboardPodiumProps) {
+export function LeaderboardPodium({ entries, period, scoreLabel, scoreDisplays, onPress }: LeaderboardPodiumProps) {
   const theme = useTheme();
-  const xpLabel = getLeaderboardXpLabel(period);
+  const xpLabel = scoreLabel ?? getLeaderboardXpLabel(period);
 
   const slots: PodiumSlot[] = PODIUM_LAYOUT.map((slot) => ({
     ...slot,
@@ -71,6 +73,7 @@ export function LeaderboardPodium({ entries, period, onPress }: LeaderboardPodiu
 
           const displayName = entry.displayName ?? entry.username;
           const avatarSize = place === 1 ? 72 : 58;
+          const customScore = scoreDisplays?.[entry.userId];
 
           return (
             <Pressable
@@ -130,12 +133,20 @@ export function LeaderboardPodium({ entries, period, onPress }: LeaderboardPodiu
               )}
 
               <View style={[styles.xpPill, { backgroundColor: `${accentColor}18` }]}>
-                <AppIcon name="bolt" size={12} color={accentColor} weight="bold" />
-                <Text style={[styles.xpValue, { color: accentColor }]}>
-                  {entry.xpAmount.toLocaleString()}
-                </Text>
+                {customScore ? (
+                  <Text style={[styles.xpValue, { color: accentColor }]}>{customScore.value}</Text>
+                ) : (
+                  <>
+                    <AppIcon name="bolt" size={12} color={accentColor} weight="bold" />
+                    <Text style={[styles.xpValue, { color: accentColor }]}>
+                      {entry.xpAmount.toLocaleString()}
+                    </Text>
+                  </>
+                )}
               </View>
-              <Text style={[styles.xpLabel, { color: theme.textSecondary }]}>{xpLabel}</Text>
+              <Text style={[styles.xpLabel, { color: theme.textSecondary }]}>
+                {customScore?.subLabel ?? xpLabel}
+              </Text>
 
               <View style={styles.pedestalStack}>
                 <View

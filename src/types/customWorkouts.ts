@@ -1,7 +1,7 @@
 import type { ExerciseType } from '@/constants/challenges';
 
 /** Supported custom workout styles. Extend as new modes ship. */
-export type CustomWorkoutType = 'amrap';
+export type CustomWorkoutType = 'amrap' | 'emom';
 
 export interface CustomWorkoutExercise {
   exerciseType: ExerciseType;
@@ -48,6 +48,7 @@ export interface AmrapWorkoutResult {
   workoutType: 'amrap';
   title: string;
   templateId: string | null;
+  catalogWorkoutId: string | null;
   timeLimitSeconds: number;
   completedRounds: number;
   totalReps: number;
@@ -60,6 +61,7 @@ export interface CustomWorkoutLaunchConfig {
   workoutType: CustomWorkoutType;
   title: string;
   templateId: string | null;
+  catalogWorkoutId: string | null;
   timeLimitSeconds: number;
   exercises: CustomWorkoutExercise[];
 }

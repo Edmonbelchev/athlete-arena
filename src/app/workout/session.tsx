@@ -37,7 +37,7 @@ function AmrapWorkoutSession({ config }: { config: CustomWorkoutLaunchConfig }) 
   const { preferences } = useUserSettings();
   const { refresh: refreshProfile } = useProfile();
   const { refreshMissionsAndCelebrate } = useMissionComplete();
-  const sessionKey = config.templateId ?? `${config.workoutType}:${config.title}`;
+  const sessionKey = config.catalogWorkoutId ?? config.templateId ?? `${config.workoutType}:${config.title}`;
   const { workoutStarted, startWorkout: markWorkoutStarted } = useWorkoutSession(
     `custom-${config.workoutType}`,
     sessionKey,

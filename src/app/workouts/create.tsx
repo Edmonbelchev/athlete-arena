@@ -7,8 +7,8 @@ export default function CreateWorkoutRedirect() {
     <Redirect
       href={
         templateId
-          ? { pathname: '/(tabs)/workouts', params: { editTemplateId: templateId } }
-          : '/(tabs)/workouts'
+          ? { pathname: '/(tabs)/workouts/library', params: { editTemplateId: templateId } }
+          : '/(tabs)/workouts/library'
       }
     />
   );
