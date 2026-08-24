@@ -13,6 +13,7 @@ import { PullUpRepEngine } from './pose/pullUpRepEngine';
 import { PushUpRepEngine } from './pose/pushUpRepEngine';
 import { SquatRepEngine } from './pose/squatRepEngine';
 import { getBurpeeStanceHint } from './pose/burpeePosture';
+import { getHalfBurpeeStanceHint } from './pose/halfBurpeePosture';
 import { PoseQualityGate, type PoseQualityResult, type PoseTrackingStatus } from './pose/poseQuality';
 import {
   resolveBurpeeTrackingStatus,
@@ -63,6 +64,8 @@ function resolveExerciseTrackingStatus(
       return resolveSquatTrackingStatus(quality, (engine as SquatRepEngine).armed);
     case 'burpees':
       return resolveBurpeeTrackingStatus(quality);
+    case 'half_burpees':
+      return resolveBurpeeTrackingStatus(quality);
     default:
       return quality.status;
   }
@@ -106,6 +109,10 @@ function getExerciseFormMessage(
     case 'burpees': {
       const burpeeHint = getBurpeeStanceHint(landmarks);
       return burpeeHint ?? quality.message;
+    }
+    case 'half_burpees': {
+      const halfBurpeeHint = getHalfBurpeeStanceHint(landmarks);
+      return halfBurpeeHint ?? quality.message;
     }
     default:
       return quality.message;

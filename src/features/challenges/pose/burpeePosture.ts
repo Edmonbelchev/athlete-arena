@@ -135,7 +135,7 @@ function isSideViewOnFloor(landmarks: PoseLandmark[]): boolean {
 }
 
 /** Standing bend with straight legs and hands on the floor — not a kickback. */
-function isBurpeeStandingBendFront(landmarks: PoseLandmark[]): boolean {
+export function isBurpeeStandingBendFront(landmarks: PoseLandmark[]): boolean {
   if (!areHandsOnFloor(landmarks) || isFrontViewPushUpPlank(landmarks)) {
     return false;
   }
@@ -160,7 +160,7 @@ function isBurpeeStandingBendFront(landmarks: PoseLandmark[]): boolean {
 }
 
 /** Kickback torso geometry while facing the camera. */
-function hasFrontKickbackTorso(landmarks: PoseLandmark[]): boolean {
+export function hasFrontKickbackTorso(landmarks: PoseLandmark[]): boolean {
   const shoulderY = getAverageShoulderY(landmarks);
   const hipY = getAverageHipY(landmarks);
   const wristY = getAverageWristY(landmarks);

@@ -36,7 +36,7 @@ export function getRepCycleProgress(
     }
   }
 
-  if (exerciseType === 'burpees') {
+  if (exerciseType === 'burpees' || exerciseType === 'half_burpees') {
     switch (phase) {
       case 'STANDING':
         return 0.05;

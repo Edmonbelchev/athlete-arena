@@ -1,4 +1,4 @@
-export const EXERCISE_TYPES = ['push_ups', 'squats', 'pull_ups', 'burpees'] as const;
+export const EXERCISE_TYPES = ['push_ups', 'squats', 'pull_ups', 'burpees', 'half_burpees'] as const;
 
 export type ExerciseType = (typeof EXERCISE_TYPES)[number];
 
@@ -28,6 +28,7 @@ export const CHALLENGE_CONFIG: Record<ExerciseType, readonly ChallengeTier[]> = 
   squats: [{ reps: 20 }, { reps: 30 }, { reps: 40 }, { reps: 50 }],
   pull_ups: [{ reps: 10 }, { reps: 15 }, { reps: 20 }, { reps: 30 }],
   burpees: [{ reps: 10 }, { reps: 15 }, { reps: 20 }, { reps: 30 }],
+  half_burpees: [{ reps: 10 }, { reps: 15 }, { reps: 20 }, { reps: 30 }],
 } as const;
 
 export const EXERCISE_LABELS: Record<DisplayExerciseType, string> = {
@@ -35,6 +36,7 @@ export const EXERCISE_LABELS: Record<DisplayExerciseType, string> = {
   squats: 'Squats',
   pull_ups: 'Pull-ups',
   burpees: 'Burpees',
+  half_burpees: 'Half Burpees',
   dips: 'Dips',
 };
 

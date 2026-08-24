@@ -25,6 +25,10 @@ export const DAILY_MISSION_QUEST: Partial<Record<ExerciseType, DailyMissionQuest
     questTitle: 'Burpee Blitz',
     objectiveVerb: 'Complete',
   },
+  half_burpees: {
+    questTitle: 'Half Burpee Hustle',
+    objectiveVerb: 'Complete',
+  },
 };
 
 export function getDailyMissionQuestMeta(exerciseType: ExerciseType): DailyMissionQuestMeta {

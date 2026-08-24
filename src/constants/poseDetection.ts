@@ -277,4 +277,12 @@ export const POSE_GUIDANCE: Record<ExerciseType, { title: string; tips: readonly
       'Stand back up and jump to finish each rep',
     ],
   },
+  half_burpees: {
+    title: 'Half burpee setup',
+    tips: [
+      'Prop your phone in portrait and keep your full body in frame',
+      'Drop to a plank with arms extended - no push-up required',
+      'Stand back up and jump to finish each rep',
+    ],
+  },
 };

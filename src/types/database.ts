@@ -6,7 +6,7 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[];
 
-export type ExerciseType = 'push_ups' | 'squats' | 'pull_ups' | 'dips' | 'burpees';
+export type ExerciseType = 'push_ups' | 'squats' | 'pull_ups' | 'dips' | 'burpees' | 'half_burpees';
 export type ChallengeStatus = 'pending' | 'in_progress' | 'completed' | 'declined' | 'expired';
 export type FriendshipStatus = 'pending' | 'accepted' | 'declined';
 export type SpinRarity = 'common' | 'rare' | 'epic' | 'legendary';
@@ -1111,6 +1111,7 @@ export interface Database {
           total_pull_ups: number;
           total_dips: number;
           total_burpees: number;
+          total_half_burpees: number;
           total_steps: number;
           total_run_km: number;
           total_run_mi: number;

@@ -159,7 +159,7 @@ function getTrackingIndices(exerciseType: ExerciseType): number[] {
     ];
   }
 
-  if (exerciseType === 'burpees') {
+  if (exerciseType === 'burpees' || exerciseType === 'half_burpees') {
     return [
       PoseLandmarkIndex.LEFT_SHOULDER,
       PoseLandmarkIndex.RIGHT_SHOULDER,
@@ -288,7 +288,7 @@ function checkRequiredLandmarks(
     return { ok: true, message: null };
   }
 
-  if (exerciseType === 'burpees') {
+  if (exerciseType === 'burpees' || exerciseType === 'half_burpees') {
     if (!hasBurpeeTrackingLandmarks(landmarks)) {
       return {
         ok: false,

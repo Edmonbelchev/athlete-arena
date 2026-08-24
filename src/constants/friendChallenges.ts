@@ -6,6 +6,7 @@ export const FRIEND_CHALLENGE_REP_PRESETS: Record<ExerciseType, readonly number[
   squats: [10, 15, 20, 25, 30, 40, 50],
   pull_ups: [3, 5, 8, 10, 12, 15],
   burpees: [3, 5, 8, 10, 12, 15],
+  half_burpees: [3, 5, 8, 10, 12, 15],
 } as const;
 
 export const FRIEND_CHALLENGE_REP_MIN = 1;

@@ -158,6 +158,17 @@ export function getRepPhaseHint(exerciseType: ExerciseType, phase: ExercisePhase
         return 'Stand up and jump to finish the rep';
       }
       return 'Stand tall to start the rep';
+    case 'half_burpees':
+      if (phase === 'DROP') {
+        return 'Drop down to a plank';
+      }
+      if (phase === 'FLOOR') {
+        return 'Hold the plank with arms extended';
+      }
+      if (phase === 'JUMP') {
+        return 'Stand up and jump to finish the rep';
+      }
+      return 'Stand tall to start the rep';
     default:
       return null;
   }

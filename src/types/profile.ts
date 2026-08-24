@@ -5,6 +5,7 @@ export interface ProfileStats {
   totalPullUps: number;
   totalDips: number;
   totalBurpees: number;
+  totalHalfBurpees: number;
 }
 
 export interface UpdateProfileInput {
