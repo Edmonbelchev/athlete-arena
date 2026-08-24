@@ -255,7 +255,7 @@ export default function FriendChallengeScreen() {
   });
 
   const autoRepCounting = Platform.OS === 'web' || supportsNativePoseDetection();
-  const showSimulateButton = canAttempt && !autoRepCounting;
+  const showSimulateButton = !__DEV__ && canAttempt && !autoRepCounting;
 
   function handleCameraReady() {
     repCounter.start();
@@ -358,6 +358,9 @@ export default function FriendChallengeScreen() {
             ) : null
           }
           footer={workoutFooter}
+          onDevSimulateRep={repCounter.simulateRep}
+          devSimulateDisabled={repCounter.isComplete || isSyncing}
+          devSimulateLoading={isSyncing}
         />
     );
   }

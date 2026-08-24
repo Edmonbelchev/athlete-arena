@@ -1,7 +1,12 @@
 import { router } from 'expo-router';
 
 import type { ChallengeNotification } from '@/features/notifications/types';
-import { isChallengeNotificationType, isSystemNotificationType, isWorkoutNotificationType } from '@/features/notifications/types';
+import {
+  isChallengeNotificationType,
+  isSystemNotificationType,
+  isWorkoutNotificationType,
+  type NotificationInboxTab,
+} from '@/features/notifications/types';
 
 function readString(value: unknown): string | null {
   return typeof value === 'string' && value.length > 0 ? value : null;
@@ -19,6 +24,42 @@ function readTemplateIdFromWorkoutLibraryUrl(url: string): string | null {
   } catch {
     return null;
   }
+}
+
+function readSystemMessageIdFromUrl(url: string): string | null {
+  const match = url.match(/\/system-message\/([^/?#]+)/i);
+  return match?.[1] ?? null;
+}
+
+function readNotificationsTabFromUrl(url: string): NotificationInboxTab | null {
+  try {
+    const parsed = new URL(url, 'https://athlete-arena.app');
+    if (!parsed.pathname.includes('/notifications')) {
+      return null;
+    }
+
+    const tab = parsed.searchParams.get('tab');
+    if (tab === 'system' || tab === 'activity') {
+      return tab;
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
+}
+
+export function routeToNotificationsInbox(
+  tab: NotificationInboxTab,
+  options?: { messageId?: string | null },
+): void {
+  router.push({
+    pathname: '/(tabs)/notifications',
+    params: {
+      tab,
+      ...(options?.messageId ? { messageId: options.messageId } : {}),
+    },
+  });
 }
 
 export function routeFromInboxNotification(notification: ChallengeNotification): void {
@@ -46,7 +87,7 @@ export function routeFromInboxNotification(notification: ChallengeNotification):
     return;
   }
 
-  router.push('/(tabs)/friends');
+  routeToNotificationsInbox('activity');
 }
 
 export function routeFromPushNotificationData(data: Record<string, unknown> | undefined): void {
@@ -55,11 +96,13 @@ export function routeFromPushNotificationData(data: Record<string, unknown> | un
   const templateId = readString(data?.templateId);
   const messageId = readString(data?.messageId);
 
-  if (type === 'system_message' && messageId) {
-    router.push({
-      pathname: '/system-message/[id]',
-      params: { id: messageId },
-    });
+  if (type === 'system_message') {
+    routeToNotificationsInbox('system', { messageId });
+    return;
+  }
+
+  if (type === 'friend_request_received' || type === 'friend_request_accepted') {
+    routeToNotificationsInbox('activity');
     return;
   }
 
@@ -81,6 +124,18 @@ export function routeFromPushNotificationData(data: Record<string, unknown> | un
 
   const url = readString(data?.url);
   if (url) {
+    const systemMessageId = readSystemMessageIdFromUrl(url);
+    if (systemMessageId) {
+      routeToNotificationsInbox('system', { messageId: systemMessageId });
+      return;
+    }
+
+    const notificationsTab = readNotificationsTabFromUrl(url);
+    if (notificationsTab) {
+      routeToNotificationsInbox(notificationsTab);
+      return;
+    }
+
     const templateIdFromUrl = readTemplateIdFromWorkoutLibraryUrl(url);
     if (templateIdFromUrl) {
       router.push({
@@ -94,5 +149,5 @@ export function routeFromPushNotificationData(data: Record<string, unknown> | un
     return;
   }
 
-  router.push('/(tabs)/friends');
+  routeToNotificationsInbox('activity');
 }

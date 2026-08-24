@@ -9,6 +9,7 @@ import { ChallengeRepHud, type ChallengeRepHudRaceTimer } from '@/components/cha
 import { WorkoutGuideAnimation } from '@/components/challenges/WorkoutGuideAnimation';
 import { WorkoutHintPanel } from '@/components/challenges/WorkoutHintPanel';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
+import { DevSimulateRepButton } from '@/dev/DevSimulateRepButton';
 import type { ExerciseType } from '@/constants/challenges';
 import { Spacing } from '@/constants/theme';
 import type { ExercisePhase } from '@/features/challenges/poseDetection.types';
@@ -37,6 +38,9 @@ interface ChallengeWorkoutModeProps {
   raceTimer?: ChallengeRepHudRaceTimer | null;
   footer?: ReactNode;
   hudOverlay?: ReactNode;
+  onDevSimulateRep?: () => void;
+  devSimulateDisabled?: boolean;
+  devSimulateLoading?: boolean;
 }
 
 export function ChallengeWorkoutMode({
@@ -57,6 +61,9 @@ export function ChallengeWorkoutMode({
   raceTimer = null,
   footer,
   hudOverlay,
+  onDevSimulateRep,
+  devSimulateDisabled,
+  devSimulateLoading,
 }: ChallengeWorkoutModeProps) {
   const theme = useTheme();
   const showCompletionOnly = completed && Boolean(completeOverlay);
@@ -140,8 +147,17 @@ export function ChallengeWorkoutMode({
         </View>
       </View>
 
-      {footer ? (
-        <View style={StyleSheet.flatten([styles.footer, { backgroundColor: theme.background }])}>{footer}</View>
+      {footer || onDevSimulateRep ? (
+        <View style={StyleSheet.flatten([styles.footer, { backgroundColor: theme.background }])}>
+          {onDevSimulateRep ? (
+            <DevSimulateRepButton
+              onPress={onDevSimulateRep}
+              disabled={devSimulateDisabled}
+              loading={devSimulateLoading}
+            />
+          ) : null}
+          {footer}
+        </View>
       ) : null}
     </SafeAreaView>
   );

@@ -155,7 +155,7 @@ export default function ChallengeScreen() {
   });
 
   const autoRepCounting = Platform.OS === 'web' || supportsNativePoseDetection();
-  const showSimulateButton = !isCompleted && !autoRepCounting;
+  const showSimulateButton = !__DEV__ && !isCompleted && !autoRepCounting;
   const earnedXp = challenge && isCompleted ? DAILY_MISSION_XP_REWARD : 0;
   const earnedCoins = challenge && isCompleted ? DAILY_MISSION_COIN_REWARD : 0;
 
@@ -237,6 +237,9 @@ export default function ChallengeScreen() {
           ) : null
         }
         footer={workoutFooter}
+        onDevSimulateRep={repCounter.simulateRep}
+        devSimulateDisabled={repCounter.isComplete || isSyncing}
+        devSimulateLoading={isSyncing}
       />
     );
   }

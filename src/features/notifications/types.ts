@@ -50,6 +50,24 @@ export function isSystemNotificationType(type: InboxNotificationType): type is S
   return type === 'system_message';
 }
 
+export type NotificationInboxTab = 'activity' | 'system';
+
+export function getNotificationInboxTab(type: InboxNotificationType): NotificationInboxTab {
+  return isSystemNotificationType(type) ? 'system' : 'activity';
+}
+
+export function filterNotificationsByTab(
+  notifications: ChallengeNotification[],
+  tab: NotificationInboxTab,
+): ChallengeNotification[] {
+  return notifications.filter((notification) => getNotificationInboxTab(notification.type) === tab);
+}
+
+export function parseNotificationInboxTab(value: string | string[] | undefined): NotificationInboxTab {
+  const raw = Array.isArray(value) ? value[0] : value;
+  return raw === 'system' ? 'system' : 'activity';
+}
+
 export function systemMessageNotificationId(messageId: string): string {
   return `system_message-${messageId}`;
 }

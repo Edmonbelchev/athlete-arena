@@ -110,7 +110,7 @@ function AmrapWorkoutSession({ config }: { config: CustomWorkoutLaunchConfig }) 
   });
 
   const autoRepCounting = Platform.OS === 'web' || supportsNativePoseDetection();
-  const showSimulateButton = canTrack && !autoRepCounting;
+  const showSimulateButton = !__DEV__ && canTrack && !autoRepCounting;
 
   useRepFeedback(amrap.currentExerciseReps, {
     enabled: canTrack,
@@ -184,6 +184,7 @@ function AmrapWorkoutSession({ config }: { config: CustomWorkoutLaunchConfig }) 
             <PrimaryButton label="+ Simulate Rep" variant="secondary" onPress={amrap.registerRep} />
           ) : undefined
         }
+        onDevSimulateRep={amrap.registerRep}
       />
     );
   }

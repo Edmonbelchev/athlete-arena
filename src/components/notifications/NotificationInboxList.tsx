@@ -5,10 +5,19 @@ import { AppIcon } from '@/components/ui/AppIcon';
 import { Radius, Spacing } from '@/constants/theme';
 import { useNotifications } from '@/features/notifications/NotificationProvider';
 import type { ChallengeNotification } from '@/features/notifications/types';
-import { isSystemNotificationType } from '@/features/notifications/types';
+import {
+  filterNotificationsByTab,
+  isSystemNotificationType,
+  type NotificationInboxTab,
+} from '@/features/notifications/types';
 import { useTheme } from '@/hooks/use-theme';
 
 const PAGE_SIZE = 5;
+
+const EMPTY_MESSAGES: Record<NotificationInboxTab, string> = {
+  activity: 'No notifications yet. Friend updates, challenge invites, and shared workouts will show up here.',
+  system: 'No system messages yet. Announcements and updates from the Athlete Arena team will show up here.',
+};
 
 function formatRelativeTime(timestamp: number): string {
   const diffSeconds = Math.max(0, Math.floor((Date.now() - timestamp) / 1000));
@@ -32,22 +41,26 @@ function formatRelativeTime(timestamp: number): string {
 }
 
 interface NotificationInboxListProps {
+  tab: NotificationInboxTab;
   showMarkAll?: boolean;
   scrollable?: boolean;
 }
 
-export function NotificationInboxList({ showMarkAll = true, scrollable = true }: NotificationInboxListProps) {
+export function NotificationInboxList({ tab, showMarkAll = true, scrollable = true }: NotificationInboxListProps) {
   const theme = useTheme();
-  const { notifications, unreadCount, markAllAsRead, openNotification } = useNotifications();
+  const { notifications, markAllAsRead, openNotification } = useNotifications();
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+
+  const tabNotifications = filterNotificationsByTab(notifications, tab);
+  const tabUnreadCount = tabNotifications.filter((notification) => !notification.read).length;
 
   useEffect(() => {
     setVisibleCount(PAGE_SIZE);
-  }, [notifications.length]);
+  }, [tabNotifications.length, tab]);
 
-  const visibleNotifications = notifications.slice(0, visibleCount);
-  const hasMore = notifications.length > visibleCount;
-  const remainingCount = notifications.length - visibleCount;
+  const visibleNotifications = tabNotifications.slice(0, visibleCount);
+  const hasMore = tabNotifications.length > visibleCount;
+  const remainingCount = tabNotifications.length - visibleCount;
 
   const listContent = (
     <>
@@ -77,17 +90,17 @@ export function NotificationInboxList({ showMarkAll = true, scrollable = true }:
 
   return (
     <View style={styles.container}>
-      {showMarkAll && unreadCount > 0 ? (
-        <Pressable onPress={markAllAsRead} style={styles.markAllButton}>
+      {showMarkAll && tabUnreadCount > 0 ? (
+        <Pressable onPress={() => markAllAsRead(tab)} style={styles.markAllButton}>
           <Text style={StyleSheet.flatten([styles.markAllText, { color: theme.primary }])}>
             Mark all as read
           </Text>
         </Pressable>
       ) : null}
 
-      {notifications.length === 0 ? (
+      {tabNotifications.length === 0 ? (
         <Text style={StyleSheet.flatten([styles.empty, { color: theme.textSecondary }])}>
-          No notifications yet. Friend updates, shared workouts, and system announcements will show up here.
+          {EMPTY_MESSAGES[tab]}
         </Text>
       ) : scrollable ? (
         <ScrollView contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>

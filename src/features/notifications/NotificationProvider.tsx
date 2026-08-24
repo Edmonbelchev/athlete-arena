@@ -22,12 +22,14 @@ import {
   getChallengeNotificationTypeFromChange,
   getFriendNotificationTypeFromChange,
   getWorkoutShareNotificationTypeFromChange,
+  filterNotificationsByTab,
   isFriendshipRow,
   isParticipantRow,
   isSystemMessageRow,
   isWorkoutShareRow,
   systemMessageNotificationId,
   type ChallengeNotification,
+  type NotificationInboxTab,
   workoutShareNotificationId,
 } from '@/features/notifications/types';
 import { env } from '@/lib/env';
@@ -38,7 +40,7 @@ interface NotificationContextValue {
   bannerNotification: ChallengeNotification | null;
   dismissBanner: () => void;
   markAsRead: (id: string) => void;
-  markAllAsRead: () => void;
+  markAllAsRead: (tab?: NotificationInboxTab) => void;
   openNotification: (notification: ChallengeNotification) => void;
   subscribeToChallengeUpdates: (listener: () => void) => () => void;
   refreshInbox: () => Promise<void>;
@@ -251,22 +253,35 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     return () => clearTimeout(timeout);
   }, [bannerNotification, dismissBanner]);
 
-  const markAllAsRead = useCallback(() => {
-    const unreadSystemMessageIds = notificationsRef.current
-      .filter(
-        (notification) =>
-          notification.type === 'system_message' && notification.messageId && !notification.read,
-      )
-      .map((notification) => notification.messageId!);
+  const markAllAsRead = useCallback(
+    (tab?: NotificationInboxTab) => {
+      const targetNotifications = tab
+        ? filterNotificationsByTab(notificationsRef.current, tab)
+        : notificationsRef.current;
 
-    updateNotifications((current) => current.map((notification) => ({ ...notification, read: true })));
+      const unreadSystemMessageIds = targetNotifications
+        .filter(
+          (notification) =>
+            notification.type === 'system_message' && notification.messageId && !notification.read,
+        )
+        .map((notification) => notification.messageId!);
 
-    if (unreadSystemMessageIds.length > 0) {
-      void import('@/services/systemMessageService').then(({ markSystemMessageRead }) =>
-        Promise.all(unreadSystemMessageIds.map((messageId) => markSystemMessageRead(messageId))),
+      const targetIds = new Set(targetNotifications.map((notification) => notification.id));
+
+      updateNotifications((current) =>
+        current.map((notification) =>
+          targetIds.has(notification.id) ? { ...notification, read: true } : notification,
+        ),
       );
-    }
-  }, [updateNotifications]);
+
+      if (unreadSystemMessageIds.length > 0) {
+        void import('@/services/systemMessageService').then(({ markSystemMessageRead }) =>
+          Promise.all(unreadSystemMessageIds.map((messageId) => markSystemMessageRead(messageId))),
+        );
+      }
+    },
+    [updateNotifications],
+  );
 
   const notifyChallengeUpdate = useCallback(() => {
     listenersRef.current.forEach((listener) => listener());

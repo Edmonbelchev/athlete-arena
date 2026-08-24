@@ -9,6 +9,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
+import { StyleSheet, View } from 'react-native';
 
 import {
   MissionCompleteToast,
@@ -114,13 +115,21 @@ export function MissionCompleteProvider({ children }: { children: ReactNode }) {
 
   return (
     <MissionCompleteContext.Provider value={value}>
-      {children}
-      {activeMission ? (
-        <MissionCompleteToast mission={activeMission} onDismiss={dismissActiveMission} onPress={handlePress} />
-      ) : null}
+      <View style={styles.root} pointerEvents="box-none">
+        {children}
+        {activeMission ? (
+          <MissionCompleteToast mission={activeMission} onDismiss={dismissActiveMission} onPress={handlePress} />
+        ) : null}
+      </View>
     </MissionCompleteContext.Provider>
   );
 }
+
+const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+  },
+});
 
 export function useMissionComplete(): MissionCompleteContextValue {
   const context = useContext(MissionCompleteContext);
