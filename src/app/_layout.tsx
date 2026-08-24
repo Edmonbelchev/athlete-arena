@@ -8,6 +8,8 @@ import { ActivityIndicator, Platform, StyleSheet, View } from 'react-native';
 import { AuthProvider, useAuth } from '@/features/auth';
 import { AuthDeepLinkHandler } from '@/features/auth/AuthDeepLinkHandler';
 import { AchievementUnlockProvider } from '@/features/achievements/AchievementUnlockProvider';
+import { PremiumProvider } from '@/features/subscription/PremiumProvider';
+import { RevenueCatBootstrap } from '@/features/subscription/RevenueCatBootstrap';
 import { MissionCompleteProvider } from '@/features/challenges/MissionCompleteProvider';
 import { FriendsProvider } from '@/features/friends/FriendsProvider';
 import { NotificationProvider } from '@/features/notifications/NotificationProvider';
@@ -37,21 +39,23 @@ export default function RootLayout() {
 
   return (
     <AuthProvider>
-      <UserSettingsProvider>
-        <AchievementUnlockProvider>
-          <MissionCompleteProvider>
-            <ProfileProvider>
-              <ShopProvider>
-                <FriendsProvider>
-                  <NotificationProvider>
-                    <ThemedRootNavigator />
-                  </NotificationProvider>
-                </FriendsProvider>
-              </ShopProvider>
-            </ProfileProvider>
-          </MissionCompleteProvider>
-        </AchievementUnlockProvider>
-      </UserSettingsProvider>
+      <PremiumProvider>
+        <UserSettingsProvider>
+          <AchievementUnlockProvider>
+            <MissionCompleteProvider>
+              <ProfileProvider>
+                <ShopProvider>
+                  <FriendsProvider>
+                    <NotificationProvider>
+                      <ThemedRootNavigator />
+                    </NotificationProvider>
+                  </FriendsProvider>
+                </ShopProvider>
+              </ProfileProvider>
+            </MissionCompleteProvider>
+          </AchievementUnlockProvider>
+        </UserSettingsProvider>
+      </PremiumProvider>
     </AuthProvider>
   );
 }
@@ -64,6 +68,7 @@ function ThemedRootNavigator() {
       <OnboardingGate>
         <RootNavigator />
         <PushNotificationBootstrap />
+        <RevenueCatBootstrap />
       </OnboardingGate>
       <ChallengeNotificationBanner />
     </ThemeProvider>

@@ -33,7 +33,14 @@ cp .env.example .env
 ```env
 EXPO_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 EXPO_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+EXPO_PUBLIC_EAS_PROJECT_ID=your-eas-project-id
+
+# RevenueCat public SDK keys (Project → API keys → App-specific keys)
+EXPO_PUBLIC_REVENUECAT_IOS_API_KEY=appl_your_ios_key
+EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY=goog_your_android_key
 ```
+
+See [.env.example](./.env.example) for the full list.
 
 ### 3. Set up Supabase
 
@@ -74,11 +81,11 @@ npm run android
 
 ## Platform matrix
 
-| Platform | Auth & challenges | Auto rep counting |
-|----------|-------------------|-------------------|
-| Web | Yes | Yes (MediaPipe CDN) |
-| Expo Go | Yes | Manual simulate only |
-| Dev / prod build | Yes | Yes (Vision Camera + MediaPipe) |
+| Platform | Auth & challenges | Auto rep counting | In-app purchases |
+|----------|-------------------|-------------------|------------------|
+| Web | Yes | Yes (MediaPipe CDN) | No |
+| Expo Go | Yes | Manual simulate only | No (requires dev build) |
+| Dev / prod build | Yes | Yes (Vision Camera + MediaPipe) | Yes (RevenueCat) |
 
 ## Workouts
 
@@ -93,7 +100,70 @@ The **Workouts** tab is a hub with two sections:
 
 Session history is always **per user** (your runs only, even on shared templates).
 
-### Test premium (manual)
+## Premium & RevenueCat
+
+Premium unlocks custom workout **create**, **edit**, and **share**. The app uses [RevenueCat](https://www.revenuecat.com/) for mobile subscriptions (`react-native-purchases` + `react-native-purchases-ui`).
+
+| Setting | Value |
+|---------|-------|
+| Entitlement | `premium` |
+| Offering | `default` (must be **Current**) |
+| iOS product IDs | `premium_monthly`, `premium_year` |
+| Android product IDs | Same IDs (when Play Console is set up) |
+| Bundle / package ID | `com.athletearena.app` |
+
+### App integration
+
+- **`RevenueCatBootstrap`** — configures the SDK and identifies users with their Supabase UUID
+- **`PremiumProvider` / `usePremium()`** — merges RevenueCat entitlement status with Supabase `user_subscriptions` (manual grants still work)
+- **Paywall** — `RevenueCatUI.presentPaywall()` opens the dashboard paywall attached to offering `default` (triggered from **My workouts → Create workout** when not premium)
+
+Key files:
+
+```
+src/services/revenueCatService.ts
+src/features/subscription/PremiumProvider.tsx
+src/features/subscription/RevenueCatBootstrap.tsx
+src/constants/subscription.ts
+```
+
+### Store & dashboard setup
+
+**iOS (App Store Connect)**
+
+1. Create subscriptions `premium_monthly` and `premium_year` in the same subscription group
+2. Complete localization, pricing, and country availability
+3. Sign the **Paid Apps Agreement** and complete Banking + Tax (required before StoreKit returns products)
+4. In RevenueCat: connect the iOS app, upload the In-App Purchase Key, add App Store products, attach them to offering `default`, and publish a paywall
+
+**Android (Google Play Console)** — generally simpler than iOS; defer until iOS is working:
+
+1. Create matching subscription products in Play Console
+2. Link a Google payments merchant profile
+3. In RevenueCat: add the Android app, connect via service account JSON, add Play Store products to offering `default`
+
+**RevenueCat offering `default`**
+
+- Packages must reference **App Store / Play Store** products (not Test Store — Test Store does not work with the native `appl_` / `goog_` SDK keys)
+- Both products must grant entitlement `premium`
+
+### Local development
+
+RevenueCat requires a **dev or production native build** — purchases do not work in Expo Go.
+
+```bash
+npx expo run:ios
+# or
+eas build --profile development --platform ios
+```
+
+Add the public SDK keys to `.env`, then restart Metro after changing env vars.
+
+**iOS sandbox:** Settings → App Store → Sandbox Account (sandbox tester from App Store Connect).
+
+### Test premium without IAP
+
+While waiting on store agreements or for backend-only testing, grant premium manually in Supabase:
 
 ```sql
 insert into user_subscriptions (user_id, status, provider, expires_at)
@@ -104,7 +174,7 @@ on conflict (user_id) do update
   set status = 'active', provider = 'manual', expires_at = excluded.expires_at;
 ```
 
-Mobile IAP will use RevenueCat later; `user_subscriptions` is the source of truth for now.
+The client treats RevenueCat entitlement **or** an active Supabase row as premium. Server RPCs (`create_custom_workout_template`, etc.) still read **`user_subscriptions` only** — a RevenueCat webhook to sync purchases is planned for production.
 
 ### Seed demo Cindy sessions
 
@@ -144,7 +214,7 @@ src/
   app/              Expo Router screens (tabs, workouts hub, catalog detail)
   components/       UI, camera previews, workout cards
   features/         Auth, challenges, pose, premium, notifications
-  services/         Supabase RPC wrappers
+  services/         Supabase RPC wrappers, RevenueCat service
   constants/        Theme, pose thresholds, workout config
 supabase/
   migrations/       Incremental SQL (001–064+)
@@ -170,7 +240,9 @@ Configure in [eas.json](./eas.json).
 
 - [ ] `npx supabase db push` on production project (through latest migration)
 - [ ] Auth email template + SMTP in Supabase Dashboard
-- [ ] Production env vars in EAS secrets
+- [ ] Production env vars in EAS secrets (Supabase + RevenueCat SDK keys)
+- [ ] App Store / Play subscriptions live; RevenueCat offering `default` current with store products
+- [ ] RevenueCat webhook → Supabase `user_subscriptions` sync (server-side premium gates)
 - [ ] Push notification edge function + webhook deployed
 - [ ] Test pose detection on real devices
 - [ ] `eas build --profile production`
@@ -192,3 +264,4 @@ Configure in [eas.json](./eas.json).
 - Supabase (auth, Postgres, RLS, RPCs, Realtime)
 - MediaPipe Pose Landmarker (web CDN + native dev build)
 - react-native-vision-camera (native dev builds)
+- RevenueCat (`react-native-purchases`, `react-native-purchases-ui`)

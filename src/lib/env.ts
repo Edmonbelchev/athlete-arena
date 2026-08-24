@@ -1,11 +1,15 @@
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL?.trim() ?? '';
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY?.trim() ?? '';
 const visualGuideCacheVersion = process.env.EXPO_PUBLIC_VISUAL_GUIDE_CACHE_VERSION?.trim() ?? '';
+const revenueCatIosApiKey = process.env.EXPO_PUBLIC_REVENUECAT_IOS_API_KEY?.trim() ?? '';
+const revenueCatAndroidApiKey = process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY?.trim() ?? '';
 
 export const env = {
   supabaseUrl,
   supabaseAnonKey,
   visualGuideCacheVersion,
+  revenueCatIosApiKey,
+  revenueCatAndroidApiKey,
   isSupabaseConfigured: Boolean(supabaseUrl && supabaseAnonKey),
 } as const;
 

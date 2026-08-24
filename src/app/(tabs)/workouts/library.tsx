@@ -50,7 +50,7 @@ const FILTERS: Array<{ id: WorkoutLibraryFilter; label: string; icon: 'dumbbell'
 
 export default function WorkoutLibraryScreen() {
   const theme = useTheme();
-  const { isPremium } = usePremium();
+  const { isPremium, showPremiumPaywall } = usePremium();
   const { templateId: deepLinkTemplateId, editTemplateId } = useLocalSearchParams<{
     templateId?: string;
     editTemplateId?: string;
@@ -76,9 +76,12 @@ export default function WorkoutLibraryScreen() {
   const [createModalTemplateId, setCreateModalTemplateId] = useState<string | null>(null);
   const [handledEditTemplateId, setHandledEditTemplateId] = useState<string | null>(null);
 
-  function openCreateModal(templateId?: string | null) {
+  async function openCreateModal(templateId?: string | null) {
     if (!isPremium) {
-      return;
+      const unlocked = await showPremiumPaywall();
+      if (!unlocked) {
+        return;
+      }
     }
 
     setCreateModalTemplateId(templateId ?? null);
@@ -296,15 +299,13 @@ export default function WorkoutLibraryScreen() {
       <View style={styles.createSection}>
         <Pressable
           accessibilityRole="button"
-          accessibilityState={{ disabled: !isPremium }}
-          disabled={!isPremium}
-          onPress={() => openCreateModal()}
+          onPress={() => void openCreateModal()}
           style={({ pressed }) => [
             styles.createButton,
             {
               backgroundColor: isPremium ? theme.primary : theme.backgroundElement,
               borderColor: isPremium ? theme.primary : theme.border,
-              opacity: !isPremium ? 0.85 : pressed ? 0.88 : 1,
+              opacity: pressed ? 0.88 : 1,
             },
           ]}>
           <View
