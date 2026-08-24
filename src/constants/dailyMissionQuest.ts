@@ -29,6 +29,10 @@ export const DAILY_MISSION_QUEST: Partial<Record<ExerciseType, DailyMissionQuest
     questTitle: 'Half Burpee Hustle',
     objectiveVerb: 'Complete',
   },
+  jumping_jacks: {
+    questTitle: 'Jumping Jack Jam',
+    objectiveVerb: 'Complete',
+  },
 };
 
 export function getDailyMissionQuestMeta(exerciseType: ExerciseType): DailyMissionQuestMeta {

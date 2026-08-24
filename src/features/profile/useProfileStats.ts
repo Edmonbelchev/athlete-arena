@@ -19,6 +19,7 @@ const EMPTY_STATS: ProfileStats = {
   totalDips: 0,
   totalBurpees: 0,
   totalHalfBurpees: 0,
+  totalJumpingJacks: 0,
 };
 
 export function useProfileStats(): UseProfileStatsResult {

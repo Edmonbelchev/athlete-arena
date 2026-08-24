@@ -8,6 +8,7 @@ import {
 
 import { PoseLandmarkIndex, type PoseLandmark } from './landmarks';
 import { hasBurpeeTrackingLandmarks } from './burpeePosture';
+import { hasJumpingJackTrackingLandmarks } from './jumpingJackPosture';
 import { hasPullUpActiveTrackingLandmarks, hasPullUpTrackingLandmarks } from './pullUpPosture';
 import { hasPushUpTrackingLandmarks } from './pushUpPosture';
 import { hasBothSquatLegChains } from './squatPosture';
@@ -176,6 +177,23 @@ function getTrackingIndices(exerciseType: ExerciseType): number[] {
     ];
   }
 
+  if (exerciseType === 'jumping_jacks') {
+    return [
+      PoseLandmarkIndex.LEFT_SHOULDER,
+      PoseLandmarkIndex.RIGHT_SHOULDER,
+      PoseLandmarkIndex.LEFT_ELBOW,
+      PoseLandmarkIndex.RIGHT_ELBOW,
+      PoseLandmarkIndex.LEFT_WRIST,
+      PoseLandmarkIndex.RIGHT_WRIST,
+      PoseLandmarkIndex.LEFT_HIP,
+      PoseLandmarkIndex.RIGHT_HIP,
+      PoseLandmarkIndex.LEFT_KNEE,
+      PoseLandmarkIndex.RIGHT_KNEE,
+      PoseLandmarkIndex.LEFT_ANKLE,
+      PoseLandmarkIndex.RIGHT_ANKLE,
+    ];
+  }
+
   return [
     PoseLandmarkIndex.LEFT_HIP,
     PoseLandmarkIndex.RIGHT_HIP,
@@ -293,6 +311,26 @@ function checkRequiredLandmarks(
       return {
         ok: false,
         message: 'Keep your full body in frame - arms and legs visible',
+      };
+    }
+
+    if (visibleCount < minVisibleTrackingPoints) {
+      return {
+        ok: false,
+        message: options?.isLandscape
+          ? 'Step back - keep your full body visible head to toe'
+          : 'Move back - keep your full body in frame',
+      };
+    }
+
+    return { ok: true, message: null };
+  }
+
+  if (exerciseType === 'jumping_jacks') {
+    if (!hasJumpingJackTrackingLandmarks(landmarks)) {
+      return {
+        ok: false,
+        message: 'Keep your full body in frame from wrists to ankles',
       };
     }
 

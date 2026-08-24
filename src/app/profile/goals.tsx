@@ -124,7 +124,7 @@ export default function GoalsScreen() {
 
   const emptyCopy = useMemo(() => {
     const periodLabel = formatGoalPeriodLabel(activePeriod).toLowerCase();
-    return `No ${periodLabel} goals yet. Add a rep target for push-ups, squats, pull-ups, burpees, or half burpees.`;
+    return `No ${periodLabel} goals yet. Add a rep target for push-ups, squats, pull-ups, burpees, half burpees, or jumping jacks.`;
   }, [activePeriod]);
 
   if (isLoading && dailyGoals.length === 0 && weeklyGoals.length === 0 && activities.length === 0) {

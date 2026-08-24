@@ -73,6 +73,22 @@ export function resolveSquatTrackingStatus(
   return 'awaiting_hang';
 }
 
+/** Jumping jacks: stay green once armed; only yellow before the start position locks in. */
+export function resolveJumpingJackTrackingStatus(
+  quality: Pick<PoseQualityResult, 'status' | 'canCountReps'>,
+  armed: boolean,
+): PoseTrackingStatus {
+  if (!quality.canCountReps) {
+    return quality.status === 'stabilizing' ? 'stabilizing' : 'partial';
+  }
+
+  if (armed) {
+    return 'ready';
+  }
+
+  return 'awaiting_hang';
+}
+
 /** Burpees: green when body is tracked; red when out of frame. */
 export function resolveBurpeeTrackingStatus(
   quality: Pick<PoseQualityResult, 'status' | 'canCountReps'>,
@@ -169,6 +185,17 @@ export function getRepPhaseHint(exerciseType: ExerciseType, phase: ExercisePhase
         return 'Stand up and jump to finish the rep';
       }
       return 'Stand tall to start the rep';
+    case 'jumping_jacks':
+      if (phase === 'OPENING') {
+        return 'Jump feet out and raise both arms';
+      }
+      if (phase === 'OPEN') {
+        return 'Hold the open position briefly';
+      }
+      if (phase === 'CLOSING') {
+        return 'Bring feet together and arms down';
+      }
+      return 'Start with feet together and arms at your sides';
     default:
       return null;
   }

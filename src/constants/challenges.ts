@@ -1,4 +1,13 @@
-export const EXERCISE_TYPES = ['push_ups', 'squats', 'pull_ups', 'burpees', 'half_burpees'] as const;
+import type { ExercisePhase } from '@/features/challenges/poseDetection.types';
+
+export const EXERCISE_TYPES = [
+  'push_ups',
+  'squats',
+  'pull_ups',
+  'burpees',
+  'half_burpees',
+  'jumping_jacks',
+] as const;
 
 export type ExerciseType = (typeof EXERCISE_TYPES)[number];
 
@@ -14,7 +23,11 @@ export function isElbowBasedExercise(exerciseType: ExerciseType): boolean {
   return exerciseType === 'push_ups' || exerciseType === 'pull_ups';
 }
 
-export function getInitialExercisePhase(exerciseType: ExerciseType): 'UP' | 'STANDING' {
+export function getInitialExercisePhase(exerciseType: ExerciseType): ExercisePhase {
+  if (exerciseType === 'jumping_jacks') {
+    return 'CLOSED';
+  }
+
   return isElbowBasedExercise(exerciseType) ? 'UP' : 'STANDING';
 }
 
@@ -29,6 +42,7 @@ export const CHALLENGE_CONFIG: Record<ExerciseType, readonly ChallengeTier[]> = 
   pull_ups: [{ reps: 10 }, { reps: 15 }, { reps: 20 }, { reps: 30 }],
   burpees: [{ reps: 10 }, { reps: 15 }, { reps: 20 }, { reps: 30 }],
   half_burpees: [{ reps: 10 }, { reps: 15 }, { reps: 20 }, { reps: 30 }],
+  jumping_jacks: [{ reps: 20 }, { reps: 30 }, { reps: 40 }, { reps: 50 }],
 } as const;
 
 export const EXERCISE_LABELS: Record<DisplayExerciseType, string> = {
@@ -37,6 +51,7 @@ export const EXERCISE_LABELS: Record<DisplayExerciseType, string> = {
   pull_ups: 'Pull-ups',
   burpees: 'Burpees',
   half_burpees: 'Half Burpees',
+  jumping_jacks: 'Jumping Jacks',
   dips: 'Dips',
 };
 

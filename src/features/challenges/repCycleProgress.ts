@@ -36,6 +36,21 @@ export function getRepCycleProgress(
     }
   }
 
+  if (exerciseType === 'jumping_jacks') {
+    switch (phase) {
+      case 'CLOSED':
+        return 0.05;
+      case 'OPENING':
+        return 0.35;
+      case 'OPEN':
+        return 0.65;
+      case 'CLOSING':
+        return 0.9;
+      default:
+        return 0;
+    }
+  }
+
   if (exerciseType === 'burpees' || exerciseType === 'half_burpees') {
     switch (phase) {
       case 'STANDING':
@@ -75,5 +90,5 @@ export function repCycleProgressColor(progress: number): string {
 }
 
 export function isRepCycleActive(phase: ExercisePhase): boolean {
-  return phase !== 'UP' && phase !== 'STANDING';
+  return phase !== 'UP' && phase !== 'STANDING' && phase !== 'CLOSED';
 }

@@ -40,6 +40,7 @@ export async function getProfileStats(userId: string): Promise<ProfileStats> {
   let totalDips = 0;
   let totalBurpees = 0;
   let totalHalfBurpees = 0;
+  let totalJumpingJacks = 0;
 
   for (const row of data ?? []) {
     completedChallenges += 1;
@@ -62,6 +63,9 @@ export async function getProfileStats(userId: string): Promise<ProfileStats> {
       case 'half_burpees':
         totalHalfBurpees += row.completed_reps;
         break;
+      case 'jumping_jacks':
+        totalJumpingJacks += row.completed_reps;
+        break;
     }
   }
 
@@ -73,6 +77,7 @@ export async function getProfileStats(userId: string): Promise<ProfileStats> {
     totalDips,
     totalBurpees,
     totalHalfBurpees,
+    totalJumpingJacks,
   };
 }
 

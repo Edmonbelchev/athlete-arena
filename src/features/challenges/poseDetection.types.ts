@@ -9,7 +9,10 @@ export type SquatPhase = 'STANDING' | 'DESCENDING' | 'BOTTOM' | 'ASCENDING';
 /** Burpee pose phases - compound squat + plank + jump. */
 export type BurpeePhase = 'STANDING' | 'DROP' | 'FLOOR' | 'JUMP';
 
-export type ExercisePhase = PushUpPhase | SquatPhase | BurpeePhase;
+/** Jumping jack pose phases - closed stance ↔ open stance. */
+export type JumpingJackPhase = 'CLOSED' | 'OPENING' | 'OPEN' | 'CLOSING';
+
+export type ExercisePhase = PushUpPhase | SquatPhase | BurpeePhase | JumpingJackPhase;
 
 export interface PoseFrame {
   timestamp: number;

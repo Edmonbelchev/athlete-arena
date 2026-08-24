@@ -29,6 +29,10 @@ export const VISUAL_GUIDE_BY_EXERCISE: Record<ExerciseType, VisualGuideExerciseC
     folder: 'half-burpees',
     frameFiles: ['frame1.webp', 'frame2.webp', 'frame3.webp', 'frame4.webp', 'frame5.webp'],
   },
+  jumping_jacks: {
+    folder: 'jumping-jacks',
+    frameFiles: ['frame1.webp', 'frame2.webp', 'frame3.webp', 'frame4.webp'],
+  },
 };
 
 /** Crossfade interval between frames in the loop. */

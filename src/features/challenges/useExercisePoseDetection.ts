@@ -14,9 +14,12 @@ import { PushUpRepEngine } from './pose/pushUpRepEngine';
 import { SquatRepEngine } from './pose/squatRepEngine';
 import { getBurpeeStanceHint } from './pose/burpeePosture';
 import { getHalfBurpeeStanceHint } from './pose/halfBurpeePosture';
+import { JumpingJackRepEngine } from './pose/jumpingJackRepEngine';
+import { getJumpingJackStanceHint } from './pose/jumpingJackPosture';
 import { PoseQualityGate, type PoseQualityResult, type PoseTrackingStatus } from './pose/poseQuality';
 import {
   resolveBurpeeTrackingStatus,
+  resolveJumpingJackTrackingStatus,
   resolvePullUpTrackingStatus,
   resolvePushUpTrackingStatus,
   resolveSquatTrackingStatus,
@@ -41,6 +44,8 @@ function getEngineArmed(engine: RepEngine, exerciseType: ExerciseType): boolean 
       return (engine as PushUpRepEngine).armed;
     case 'squats':
       return (engine as SquatRepEngine).armed;
+    case 'jumping_jacks':
+      return (engine as JumpingJackRepEngine).armed;
     default:
       return false;
   }
@@ -66,6 +71,8 @@ function resolveExerciseTrackingStatus(
       return resolveBurpeeTrackingStatus(quality);
     case 'half_burpees':
       return resolveBurpeeTrackingStatus(quality);
+    case 'jumping_jacks':
+      return resolveJumpingJackTrackingStatus(quality, (engine as JumpingJackRepEngine).armed);
     default:
       return quality.status;
   }
@@ -113,6 +120,13 @@ function getExerciseFormMessage(
     case 'half_burpees': {
       const halfBurpeeHint = getHalfBurpeeStanceHint(landmarks);
       return halfBurpeeHint ?? quality.message;
+    }
+    case 'jumping_jacks': {
+      const jumpingJackEngine = engine as JumpingJackRepEngine;
+      if (!jumpingJackEngine.armed) {
+        return jumpingJackEngine.getReadyHint(landmarks);
+      }
+      return getJumpingJackStanceHint(landmarks) ?? quality.message;
     }
     default:
       return quality.message;
@@ -234,7 +248,8 @@ export function useExercisePoseDetection({
       const shouldUpdateEngine =
         quality.canCountReps ||
         armedBeforeUpdate ||
-        (exerciseType === 'push_ups' && landmarks.length > 0);
+        (exerciseType === 'push_ups' && landmarks.length > 0) ||
+        (exerciseType === 'jumping_jacks' && (engine as JumpingJackRepEngine).armed);
 
       if (!shouldUpdateEngine) {
         setTrackingStatus(resolveExerciseTrackingStatus(exerciseType, quality, engine));

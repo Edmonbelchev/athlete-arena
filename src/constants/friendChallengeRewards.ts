@@ -41,11 +41,17 @@ export const FRIEND_CHALLENGE_REWARD_RULES: Record<ExerciseType, FriendChallenge
     maxXp: FRIEND_CHALLENGE_MAX_XP,
     maxCoins: FRIEND_CHALLENGE_MAX_COINS,
   },
+  jumping_jacks: {
+    xpPerRep: 0.5,
+    coinEveryReps: 10,
+    maxXp: FRIEND_CHALLENGE_MAX_XP,
+    maxCoins: FRIEND_CHALLENGE_MAX_COINS,
+  },
 };
 
 export function calculateFriendChallengeXp(exerciseType: ExerciseType, reps: number): number {
   const rule = FRIEND_CHALLENGE_REWARD_RULES[exerciseType];
-  return Math.min(Math.max(reps, 0) * rule.xpPerRep, rule.maxXp);
+  return Math.min(Math.floor(Math.max(reps, 0) * rule.xpPerRep), rule.maxXp);
 }
 
 export function calculateFriendChallengeCoins(exerciseType: ExerciseType, reps: number): number {

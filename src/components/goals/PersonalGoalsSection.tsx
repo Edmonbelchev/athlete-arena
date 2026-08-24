@@ -32,7 +32,7 @@ export function PersonalGoalsSection({ goals, isLoading, error }: PersonalGoalsS
 
       {!isLoading && activeGoals.length === 0 ? (
         <Text style={[styles.empty, { color: theme.textSecondary }]}>
-          Set a daily or weekly target for push-ups, squats, pull-ups, burpees, or half burpees.
+          Set a daily or weekly target for push-ups, squats, pull-ups, burpees, half burpees, or jumping jacks.
         </Text>
       ) : null}
 

@@ -2,6 +2,7 @@ import type { ExerciseType } from '@/constants/challenges';
 import type { ExercisePhase } from '@/features/challenges/poseDetection.types';
 
 import { PullUpRepEngine } from './pullUpRepEngine';
+import { JumpingJackRepEngine } from './jumpingJackRepEngine';
 import { HalfBurpeeRepEngine } from './halfBurpeeRepEngine';
 import { BurpeeRepEngine } from './burpeeRepEngine';
 import { PushUpRepEngine } from './pushUpRepEngine';
@@ -33,6 +34,10 @@ export function createRepEngine(exerciseType: ExerciseType): RepEngine {
 
   if (exerciseType === 'half_burpees') {
     return new HalfBurpeeRepEngine();
+  }
+
+  if (exerciseType === 'jumping_jacks') {
+    return new JumpingJackRepEngine();
   }
 
   throw new Error(`Unsupported exercise type: ${String(exerciseType)}`);

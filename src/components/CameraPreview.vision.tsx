@@ -14,7 +14,7 @@ import type { CameraPreviewProps } from '@/components/CameraPreview.types';
 import { RepCycleProgressBar } from '@/components/challenges/RepCycleProgressBar';
 import { PoseSkeletonOverlay } from '@/components/settings/PoseSkeletonOverlay';
 import { PullUpBarLineOverlay } from '@/components/settings/PullUpBarLineOverlay';
-import { POSE_LANDSCAPE_POST_SETTLE_FRAMES, POSE_LANDMARK_SMOOTH_ALPHA, POSE_LANDMARK_SMOOTH_ALPHA_PULL_UP } from '@/constants/poseDetection';
+import { POSE_LANDSCAPE_POST_SETTLE_FRAMES, POSE_LANDMARK_SMOOTH_ALPHA, POSE_LANDMARK_SMOOTH_ALPHA_JUMPING_JACK, POSE_LANDMARK_SMOOTH_ALPHA_PULL_UP } from '@/constants/poseDetection';
 import { Radius, Spacing } from '@/constants/theme';
 import {
   isDisplayFrameStale,
@@ -44,6 +44,18 @@ const POSE_DETECTION_OPTIONS = {
   delegate: POSE_DELEGATE,
   mirrorMode: 'mirror-front-only' as const,
 };
+
+function getPoseLandmarkSmoothAlpha(exerciseType: ActiveVisionCameraProps['exerciseType']): number {
+  if (exerciseType === 'pull_ups') {
+    return POSE_LANDMARK_SMOOTH_ALPHA_PULL_UP;
+  }
+
+  if (exerciseType === 'jumping_jacks') {
+    return POSE_LANDMARK_SMOOTH_ALPHA_JUMPING_JACK;
+  }
+
+  return POSE_LANDMARK_SMOOTH_ALPHA;
+}
 
 type ActiveVisionCameraProps = Omit<CameraPreviewProps, 'active'> & {
   cameraLive: boolean;
@@ -80,11 +92,7 @@ function VisionCameraPreviewActive({
   const [latestLandmarks, setLatestLandmarks] = useState<PoseLandmark[] | null>(null);
   const [viewBarLineY, setViewBarLineY] = useState<number | null>(null);
   const pullUpBarLineYRef = useRef(pullUpBarLineY);
-  const landmarkSmootherRef = useRef(
-    new PoseLandmarkSmoother(
-      exerciseType === 'pull_ups' ? POSE_LANDMARK_SMOOTH_ALPHA_PULL_UP : POSE_LANDMARK_SMOOTH_ALPHA,
-    ),
-  );
+  const landmarkSmootherRef = useRef(new PoseLandmarkSmoother(getPoseLandmarkSmoothAlpha(exerciseType)));
   const viewSettleGateRef = useRef(new PoseViewSettleGate());
   const postSettleFramesRef = useRef(0);
   const lastDisplayFrameAtRef = useRef(0);
@@ -96,9 +104,7 @@ function VisionCameraPreviewActive({
   isActiveRef.current = cameraLive;
 
   useEffect(() => {
-    landmarkSmootherRef.current = new PoseLandmarkSmoother(
-      exerciseType === 'pull_ups' ? POSE_LANDMARK_SMOOTH_ALPHA_PULL_UP : POSE_LANDMARK_SMOOTH_ALPHA,
-    );
+    landmarkSmootherRef.current = new PoseLandmarkSmoother(getPoseLandmarkSmoothAlpha(exerciseType));
   }, [exerciseType]);
 
   useEffect(() => {

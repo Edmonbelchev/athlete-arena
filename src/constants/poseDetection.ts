@@ -237,6 +237,28 @@ export const BURPEE_POSTURE = {
   maxStandingWristAboveHip: isNativeMobile ? 0.04 : 0.035,
 } as const;
 
+/** Jumping jack rep validation - open and closed require arms and legs together on the same frame. */
+export const JUMPING_JACK_POSTURE = {
+  /** Feet-together spread relative to shoulder width (rep completion). */
+  maxClosedAnkleSpreadRatio: isNativeMobile ? 0.66 : 0.62,
+  /** Feet-apart spread relative to shoulder width (open position). */
+  minOpenAnkleSpreadRatio: isNativeMobile ? 0.82 : 0.85,
+  /** Relaxed closed thresholds only while arming the set. */
+  maxReadyAnkleSpreadRatio: isNativeMobile ? 0.72 : 0.68,
+  /** Wrists near shoulder height while closed (y grows down). */
+  maxClosedArmRaise: isNativeMobile ? 0.06 : 0.055,
+  maxReadyArmRaise: isNativeMobile ? 0.09 : 0.08,
+  /** Wrists clearly above shoulders at the open position. */
+  minOpenArmRaise: isNativeMobile ? 0.08 : 0.085,
+  readyFramesRequired: isNativeMobile ? 3 : 4,
+  openHoldFrames: isNativeMobile ? 2 : 2,
+  /** Disarm only after tracking is lost for several frames (not mid-jack). */
+  lostTrackingFramesToDisarm: isNativeMobile ? 12 : 8,
+} as const;
+
+/** Faster landmark follow for quick jumping jack motion. */
+export const POSE_LANDMARK_SMOOTH_ALPHA_JUMPING_JACK = isNativeMobile ? 0.68 : 1;
+
 /** EMA smoothing for native camera landmarks (0 = frozen, 1 = raw). */
 export const POSE_LANDMARK_SMOOTH_ALPHA = isNativeMobile ? 0.52 : 1;
 
@@ -283,6 +305,14 @@ export const POSE_GUIDANCE: Record<ExerciseType, { title: string; tips: readonly
       'Prop your phone in portrait and keep your full body in frame',
       'Drop to a plank with arms extended - no push-up required',
       'Stand back up and jump to finish each rep',
+    ],
+  },
+  jumping_jacks: {
+    title: 'Jumping jack setup',
+    tips: [
+      'Prop your phone in portrait and step back until your full body is visible',
+      'Start with feet together and arms at your sides',
+      'Jump feet out while raising both arms overhead, then return to closed to count a rep',
     ],
   },
 };
