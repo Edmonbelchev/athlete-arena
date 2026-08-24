@@ -75,7 +75,7 @@ export default function OfficialWorkoutsScreen() {
           subtitle="Arena benchmarks with leaderboards for everyone"
           rightSlot={
             <View style={[styles.headerBadge, { backgroundColor: `${theme.streak}18` }]}>
-              <AppIcon name="crown" size={22} color={theme.streak} weight="bold" />
+              <AppIcon name="medal" size={22} color={theme.streak} weight="bold" />
             </View>
           }
         />
@@ -93,7 +93,7 @@ export default function OfficialWorkoutsScreen() {
           </View>
         ) : workouts.length === 0 ? (
           <View style={[styles.emptyCard, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
-            <AppIcon name="crown" size={28} color={theme.streak} weight="semibold" />
+            <AppIcon name="medal" size={28} color={theme.streak} weight="semibold" />
             <Text style={[styles.emptyTitle, { color: theme.text }]}>No official workouts yet</Text>
             <Text style={[styles.emptyBody, { color: theme.textSecondary }]}>
               Check back soon for new Arena benchmarks.

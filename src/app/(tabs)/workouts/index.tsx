@@ -76,7 +76,7 @@ export default function WorkoutsHubScreen() {
                   ? `${officialCount} Arena workout${officialCount === 1 ? '' : 's'} with leaderboards`
                   : 'Arena workouts with leaderboards for everyone'
               }
-              icon="crown"
+              icon="medal"
               accentColor={theme.streak}
               badge={officialCount > 0 ? officialCount : undefined}
               onPress={() => router.push('/(tabs)/workouts/official' as Href)}
@@ -91,7 +91,7 @@ export default function WorkoutsHubScreen() {
                     : 'Build, save, and share custom workouts'
                   : 'Create and share custom workouts'
               }
-              icon={isPremium ? 'bolt' : 'crown'}
+              icon="dumbbell"
               accentColor={theme.primary}
               badge={libraryCount > 0 ? libraryCount : undefined}
               onPress={() => router.push('/(tabs)/workouts/library' as Href)}

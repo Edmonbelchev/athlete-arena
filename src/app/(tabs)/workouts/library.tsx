@@ -282,9 +282,9 @@ export default function WorkoutLibraryScreen() {
       <TabScreenHeader
         title="My workouts"
         subtitle={
-          isPremium
-            ? 'Build, save, and share custom workouts'
-            : 'Premium · custom workout creation'
+          templates.length > 0
+            ? `${templates.length} saved workout${templates.length === 1 ? '' : 's'}`
+            : 'Your personal workout library'
         }
         rightSlot={
           <View style={[styles.headerBadge, { backgroundColor: `${theme.primary}18` }]}>
@@ -293,32 +293,41 @@ export default function WorkoutLibraryScreen() {
         }
       />
 
-      <Pressable
-        accessibilityRole="button"
-        disabled={!isPremium}
-        onPress={() => openCreateModal()}
-        style={[
-          styles.createCard,
-          {
-            backgroundColor: isPremium ? theme.primary : theme.backgroundElement,
-            borderColor: isPremium ? theme.primary : theme.border,
-            opacity: isPremium ? 1 : 0.92,
-          },
-        ]}>
-        <View style={styles.createCopy}>
-          <Text style={[styles.createTitle, { color: isPremium ? '#FFFFFF' : theme.text }]}>
-            {isPremium ? 'Create workout' : 'Premium · Create workouts'}
+      <View style={styles.createSection}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityState={{ disabled: !isPremium }}
+          disabled={!isPremium}
+          onPress={() => openCreateModal()}
+          style={({ pressed }) => [
+            styles.createButton,
+            {
+              backgroundColor: isPremium ? theme.primary : theme.backgroundElement,
+              borderColor: isPremium ? theme.primary : theme.border,
+              opacity: !isPremium ? 0.85 : pressed ? 0.88 : 1,
+            },
+          ]}>
+          <View
+            style={[
+              styles.premiumBadge,
+              {
+                backgroundColor: isPremium ? 'rgba(255,255,255,0.18)' : `${theme.streak}18`,
+                borderColor: isPremium ? 'rgba(255,255,255,0.24)' : theme.border,
+              },
+            ]}>
+            <AppIcon name="crown" size={14} color={isPremium ? '#FFFFFF' : theme.streak} weight="semibold" />
+          </View>
+          <Text style={[styles.createButtonLabel, { color: isPremium ? '#FFFFFF' : theme.text }]}>
+            Create workout
           </Text>
-          <Text style={[styles.createBody, { color: isPremium ? 'rgba(255,255,255,0.88)' : theme.textSecondary }]}>
-            {isPremium
-              ? 'Build a workout, save it, and share with friends.'
-              : 'Custom workouts are a premium feature. Official Arena workouts are free.'}
+        </Pressable>
+
+        {!isPremium ? (
+          <Text style={[styles.createHint, { color: theme.textSecondary }]}>
+            Premium feature · Arena workouts are free for everyone
           </Text>
-        </View>
-        <View style={[styles.createIconWrap, !isPremium ? { backgroundColor: `${theme.primary}18` } : null]}>
-          <AppIcon name={isPremium ? 'bolt' : 'crown'} size={22} color={isPremium ? '#FFFFFF' : theme.primary} weight="bold" />
-        </View>
-      </Pressable>
+        ) : null}
+      </View>
 
       {templates.length > 0 ? (
         <View style={[styles.statsCard, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
@@ -600,34 +609,37 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  createCard: {
+  createSection: {
+    gap: Spacing.two,
+  },
+  createButton: {
+    minHeight: 52,
     borderWidth: 1,
     borderRadius: Radius.lg,
-    padding: Spacing.four,
+    paddingHorizontal: Spacing.four,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.three,
+    justifyContent: 'center',
+    gap: Spacing.two,
   },
-  createCopy: {
-    flex: 1,
-    gap: Spacing.half,
+  premiumBadge: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  createTitle: {
-    fontSize: 18,
-    fontWeight: '900',
+  createButtonLabel: {
+    fontSize: 16,
+    fontWeight: '700',
+    letterSpacing: 0.4,
   },
-  createBody: {
+  createHint: {
     fontSize: 13,
     lineHeight: 18,
     fontWeight: '600',
-  },
-  createIconWrap: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.16)',
+    textAlign: 'center',
   },
   statsCard: {
     borderWidth: 1,
