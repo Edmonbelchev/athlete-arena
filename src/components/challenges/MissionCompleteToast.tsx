@@ -37,16 +37,16 @@ export function MissionCompleteToast({ mission, onDismiss, onPress }: MissionCom
             styles.banner,
             {
               backgroundColor: theme.backgroundElement,
-              borderColor: theme.success,
-              shadowColor: theme.success,
+              borderColor: theme.border,
+              shadowColor: theme.text,
             },
           ])}>
           <View
             style={StyleSheet.flatten([
               styles.iconWrap,
-              { backgroundColor: theme.backgroundSelected, borderColor: theme.success },
+              { backgroundColor: theme.backgroundSelected, borderColor: theme.border },
             ])}>
-            <AppIcon name="target" size={18} color={theme.success} />
+            <AppIcon name="target" size={18} color={theme.primary} />
           </View>
 
           <View style={styles.copy}>

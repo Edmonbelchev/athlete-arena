@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View, Pressable } from 'react-native';
+import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { AppIcon } from '@/components/ui/AppIcon';
 import { CoinIcon } from '@/components/ui/CoinIcon';
@@ -35,6 +35,10 @@ interface ChallengeCardProps {
 
 type MissionStatusKey = 'tracking' | 'active' | 'ready' | 'cleared';
 
+const ACTION_BUTTON_HEIGHT = 52;
+const REROLL_ROW_HEIGHT = 40;
+const PROGRESS_PERCENT = (progress: number) => Math.round(Math.min(Math.max(progress, 0), 1) * 100);
+
 function resolveMissionStatus(
   status: ChallengeStatus,
   completedReps: number,
@@ -53,48 +57,6 @@ function resolveMissionStatus(
   }
 
   return 'tracking';
-}
-
-function MissionStatusBadge({
-  missionStatus,
-  accentColor,
-}: {
-  missionStatus: MissionStatusKey;
-  accentColor: string;
-}) {
-  const theme = useTheme();
-
-  const config = {
-    tracking: { label: 'TRACKING', background: theme.backgroundSelected, text: accentColor },
-    active: { label: 'IN PROGRESS', background: theme.backgroundSelected, text: accentColor },
-    ready: { label: 'READY', background: theme.success, text: '#FFFFFF' },
-    cleared: { label: 'CLEARED', background: theme.success, text: '#FFFFFF' },
-  }[missionStatus];
-
-  return (
-    <View style={[styles.statusBadge, { backgroundColor: config.background }]}>
-      <Text style={[styles.statusBadgeText, { color: config.text }]}>{config.label}</Text>
-    </View>
-  );
-}
-
-function RewardChip({
-  icon,
-  label,
-  color,
-  backgroundColor,
-}: {
-  icon: 'xp' | 'coin';
-  label: string;
-  color: string;
-  backgroundColor: string;
-}) {
-  return (
-    <View style={[styles.rewardChip, { backgroundColor, borderColor: color }]}>
-      {icon === 'coin' ? <CoinIcon size={14} /> : <AppIcon name="star" size={14} color={color} weight="semibold" />}
-      <Text style={[styles.rewardChipText, { color }]}>{label}</Text>
-    </View>
-  );
 }
 
 export function ChallengeCard({
@@ -116,64 +78,75 @@ export function ChallengeCard({
   const accentColor = theme[getQuestAccentColor(missionIndex)];
   const missionStatus = resolveMissionStatus(status, completedReps, targetReps);
   const isCompleted = missionStatus === 'cleared';
+  const isReady = missionStatus === 'ready';
   const displayReps = Math.min(completedReps, targetReps);
   const progress = targetReps > 0 ? Math.min(displayReps / targetReps, 1) : 0;
-  const progressPercent = Math.round(progress * 100);
+  const progressPercent = PROGRESS_PERCENT(progress);
   const exerciseLabel = formatExerciseLabel(exerciseType, true);
   const actionLabel = getQuestActionLabel(missionStatus);
+  const questBadgeLabel = missionLabel ?? `Quest ${missionIndex + 1}`;
 
-  const borderColor =
-    missionStatus === 'ready'
-      ? theme.success
-      : missionStatus === 'cleared'
-        ? theme.success
-        : theme.border;
+  const borderColor = isReady ? accentColor : isCompleted ? `${accentColor}55` : theme.border;
+  const borderWidth = isReady ? 2 : 1;
 
   return (
     <View
       style={[
         styles.card,
         {
-          backgroundColor: theme.card,
+          backgroundColor: isCompleted ? theme.card : `${accentColor}0C`,
           borderColor,
-          borderWidth: missionStatus === 'ready' ? 2 : 1,
+          borderWidth,
+          opacity: isCompleted ? 0.96 : 1,
+          shadowColor: isReady ? accentColor : '#0F172A',
+          shadowOpacity: isReady ? 0.22 : Platform.OS === 'ios' ? 0.08 : 0,
         },
       ]}>
       <View style={[styles.accentRail, { backgroundColor: accentColor }]} />
-      <View style={[styles.accentGlow, { backgroundColor: `${accentColor}18` }]} />
+      <View style={[styles.accentGlow, { backgroundColor: `${accentColor}16` }]} />
 
       <View style={styles.inner}>
         <View style={styles.headerRow}>
-          <View
-            accessibilityLabel={
-              isRerolled ? `${missionLabel ?? 'Daily quest'}, swapped exercise` : undefined
-            }
-            style={[styles.missionPill, { backgroundColor: `${accentColor}22`, borderColor: accentColor }]}>
-            <Text style={[styles.missionPillText, { color: accentColor }]}>
-              {missionLabel ?? 'DAILY QUEST'}
-            </Text>
-            {isRerolled ? (
-              <AppIcon name="swap" size={11} color={accentColor} weight="semibold" />
-            ) : null}
+          <View style={[styles.questPill, { backgroundColor: `${accentColor}20`, borderColor: `${accentColor}44` }]}>
+            <AppIcon name="target" size={11} color={accentColor} weight="semibold" />
+            <Text style={[styles.questPillText, { color: accentColor }]}>{questBadgeLabel}</Text>
           </View>
-          <MissionStatusBadge missionStatus={missionStatus} accentColor={accentColor} />
+
+          {isRerolled ? (
+            <View style={[styles.statusBadge, { backgroundColor: `${accentColor}22` }]}>
+              <AppIcon name="swap" size={14} color={accentColor} weight="semibold" />
+            </View>
+          ) : isCompleted ? (
+            <View style={[styles.statusBadge, { backgroundColor: `${accentColor}22` }]}>
+              <AppIcon name="checkmark" size={16} color={accentColor} weight="bold" />
+            </View>
+          ) : null}
         </View>
 
-        <View style={styles.questCopy}>
+        <View style={styles.contentBlock}>
           <Text style={[styles.questTitle, { color: theme.text }]}>{quest.questTitle}</Text>
           <Text style={[styles.questObjective, { color: theme.textSecondary }]}>
             {quest.objectiveVerb} {targetReps} {exerciseLabel.toLowerCase()}
           </Text>
+
+          <View style={styles.rewardRow}>
+            <View style={[styles.rewardChip, { backgroundColor: `${theme.xp}18` }]}>
+              <AppIcon name="star" size={12} color={theme.xp} weight="semibold" />
+              <Text style={[styles.rewardText, { color: theme.xp }]}>{DAILY_MISSION_XP_REWARD} XP</Text>
+            </View>
+            <View style={[styles.rewardChip, { backgroundColor: `${theme.accent}18` }]}>
+              <CoinIcon size={12} />
+              <Text style={[styles.rewardText, { color: theme.accent }]}>{DAILY_MISSION_COIN_REWARD}</Text>
+            </View>
+          </View>
         </View>
 
         <View style={styles.progressBlock}>
           <View style={styles.progressHeader}>
-            <Text style={[styles.progressLabel, { color: theme.textSecondary }]}>Quest progress</Text>
-            <Text style={[styles.progressValue, { color: isCompleted ? theme.success : theme.text }]}>
-              {displayReps} / {targetReps}
-              {!isCompleted ? (
-                <Text style={[styles.progressPercent, { color: accentColor }]}> · {progressPercent}%</Text>
-              ) : null}
+            <Text style={[styles.progressLabel, { color: theme.textSecondary }]}>Progress</Text>
+            <Text style={[styles.progressValue, { color: isCompleted ? theme.textSecondary : theme.text }]}>
+              {displayReps}/{targetReps}
+              <Text style={[styles.progressPercent, { color: theme.textSecondary }]}> · {progressPercent}%</Text>
             </Text>
           </View>
 
@@ -182,74 +155,64 @@ export function ChallengeCard({
               style={[
                 styles.progressFill,
                 {
-                  backgroundColor: isCompleted ? theme.success : accentColor,
-                  width: `${Math.max(progress * 100, 0)}%`,
+                  backgroundColor: isCompleted ? theme.textSecondary : accentColor,
+                  width: `${progress > 0 ? Math.max(progressPercent, 4) : 0}%`,
                 },
               ]}
             />
           </View>
-
-          {!isCompleted ? (
-            <Text style={[styles.progressHint, { color: theme.textSecondary }]}>
-              {missionStatus === 'tracking'
-                ? 'Progress counts automatically from workouts, races, and challenges'
-                : missionStatus === 'ready'
-                  ? 'Target reached — claim your reward or keep training'
-                  : 'Keep training anywhere in the app, or tap below to finish in a workout'}
-            </Text>
-          ) : null}
         </View>
 
-        <View style={styles.rewardsRow}>
-          <Text style={[styles.rewardsLabel, { color: theme.textSecondary }]}>Rewards</Text>
-          <View style={styles.rewardChips}>
-            <RewardChip
-              icon="xp"
-              label={`${DAILY_MISSION_XP_REWARD} XP`}
-              color={theme.xp}
-              backgroundColor={`${theme.xp}14`}
+        <View style={styles.actions}>
+          {isCompleted ? (
+            <View
+              style={[
+                styles.clearedBanner,
+                {
+                  backgroundColor: `${accentColor}16`,
+                  borderColor: `${accentColor}40`,
+                },
+              ]}>
+              <AppIcon name="checkmark" size={18} color={accentColor} weight="bold" />
+              <Text style={[styles.clearedLabel, { color: accentColor }]}>Quest cleared</Text>
+            </View>
+          ) : actionLabel ? (
+            <PrimaryButton
+              label={actionLabel}
+              loading={loading}
+              onPress={onStart}
+              style={[
+                styles.actionButton,
+                isReady ? { backgroundColor: accentColor } : null,
+              ]}
             />
-            <RewardChip
-              icon="coin"
-              label={`${DAILY_MISSION_COIN_REWARD}`}
-              color={theme.accent}
-              backgroundColor={`${theme.accent}14`}
-            />
-          </View>
-        </View>
+          ) : (
+            <View style={styles.actionButtonPlaceholder} />
+          )}
 
-        {isCompleted ? (
-          <View style={[styles.clearedBanner, { backgroundColor: `${theme.success}18`, borderColor: theme.success }]}>
-            <Text style={[styles.clearedText, { color: theme.success }]}>
-              Quest cleared · {DAILY_MISSION_XP_REWARD} XP and {DAILY_MISSION_COIN_REWARD} coins collected
-            </Text>
-          </View>
-        ) : (
-          <>
-            {canReroll && onReroll ? (
+          <View style={styles.rerollRow}>
+            {!isCompleted && canReroll && onReroll ? (
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="Swap this quest for another exercise"
                 disabled={rerollLoading || loading}
                 onPress={onReroll}
                 style={({ pressed }) => [
-                  styles.rerollButton,
+                  styles.swapPill,
                   {
                     backgroundColor: theme.backgroundSelected,
                     borderColor: theme.border,
-                    opacity: pressed || rerollLoading || loading ? 0.7 : 1,
+                    opacity: pressed || rerollLoading || loading ? 0.65 : 1,
                   },
                 ]}>
-                <Text style={[styles.rerollButtonText, { color: theme.textSecondary }]}>
-                  {rerollLoading ? 'Swapping quest…' : 'Swap quest (once per day)'}
+                <AppIcon name="swap" size={14} color={theme.textSecondary} weight="semibold" />
+                <Text style={[styles.rerollLink, { color: theme.textSecondary }]}>
+                  {rerollLoading ? 'Swapping…' : 'Swap quest'}
                 </Text>
               </Pressable>
             ) : null}
-            {actionLabel ? (
-              <PrimaryButton label={actionLabel} loading={loading} onPress={onStart} />
-            ) : null}
-          </>
-        )}
+          </View>
+        </View>
       </View>
     </View>
   );
@@ -257,9 +220,14 @@ export function ChallengeCard({
 
 const styles = StyleSheet.create({
   card: {
+    flex: 1,
+    minHeight: 310,
     borderRadius: Radius.xl,
     overflow: 'hidden',
     position: 'relative',
+    shadowOffset: { width: 0, height: 10 },
+    shadowRadius: 18,
+    elevation: 3,
   },
   accentRail: {
     position: 'absolute',
@@ -271,15 +239,20 @@ const styles = StyleSheet.create({
   },
   accentGlow: {
     position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 72,
+    top: -40,
+    right: -20,
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    zIndex: 0,
   },
   inner: {
+    flex: 1,
     padding: Spacing.four,
     paddingLeft: Spacing.four + 4,
     gap: Spacing.three,
+    justifyContent: 'space-between',
+    zIndex: 1,
   },
   headerRow: {
     flexDirection: 'row',
@@ -287,45 +260,62 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: Spacing.two,
   },
-  missionPill: {
+  questPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.one,
+    gap: 5,
     paddingHorizontal: Spacing.two,
-    paddingVertical: Spacing.one,
+    paddingVertical: 5,
     borderRadius: Radius.sm,
     borderWidth: 1,
   },
-  missionPillText: {
-    fontSize: 10,
-    fontWeight: '900',
-    letterSpacing: 1.1,
-  },
-  statusBadge: {
-    paddingHorizontal: Spacing.two,
-    paddingVertical: Spacing.one,
-    borderRadius: Radius.sm,
-  },
-  statusBadgeText: {
+  questPillText: {
     fontSize: 10,
     fontWeight: '900',
     letterSpacing: 0.8,
+    textTransform: 'uppercase',
   },
-  questCopy: {
-    gap: Spacing.half,
+  statusBadge: {
+    width: 32,
+    height: 32,
+    borderRadius: Radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  contentBlock: {
+    gap: Spacing.one,
   },
   questTitle: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: '900',
-    letterSpacing: -0.3,
+    letterSpacing: -0.4,
+    lineHeight: 28,
   },
   questObjective: {
     fontSize: 14,
     lineHeight: 20,
     fontWeight: '600',
   },
+  rewardRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.two,
+    marginTop: Spacing.half,
+  },
+  rewardChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: Spacing.two,
+    paddingVertical: 5,
+    borderRadius: Radius.sm,
+  },
+  rewardText: {
+    fontSize: 12,
+    fontWeight: '800',
+  },
   progressBlock: {
-    gap: Spacing.one,
+    gap: Spacing.two,
   },
   progressHeader: {
     flexDirection: 'row',
@@ -334,9 +324,9 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
   },
   progressLabel: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '800',
-    letterSpacing: 0.8,
+    letterSpacing: 0.4,
     textTransform: 'uppercase',
   },
   progressValue: {
@@ -345,69 +335,63 @@ const styles = StyleSheet.create({
     fontVariant: ['tabular-nums'],
   },
   progressPercent: {
-    fontSize: 13,
-    fontWeight: '800',
+    fontWeight: '700',
   },
   progressTrack: {
-    height: 10,
-    borderRadius: Radius.sm,
+    height: 12,
+    borderRadius: Radius.lg,
     overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
-    borderRadius: Radius.sm,
+    borderRadius: Radius.lg,
+    minWidth: 0,
   },
-  progressHint: {
-    fontSize: 12,
-    lineHeight: 17,
-    fontWeight: '500',
-  },
-  rewardsRow: {
-    gap: Spacing.one,
-  },
-  rewardsLabel: {
-    fontSize: 11,
-    fontWeight: '800',
-    letterSpacing: 0.8,
-    textTransform: 'uppercase',
-  },
-  rewardChips: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+  actions: {
+    minHeight: ACTION_BUTTON_HEIGHT + Spacing.two + REROLL_ROW_HEIGHT,
     gap: Spacing.two,
+    alignSelf: 'stretch',
   },
-  rewardChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.one,
-    paddingHorizontal: Spacing.two,
-    paddingVertical: Spacing.one,
-    borderRadius: Radius.sm,
-    borderWidth: 1,
+  actionButton: {
+    width: '100%',
   },
-  rewardChipText: {
-    fontSize: 13,
-    fontWeight: '800',
+  actionButtonPlaceholder: {
+    width: '100%',
+    minHeight: ACTION_BUTTON_HEIGHT,
   },
   clearedBanner: {
-    padding: Spacing.three,
-    borderRadius: Radius.md,
+    width: '100%',
+    minHeight: ACTION_BUTTON_HEIGHT,
+    borderRadius: Radius.lg,
     borderWidth: 1,
-  },
-  clearedText: {
-    fontSize: 13,
-    lineHeight: 18,
-    fontWeight: '700',
-    textAlign: 'center',
-  },
-  rerollButton: {
-    paddingVertical: Spacing.two,
-    paddingHorizontal: Spacing.three,
-    borderRadius: Radius.md,
-    borderWidth: 1,
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.two,
   },
-  rerollButtonText: {
+  clearedLabel: {
+    fontSize: 16,
+    fontWeight: '800',
+    letterSpacing: 0.2,
+  },
+  rerollRow: {
+    minHeight: REROLL_ROW_HEIGHT,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: '100%',
+  },
+  swapPill: {
+    width: '100%',
+    minHeight: REROLL_ROW_HEIGHT,
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.one,
+    paddingHorizontal: Spacing.three,
+  },
+  rerollLink: {
     fontSize: 13,
     fontWeight: '700',
   },

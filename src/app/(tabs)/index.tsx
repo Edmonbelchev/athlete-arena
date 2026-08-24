@@ -229,7 +229,9 @@ export default function HomeScreen() {
 
         <HomeSection
           title="Daily Quests"
-          subtitle="Three quests today — swap one per day or let reps count from any workout">
+          subtitle="Three quests today — swap one per day or let reps count from any workout"
+          actionLabel="Quest log"
+          onAction={() => router.push('/profile/quest-log')}>
           {missions.length > 0 ? (
             <DailyMissionsCarousel
               missions={missions}

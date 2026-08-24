@@ -158,6 +158,14 @@ function RootNavigator() {
             }}
           />
           <Stack.Screen
+            name="profile/quest-log"
+            options={{
+              presentation: 'modal',
+              headerShown: true,
+              title: 'Quest Log',
+            }}
+          />
+          <Stack.Screen
             name="profile/edit"
             options={{
               presentation: 'modal',
@@ -203,6 +211,14 @@ function RootNavigator() {
               presentation: 'modal',
               headerShown: true,
               title: 'Settings',
+            }}
+          />
+          <Stack.Screen
+            name="profile/subscription"
+            options={{
+              presentation: 'modal',
+              headerShown: true,
+              title: 'Membership',
             }}
           />
           <Stack.Screen

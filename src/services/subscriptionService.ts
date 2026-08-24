@@ -23,3 +23,16 @@ export async function getMyPremiumStatus(): Promise<PremiumStatus> {
     expiresAt: row?.expires_at ?? null,
   };
 }
+
+/** Upserts server-side premium after RevenueCat restore or purchase. */
+export async function syncMyRevenueCatSubscription(expiresAt: string | null): Promise<void> {
+  assertSupabaseConfigured();
+
+  const { error } = await supabase.rpc('sync_my_revenuecat_subscription', {
+    p_expires_at: expiresAt,
+  });
+
+  if (error) {
+    throw error;
+  }
+}

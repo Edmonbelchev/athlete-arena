@@ -14,6 +14,8 @@ interface ProfileAvatarProps {
   size?: number;
   shopAvatar?: ShopAvatarDisplay | null;
   frame?: ShopFrameDisplay | null;
+  /** Self-only premium indicator; do not pass on other users' avatars. */
+  showPremiumCrown?: boolean;
 }
 
 export function ProfileAvatar({
@@ -22,6 +24,7 @@ export function ProfileAvatar({
   size = 96,
   shopAvatar,
   frame,
+  showPremiumCrown = false,
 }: ProfileAvatarProps) {
   const theme = useTheme();
   const radius = size >= 96 ? Radius.xl : size / 2;
@@ -29,6 +32,8 @@ export function ProfileAvatar({
   const fontSize = Math.round(size * (initials.length > 1 ? 0.34 : 0.42));
   const frameWidth = frame?.borderWidth ?? 0;
   const outerSize = size + frameWidth * 2;
+  const crownBadgeSize = Math.max(20, Math.round(size * 0.3));
+  const crownIconSize = Math.max(11, Math.round(crownBadgeSize * 0.58));
 
   const imageUri = shopAvatar?.imageUrl ?? uri ?? null;
   const icon = shopAvatar?.icon;
@@ -78,11 +83,7 @@ export function ProfileAvatar({
     </View>
   );
 
-  if (!frame) {
-    return avatarBody;
-  }
-
-  return (
+  const avatarContent = frame ? (
     <View
       style={StyleSheet.flatten([
         styles.frameWrap,
@@ -95,6 +96,39 @@ export function ProfileAvatar({
         },
       ])}>
       {avatarBody}
+    </View>
+  ) : (
+    avatarBody
+  );
+
+  if (!showPremiumCrown) {
+    return avatarContent;
+  }
+
+  return (
+    <View
+      style={[
+        styles.crownWrap,
+        {
+          width: frame ? outerSize : size,
+          height: frame ? outerSize : size,
+        },
+      ]}
+      accessibilityLabel={`${name} profile photo, premium member`}>
+      {avatarContent}
+      <View
+        style={[
+          styles.premiumCrownBadge,
+          {
+            width: crownBadgeSize,
+            height: crownBadgeSize,
+            borderRadius: crownBadgeSize / 2,
+            backgroundColor: theme.streak,
+            borderColor: theme.card,
+          },
+        ]}>
+        <AppIcon name="crown" size={crownIconSize} color="#FFFFFF" weight="bold" />
+      </View>
     </View>
   );
 }
@@ -192,6 +226,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
+  },
+  crownWrap: {
+    position: 'relative',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  premiumCrownBadge: {
+    position: 'absolute',
+    bottom: -2,
+    right: -2,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   selectorContainer: {
     alignItems: 'center',

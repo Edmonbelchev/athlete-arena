@@ -24,6 +24,7 @@ import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useAchievementPreview } from '@/features/achievements/useAchievementPreview';
 import { getAuthErrorMessage } from '@/features/auth/authErrors';
 import { useAuth } from '@/features/auth';
+import { usePremium } from '@/features/subscription/usePremium';
 import { useProfile } from '@/features/profile/useProfile';
 import { useProfileStats } from '@/features/profile/useProfileStats';
 import { xpProgressInCurrentLevel } from '@/features/xp/levelUtils';
@@ -34,6 +35,7 @@ import { useTheme } from '@/hooks/use-theme';
 export default function ProfileScreen() {
   const theme = useTheme();
   const { session, signOut } = useAuth();
+  const { isPremium } = usePremium();
   const { profile, isLoading: isProfileLoading, error: profileError, refresh: refreshProfile } =
     useProfile();
   const {
@@ -98,6 +100,12 @@ export default function ProfileScreen() {
         label: 'History',
         icon: 'history' as const,
         onPress: () => router.push('/profile/history'),
+      },
+      {
+        id: 'membership',
+        label: 'Membership',
+        icon: 'crown' as const,
+        onPress: () => router.push('/profile/subscription'),
       },
       {
         id: 'settings',
@@ -195,6 +203,7 @@ export default function ProfileScreen() {
           level={profile?.level ?? xpProgress.level}
           coinBalance={profile?.coin_balance ?? 0}
           avatarUrl={profile?.avatar_url}
+          showPremiumCrown={isPremium}
           onEdit={() => router.push('/profile/edit')}
         />
 

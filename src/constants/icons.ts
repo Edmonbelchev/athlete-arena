@@ -28,7 +28,8 @@ export type AppIconName =
   | 'settings'
   | 'support'
   | 'swap'
-  | 'announcement';
+  | 'announcement'
+  | 'checkmark';
 
 export const APP_ICONS: Record<AppIconName, SymbolViewProps['name']> = {
   home: { ios: 'house.fill', android: 'home', web: 'home' },
@@ -78,5 +79,10 @@ export const APP_ICONS: Record<AppIconName, SymbolViewProps['name']> = {
     ios: 'megaphone.fill',
     android: 'campaign',
     web: 'campaign',
+  },
+  checkmark: {
+    ios: 'checkmark.circle.fill',
+    android: 'check_circle',
+    web: 'check_circle',
   },
 };

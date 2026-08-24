@@ -121,7 +121,7 @@ export function DailyMissionsCarousel({
             disableIntervalMomentum
             onScroll={handleScroll}
             style={{ width: slideWidth }}
-            contentContainerStyle={{ width: slideWidth * missions.length }}>
+            contentContainerStyle={{ width: slideWidth * missions.length, alignItems: 'stretch' }}>
             {missions.map((mission, index) => {
               const missionIndex = resolveMissionIndex(
                 mission.exerciseType,
@@ -132,7 +132,9 @@ export function DailyMissionsCarousel({
               const canReroll = canRerollMission(mission, rerollUsedOn);
 
               return (
-                <View key={slideKey} style={{ width: slideWidth, paddingHorizontal: Spacing.half }}>
+                <View
+                  key={slideKey}
+                  style={{ width: slideWidth, paddingHorizontal: Spacing.half, alignSelf: 'stretch' }}>
                   <ChallengeCard
                     missionIndex={missionIndex}
                     missionLabel={`QUEST ${missionIndex + 1}`}
@@ -176,7 +178,7 @@ export function DailyMissionsCarousel({
                         styles.step,
                         {
                           backgroundColor: isActive ? `${accentColor}22` : theme.backgroundSelected,
-                          borderColor: isActive || isCleared ? accentColor : theme.border,
+                          borderColor: isActive ? accentColor : isCleared ? theme.border : theme.border,
                         },
                         isActive ? styles.stepActive : null,
                       ])}>
@@ -184,7 +186,7 @@ export function DailyMissionsCarousel({
                         style={StyleSheet.flatten([
                           styles.stepLabel,
                           {
-                            color: isCleared ? theme.success : isActive ? accentColor : theme.textSecondary,
+                            color: isCleared ? theme.textSecondary : isActive ? accentColor : theme.textSecondary,
                           },
                         ])}>
                         {missionIndex + 1}

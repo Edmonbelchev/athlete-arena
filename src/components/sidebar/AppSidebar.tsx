@@ -24,6 +24,7 @@ import type { AppIconName } from '@/constants/icons';
 import { Radius, Spacing } from '@/constants/theme';
 import { getAuthErrorMessage } from '@/features/auth/authErrors';
 import { useAuth } from '@/features/auth';
+import { usePremium } from '@/features/subscription/usePremium';
 import { useProfile } from '@/features/profile/useProfile';
 import { useSidebar } from '@/features/sidebar/SidebarProvider';
 import { xpProgressInCurrentLevel } from '@/features/xp/levelUtils';
@@ -63,6 +64,7 @@ const NAV_SECTIONS: NavSection[] = [
     title: 'More',
     items: [
       { label: 'Settings', icon: 'settings', href: '/profile/settings' },
+      { label: 'Membership', icon: 'crown', href: '/profile/subscription' },
       { label: 'Support', icon: 'support', href: '/profile/support' },
     ],
   },
@@ -75,6 +77,7 @@ export function AppSidebar() {
   const { isOpen, close } = useSidebar();
   const { signOut } = useAuth();
   const { profile, refresh: refreshProfile } = useProfile();
+  const { isPremium } = usePremium();
   const { achievements, refresh: refreshAchievements } = useAchievementPreview();
   const [logoutError, setLogoutError] = useState<string | null>(null);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -144,6 +147,7 @@ export function AppSidebar() {
                   uri={profile?.avatar_url}
                   name={displayName}
                   size={48}
+                  showPremiumCrown={isPremium}
                 />
 
                 <View style={styles.greetingBlock}>

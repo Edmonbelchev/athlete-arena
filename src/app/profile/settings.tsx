@@ -11,6 +11,7 @@ import { AppIcon } from '@/components/ui/AppIcon';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { APP_VERSION_LABEL } from '@/constants/app';
 import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
+import { usePremium } from '@/features/subscription/usePremium';
 import { useCameraDebugOverlaysAccess } from '@/features/settings/cameraDebugAccess';
 import { useUserSettings } from '@/features/settings/UserSettingsProvider';
 import { leaveScreen } from '@/lib/navigation';
@@ -36,6 +37,7 @@ export default function SettingsScreen() {
     saveError,
   } = useUserSettings();
   const showCameraDebugSettings = useCameraDebugOverlaysAccess();
+  const { isPremium } = usePremium();
 
   return (
     <>
@@ -123,6 +125,20 @@ export default function SettingsScreen() {
               />
             </View>
           ) : null}
+
+          <View style={styles.section}>
+            <Text style={StyleSheet.flatten([styles.sectionTitle, { color: theme.text }])}>Membership</Text>
+            <Text style={StyleSheet.flatten([styles.supportCopy, { color: theme.textSecondary }])}>
+              {isPremium
+                ? 'You have Premium access. View your plan, renewal date, and billing details.'
+                : 'Upgrade to create, edit, and share custom workouts.'}
+            </Text>
+            <PrimaryButton
+              label={isPremium ? 'View membership' : 'Upgrade to Premium'}
+              variant="secondary"
+              onPress={() => router.push('/profile/subscription')}
+            />
+          </View>
 
           <View style={styles.section}>
             <Text style={StyleSheet.flatten([styles.sectionTitle, { color: theme.text }])}>

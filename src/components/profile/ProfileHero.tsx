@@ -15,6 +15,7 @@ interface ProfileHeroProps {
   avatarUrl?: string | null;
   shopAvatar?: ShopAvatarDisplay | null;
   frame?: ShopFrameDisplay | null;
+  showPremiumCrown?: boolean;
   onEdit: () => void;
 }
 
@@ -26,6 +27,7 @@ export function ProfileHero({
   avatarUrl,
   shopAvatar,
   frame,
+  showPremiumCrown = false,
   onEdit,
 }: ProfileHeroProps) {
   const theme = useTheme();
@@ -42,6 +44,7 @@ export function ProfileHero({
         size={104}
         shopAvatar={shopAvatar}
         frame={frame}
+        showPremiumCrown={showPremiumCrown}
       />
 
       <View style={styles.identity}>

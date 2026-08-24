@@ -106,7 +106,7 @@ Premium unlocks custom workout **create**, **edit**, and **share**. The app uses
 
 | Setting | Value |
 |---------|-------|
-| Entitlement | `premium` |
+| Entitlement | `athlete_arena_pro` |
 | Offering | `default` (must be **Current**) |
 | iOS product IDs | `premium_monthly`, `premium_year` |
 | Android product IDs | Same IDs (when Play Console is set up) |
@@ -145,7 +145,22 @@ src/constants/subscription.ts
 **RevenueCat offering `default`**
 
 - Packages must reference **App Store / Play Store** products (not Test Store — Test Store does not work with the native `appl_` / `goog_` SDK keys)
-- Both products must grant entitlement `premium`
+- Both products must grant entitlement `athlete_arena_pro`
+
+### RevenueCat webhook (production server sync)
+
+Server RPCs (`create_custom_workout_template`, etc.) read **`user_subscriptions` only**. The webhook syncs RevenueCat purchases into that table.
+
+See **[supabase/REVENUECAT_WEBHOOK.md](./supabase/REVENUECAT_WEBHOOK.md)** for deploy steps, dashboard config, and backfill.
+
+Quick deploy:
+
+```bash
+supabase secrets set REVENUECAT_WEBHOOK_AUTHORIZATION="Bearer YOUR_RANDOM_SECRET" PREMIUM_ENTITLEMENT_ID="athlete_arena_pro"
+supabase functions deploy revenuecat-webhook --no-verify-jwt
+```
+
+Point RevenueCat webhooks at `https://YOUR_PROJECT_REF.supabase.co/functions/v1/revenuecat-webhook` with the same Authorization header. Enable **Sandbox + Production** while testing.
 
 ### Local development
 
@@ -174,7 +189,7 @@ on conflict (user_id) do update
   set status = 'active', provider = 'manual', expires_at = excluded.expires_at;
 ```
 
-The client treats RevenueCat entitlement **or** an active Supabase row as premium. Server RPCs (`create_custom_workout_template`, etc.) still read **`user_subscriptions` only** — a RevenueCat webhook to sync purchases is planned for production.
+The client treats RevenueCat entitlement **or** an active Supabase row as premium. Server RPCs use **`user_subscriptions`**, kept in sync by the RevenueCat webhook above.
 
 ### Seed demo Cindy sessions
 
@@ -242,7 +257,7 @@ Configure in [eas.json](./eas.json).
 - [ ] Auth email template + SMTP in Supabase Dashboard
 - [ ] Production env vars in EAS secrets (Supabase + RevenueCat SDK keys)
 - [ ] App Store / Play subscriptions live; RevenueCat offering `default` current with store products
-- [ ] RevenueCat webhook → Supabase `user_subscriptions` sync (server-side premium gates)
+- [ ] RevenueCat webhook deployed (`revenuecat-webhook` edge function + migration `067`)
 - [ ] Push notification edge function + webhook deployed
 - [ ] Test pose detection on real devices
 - [ ] `eas build --profile production`

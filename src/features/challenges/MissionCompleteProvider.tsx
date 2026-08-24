@@ -17,6 +17,11 @@ import {
 } from '@/components/challenges/MissionCompleteToast';
 import type { DailyMissionCompletePayload } from '@/features/challenges/dailyMissionCelebration';
 import { findNewlyCompletedMissions } from '@/features/challenges/dailyMissionCelebration';
+import {
+  getMissionCelebrationKey,
+  loadCelebratedMissionKeys,
+  markMissionCelebrated,
+} from '@/features/challenges/missionCelebrationStorage';
 import { notifyDailyChallengeRefresh } from '@/lib/dailyChallengeSync';
 import { getDailyChallengeHome } from '@/services/challengeService';
 import type { DailyChallengeHome } from '@/types';
@@ -34,6 +39,8 @@ export function MissionCompleteProvider({ children }: { children: ReactNode }) {
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isShowingRef = useRef(false);
   const missionsSnapshotRef = useRef<DailyChallengeHome[]>([]);
+  const celebratedKeysRef = useRef<Set<string>>(new Set());
+  const isReadyRef = useRef(false);
 
   const showNextMission = useCallback(() => {
     const next = queueRef.current.shift() ?? null;
@@ -52,8 +59,16 @@ export function MissionCompleteProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const celebrateMissionComplete = useCallback(
+  const enqueueCelebration = useCallback(
     (mission: DailyMissionCompletePayload) => {
+      const key = getMissionCelebrationKey(mission);
+      if (celebratedKeysRef.current.has(key)) {
+        return;
+      }
+
+      celebratedKeysRef.current.add(key);
+      void markMissionCelebrated(mission);
+
       queueRef.current.push(mission);
 
       if (!isShowingRef.current) {
@@ -63,19 +78,28 @@ export function MissionCompleteProvider({ children }: { children: ReactNode }) {
     [showNextMission],
   );
 
+  const celebrateMissionComplete = useCallback(
+    (mission: DailyMissionCompletePayload) => {
+      enqueueCelebration(mission);
+    },
+    [enqueueCelebration],
+  );
+
   const refreshMissionsAndCelebrate = useCallback(async () => {
     const before = missionsSnapshotRef.current;
     const after = await getDailyChallengeHome();
     missionsSnapshotRef.current = after;
 
-    findNewlyCompletedMissions(before, after).forEach((mission) => {
-      celebrateMissionComplete(mission);
-    });
+    if (isReadyRef.current) {
+      findNewlyCompletedMissions(before, after).forEach((mission) => {
+        enqueueCelebration(mission);
+      });
+    }
 
     notifyDailyChallengeRefresh();
 
     return after;
-  }, [celebrateMissionComplete]);
+  }, [enqueueCelebration]);
 
   const dismissActiveMission = useCallback(() => {
     if (timeoutRef.current) {
@@ -92,13 +116,26 @@ export function MissionCompleteProvider({ children }: { children: ReactNode }) {
   }, [dismissActiveMission]);
 
   useEffect(() => {
-    void getDailyChallengeHome()
-      .then((missions) => {
+    let cancelled = false;
+
+    void Promise.all([loadCelebratedMissionKeys(), getDailyChallengeHome()])
+      .then(([celebratedKeys, missions]) => {
+        if (cancelled) {
+          return;
+        }
+
+        celebratedKeysRef.current = celebratedKeys;
         missionsSnapshotRef.current = missions;
+        isReadyRef.current = true;
       })
-      .catch(() => {});
+      .catch(() => {
+        if (!cancelled) {
+          isReadyRef.current = true;
+        }
+      });
 
     return () => {
+      cancelled = true;
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
       }

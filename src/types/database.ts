@@ -857,6 +857,19 @@ export interface Database {
           xp_earned: number | null;
         }[];
       };
+      get_quest_log: {
+        Args: { p_completed: boolean; p_limit?: number; p_offset?: number };
+        Returns: {
+          entry_id: string;
+          exercise_type: ExerciseType;
+          target_reps: number;
+          completed_reps: number;
+          xp_reward: number;
+          status: ChallengeStatus;
+          challenge_date: string;
+          result_at: string;
+        }[];
+      };
       sync_user_achievements: {
         Args: { p_user_id?: string };
         Returns: number;

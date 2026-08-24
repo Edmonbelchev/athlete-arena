@@ -1,5 +1,6 @@
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import * as Haptics from 'expo-haptics';
 import {
   ActivityIndicator,
   FlatList,
@@ -82,6 +83,8 @@ export default function WorkoutLibraryScreen() {
       if (!unlocked) {
         return;
       }
+
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     }
 
     setCreateModalTemplateId(templateId ?? null);

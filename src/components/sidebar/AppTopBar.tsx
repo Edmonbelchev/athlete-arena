@@ -6,6 +6,7 @@ import { NotificationBellButton } from '@/components/notifications/NotificationB
 import { ProfileAvatar } from '@/components/profile/ProfileAvatar';
 import { SidebarToggleButton } from '@/components/sidebar/SidebarToggleButton';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { usePremium } from '@/features/subscription/usePremium';
 import { useProfile } from '@/features/profile/useProfile';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -13,6 +14,7 @@ export function AppTopBar() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const { profile } = useProfile();
+  const { isPremium } = usePremium();
 
   const displayName = profile?.display_name ?? profile?.username ?? 'Athlete';
 
@@ -41,6 +43,7 @@ export function AppTopBar() {
               uri={profile?.avatar_url}
               name={displayName}
               size={40}
+              showPremiumCrown={isPremium}
             />
           </Pressable>
         </View>
