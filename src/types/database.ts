@@ -16,7 +16,8 @@ export type GoalStatus = 'active' | 'completed' | 'cancelled';
 export interface FriendChallengeRpcRow {
   participant_id: string;
   challenge_id: string;
-  exercise_type: ExerciseType;
+  challenge_kind: 'exercise' | 'workout';
+  exercise_type: ExerciseType | null;
   target_reps: number;
   xp_reward: number;
   message: string | null;
@@ -27,6 +28,10 @@ export interface FriendChallengeRpcRow {
   completed_at: string | null;
   started_at: string | null;
   xp_earned: number | null;
+  coins_earned: number | null;
+  elapsed_seconds: number | null;
+  completed_rounds: number | null;
+  workout_total_reps: number | null;
   created_at: string;
   creator_id: string;
   creator_username: string;
@@ -39,10 +44,19 @@ export interface FriendChallengeRpcRow {
   opponent_completed_reps: number;
   opponent_completed_at: string | null;
   opponent_started_at: string | null;
+  opponent_elapsed_seconds: number | null;
+  opponent_completed_rounds: number | null;
+  opponent_workout_total_reps: number | null;
   winner_user_id: string | null;
   resolved_at: string | null;
   creator_emote_id: string | null;
   creator_emote_emoji: string | null;
+  template_id: string | null;
+  catalog_workout_id: string | null;
+  workout_title: string | null;
+  workout_type: 'amrap' | 'for_time' | 'emom' | null;
+  structure_config: unknown;
+  workout_exercises: unknown;
 }
 
 export interface Database {
@@ -834,6 +848,34 @@ export interface Database {
       };
       complete_friend_challenge: {
         Args: { p_participant_id: string; p_completed_reps: number };
+        Returns: Database['public']['Tables']['friend_challenge_participants']['Row'];
+      };
+      create_friend_workout_challenge: {
+        Args: {
+          p_friend_id: string;
+          p_template_id: string;
+          p_message?: string | null;
+          p_emote_id?: string | null;
+        };
+        Returns: string;
+      };
+      create_friend_catalog_workout_challenge: {
+        Args: {
+          p_friend_id: string;
+          p_catalog_workout_id: string;
+          p_message?: string | null;
+          p_emote_id?: string | null;
+        };
+        Returns: string;
+      };
+      complete_friend_workout_challenge: {
+        Args: {
+          p_participant_id: string;
+          p_started_at: string;
+          p_completed_rounds: number;
+          p_total_reps: number;
+          p_elapsed_seconds?: number | null;
+        };
         Returns: Database['public']['Tables']['friend_challenge_participants']['Row'];
       };
       get_challenge_history: {

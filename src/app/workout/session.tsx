@@ -34,9 +34,28 @@ import { formatUserError } from '@/lib/errors';
 import { leaveScreen } from '@/lib/navigation';
 import { supportsNativePoseDetection } from '@/lib/runtime';
 import { saveCustomWorkoutSession, saveForTimeWorkoutSession } from '@/services/customWorkoutService';
+import { completeFriendWorkoutChallenge } from '@/services/friendChallengeService';
 import type { AmrapWorkoutResult, CustomWorkoutLaunchConfig, ForTimeWorkoutResult } from '@/types/customWorkouts';
 import { useTheme } from '@/hooks/use-theme';
 import { useUserSettings } from '@/features/settings/UserSettingsProvider';
+
+async function syncFriendWorkoutChallengeCompletion(
+  participantId: string,
+  input: {
+    startedAt: string;
+    completedRounds: number;
+    totalReps: number;
+    elapsedSeconds?: number | null;
+  },
+): Promise<void> {
+  await completeFriendWorkoutChallenge({
+    participantId,
+    startedAt: input.startedAt,
+    completedRounds: input.completedRounds,
+    totalReps: input.totalReps,
+    elapsedSeconds: input.elapsedSeconds ?? null,
+  });
+}
 
 function AmrapWorkoutSession({ config }: { config: CustomWorkoutLaunchConfig }) {
   const theme = useTheme();
@@ -73,6 +92,13 @@ function AmrapWorkoutSession({ config }: { config: CustomWorkoutLaunchConfig }) 
 
     try {
       await saveCustomWorkoutSession(result);
+      if (config.friendChallengeParticipantId) {
+        await syncFriendWorkoutChallengeCompletion(config.friendChallengeParticipantId, {
+          startedAt: result.startedAt,
+          completedRounds: result.completedRounds,
+          totalReps: result.totalReps,
+        });
+      }
       await refreshMissionsAndCelebrate();
       void refreshProfile();
     } catch (err) {
@@ -80,7 +106,19 @@ function AmrapWorkoutSession({ config }: { config: CustomWorkoutLaunchConfig }) 
     } finally {
       setIsSaving(false);
     }
-  }, [refreshMissionsAndCelebrate, refreshProfile]);
+  }, [config.friendChallengeParticipantId, refreshMissionsAndCelebrate, refreshProfile]);
+
+  const handleLeave = useCallback(() => {
+    if (config.friendChallengeParticipantId) {
+      router.replace({
+        pathname: '/challenge/friend/[participantId]',
+        params: { participantId: config.friendChallengeParticipantId },
+      });
+      return;
+    }
+
+    leaveScreen(router, '/(tabs)/workouts');
+  }, [config.friendChallengeParticipantId, router]);
 
   const handleTimerExpire = useCallback(() => {
     amrap.finishWorkout();
@@ -123,10 +161,6 @@ function AmrapWorkoutSession({ config }: { config: CustomWorkoutLaunchConfig }) 
     enabled: canTrack,
     soundEnabled: preferences.repSoundEnabled,
   });
-
-  const handleLeave = useCallback(() => {
-    leaveScreen(router, '/(tabs)/workouts');
-  }, [router]);
 
   function handleCameraReady() {
     amrap.startWorkout();
@@ -245,6 +279,14 @@ function ForTimeWorkoutSession({ config }: { config: CustomWorkoutLaunchConfig }
 
     try {
       await saveForTimeWorkoutSession(result);
+      if (config.friendChallengeParticipantId) {
+        await syncFriendWorkoutChallengeCompletion(config.friendChallengeParticipantId, {
+          startedAt: result.startedAt,
+          completedRounds: 0,
+          totalReps: result.totalReps,
+          elapsedSeconds: result.elapsedSeconds,
+        });
+      }
       await refreshMissionsAndCelebrate();
       void refreshProfile();
     } catch (err) {
@@ -252,7 +294,19 @@ function ForTimeWorkoutSession({ config }: { config: CustomWorkoutLaunchConfig }
     } finally {
       setIsSaving(false);
     }
-  }, [refreshMissionsAndCelebrate, refreshProfile]);
+  }, [config.friendChallengeParticipantId, refreshMissionsAndCelebrate, refreshProfile]);
+
+  const handleLeave = useCallback(() => {
+    if (config.friendChallengeParticipantId) {
+      router.replace({
+        pathname: '/challenge/friend/[participantId]',
+        params: { participantId: config.friendChallengeParticipantId },
+      });
+      return;
+    }
+
+    leaveScreen(router, '/(tabs)/workouts');
+  }, [config.friendChallengeParticipantId, router]);
 
   const { elapsedSeconds } = useFriendChallengeRaceTimer({
     startedAt: forTime.startedAt,
@@ -290,10 +344,6 @@ function ForTimeWorkoutSession({ config }: { config: CustomWorkoutLaunchConfig }
     enabled: canTrack,
     soundEnabled: preferences.repSoundEnabled,
   });
-
-  const handleLeave = useCallback(() => {
-    leaveScreen(router, '/(tabs)/workouts');
-  }, [router]);
 
   function handleCameraReady() {
     forTime.startWorkout();

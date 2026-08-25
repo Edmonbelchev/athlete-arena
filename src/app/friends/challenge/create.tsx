@@ -1,13 +1,15 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { ProfileAvatar } from '@/components/profile/ProfileAvatar';
 import { FriendChallengeRewardInfo } from '@/components/friends/FriendChallengeRewardInfo';
+import { FriendChallengeWorkoutPicker } from '@/components/friends/FriendChallengeWorkoutPicker';
+import { ProfileAvatar } from '@/components/profile/ProfileAvatar';
 import { EmotePicker } from '@/components/shop/EmotePicker';
 import { AuthTextInput } from '@/components/ui/AuthTextInput';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
+import { WorkoutCircuitPreview } from '@/components/workouts/WorkoutCircuitPreview';
 import {
     EXERCISE_LABELS,
     EXERCISE_TYPES,
@@ -23,13 +25,34 @@ import {
     getDefaultRepsForExercise,
 } from '@/constants/friendChallenges';
 import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
+import {
+    formatFriendChallengeWorkoutMeta,
+    getFriendChallengeWorkoutKey,
+    parseFriendChallengeWorkoutKey,
+    type FriendChallengeWorkoutOption,
+} from '@/features/friends/friendChallengeWorkoutPicker';
 import { useFriends } from '@/features/friends/useFriends';
 import { useShop } from '@/features/shop/ShopProvider';
 import { getOwnedEmotes } from '@/features/shop/shopUtils';
+import { parseStructureConfig } from '@/features/workouts/forTimeStructure';
 import { useTheme } from '@/hooks/use-theme';
 import { formatUserError } from '@/lib/errors';
-import { createFriendChallenge } from '@/services/friendChallengeService';
-import type { FriendSummary } from '@/types/friends';
+import { getCustomWorkoutTemplateDetail } from '@/services/customWorkoutService';
+import {
+    createFriendCatalogWorkoutChallenge,
+    createFriendChallenge,
+    createFriendWorkoutChallenge,
+} from '@/services/friendChallengeService';
+import { getWorkoutCatalogDetail } from '@/services/workoutCatalogService';
+import type { CustomWorkoutExercise, CustomWorkoutType, ForTimeStructureConfig } from '@/types/customWorkouts';
+import type { FriendChallengeKind, FriendSummary } from '@/types/friends';
+
+interface WorkoutChallengePreview {
+  title: string;
+  workoutType: CustomWorkoutType;
+  exercises: CustomWorkoutExercise[];
+  structureConfig: ForTimeStructureConfig | null;
+}
 
 export default function CreateFriendChallengeScreen() {
   const theme = useTheme();
@@ -52,6 +75,11 @@ export default function CreateFriendChallengeScreen() {
     }
   }, [isFriendLocked, refreshFriends]);
   const [selectedFriendId, setSelectedFriendId] = useState<string | null>(initialFriendId ?? null);
+  const [challengeKind, setChallengeKind] = useState<FriendChallengeKind>('exercise');
+  const [selectedWorkoutKey, setSelectedWorkoutKey] = useState<string | null>(null);
+  const [selectedWorkoutOption, setSelectedWorkoutOption] = useState<FriendChallengeWorkoutOption | null>(null);
+  const [selectedWorkoutPreview, setSelectedWorkoutPreview] = useState<WorkoutChallengePreview | null>(null);
+  const [isWorkoutPreviewLoading, setIsWorkoutPreviewLoading] = useState(false);
   const [exerciseType, setExerciseType] = useState<ExerciseType>('push_ups');
   const [targetReps, setTargetReps] = useState(getDefaultRepsForExercise('push_ups'));
   const [customReps, setCustomReps] = useState('');
@@ -96,6 +124,81 @@ export default function CreateFriendChallengeScreen() {
       setSelectedFriendId(initialFriendId);
     }
   }, [initialFriendId]);
+
+  useEffect(() => {
+    if (challengeKind !== 'workout') {
+      setSelectedWorkoutKey(null);
+      setSelectedWorkoutOption(null);
+    }
+  }, [challengeKind]);
+
+  const handleSelectWorkout = useCallback((option: FriendChallengeWorkoutOption) => {
+    setSelectedWorkoutOption(option);
+    setSelectedWorkoutKey(getFriendChallengeWorkoutKey(option));
+  }, []);
+
+  useEffect(() => {
+    if (challengeKind !== 'workout' || !selectedWorkoutKey) {
+      setSelectedWorkoutPreview(null);
+      return;
+    }
+
+    const parsed = parseFriendChallengeWorkoutKey(selectedWorkoutKey);
+    if (!parsed) {
+      setSelectedWorkoutPreview(null);
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadPreview() {
+      setIsWorkoutPreviewLoading(true);
+
+      try {
+        if (parsed!.source === 'arena') {
+          const detail = await getWorkoutCatalogDetail(parsed!.id);
+          if (cancelled) {
+            return;
+          }
+
+          setSelectedWorkoutPreview({
+            title: detail.title,
+            workoutType: detail.workoutType,
+            exercises: detail.exercises,
+            structureConfig: detail.structureConfig,
+          });
+          return;
+        }
+
+        const detail = await getCustomWorkoutTemplateDetail(parsed!.id);
+        if (cancelled) {
+          return;
+        }
+
+        setSelectedWorkoutPreview({
+          title: detail.title,
+          workoutType: detail.workoutType,
+          exercises: detail.exercises,
+          structureConfig: parseStructureConfig(detail.structureConfig),
+        });
+      } catch (err) {
+        if (!cancelled) {
+          setSelectedWorkoutPreview(null);
+          setError(formatUserError(err, 'Failed to load workout details'));
+        }
+      } finally {
+        if (!cancelled) {
+          setIsWorkoutPreviewLoading(false);
+        }
+      }
+    }
+
+    void loadPreview();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [challengeKind, selectedWorkoutKey]);
 
   function renderFriendRow(friend: FriendSummary, selected: boolean, onPress?: () => void) {
     const displayName = friend.displayName ?? friend.username;
@@ -150,6 +253,43 @@ export default function CreateFriendChallengeScreen() {
   async function handleSubmit() {
     if (!selectedFriendId) {
       setError('Select a friend to challenge');
+      return;
+    }
+
+    if (challengeKind === 'workout') {
+      const parsed = selectedWorkoutKey ? parseFriendChallengeWorkoutKey(selectedWorkoutKey) : null;
+      if (!parsed) {
+        setError('Select a workout to challenge your friend with');
+        return;
+      }
+
+      setIsSubmitting(true);
+      setError(null);
+
+      try {
+        const participantId =
+          parsed.source === 'arena'
+            ? await createFriendCatalogWorkoutChallenge(
+                selectedFriendId,
+                parsed.id,
+                message.trim() || undefined,
+                selectedEmoteId,
+              )
+            : await createFriendWorkoutChallenge(
+                selectedFriendId,
+                parsed.id,
+                message.trim() || undefined,
+                selectedEmoteId,
+              );
+        router.replace({
+          pathname: '/challenge/friend/[participantId]',
+          params: { participantId },
+        });
+      } catch (err) {
+        setError(formatUserError(err, 'Failed to send challenge'));
+      } finally {
+        setIsSubmitting(false);
+      }
       return;
     }
 
@@ -217,6 +357,55 @@ export default function CreateFriendChallengeScreen() {
             </View>
           )}
 
+          <Text style={StyleSheet.flatten([styles.label, { color: theme.textSecondary }])}>CHALLENGE TYPE</Text>
+          <View style={styles.exerciseRow}>
+            {(['exercise', 'workout'] as const).map((kind) => {
+              const selected = challengeKind === kind;
+              return (
+                <Pressable
+                  key={kind}
+                  onPress={() => setChallengeKind(kind)}
+                  style={StyleSheet.flatten([
+                    styles.exerciseChip,
+                    {
+                      backgroundColor: selected ? theme.primary : theme.backgroundElement,
+                      borderColor: selected ? theme.primary : theme.border,
+                    },
+                  ])}>
+                  <Text
+                    style={StyleSheet.flatten([
+                      styles.exerciseChipText,
+                      { color: selected ? '#FFFFFF' : theme.text },
+                    ])}>
+                    {kind === 'exercise' ? 'Single exercise' : 'Full workout'}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+
+          <FriendChallengeRewardInfo />
+
+          {challengeKind === 'workout' ? (
+            <>
+              <Text style={StyleSheet.flatten([styles.label, { color: theme.textSecondary }])}>WORKOUT</Text>
+              <FriendChallengeWorkoutPicker
+                selectedWorkoutKey={selectedWorkoutKey}
+                onSelectWorkout={handleSelectWorkout}
+              />
+
+              {isWorkoutPreviewLoading ? (
+                <ActivityIndicator color={theme.primary} />
+              ) : selectedWorkoutPreview ? (
+                <WorkoutCircuitPreview
+                  workoutType={selectedWorkoutPreview.workoutType}
+                  exercises={selectedWorkoutPreview.exercises}
+                  structureConfig={selectedWorkoutPreview.structureConfig}
+                />
+              ) : null}
+            </>
+          ) : (
+            <>
           <Text style={StyleSheet.flatten([styles.label, { color: theme.textSecondary }])}>EXERCISE</Text>
           <View style={styles.exerciseRow}>
             {EXERCISE_TYPES.map((type) => {
@@ -243,8 +432,6 @@ export default function CreateFriendChallengeScreen() {
               );
             })}
           </View>
-
-          <FriendChallengeRewardInfo exerciseType={exerciseType} targetReps={targetReps} />
 
           <Text style={StyleSheet.flatten([styles.label, { color: theme.textSecondary }])}>TARGET REPS</Text>
           <View style={styles.repRow}>
@@ -315,6 +502,8 @@ export default function CreateFriendChallengeScreen() {
               );
             })}
           </View>
+            </>
+          )}
 
           <EmotePicker
             emotes={ownedEmotes}
@@ -334,12 +523,27 @@ export default function CreateFriendChallengeScreen() {
               styles.summary,
               { backgroundColor: theme.backgroundElement, borderColor: theme.border },
             ])}>
-            <Text style={StyleSheet.flatten([styles.summaryTitle, { color: theme.text }])}>
-              {targetReps} {EXERCISE_LABELS[exerciseType]}
-            </Text>
-            <Text style={StyleSheet.flatten([styles.summaryMeta, { color: theme.textSecondary }])}>
-              {formatRaceTimeLimit(timeLimitSeconds)} · fastest finisher wins
-            </Text>
+            {challengeKind === 'workout' ? (
+              <>
+                <Text style={StyleSheet.flatten([styles.summaryTitle, { color: theme.text }])}>
+                  {selectedWorkoutOption?.title ?? 'Select a workout'}
+                </Text>
+                <Text style={StyleSheet.flatten([styles.summaryMeta, { color: theme.textSecondary }])}>
+                  {selectedWorkoutOption
+                    ? `${formatFriendChallengeWorkoutMeta(selectedWorkoutOption)} · head-to-head challenge`
+                    : 'Choose a workout below'}
+                </Text>
+              </>
+            ) : (
+              <>
+                <Text style={StyleSheet.flatten([styles.summaryTitle, { color: theme.text }])}>
+                  {targetReps} {EXERCISE_LABELS[exerciseType]}
+                </Text>
+                <Text style={StyleSheet.flatten([styles.summaryMeta, { color: theme.textSecondary }])}>
+                  {formatRaceTimeLimit(timeLimitSeconds)} · fastest finisher wins
+                </Text>
+              </>
+            )}
           </View>
 
           {error ? (
@@ -349,7 +553,11 @@ export default function CreateFriendChallengeScreen() {
           <PrimaryButton
             label="Send Challenge"
             loading={isSubmitting}
-            disabled={!selectedFriendId}
+            disabled={
+              !selectedFriendId ||
+              (challengeKind === 'workout' &&
+                (!selectedWorkoutKey || !selectedWorkoutOption || isWorkoutPreviewLoading))
+            }
             onPress={() => void handleSubmit()}
           />
         </ScrollView>
@@ -400,6 +608,14 @@ const styles = StyleSheet.create({
   friendMeta: {
     fontSize: 13,
     fontWeight: '600',
+  },
+  templateRow: {
+    padding: Spacing.three,
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+  },
+  templateInfo: {
+    gap: Spacing.half,
   },
   label: {
     fontSize: 12,

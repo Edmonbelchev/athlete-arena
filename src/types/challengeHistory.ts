@@ -1,6 +1,7 @@
 import type { ExerciseType } from '@/constants/challenges';
 import { formatRaceTime } from '@/constants/friendChallenges';
-import { formatCoinAmount, getFriendChallengeCoinReward } from '@/constants/coins';
+import { formatCoinAmount } from '@/constants/coins';
+import { getFriendChallengeEarnedRewards } from '@/constants/friendChallengeRewards';
 import { DAILY_MISSION_COIN_REWARD } from '@/constants/dailyMissionRewards';
 import type { ChallengeStatus } from '@/types/friends';
 
@@ -50,41 +51,26 @@ export function getHistoryResultLabel(entry: ChallengeHistoryEntry, myUserId?: s
 
   if (entry.status === 'completed') {
     const earned = entry.xpEarned ?? entry.xpReward;
+    const coins = getFriendChallengeEarnedRewards(entry.xpEarned, null).coins;
 
     if (entry.winnerUserId && myUserId) {
-      const coins = getFriendChallengeCoinReward(
-        entry.resultAt,
-        entry.winnerUserId,
-        myUserId,
-        entry.exerciseType,
-        entry.targetReps,
-      );
       const coinSuffix = coins > 0 ? ` · ${formatCoinAmount(coins)}` : '';
 
       if (entry.winnerUserId === myUserId) {
         return `Won the race · +${earned} XP${coinSuffix}`;
       }
-      return `Lost the race · +${earned} XP`;
+      return `Lost the race · +${earned} XP${coinSuffix}`;
     }
 
     if (entry.raceSeconds !== null && entry.opponentRaceSeconds !== null) {
       if (entry.raceSeconds === entry.opponentRaceSeconds) {
-        const coinSuffix = myUserId
-          ? ` · ${formatCoinAmount(
-              getFriendChallengeCoinReward(
-                entry.resultAt,
-                null,
-                myUserId,
-                entry.exerciseType,
-                entry.targetReps,
-              ),
-            )}`
-          : '';
+        const coinSuffix = coins > 0 ? ` · ${formatCoinAmount(coins)}` : '';
         return `Tie race · +${earned} XP${coinSuffix}`;
       }
     }
 
-    return `Completed · +${earned} XP`;
+    const coinSuffix = coins > 0 ? ` · ${formatCoinAmount(coins)}` : '';
+    return `Completed · +${earned} XP${coinSuffix}`;
   }
 
   return entry.status;

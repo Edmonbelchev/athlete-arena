@@ -1,9 +1,14 @@
 import type { ExerciseType } from '@/constants/challenges';
+import { formatExerciseLabel } from '@/constants/challenges';
+import { formatRaceTime } from '@/constants/friendChallenges';
+import type { CustomWorkoutExercise, CustomWorkoutType } from '@/types/customWorkouts';
 
 import type { ShopAvatarDisplay, ShopFrameDisplay } from '@/types/shop';
 
 export type FriendshipStatus = 'pending' | 'accepted' | 'declined';
 export type ChallengeStatus = 'pending' | 'in_progress' | 'completed' | 'declined' | 'expired';
+
+export type FriendChallengeKind = 'exercise' | 'workout';
 
 export interface FriendSummary {
   friendshipId: string;
@@ -55,7 +60,8 @@ export interface FriendWithActiveChallengesSummary {
 export interface FriendChallenge {
   participantId: string;
   challengeId: string;
-  exerciseType: ExerciseType;
+  challengeKind: FriendChallengeKind;
+  exerciseType: ExerciseType | null;
   targetReps: number;
   xpReward: number;
   message: string | null;
@@ -67,6 +73,10 @@ export interface FriendChallenge {
   completedAt: string | null;
   startedAt: string | null;
   xpEarned: number | null;
+  coinsEarned: number | null;
+  elapsedSeconds: number | null;
+  completedRounds: number | null;
+  workoutTotalReps: number | null;
   createdAt: string;
   creatorId: string;
   creatorUsername: string;
@@ -79,10 +89,19 @@ export interface FriendChallenge {
   opponentCompletedReps: number;
   opponentCompletedAt: string | null;
   opponentStartedAt: string | null;
+  opponentElapsedSeconds: number | null;
+  opponentCompletedRounds: number | null;
+  opponentWorkoutTotalReps: number | null;
   winnerUserId: string | null;
   resolvedAt: string | null;
   creatorEmoteId: string | null;
   creatorEmoteEmoji: string | null;
+  templateId: string | null;
+  catalogWorkoutId: string | null;
+  workoutTitle: string | null;
+  workoutType: CustomWorkoutType | null;
+  structureConfig: unknown;
+  workoutExercises: CustomWorkoutExercise[];
 }
 
 export function getOpponentDisplayName(challenge: FriendChallenge): string {
@@ -157,4 +176,38 @@ export function getFriendChallengeSecondsRemaining(
 /** @deprecated Use hasFriendChallengeStarted for race mode. */
 export function hasFriendChallengeTimerStarted(challenge: FriendChallenge): boolean {
   return hasFriendChallengeStarted(challenge);
+}
+
+export function getFriendChallengeTitle(challenge: FriendChallenge): string {
+  if (challenge.challengeKind === 'workout') {
+    return challenge.workoutTitle ?? 'Workout challenge';
+  }
+
+  return `${challenge.targetReps} ${formatExerciseLabel(challenge.exerciseType ?? 'push_ups', true)}`;
+}
+
+export function getFriendChallengeKindLabel(challenge: FriendChallenge): string {
+  return challenge.challengeKind === 'workout' ? 'WORKOUT CHALLENGE' : 'SPEED RACE';
+}
+
+export function formatFriendWorkoutScore(challenge: FriendChallenge): string {
+  if (challenge.workoutType === 'for_time') {
+    const myTime = challenge.elapsedSeconds ?? getMyRaceSeconds(challenge);
+    const opponentTime = challenge.opponentElapsedSeconds ?? getOpponentRaceSeconds(challenge);
+    const opponentName = getOpponentDisplayName(challenge);
+
+    if (myTime !== null) {
+      return `You ${formatRaceTime(myTime)}${
+        opponentTime !== null ? ` · ${opponentName} ${formatRaceTime(opponentTime)}` : ''
+      }`;
+    }
+  }
+
+  const myRounds = challenge.completedRounds ?? 0;
+  const opponentRounds = challenge.opponentCompletedRounds ?? 0;
+  const myReps = challenge.workoutTotalReps ?? challenge.completedReps;
+  const opponentReps = challenge.opponentWorkoutTotalReps ?? challenge.opponentCompletedReps;
+  const opponentName = getOpponentDisplayName(challenge);
+
+  return `You ${myRounds} rnd · ${myReps} reps · ${opponentName} ${opponentRounds} rnd · ${opponentReps} reps`;
 }

@@ -10,9 +10,11 @@ import {
     FriendChallengeCompleteOverlay,
     type FriendChallengeCompleteVariant,
 } from '@/components/challenges/FriendChallengeCompleteOverlay';
+import { WorkoutCircuitPreview } from '@/components/workouts/WorkoutCircuitPreview';
 import { EmoteDisplay } from '@/components/shop/EmoteDisplay';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { formatExerciseLabel } from '@/constants/challenges';
+import { getCustomWorkoutSessionPath, getCustomWorkoutTypeLabel } from '@/constants/customWorkouts';
 import { getFriendChallengeCoinReward } from '@/constants/coins';
 import {
     FRIEND_RACE_TIMER_START_HINT,
@@ -22,6 +24,9 @@ import { useAuth } from '@/features/auth';
 import { useExercisePoseDetection } from '@/features/challenges/useExercisePoseDetection';
 import { useMissionComplete } from '@/features/challenges/MissionCompleteProvider';
 import { useRepCounter } from '@/features/challenges/useRepCounter';
+import { buildFriendWorkoutLaunchConfig, isFriendWorkoutChallenge } from '@/features/friends/friendChallengeWorkout';
+import { setPendingCustomWorkoutLaunch } from '@/features/workouts/customWorkoutLaunchStore';
+import { parseStructureConfig } from '@/features/workouts/forTimeStructure';
 import { useFriendChallenge } from '@/features/friends/useFriendChallenge';
 import { useFriendChallengeRaceTimer } from '@/features/friends/useFriendChallengeRaceTimer';
 import { useProfile } from '@/features/profile/useProfile';
@@ -40,7 +45,9 @@ import {
 } from '@/services/friendChallengeService';
 import {
     didIWinFriendChallenge,
+    formatFriendWorkoutScore,
     getCreatorDisplayName,
+    getFriendChallengeTitle,
     getOpponentDisplayName,
     getOpponentRaceSeconds,
     hasFriendChallengeStarted,
@@ -117,18 +124,21 @@ export default function FriendChallengeScreen() {
     !waitingOnOpponent;
   const opponentForfeited =
     Boolean(challenge) &&
-    challenge.isCreator &&
+    Boolean(challenge?.isCreator) &&
     isCompleted &&
     opponentDeclined &&
     winResult === true;
   const overlayVariant = challenge
     ? getFriendChallengeOverlayVariant(waitingOnOpponent, isCompleted, isResolved, winResult)
     : null;
-  const showWorkout =
+  const isWorkoutChallenge = challenge ? isFriendWorkoutChallenge(challenge) : false;
+  const exerciseType = challenge?.exerciseType ?? 'push_ups';
+  const showExerciseWorkout =
     Boolean(challenge) &&
+    !isWorkoutChallenge &&
     (canAttempt || Boolean(overlayVariant)) &&
     (workoutStarted || Boolean(overlayVariant));
-  const cameraActive = useDrainNativeCameraOnLeave(showWorkout);
+  const cameraActive = useDrainNativeCameraOnLeave(showExerciseWorkout);
 
   const handleLeave = useCallback(() => {
     leaveScreen(router, '/(tabs)/friends');
@@ -156,6 +166,22 @@ export default function FriendChallengeScreen() {
       setIsPendingAction(false);
     }
   }, [participantId, refresh]);
+
+  const handleStartWorkoutChallenge = useCallback(() => {
+    if (!challenge) {
+      return;
+    }
+
+    const launchConfig = buildFriendWorkoutLaunchConfig(challenge);
+    if (!launchConfig) {
+      setSyncError('Workout challenge is missing workout details');
+      return;
+    }
+
+    setSyncError(null);
+    setPendingCustomWorkoutLaunch(launchConfig);
+    router.push(getCustomWorkoutSessionPath(launchConfig.workoutType));
+  }, [challenge, router]);
 
   const handleDeclineChallenge = useCallback(async () => {
     if (!participantId) {
@@ -246,8 +272,8 @@ export default function FriendChallengeScreen() {
     pullUpBarLineY,
     processLandmarks,
   } = useExercisePoseDetection({
-    exerciseType: challenge?.exerciseType ?? 'push_ups',
-    enabled: canAttempt && cameraActive && showWorkout && !overlayVariant,
+    exerciseType,
+    enabled: canAttempt && !isWorkoutChallenge && cameraActive && showExerciseWorkout && !overlayVariant,
     posePreviewLayoutRef,
     onRepDetected: () => {
       repCounter.simulateRep();
@@ -286,13 +312,7 @@ export default function FriendChallengeScreen() {
   const myTime = isCompleted || waitingOnOpponent ? elapsedSeconds : raceStarted ? elapsedSeconds : null;
   const opponentTime = getOpponentRaceSeconds(challenge);
   const earnedXp = challenge.xpEarned ?? 0;
-  const earnedCoins = getFriendChallengeCoinReward(
-    challenge.resolvedAt,
-    challenge.winnerUserId,
-    myUserId,
-    challenge.exerciseType,
-    challenge.targetReps,
-  );
+  const earnedCoins = getFriendChallengeCoinReward(challenge.coinsEarned);
   const overlayKey = `${overlayVariant ?? 'none'}-${challenge.resolvedAt ?? challenge.completedAt ?? 'pending'}`;
   const raceTimer =
     isPending || !canAttempt
@@ -325,10 +345,45 @@ export default function FriendChallengeScreen() {
       </>
     ) : undefined;
 
-  if (showWorkout) {
+  if (isWorkoutChallenge && overlayVariant) {
+    const myTime = challenge.elapsedSeconds ?? (isCompleted || waitingOnOpponent ? elapsedSeconds : null);
+    const opponentTime = challenge.opponentElapsedSeconds ?? getOpponentRaceSeconds(challenge);
+
+    return (
+      <SafeAreaView
+        style={StyleSheet.flatten([styles.safeArea, { backgroundColor: theme.background }])}
+        edges={['bottom']}>
+        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+          <Text style={StyleSheet.flatten([styles.exercise, { color: theme.textSecondary }])}>
+            Workout challenge vs {opponentName}
+          </Text>
+          <Text style={StyleSheet.flatten([styles.workoutTitle, { color: theme.text }])}>
+            {getFriendChallengeTitle(challenge)}
+          </Text>
+          <Text style={StyleSheet.flatten([styles.pending, { color: theme.textSecondary }])}>
+            {formatFriendWorkoutScore(challenge)}
+          </Text>
+          <FriendChallengeCompleteOverlay
+            key={overlayKey}
+            variant={overlayVariant}
+            raceTimeSeconds={myTime}
+            opponentName={opponentName}
+            opponentTimeSeconds={opponentTime}
+            xp={earnedXp}
+            coins={earnedCoins}
+            emote={equippedEmote}
+            opponentForfeited={opponentForfeited}
+          />
+          <PrimaryButton label="Back" variant="secondary" onPress={handleLeave} />
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
+
+  if (showExerciseWorkout) {
     return (
       <ChallengeWorkoutMode
-          exerciseType={challenge.exerciseType}
+          exerciseType={exerciseType}
           currentReps={repCounter.currentReps}
           targetReps={challenge.targetReps}
           trackingStatus={trackingStatus}
@@ -336,7 +391,7 @@ export default function FriendChallengeScreen() {
           repPhase={posePhase}
           cameraActive={cameraActive && canAttempt && !overlayVariant}
           onContinue={handleLeave}
-          pullUpBarLineY={challenge.exerciseType === 'pull_ups' ? pullUpBarLineY : null}
+          pullUpBarLineY={exerciseType === 'pull_ups' ? pullUpBarLineY : null}
           posePreviewLayoutRef={posePreviewLayoutRef}
           onCameraReady={handleCameraReady}
           onLandmarksDetected={processLandmarks}
@@ -365,14 +420,54 @@ export default function FriendChallengeScreen() {
     );
   }
 
+  if (isWorkoutChallenge && canAttempt) {
+    return (
+      <SafeAreaView
+        style={StyleSheet.flatten([styles.safeArea, { backgroundColor: theme.background }])}
+        edges={['bottom']}>
+        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+          <Text style={StyleSheet.flatten([styles.exercise, { color: theme.textSecondary }])}>
+            Workout challenge vs {opponentName}
+          </Text>
+          <Text style={StyleSheet.flatten([styles.workoutTitle, { color: theme.text }])}>
+            {getFriendChallengeTitle(challenge)}
+          </Text>
+          {challenge.workoutType ? (
+            <Text style={StyleSheet.flatten([styles.pending, { color: theme.textSecondary }])}>
+              {getCustomWorkoutTypeLabel(challenge.workoutType)} · finish the workout to submit your score
+            </Text>
+          ) : null}
+          {challenge.creatorEmoteEmoji && !challenge.isCreator ? (
+            <View style={styles.creatorEmoteRow}>
+              <Text style={StyleSheet.flatten([styles.creatorEmoteLabel, { color: theme.textSecondary }])}>
+                Challenge emote
+              </Text>
+              <EmoteDisplay emoji={challenge.creatorEmoteEmoji} size="sm" />
+            </View>
+          ) : null}
+          <WorkoutCircuitPreview
+            workoutType={challenge.workoutType ?? 'amrap'}
+            exercises={challenge.workoutExercises}
+            structureConfig={parseStructureConfig(challenge.structureConfig)}
+          />
+          {syncError ? (
+            <Text style={StyleSheet.flatten([styles.error, { color: theme.danger }])}>{syncError}</Text>
+          ) : null}
+          <PrimaryButton label="Start Workout" onPress={handleStartWorkoutChallenge} />
+          <PrimaryButton label="Back" variant="secondary" onPress={handleLeave} />
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
+
   if (canAttempt && !workoutStarted) {
     return (
       <SafeAreaView
           style={StyleSheet.flatten([styles.safeArea, { backgroundColor: theme.background }])}
           edges={['bottom']}>
           <ChallengeWorkoutSetup
-            exerciseLabel={formatExerciseLabel(challenge.exerciseType, true)}
-            exerciseType={challenge.exerciseType}
+            exerciseLabel={formatExerciseLabel(exerciseType, true)}
+            exerciseType={exerciseType}
             targetReps={challenge.targetReps}
             subtitle={`Speed race vs ${opponentName}`}
             onStart={startWorkout}
@@ -392,8 +487,15 @@ export default function FriendChallengeScreen() {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled">
           <Text style={StyleSheet.flatten([styles.exercise, { color: theme.textSecondary }])}>
-            Speed race vs {opponentName} · {formatExerciseLabel(challenge.exerciseType, true)}
+            {isWorkoutChallenge
+              ? `Workout challenge vs ${opponentName}`
+              : `Speed race vs ${opponentName} · ${formatExerciseLabel(exerciseType, true)}`}
           </Text>
+          {isWorkoutChallenge ? (
+            <Text style={StyleSheet.flatten([styles.workoutTitle, { color: theme.text }])}>
+              {getFriendChallengeTitle(challenge)}
+            </Text>
+          ) : null}
           {challenge.creatorEmoteEmoji && !challenge.isCreator ? (
             <View style={styles.creatorEmoteRow}>
               <Text style={StyleSheet.flatten([styles.creatorEmoteLabel, { color: theme.textSecondary }])}>
@@ -411,7 +513,8 @@ export default function FriendChallengeScreen() {
             ) : (
               <View style={styles.pendingActions}>
                 <Text style={StyleSheet.flatten([styles.pending, { color: theme.textSecondary }])}>
-                  {getCreatorDisplayName(challenge)} challenged you to a speed race.
+                  {getCreatorDisplayName(challenge)} challenged you to{' '}
+                  {isWorkoutChallenge ? 'a workout' : 'a speed race'}.
                 </Text>
                 <PrimaryButton
                   label="Accept"
@@ -488,6 +591,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '800',
     letterSpacing: 1.5,
+    textAlign: 'center',
+  },
+  workoutTitle: {
+    fontSize: 24,
+    fontWeight: '900',
     textAlign: 'center',
   },
   pending: {

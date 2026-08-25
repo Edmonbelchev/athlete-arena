@@ -1,3 +1,4 @@
+import { mapFriendWorkoutExercises } from '@/features/friends/friendChallengeWorkout';
 import { assertSupabaseConfigured, supabase } from '@/lib/supabase';
 import type { ExerciseType } from '@/constants/challenges';
 import type { ChallengeStatus, FriendChallenge, FriendWithActiveChallengesSummary } from '@/types/friends';
@@ -7,6 +8,7 @@ function mapFriendChallenge(row: FriendChallengeRpcRow): FriendChallenge {
   return {
     participantId: row.participant_id,
     challengeId: row.challenge_id,
+    challengeKind: row.challenge_kind ?? 'exercise',
     exerciseType: row.exercise_type,
     targetReps: row.target_reps,
     xpReward: row.xp_reward,
@@ -18,6 +20,10 @@ function mapFriendChallenge(row: FriendChallengeRpcRow): FriendChallenge {
     completedAt: row.completed_at,
     startedAt: row.started_at,
     xpEarned: row.xp_earned,
+    coinsEarned: row.coins_earned,
+    elapsedSeconds: row.elapsed_seconds,
+    completedRounds: row.completed_rounds,
+    workoutTotalReps: row.workout_total_reps,
     createdAt: row.created_at,
     creatorId: row.creator_id,
     creatorUsername: row.creator_username,
@@ -30,10 +36,19 @@ function mapFriendChallenge(row: FriendChallengeRpcRow): FriendChallenge {
     opponentCompletedReps: row.opponent_completed_reps,
     opponentCompletedAt: row.opponent_completed_at,
     opponentStartedAt: row.opponent_started_at,
+    opponentElapsedSeconds: row.opponent_elapsed_seconds,
+    opponentCompletedRounds: row.opponent_completed_rounds,
+    opponentWorkoutTotalReps: row.opponent_workout_total_reps,
     winnerUserId: row.winner_user_id,
     resolvedAt: row.resolved_at,
     creatorEmoteId: row.creator_emote_id ?? null,
     creatorEmoteEmoji: row.creator_emote_emoji ?? null,
+    templateId: row.template_id,
+    catalogWorkoutId: row.catalog_workout_id,
+    workoutTitle: row.workout_title,
+    workoutType: row.workout_type,
+    structureConfig: row.structure_config,
+    workoutExercises: mapFriendWorkoutExercises(row.workout_exercises),
   };
 }
 
@@ -251,6 +266,110 @@ export async function completeFriendChallenge(
   const { error } = await supabase.rpc('complete_friend_challenge', {
     p_participant_id: participantId,
     p_completed_reps: completedReps,
+  });
+
+  if (error) {
+    throw error;
+  }
+}
+
+export async function createFriendWorkoutChallenge(
+  friendId: string,
+  templateId: string,
+  message?: string,
+  emoteId?: string | null,
+): Promise<string> {
+  assertSupabaseConfigured();
+
+  const { data, error } = await supabase.rpc('create_friend_workout_challenge', {
+    p_friend_id: friendId,
+    p_template_id: templateId,
+    p_message: message ?? null,
+    p_emote_id: emoteId ?? null,
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  if (!data) {
+    throw new Error('Failed to create friend workout challenge');
+  }
+
+  const challengeId = data as string;
+  const { data: challenges, error: listError } = await supabase.rpc('get_my_friend_challenges');
+
+  if (listError) {
+    throw listError;
+  }
+
+  const created = (challenges ?? []).find(
+    (row) => row.challenge_id === challengeId && row.is_creator,
+  );
+
+  if (!created?.participant_id) {
+    throw new Error('Failed to open created challenge');
+  }
+
+  return created.participant_id;
+}
+
+export async function createFriendCatalogWorkoutChallenge(
+  friendId: string,
+  catalogWorkoutId: string,
+  message?: string,
+  emoteId?: string | null,
+): Promise<string> {
+  assertSupabaseConfigured();
+
+  const { data, error } = await supabase.rpc('create_friend_catalog_workout_challenge', {
+    p_friend_id: friendId,
+    p_catalog_workout_id: catalogWorkoutId,
+    p_message: message ?? null,
+    p_emote_id: emoteId ?? null,
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  if (!data) {
+    throw new Error('Failed to create friend workout challenge');
+  }
+
+  const challengeId = data as string;
+  const { data: challenges, error: listError } = await supabase.rpc('get_my_friend_challenges');
+
+  if (listError) {
+    throw listError;
+  }
+
+  const created = (challenges ?? []).find(
+    (row) => row.challenge_id === challengeId && row.is_creator,
+  );
+
+  if (!created?.participant_id) {
+    throw new Error('Failed to open created challenge');
+  }
+
+  return created.participant_id;
+}
+
+export async function completeFriendWorkoutChallenge(input: {
+  participantId: string;
+  startedAt: string;
+  completedRounds: number;
+  totalReps: number;
+  elapsedSeconds?: number | null;
+}): Promise<void> {
+  assertSupabaseConfigured();
+
+  const { error } = await supabase.rpc('complete_friend_workout_challenge', {
+    p_participant_id: input.participantId,
+    p_started_at: input.startedAt,
+    p_completed_rounds: input.completedRounds,
+    p_total_reps: input.totalReps,
+    p_elapsed_seconds: input.elapsedSeconds ?? null,
   });
 
   if (error) {

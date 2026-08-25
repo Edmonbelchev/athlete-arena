@@ -1,28 +1,19 @@
 import { StyleSheet, Text, View } from 'react-native';
 
-import type { ExerciseType } from '@/constants/challenges';
 import { formatCoinAmount } from '@/constants/coins';
 import {
-  calculateFriendChallengeCoins,
-  calculateFriendChallengeConsolationXp,
-  calculateFriendChallengeXp,
-  formatFriendChallengeRewardRule,
-  FRIEND_CHALLENGE_MAX_COINS,
-  FRIEND_CHALLENGE_MAX_XP,
+  FRIEND_CHALLENGE_PARTICIPATION_COINS,
+  FRIEND_CHALLENGE_PARTICIPATION_XP,
+  FRIEND_CHALLENGE_WINNER_BONUS_COINS,
+  FRIEND_CHALLENGE_WINNER_BONUS_XP,
+  FRIEND_CHALLENGE_WINNER_TOTAL_COINS,
+  FRIEND_CHALLENGE_WINNER_TOTAL_XP,
 } from '@/constants/friendChallengeRewards';
 import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
-interface FriendChallengeRewardInfoProps {
-  exerciseType: ExerciseType;
-  targetReps: number;
-}
-
-export function FriendChallengeRewardInfo({ exerciseType, targetReps }: FriendChallengeRewardInfoProps) {
+export function FriendChallengeRewardInfo() {
   const theme = useTheme();
-  const xpReward = calculateFriendChallengeXp(exerciseType, targetReps);
-  const coinReward = calculateFriendChallengeCoins(exerciseType, targetReps);
-  const consolationXp = calculateFriendChallengeConsolationXp(exerciseType, targetReps);
 
   return (
     <View
@@ -30,16 +21,15 @@ export function FriendChallengeRewardInfo({ exerciseType, targetReps }: FriendCh
         styles.card,
         { backgroundColor: theme.backgroundElement, borderColor: theme.border },
       ])}>
-      <Text style={StyleSheet.flatten([styles.title, { color: theme.text }])}>Race rewards</Text>
-      <Text style={StyleSheet.flatten([styles.rule, { color: theme.textSecondary }])}>
-        {formatFriendChallengeRewardRule(exerciseType)}
+      <Text style={StyleSheet.flatten([styles.title, { color: theme.text }])}>Challenge rewards</Text>
+      <Text style={StyleSheet.flatten([styles.line, { color: theme.textSecondary }])}>
+        Finish the challenge: +{FRIEND_CHALLENGE_PARTICIPATION_XP} XP & {formatCoinAmount(FRIEND_CHALLENGE_PARTICIPATION_COINS)}
       </Text>
-      <Text style={StyleSheet.flatten([styles.max, { color: theme.textSecondary }])}>
-        Max per race: {FRIEND_CHALLENGE_MAX_XP} XP & {FRIEND_CHALLENGE_MAX_COINS} coins
+      <Text style={StyleSheet.flatten([styles.line, { color: theme.textSecondary }])}>
+        Win the head-to-head: extra +{FRIEND_CHALLENGE_WINNER_BONUS_XP} XP & {formatCoinAmount(FRIEND_CHALLENGE_WINNER_BONUS_COINS)}
       </Text>
       <Text style={StyleSheet.flatten([styles.preview, { color: theme.xp }])}>
-        At {targetReps} reps: Winner +{xpReward} XP & {formatCoinAmount(coinReward)} · Runner-up +{consolationXp}{' '}
-        XP
+        Winner total: +{FRIEND_CHALLENGE_WINNER_TOTAL_XP} XP & {formatCoinAmount(FRIEND_CHALLENGE_WINNER_TOTAL_COINS)}
       </Text>
     </View>
   );
@@ -57,12 +47,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     letterSpacing: 0.2,
   },
-  rule: {
-    fontSize: 12,
-    lineHeight: 17,
-    fontWeight: '600',
-  },
-  max: {
+  line: {
     fontSize: 12,
     lineHeight: 17,
     fontWeight: '600',

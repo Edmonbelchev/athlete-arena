@@ -4,22 +4,28 @@ import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { formatExerciseLabel } from '@/constants/challenges';
 import { formatCoinAmount } from '@/constants/coins';
 import {
-  calculateFriendChallengeCoins,
-  calculateFriendChallengeConsolationXp,
+  FRIEND_CHALLENGE_PARTICIPATION_COINS,
+  FRIEND_CHALLENGE_PARTICIPATION_XP,
+  FRIEND_CHALLENGE_WINNER_TOTAL_COINS,
+  FRIEND_CHALLENGE_WINNER_TOTAL_XP,
 } from '@/constants/friendChallengeRewards';
+import { getCustomWorkoutTypeLabel } from '@/constants/customWorkouts';
 import { formatRaceTime, formatRaceTimeLimit } from '@/constants/friendChallenges';
 import { Radius, Spacing } from '@/constants/theme';
 import { useFriendChallengeRaceTimer } from '@/features/friends/useFriendChallengeRaceTimer';
 import { useTheme } from '@/hooks/use-theme';
 import {
-    getCreatorDisplayName,
-    getMyRaceSeconds,
-    getOpponentDisplayName,
-    getOpponentRaceSeconds,
-    hasFriendChallengeStarted,
-    isFriendChallengeResolved,
-    isFriendChallengeWaitingOnOpponent,
-    type FriendChallenge,
+  formatFriendWorkoutScore,
+  getCreatorDisplayName,
+  getFriendChallengeKindLabel,
+  getFriendChallengeTitle,
+  getMyRaceSeconds,
+  getOpponentDisplayName,
+  getOpponentRaceSeconds,
+  hasFriendChallengeStarted,
+  isFriendChallengeResolved,
+  isFriendChallengeWaitingOnOpponent,
+  type FriendChallenge,
 } from '@/types/friends';
 
 interface FriendChallengeCardProps {
@@ -40,6 +46,7 @@ export function FriendChallengeCard({
   const theme = useTheme();
   const opponentName = getOpponentDisplayName(challenge);
   const creatorName = getCreatorDisplayName(challenge);
+  const isWorkout = challenge.challengeKind === 'workout';
   const isPendingInvite = challenge.status === 'pending';
   const isInProgress = challenge.status === 'in_progress';
   const isCompleted = challenge.status === 'completed';
@@ -50,17 +57,24 @@ export function FriendChallengeCard({
   const myRaceSeconds = getMyRaceSeconds(challenge);
   const opponentRaceSeconds = getOpponentRaceSeconds(challenge);
 
-  const winnerCoins = calculateFriendChallengeCoins(challenge.exerciseType, challenge.targetReps);
-  const runnerUpXp = calculateFriendChallengeConsolationXp(challenge.exerciseType, challenge.targetReps);
-
   const { elapsedSeconds, secondsRemaining, isExpired } = useFriendChallengeRaceTimer({
     startedAt: challenge.startedAt,
     completedAt: challenge.completedAt,
     maxSeconds: challenge.timeLimitSeconds,
-    enabled: raceStarted && isInProgress,
+    enabled: raceStarted && isInProgress && !isWorkout,
   });
 
   function renderTimerLabel() {
+    if (isWorkout) {
+      const typeLabel = challenge.workoutType ? getCustomWorkoutTypeLabel(challenge.workoutType) : 'Workout';
+      const capLabel = challenge.workoutType === 'for_time' ? 'Fastest time wins' : formatRaceTimeLimit(challenge.timeLimitSeconds);
+      return (
+        <Text style={[styles.timer, { color: theme.textSecondary }]}>
+          {typeLabel} · {capLabel}
+        </Text>
+      );
+    }
+
     if (isCompleted && myRaceSeconds !== null) {
       return (
         <Text style={[styles.timer, { color: theme.primary }]}>
@@ -92,6 +106,14 @@ export function FriendChallengeCard({
 
   function renderStatusLine() {
     if (waitingOnOpponent) {
+      if (isWorkout) {
+        return (
+          <Text style={[styles.progress, { color: theme.textSecondary }]}>
+            Finished · waiting for {opponentName}
+          </Text>
+        );
+      }
+
       return (
         <Text style={[styles.progress, { color: theme.textSecondary }]}>
           Finished in {formatRaceTime(myRaceSeconds)} - waiting for {opponentName}
@@ -104,7 +126,15 @@ export function FriendChallengeCard({
       const won = challenge.winnerUserId === myUserId;
       return (
         <Text style={[styles.progress, { color: won ? theme.success : theme.danger }]}>
-          {won ? 'You won the race' : `${opponentName} won the race`}
+          {won ? 'You won the challenge' : `${opponentName} won the challenge`}
+        </Text>
+      );
+    }
+
+    if (isWorkout) {
+      return (
+        <Text style={[styles.progress, { color: theme.textSecondary }]}>
+          {formatFriendWorkoutScore(challenge)}
         </Text>
       );
     }
@@ -117,12 +147,21 @@ export function FriendChallengeCard({
     );
   }
 
+  const title = getFriendChallengeTitle(challenge);
+  const subtitle =
+    isWorkout && challenge.workoutType
+      ? getCustomWorkoutTypeLabel(challenge.workoutType)
+      : `${challenge.targetReps} ${formatExerciseLabel(challenge.exerciseType ?? 'push_ups', true)}`;
+
   return (
     <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}>
-      <Text style={[styles.sectionLabel, { color: theme.textSecondary }]}>SPEED RACE</Text>
-      <Text style={[styles.title, { color: theme.text }]}>
-        {challenge.targetReps} {formatExerciseLabel(challenge.exerciseType, true)}
+      <Text style={[styles.sectionLabel, { color: theme.textSecondary }]}>
+        {getFriendChallengeKindLabel(challenge)}
       </Text>
+      <Text style={[styles.title, { color: theme.text }]}>{title}</Text>
+      {!isWorkout ? (
+        <Text style={[styles.subtitle, { color: theme.textSecondary }]}>{subtitle}</Text>
+      ) : null}
       <Text style={[styles.subtitle, { color: theme.textSecondary }]}>{label}</Text>
       {renderTimerLabel()}
 
@@ -139,7 +178,7 @@ export function FriendChallengeCard({
         <View style={styles.actions}>
           {renderStatusLine()}
           <Text style={[styles.reward, { color: theme.xp }]}>
-            Winner +{challenge.xpReward} XP & {formatCoinAmount(winnerCoins)} · Runner-up +{runnerUpXp} XP
+            Finish +{FRIEND_CHALLENGE_PARTICIPATION_XP} XP & {formatCoinAmount(FRIEND_CHALLENGE_PARTICIPATION_COINS)} · Winner +{FRIEND_CHALLENGE_WINNER_TOTAL_XP} XP & {formatCoinAmount(FRIEND_CHALLENGE_WINNER_TOTAL_COINS)}
           </Text>
           <PrimaryButton
             label={
@@ -147,7 +186,9 @@ export function FriendChallengeCard({
                 ? 'VIEW RESULT'
                 : isExpired
                   ? 'TIME EXPIRED'
-                  : 'START RACE'
+                  : isWorkout
+                    ? 'START WORKOUT'
+                    : 'START RACE'
             }
             onPress={onStart}
             disabled={isExpired && !isCompleted}

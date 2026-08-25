@@ -2,12 +2,16 @@ import { router } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { formatExerciseLabel } from '@/constants/challenges';
+import { getCustomWorkoutTypeLabel } from '@/constants/customWorkouts';
 import { formatRaceTime } from '@/constants/friendChallenges';
 import { Radius, Spacing } from '@/constants/theme';
 import { useAuth } from '@/features/auth';
 import { useTheme } from '@/hooks/use-theme';
 import {
   didIWinFriendChallenge,
+  formatFriendWorkoutScore,
+  getFriendChallengeKindLabel,
+  getFriendChallengeTitle,
   getMyRaceSeconds,
   getOpponentDisplayName,
   getOpponentRaceSeconds,
@@ -36,21 +40,28 @@ export function FriendChallengeHistoryCard({ challenge }: FriendChallengeHistory
   const opponentName = getOpponentDisplayName(challenge);
   const myUserId = session?.user.id ?? '';
   const winResult = didIWinFriendChallenge(challenge, myUserId);
+  const isWorkout = challenge.challengeKind === 'workout';
   const myRaceSeconds = getMyRaceSeconds(challenge);
   const opponentRaceSeconds = getOpponentRaceSeconds(challenge);
 
   const resultLabel =
-    winResult === true ? 'You won' : winResult === false ? `${opponentName} won` : 'Race finished';
+    winResult === true ? 'You won' : winResult === false ? `${opponentName} won` : 'Challenge finished';
 
   const resultColor =
     winResult === true ? theme.success : winResult === false ? theme.danger : theme.textSecondary;
 
-  const timeLabel =
-    myRaceSeconds !== null
+  const timeLabel = isWorkout
+    ? formatFriendWorkoutScore(challenge)
+    : myRaceSeconds !== null
       ? `You ${formatRaceTime(myRaceSeconds)}${
           opponentRaceSeconds !== null ? ` · ${opponentName} ${formatRaceTime(opponentRaceSeconds)}` : ''
         }`
       : `You ${challenge.completedReps}/${challenge.targetReps} · ${opponentName} ${challenge.opponentCompletedReps}/${challenge.targetReps}`;
+
+  const metaLabel =
+    isWorkout && challenge.workoutType
+      ? getCustomWorkoutTypeLabel(challenge.workoutType)
+      : `${challenge.targetReps} ${formatExerciseLabel(challenge.exerciseType ?? 'push_ups', true)}`;
 
   return (
     <Pressable
@@ -72,15 +83,20 @@ export function FriendChallengeHistoryCard({ challenge }: FriendChallengeHistory
         ])
       }>
       <View style={styles.headerRow}>
-        <Text style={StyleSheet.flatten([styles.kind, { color: theme.textSecondary }])}>SPEED RACE</Text>
+        <Text style={StyleSheet.flatten([styles.kind, { color: theme.textSecondary }])}>
+          {getFriendChallengeKindLabel(challenge)}
+        </Text>
         <Text style={StyleSheet.flatten([styles.date, { color: theme.textSecondary }])}>
           {formatHistoryDate(challenge.resolvedAt ?? challenge.completedAt ?? challenge.createdAt)}
         </Text>
       </View>
 
       <Text style={StyleSheet.flatten([styles.title, { color: theme.text }])}>
-        {challenge.targetReps} {formatExerciseLabel(challenge.exerciseType, true)}
+        {getFriendChallengeTitle(challenge)}
       </Text>
+      {!isWorkout ? (
+        <Text style={StyleSheet.flatten([styles.meta, { color: theme.textSecondary }])}>{metaLabel}</Text>
+      ) : null}
 
       <Text style={StyleSheet.flatten([styles.score, { color: theme.text }])}>{timeLabel}</Text>
       <Text style={StyleSheet.flatten([styles.result, { color: resultColor }])}>{resultLabel}</Text>
@@ -114,6 +130,10 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontWeight: '900',
+  },
+  meta: {
+    fontSize: 13,
+    fontWeight: '600',
   },
   score: {
     fontSize: 14,

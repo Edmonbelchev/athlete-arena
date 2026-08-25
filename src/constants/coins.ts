@@ -1,14 +1,13 @@
-import type { ExerciseType } from '@/constants/challenges';
-import {
-  calculateFriendChallengeCoins,
-  FRIEND_CHALLENGE_MAX_COINS,
-} from '@/constants/friendChallengeRewards';
 import { DAILY_MISSION_COIN_REWARD } from '@/constants/dailyMissionRewards';
+import {
+  FRIEND_CHALLENGE_PARTICIPATION_COINS,
+  FRIEND_CHALLENGE_WINNER_TOTAL_COINS,
+} from '@/constants/friendChallengeRewards';
 
-/** Coin rewards - keep in sync with supabase/migrations/037_reward_model_swap.sql */
+/** Coin rewards - keep in sync with supabase/migrations/078_friend_workout_challenges.sql */
 
 export { DAILY_MISSION_COIN_REWARD };
-export { FRIEND_CHALLENGE_MAX_COINS as FRIEND_CHALLENGE_MAX_COIN_REWARD };
+export const FRIEND_CHALLENGE_MAX_COINS = FRIEND_CHALLENGE_WINNER_TOTAL_COINS;
 /** Best coin segment on the daily spin wheel (031_daily_spin_wheel.sql). */
 export const DAILY_SPIN_MAX_COIN_REWARD = 100;
 
@@ -20,8 +19,8 @@ export const COIN_EARN_SOURCES = [
   },
   {
     id: 'friend_race_win',
-    label: 'Win a friend speed race',
-    amount: FRIEND_CHALLENGE_MAX_COINS,
+    label: 'Win a friend challenge',
+    amount: FRIEND_CHALLENGE_WINNER_TOTAL_COINS,
   },
   {
     id: 'daily_spin',
@@ -42,22 +41,10 @@ export function formatRewardPreview(xp: number, coins: number): string {
   return `Reward: ${formatXpAndCoins(xp, coins)}`;
 }
 
-export function getFriendChallengeCoinReward(
-  resolvedAt: string | null,
-  winnerUserId: string | null,
-  myUserId: string,
-  exerciseType: ExerciseType,
-  targetReps: number,
-): number {
-  if (!resolvedAt) {
-    return 0;
-  }
+export function getFriendChallengeCoinReward(coinsEarned: number | null): number {
+  return coinsEarned ?? 0;
+}
 
-  const coins = calculateFriendChallengeCoins(exerciseType, targetReps);
-
-  if (!winnerUserId) {
-    return coins;
-  }
-
-  return winnerUserId === myUserId ? coins : 0;
+export function getFriendChallengeParticipationCoins(): number {
+  return FRIEND_CHALLENGE_PARTICIPATION_COINS;
 }

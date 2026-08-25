@@ -100,6 +100,7 @@ export interface CustomWorkoutLaunchConfig {
   timeLimitSeconds: number;
   exercises: CustomWorkoutExercise[];
   structureConfig?: ForTimeStructureConfig | null;
+  friendChallengeParticipantId?: string | null;
 }
 
 /** @deprecated Use CustomWorkoutExercise */
