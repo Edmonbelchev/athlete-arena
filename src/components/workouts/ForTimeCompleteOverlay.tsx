@@ -33,8 +33,8 @@ export function ForTimeCompleteOverlay({ result }: ForTimeCompleteOverlayProps) 
 
       <View style={[styles.breakdownCard, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
         <Text style={[styles.breakdownTitle, { color: theme.text }]}>Exercise breakdown</Text>
-        {result.exerciseBreakdown.map((entry, index) => (
-          <View key={`${entry.exerciseType}-${index}`} style={styles.breakdownRow}>
+        {result.exerciseBreakdown.map((entry) => (
+          <View key={entry.exerciseType} style={styles.breakdownRow}>
             <Text style={[styles.breakdownExercise, { color: theme.text }]}>
               {entry.targetReps} {formatExerciseLabel(entry.exerciseType)}
             </Text>

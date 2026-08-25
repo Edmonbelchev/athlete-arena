@@ -199,6 +199,7 @@ export default function WorkoutLibraryScreen() {
         catalogWorkoutId: null,
         timeLimitSeconds: workoutDetail.timeLimitSeconds,
         exercises: cloneCustomWorkoutExercises(workoutDetail.exercises),
+        structureConfig: workoutDetail.structureConfig,
       });
       closePreview();
       router.push(getCustomWorkoutSessionPath(workoutDetail.workoutType));

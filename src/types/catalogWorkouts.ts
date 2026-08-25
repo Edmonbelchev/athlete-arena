@@ -1,5 +1,5 @@
 import type { ExerciseType } from '@/constants/challenges';
-import type { CustomWorkoutType } from '@/types/customWorkouts';
+import type { CustomWorkoutType, ForTimeStructureConfig } from '@/types/customWorkouts';
 import { formatRaceTime } from '@/constants/friendChallenges';
 import type { ShopAvatarDisplay, ShopFrameDisplay } from '@/types/shop';
 
@@ -24,6 +24,7 @@ export interface CatalogWorkoutDetail {
   timeLimitSeconds: number;
   leaderboardMetric: WorkoutLeaderboardMetric | null;
   exercises: Array<{ exerciseType: ExerciseType; targetReps: number }>;
+  structureConfig: ForTimeStructureConfig | null;
   myBestRounds: number | null;
   myBestReps: number | null;
   myBestElapsedSeconds: number | null;

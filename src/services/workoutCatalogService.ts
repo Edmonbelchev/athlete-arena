@@ -8,6 +8,7 @@ import type {
   WorkoutSessionHistoryEntry,
 } from '@/types/catalogWorkouts';
 import type { ExerciseType } from '@/constants/challenges';
+import { parseStructureConfig } from '@/features/workouts/forTimeStructure';
 
 export async function getWorkoutCatalog(): Promise<CatalogWorkoutSummary[]> {
   assertSupabaseConfigured();
@@ -58,6 +59,7 @@ export async function getWorkoutCatalogDetail(catalogWorkoutId: string): Promise
       exerciseType: row.exercise_type as ExerciseType,
       targetReps: row.target_reps,
     })),
+    structureConfig: parseStructureConfig(first.structure_config),
     myBestRounds: first.my_best_rounds,
     myBestReps: first.my_best_reps,
     myBestElapsedSeconds: first.my_best_elapsed_seconds ?? null,

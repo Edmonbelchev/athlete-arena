@@ -119,6 +119,7 @@ export default function CatalogWorkoutScreen() {
       catalogWorkoutId: workout.catalogWorkoutId,
       timeLimitSeconds: workout.timeLimitSeconds,
       exercises: cloneCustomWorkoutExercises(workout.exercises),
+      structureConfig: workout.structureConfig,
     });
     router.push(getCustomWorkoutSessionPath(workout.workoutType));
   }
@@ -187,7 +188,11 @@ export default function CatalogWorkoutScreen() {
               ) : null}
             </View>
 
-            <WorkoutCircuitPreview workoutType={workout.workoutType} exercises={workout.exercises} />
+            <WorkoutCircuitPreview
+              workoutType={workout.workoutType}
+              exercises={workout.exercises}
+              structureConfig={workout.structureConfig}
+            />
 
             {workout.workoutType === 'amrap' || workout.workoutType === 'for_time' ? (
               <PrimaryButton label="Start workout" onPress={handleStartWorkout} />

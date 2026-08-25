@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Modal,
@@ -23,13 +23,21 @@ import {
   DEFAULT_CUSTOM_WORKOUT_EXERCISES,
   DEFAULT_CUSTOM_WORKOUT_TIME_SECONDS,
   DEFAULT_FOR_TIME_EXERCISES,
+  DEFAULT_LADDER_EXERCISES,
+  DEFAULT_LADDER_REP_SCHEME,
   FOR_TIME_TIME_LIMIT_SECONDS,
+  LADDER_REP_SCHEME_PRESETS,
   formatWorkoutTimeLimit,
   getCustomWorkoutSessionPath,
   getCustomWorkoutTypeDefinition,
 } from '@/constants/customWorkouts';
 import { Radius, Spacing } from '@/constants/theme';
 import { setPendingCustomWorkoutLaunch } from '@/features/workouts/customWorkoutLaunchStore';
+import {
+  formatRepScheme,
+  isLadderForTimeStructure,
+  parseRepScheme,
+} from '@/features/workouts/forTimeStructure';
 import { cloneCustomWorkoutExercises } from '@/features/workouts/useAmrapWorkout';
 import { useFriends } from '@/features/friends/useFriends';
 import { useTheme } from '@/hooks/use-theme';
@@ -40,7 +48,12 @@ import {
   shareCustomWorkoutTemplateWithFriends,
   updateCustomWorkoutTemplate,
 } from '@/services/customWorkoutService';
-import type { CustomWorkoutExercise, CustomWorkoutType } from '@/types/customWorkouts';
+import type {
+  CustomWorkoutExercise,
+  CustomWorkoutType,
+  ForTimeStructureConfig,
+  ForTimeWorkoutStructure,
+} from '@/types/customWorkouts';
 
 interface CreateWorkoutModalProps {
   visible: boolean;
@@ -55,6 +68,8 @@ function getDefaultFormState() {
     title: '',
     timeLimitSeconds: DEFAULT_CUSTOM_WORKOUT_TIME_SECONDS,
     exercises: cloneCustomWorkoutExercises(DEFAULT_CUSTOM_WORKOUT_EXERCISES),
+    forTimeStructure: 'linear' as ForTimeWorkoutStructure,
+    repSchemeInput: formatRepScheme(DEFAULT_LADDER_REP_SCHEME),
     savedTemplateId: null as string | null,
     isTemplateOwner: true,
   };
@@ -74,6 +89,8 @@ export function CreateWorkoutModal({
   const [exercises, setExercises] = useState<CustomWorkoutExercise[]>(() =>
     cloneCustomWorkoutExercises(DEFAULT_CUSTOM_WORKOUT_EXERCISES),
   );
+  const [forTimeStructure, setForTimeStructure] = useState<ForTimeWorkoutStructure>('linear');
+  const [repSchemeInput, setRepSchemeInput] = useState(formatRepScheme(DEFAULT_LADDER_REP_SCHEME));
   const [savedTemplateId, setSavedTemplateId] = useState<string | null>(null);
   const [isTemplateOwner, setIsTemplateOwner] = useState(true);
   const [isLoadingTemplate, setIsLoadingTemplate] = useState(false);
@@ -96,6 +113,8 @@ export function CreateWorkoutModal({
     setTitle(defaults.title);
     setTimeLimitSeconds(defaults.timeLimitSeconds);
     setExercises(defaults.exercises);
+    setForTimeStructure(defaults.forTimeStructure);
+    setRepSchemeInput(defaults.repSchemeInput);
     setSavedTemplateId(defaults.savedTemplateId);
     setIsTemplateOwner(defaults.isTemplateOwner);
     setPickerExerciseIndex(null);
@@ -127,6 +146,13 @@ export function CreateWorkoutModal({
         setTitle(detail.title);
         setTimeLimitSeconds(detail.timeLimitSeconds);
         setExercises(cloneCustomWorkoutExercises(detail.exercises));
+        if (isLadderForTimeStructure(detail.structureConfig)) {
+          setForTimeStructure('ladder');
+          setRepSchemeInput(formatRepScheme(detail.structureConfig.repScheme));
+        } else {
+          setForTimeStructure('linear');
+          setRepSchemeInput(formatRepScheme(DEFAULT_LADDER_REP_SCHEME));
+        }
         setSavedTemplateId(detail.templateId);
         setIsTemplateOwner(detail.isOwner);
       } catch (err) {
@@ -146,7 +172,25 @@ export function CreateWorkoutModal({
     onClose();
   }
 
-  const canSubmit = title.trim().length > 0 && exercises.length > 0;
+  const parsedRepScheme = useMemo(() => parseRepScheme(repSchemeInput), [repSchemeInput]);
+  const isLadderMode = isForTime && forTimeStructure === 'ladder';
+
+  const buildStructureConfig = useCallback((): ForTimeStructureConfig | null => {
+    if (!isForTime) {
+      return null;
+    }
+
+    if (forTimeStructure === 'ladder') {
+      return parsedRepScheme.length > 0 ? { structure: 'ladder', repScheme: parsedRepScheme } : null;
+    }
+
+    return { structure: 'linear' };
+  }, [forTimeStructure, isForTime, parsedRepScheme]);
+
+  const canSubmit =
+    title.trim().length > 0 &&
+    exercises.length > 0 &&
+    (!isLadderMode || parsedRepScheme.length > 0);
 
   const updateExercise = useCallback((index: number, patch: Partial<CustomWorkoutExercise>) => {
     setExercises((current) =>
@@ -165,11 +209,11 @@ export function CreateWorkoutModal({
       ...current,
       ...exerciseTypes.map((exerciseType) => ({
         exerciseType,
-        targetReps: getDefaultRepsForExercise(exerciseType),
+        targetReps: isLadderMode ? 1 : getDefaultRepsForExercise(exerciseType),
       })),
     ]);
     setShowAddExercisePicker(false);
-  }, []);
+  }, [isLadderMode]);
 
   const removeExercise = useCallback((index: number) => {
     setExercises((current) => current.filter((_, exerciseIndex) => exerciseIndex !== index));
@@ -180,14 +224,28 @@ export function CreateWorkoutModal({
 
     if (nextType === 'for_time') {
       setTimeLimitSeconds(FOR_TIME_TIME_LIMIT_SECONDS);
+      setForTimeStructure('linear');
       setExercises(cloneCustomWorkoutExercises(DEFAULT_FOR_TIME_EXERCISES));
       return;
     }
 
     if (workoutType === 'for_time') {
       setTimeLimitSeconds(DEFAULT_CUSTOM_WORKOUT_TIME_SECONDS);
+      setForTimeStructure('linear');
       setExercises(cloneCustomWorkoutExercises(DEFAULT_CUSTOM_WORKOUT_EXERCISES));
     }
+  }
+
+  function handleForTimeStructureChange(nextStructure: ForTimeWorkoutStructure) {
+    setForTimeStructure(nextStructure);
+
+    if (nextStructure === 'ladder') {
+      setRepSchemeInput(formatRepScheme(DEFAULT_LADDER_REP_SCHEME));
+      setExercises(cloneCustomWorkoutExercises(DEFAULT_LADDER_EXERCISES));
+      return;
+    }
+
+    setExercises(cloneCustomWorkoutExercises(DEFAULT_FOR_TIME_EXERCISES));
   }
 
   const buildLaunchConfig = useCallback(() => {
@@ -198,8 +256,9 @@ export function CreateWorkoutModal({
       catalogWorkoutId: null,
       timeLimitSeconds,
       exercises: cloneCustomWorkoutExercises(exercises),
+      structureConfig: buildStructureConfig(),
     };
-  }, [exercises, savedTemplateId, timeLimitSeconds, title, workoutType]);
+  }, [buildStructureConfig, exercises, savedTemplateId, timeLimitSeconds, title, workoutType]);
 
   async function handleSaveTemplate() {
     if (!canSubmit) {
@@ -214,6 +273,7 @@ export function CreateWorkoutModal({
       workoutType,
       timeLimitSeconds,
       exercises,
+      structureConfig: buildStructureConfig(),
     };
 
     try {
@@ -370,9 +430,81 @@ export function CreateWorkoutModal({
                 </View>
               ) : null}
 
+              {isForTime ? (
+                <View style={styles.section}>
+                  <Text style={[styles.sectionTitle, { color: theme.text }]}>Circuit format</Text>
+                  <View style={styles.typeRow}>
+                    {([
+                      { id: 'linear' as const, label: 'Linear circuit' },
+                      { id: 'ladder' as const, label: 'Rep ladder' },
+                    ]).map((option) => {
+                      const selected = option.id === forTimeStructure;
+
+                      return (
+                        <Pressable
+                          key={option.id}
+                          disabled={isBusy}
+                          onPress={() => handleForTimeStructureChange(option.id)}
+                          style={[
+                            styles.typeCard,
+                            {
+                              backgroundColor: selected ? theme.primary : theme.backgroundElement,
+                              borderColor: selected ? theme.primary : theme.border,
+                            },
+                          ]}>
+                          <Text style={[styles.typeLabel, { color: selected ? '#FFFFFF' : theme.text }]}>
+                            {option.label}
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                  {isLadderMode ? (
+                    <>
+                      <Text style={[styles.helper, { color: theme.textSecondary }]}>
+                        Each tier uses the same rep count for every exercise below.
+                      </Text>
+                      <AuthTextInput
+                        label="Rep ladder"
+                        value={repSchemeInput}
+                        onChangeText={setRepSchemeInput}
+                        placeholder="50-40-30-20-10"
+                        autoCapitalize="none"
+                        autoCorrect={false}
+                      />
+                      <View style={styles.presetRow}>
+                        {LADDER_REP_SCHEME_PRESETS.map((preset) => {
+                          const selected = repSchemeInput === formatRepScheme([...preset.scheme]);
+
+                          return (
+                            <Pressable
+                              key={preset.label}
+                              disabled={isBusy}
+                              onPress={() => setRepSchemeInput(formatRepScheme([...preset.scheme]))}
+                              style={[
+                                styles.presetChip,
+                                {
+                                  backgroundColor: selected ? theme.primary : theme.backgroundElement,
+                                  borderColor: selected ? theme.primary : theme.border,
+                                },
+                              ]}>
+                              <Text style={[styles.presetLabel, { color: selected ? '#FFFFFF' : theme.text }]}>
+                                {preset.label}
+                              </Text>
+                            </Pressable>
+                          );
+                        })}
+                      </View>
+                    </>
+                  ) : null}
+                </View>
+              ) : null}
+
               <View style={styles.section}>
                 <View style={styles.sectionHeader}>
-                  <Text style={[styles.sectionTitle, { color: theme.text }]}>Exercises</Text>
+                  <Text style={[styles.sectionTitle, { color: theme.text }]}>
+                    {isLadderMode ? 'Exercises per tier' : 'Exercises'}
+                  </Text>
                   <Pressable disabled={isBusy} onPress={() => setShowAddExercisePicker(true)}>
                     <Text style={[styles.linkAction, { color: theme.primary }]}>Add exercise</Text>
                   </Pressable>
@@ -385,7 +517,9 @@ export function CreateWorkoutModal({
                       styles.exerciseCard,
                       { backgroundColor: theme.backgroundElement, borderColor: theme.border },
                     ]}>
-                    <Text style={[styles.exerciseStep, { color: theme.textSecondary }]}>Step {index + 1}</Text>
+                    <Text style={[styles.exerciseStep, { color: theme.textSecondary }]}>
+                      {isLadderMode ? `Exercise ${index + 1}` : `Step ${index + 1}`}
+                    </Text>
 
                     <Pressable
                       disabled={isBusy}
@@ -400,28 +534,30 @@ export function CreateWorkoutModal({
                       </Text>
                     </Pressable>
 
-                    <View style={styles.repRow}>
-                      <Text style={[styles.repLabel, { color: theme.text }]}>
-                        {isForTime ? 'Reps' : 'Reps per round'}
-                      </Text>
-                      <View style={styles.repControls}>
-                        <Pressable
-                          disabled={isBusy}
-                          onPress={() => updateExercise(index, { targetReps: Math.max(1, exercise.targetReps - 1) })}
-                          style={[styles.repButton, { borderColor: theme.border }]}>
-                          <Text style={[styles.repButtonLabel, { color: theme.text }]}>-</Text>
-                        </Pressable>
-                        <Text style={[styles.repValue, { color: theme.text }]}>{exercise.targetReps}</Text>
-                        <Pressable
-                          disabled={isBusy}
-                          onPress={() =>
-                            updateExercise(index, { targetReps: Math.min(500, exercise.targetReps + 1) })
-                          }
-                          style={[styles.repButton, { borderColor: theme.border }]}>
-                          <Text style={[styles.repButtonLabel, { color: theme.text }]}>+</Text>
-                        </Pressable>
+                    {!isLadderMode ? (
+                      <View style={styles.repRow}>
+                        <Text style={[styles.repLabel, { color: theme.text }]}>
+                          {isForTime ? 'Reps' : 'Reps per round'}
+                        </Text>
+                        <View style={styles.repControls}>
+                          <Pressable
+                            disabled={isBusy}
+                            onPress={() => updateExercise(index, { targetReps: Math.max(1, exercise.targetReps - 1) })}
+                            style={[styles.repButton, { borderColor: theme.border }]}>
+                            <Text style={[styles.repButtonLabel, { color: theme.text }]}>-</Text>
+                          </Pressable>
+                          <Text style={[styles.repValue, { color: theme.text }]}>{exercise.targetReps}</Text>
+                          <Pressable
+                            disabled={isBusy}
+                            onPress={() =>
+                              updateExercise(index, { targetReps: Math.min(500, exercise.targetReps + 1) })
+                            }
+                            style={[styles.repButton, { borderColor: theme.border }]}>
+                            <Text style={[styles.repButtonLabel, { color: theme.text }]}>+</Text>
+                          </Pressable>
+                        </View>
                       </View>
-                    </View>
+                    ) : null}
                     {exercises.length > 1 ? (
                       <Pressable disabled={isBusy} onPress={() => removeExercise(index)}>
                         <Text style={[styles.removeAction, { color: theme.danger }]}>Remove</Text>
@@ -431,7 +567,11 @@ export function CreateWorkoutModal({
                 ))}
               </View>
 
-              <WorkoutCircuitPreview workoutType={workoutType} exercises={exercises} />
+              <WorkoutCircuitPreview
+                workoutType={workoutType}
+                exercises={exercises}
+                structureConfig={buildStructureConfig()}
+              />
 
               {error ? <Text style={[styles.error, { color: theme.danger }]}>{error}</Text> : null}
               {shareMessage ? <Text style={[styles.success, { color: theme.success }]}>{shareMessage}</Text> : null}

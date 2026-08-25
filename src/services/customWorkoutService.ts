@@ -6,7 +6,9 @@ import type {
   ForTimeWorkoutResult,
   CustomWorkoutTemplateDetail,
   CustomWorkoutTemplateSummary,
+  ForTimeStructureConfig,
 } from '@/types/customWorkouts';
+import { parseStructureConfig, serializeStructureConfig } from '@/features/workouts/forTimeStructure';
 
 function mapTemplateSummary(row: {
   template_id: string;
@@ -74,6 +76,7 @@ export async function getCustomWorkoutTemplateDetail(
     creatorUsername: first.creator_username,
     creatorDisplayName: first.creator_display_name,
     isOwner: first.is_owner,
+    structureConfig: parseStructureConfig(first.structure_config),
     exercises: data.map((row) => ({
       exerciseType: row.exercise_type as ExerciseType,
       targetReps: row.target_reps,
@@ -86,6 +89,7 @@ export async function createCustomWorkoutTemplate(input: {
   workoutType: CustomWorkoutTemplateSummary['workoutType'];
   timeLimitSeconds: number;
   exercises: Array<{ exerciseType: ExerciseType; targetReps: number }>;
+  structureConfig?: ForTimeStructureConfig | null;
 }): Promise<string> {
   assertSupabaseConfigured();
 
@@ -97,6 +101,7 @@ export async function createCustomWorkoutTemplate(input: {
       exercise_type: exercise.exerciseType,
       target_reps: exercise.targetReps,
     })),
+    p_structure_config: serializeStructureConfig(input.structureConfig),
   });
 
   if (error) {
@@ -113,6 +118,7 @@ export async function updateCustomWorkoutTemplate(
     workoutType: CustomWorkoutTemplateSummary['workoutType'];
     timeLimitSeconds: number;
     exercises: Array<{ exerciseType: ExerciseType; targetReps: number }>;
+    structureConfig?: ForTimeStructureConfig | null;
   },
 ): Promise<void> {
   assertSupabaseConfigured();
@@ -126,6 +132,7 @@ export async function updateCustomWorkoutTemplate(
       exercise_type: exercise.exerciseType,
       target_reps: exercise.targetReps,
     })),
+    p_structure_config: serializeStructureConfig(input.structureConfig),
   });
 
   if (error) {

@@ -6,6 +6,7 @@ import {
   formatWorkoutTimeLimit,
   getCustomWorkoutTypeLabel,
 } from '@/constants/customWorkouts';
+import { getForTimeStepCount } from '@/features/workouts/forTimeStructure';
 import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import type { CustomWorkoutTemplateDetail } from '@/types/customWorkouts';
@@ -66,10 +67,14 @@ export function SharedWorkoutPreviewModal({
                 ) : null}
                 <Text style={[styles.meta, { color: theme.textSecondary }]}>
                   {detail.workoutType === 'for_time'
-                    ? `${getCustomWorkoutTypeLabel(detail.workoutType)} · ${detail.exercises.length} exercises`
+                    ? `${getCustomWorkoutTypeLabel(detail.workoutType)} · ${getForTimeStepCount(detail.exercises, detail.structureConfig)} steps`
                     : `${formatWorkoutTimeLimit(detail.timeLimitSeconds)} · ${detail.exercises.length} exercises · ${getCustomWorkoutTypeLabel(detail.workoutType)}`}
                 </Text>
-                <WorkoutCircuitPreview workoutType={detail.workoutType} exercises={detail.exercises} />
+                <WorkoutCircuitPreview
+                  workoutType={detail.workoutType}
+                  exercises={detail.exercises}
+                  structureConfig={detail.structureConfig}
+                />
               </ScrollView>
 
               <View style={styles.footer}>

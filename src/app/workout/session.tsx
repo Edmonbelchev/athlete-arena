@@ -19,6 +19,10 @@ import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useExercisePoseDetection } from '@/features/challenges/useExercisePoseDetection';
 import { useFriendChallengeRaceTimer } from '@/features/friends/useFriendChallengeRaceTimer';
 import { consumePendingCustomWorkoutLaunch } from '@/features/workouts/customWorkoutLaunchStore';
+import {
+  getForTimeStepContext,
+  getForTimeStepCount,
+} from '@/features/workouts/forTimeStructure';
 import { useMissionComplete } from '@/features/challenges/MissionCompleteProvider';
 import { useAmrapWorkout } from '@/features/workouts/useAmrapWorkout';
 import { useForTimeWorkout } from '@/features/workouts/useForTimeWorkout';
@@ -295,9 +299,16 @@ function ForTimeWorkoutSession({ config }: { config: CustomWorkoutLaunchConfig }
     forTime.startWorkout();
   }
 
+  const stepContext = useMemo(
+    () =>
+      getForTimeStepContext(forTime.currentExerciseIndex, config.exercises, config.structureConfig),
+    [config.exercises, config.structureConfig, forTime.currentExerciseIndex],
+  );
+
   const setupSubtitle = useMemo(() => {
     const typeLabel = getCustomWorkoutTypeLabel(config.workoutType);
-    return `${typeLabel} · ${config.exercises.length} exercises · finish the circuit to stop the clock`;
+    const stepCount = getForTimeStepCount(config.exercises, config.structureConfig);
+    return `${typeLabel} · ${stepCount} steps · finish the circuit to stop the clock`;
   }, [config]);
 
   if (showWorkout && forTime.completed && savedResult) {
@@ -344,9 +355,10 @@ function ForTimeWorkoutSession({ config }: { config: CustomWorkoutLaunchConfig }
             workoutTypeLabel={getCustomWorkoutTypeLabel(config.workoutType)}
             currentExercise={forTime.currentExercise}
             currentExerciseIndex={forTime.currentExerciseIndex}
-            exerciseCount={forTime.exercises.length}
+            exerciseCount={forTime.steps.length}
             currentExerciseReps={forTime.currentExerciseReps}
             elapsedSeconds={elapsedSeconds}
+            tierLabel={stepContext.tierLabel}
           />
         }
         footer={

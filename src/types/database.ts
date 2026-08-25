@@ -942,6 +942,7 @@ export interface Database {
           p_time_limit_seconds: number;
           p_exercises: Json;
           p_workout_type?: string;
+          p_structure_config?: Json | null;
         };
         Returns: string;
       };
@@ -952,6 +953,7 @@ export interface Database {
           p_time_limit_seconds: number;
           p_exercises: Json;
           p_workout_type?: string;
+          p_structure_config?: Json | null;
         };
         Returns: undefined;
       };
@@ -977,8 +979,9 @@ export interface Database {
         Returns: {
           template_id: string;
           title: string;
-          workout_type: 'amrap';
+          workout_type: 'amrap' | 'for_time' | 'emom';
           time_limit_seconds: number;
+          structure_config: Json | null;
           creator_id: string;
           creator_username: string;
           creator_display_name: string | null;

@@ -25,6 +25,20 @@ export const DEFAULT_FOR_TIME_EXERCISES: Array<{ exerciseType: ExerciseType; tar
   { exerciseType: 'burpees', targetReps: 50 },
 ];
 
+export const DEFAULT_LADDER_REP_SCHEME = [50, 40, 30, 20, 10];
+
+export const LADDER_REP_SCHEME_PRESETS = [
+  { label: '50-40-30-20-10', scheme: [50, 40, 30, 20, 10] },
+  { label: '21-15-9', scheme: [21, 15, 9] },
+] as const;
+
+export const DEFAULT_LADDER_EXERCISES: Array<{ exerciseType: ExerciseType; targetReps: number }> = [
+  { exerciseType: 'burpees', targetReps: 1 },
+  { exerciseType: 'jumping_jacks', targetReps: 1 },
+  { exerciseType: 'squats', targetReps: 1 },
+  { exerciseType: 'push_ups', targetReps: 1 },
+];
+
 export const FOR_TIME_TIME_LIMIT_SECONDS = 0;
 
 export interface CustomWorkoutTypeDefinition {

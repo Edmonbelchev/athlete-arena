@@ -1,5 +1,10 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 
+import {
+  buildAggregatedExerciseBreakdown,
+  isLadderForTimeStructure,
+  resolveForTimeSteps,
+} from '@/features/workouts/forTimeStructure';
 import { buildExerciseBreakdownFromSteps } from '@/services/customWorkoutService';
 import type { CustomWorkoutLaunchConfig, ForTimeWorkoutResult } from '@/types/customWorkouts';
 
@@ -21,8 +26,23 @@ export function useForTimeWorkout({ config, onComplete }: UseForTimeWorkoutOptio
     repTotalsByStep: [] as number[],
   });
 
-  const exercises = config.exercises;
-  const currentExercise = exercises[currentExerciseIndex] ?? exercises[0];
+  const steps = useMemo(
+    () => resolveForTimeSteps(config.exercises, config.structureConfig),
+    [config.exercises, config.structureConfig],
+  );
+
+  const currentExercise = steps[currentExerciseIndex] ?? steps[0];
+
+  const buildBreakdown = useCallback(
+    (stepTotals: number[]) => {
+      if (isLadderForTimeStructure(config.structureConfig)) {
+        return buildAggregatedExerciseBreakdown(steps, stepTotals);
+      }
+
+      return buildExerciseBreakdownFromSteps(steps, stepTotals);
+    },
+    [config.structureConfig, steps],
+  );
 
   const result = useMemo((): ForTimeWorkoutResult | null => {
     if (!startedAt || !completedAt || !completed) {
@@ -41,11 +61,11 @@ export function useForTimeWorkout({ config, onComplete }: UseForTimeWorkoutOptio
       catalogWorkoutId: config.catalogWorkoutId,
       elapsedSeconds,
       totalReps: snapshotRef.current.totalReps,
-      exerciseBreakdown: buildExerciseBreakdownFromSteps(exercises, snapshotRef.current.repTotalsByStep),
+      exerciseBreakdown: buildBreakdown(snapshotRef.current.repTotalsByStep),
       startedAt,
       completedAt,
     };
-  }, [completed, completedAt, config.catalogWorkoutId, config.templateId, config.title, exercises, startedAt]);
+  }, [buildBreakdown, completed, completedAt, config.catalogWorkoutId, config.templateId, config.title, startedAt]);
 
   const finishWorkout = useCallback(
     (finishedAt = new Date().toISOString()) => {
@@ -69,14 +89,14 @@ export function useForTimeWorkout({ config, onComplete }: UseForTimeWorkoutOptio
         catalogWorkoutId: config.catalogWorkoutId,
         elapsedSeconds,
         totalReps: snapshotRef.current.totalReps,
-        exerciseBreakdown: buildExerciseBreakdownFromSteps(exercises, snapshotRef.current.repTotalsByStep),
+        exerciseBreakdown: buildBreakdown(snapshotRef.current.repTotalsByStep),
         startedAt,
         completedAt: finishedAt,
       };
 
       onComplete?.(finalResult);
     },
-    [config.catalogWorkoutId, config.templateId, config.title, exercises, onComplete, startedAt],
+    [buildBreakdown, config.catalogWorkoutId, config.templateId, config.title, onComplete, startedAt],
   );
 
   const startWorkout = useCallback(() => {
@@ -84,16 +104,16 @@ export function useForTimeWorkout({ config, onComplete }: UseForTimeWorkoutOptio
       return;
     }
 
-    snapshotRef.current.repTotalsByStep = exercises.map(() => 0);
+    snapshotRef.current.repTotalsByStep = steps.map(() => 0);
     setStartedAt(new Date().toISOString());
-  }, [exercises, startedAt]);
+  }, [startedAt, steps]);
 
   const registerRep = useCallback(() => {
-    if (completedRef.current || !startedAt || exercises.length === 0) {
+    if (completedRef.current || !startedAt || steps.length === 0) {
       return;
     }
 
-    const exercise = exercises[currentExerciseIndex];
+    const exercise = steps[currentExerciseIndex];
     if (!exercise) {
       return;
     }
@@ -112,7 +132,7 @@ export function useForTimeWorkout({ config, onComplete }: UseForTimeWorkoutOptio
       return;
     }
 
-    const isLastExercise = currentExerciseIndex >= exercises.length - 1;
+    const isLastExercise = currentExerciseIndex >= steps.length - 1;
 
     if (isLastExercise) {
       finishWorkout();
@@ -121,10 +141,10 @@ export function useForTimeWorkout({ config, onComplete }: UseForTimeWorkoutOptio
 
     setCurrentExerciseIndex((value) => value + 1);
     setCurrentExerciseReps(0);
-  }, [currentExerciseIndex, currentExerciseReps, exercises, finishWorkout, startedAt]);
+  }, [currentExerciseIndex, currentExerciseReps, finishWorkout, startedAt, steps]);
 
   return {
-    exercises,
+    steps,
     currentExercise,
     currentExerciseIndex,
     currentExerciseReps,

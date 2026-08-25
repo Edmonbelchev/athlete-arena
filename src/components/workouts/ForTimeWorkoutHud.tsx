@@ -13,6 +13,7 @@ interface ForTimeWorkoutHudProps {
   exerciseCount: number;
   currentExerciseReps: number;
   elapsedSeconds: number;
+  tierLabel?: string;
 }
 
 export function ForTimeWorkoutHud({
@@ -22,6 +23,7 @@ export function ForTimeWorkoutHud({
   exerciseCount,
   currentExerciseReps,
   elapsedSeconds,
+  tierLabel,
 }: ForTimeWorkoutHudProps) {
   const theme = useTheme();
 
@@ -41,6 +43,7 @@ export function ForTimeWorkoutHud({
       </View>
 
       <View style={styles.mainHud}>
+        {tierLabel ? <Text style={styles.tierLabel}>{tierLabel}</Text> : null}
         <Text style={styles.exerciseLabel}>{formatExerciseLabel(currentExercise.exerciseType, true)}</Text>
         <Text style={styles.repCount}>
           {currentExerciseReps}
@@ -97,6 +100,13 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '800',
     letterSpacing: 1,
+  },
+  tierLabel: {
+    color: 'rgba(255,255,255,0.68)',
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
   },
   repCount: {
     color: '#FFFFFF',

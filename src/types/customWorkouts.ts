@@ -8,6 +8,19 @@ export interface CustomWorkoutExercise {
   targetReps: number;
 }
 
+export type ForTimeWorkoutStructure = 'linear' | 'ladder';
+
+export interface LinearForTimeStructureConfig {
+  structure: 'linear';
+}
+
+export interface LadderForTimeStructureConfig {
+  structure: 'ladder';
+  repScheme: number[];
+}
+
+export type ForTimeStructureConfig = LinearForTimeStructureConfig | LadderForTimeStructureConfig;
+
 export interface CustomWorkoutTemplateSummary {
   templateId: string;
   title: string;
@@ -35,6 +48,7 @@ export interface CustomWorkoutTemplateDetail {
   creatorDisplayName: string | null;
   isOwner: boolean;
   exercises: CustomWorkoutExercise[];
+  structureConfig: ForTimeStructureConfig | null;
 }
 
 export interface CustomWorkoutExerciseBreakdown {
@@ -77,6 +91,7 @@ export interface CustomWorkoutLaunchConfig {
   catalogWorkoutId: string | null;
   timeLimitSeconds: number;
   exercises: CustomWorkoutExercise[];
+  structureConfig?: ForTimeStructureConfig | null;
 }
 
 /** @deprecated Use CustomWorkoutExercise */
