@@ -39,6 +39,16 @@ export const DEFAULT_LADDER_EXERCISES: Array<{ exerciseType: ExerciseType; targe
   { exerciseType: 'push_ups', targetReps: 1 },
 ];
 
+export const DEFAULT_ROUNDS_COUNT = 5;
+
+export const ROUNDS_COUNT_PRESETS = [3, 5, 10] as const;
+
+export const DEFAULT_ROUNDS_EXERCISES: Array<{ exerciseType: ExerciseType; targetReps: number }> = [
+  { exerciseType: 'squats', targetReps: 15 },
+  { exerciseType: 'burpees', targetReps: 15 },
+  { exerciseType: 'push_ups', targetReps: 15 },
+];
+
 export const FOR_TIME_TIME_LIMIT_SECONDS = 0;
 
 export interface CustomWorkoutTypeDefinition {

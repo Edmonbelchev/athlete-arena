@@ -5,8 +5,10 @@ import { getCustomWorkoutTypeDefinition } from '@/constants/customWorkouts';
 import { Radius, Spacing } from '@/constants/theme';
 import {
   expandLadderSteps,
+  expandRoundsSteps,
   formatRepScheme,
   isLadderForTimeStructure,
+  isRoundsForTimeStructure,
 } from '@/features/workouts/forTimeStructure';
 import type {
   CustomWorkoutExercise,
@@ -29,6 +31,7 @@ export function WorkoutCircuitPreview({
   const theme = useTheme();
   const typeDefinition = getCustomWorkoutTypeDefinition(workoutType);
   const isLadder = workoutType === 'for_time' && isLadderForTimeStructure(structureConfig);
+  const isRounds = workoutType === 'for_time' && isRoundsForTimeStructure(structureConfig);
 
   if (isLadder) {
     const repScheme = structureConfig.repScheme;
@@ -55,6 +58,30 @@ export function WorkoutCircuitPreview({
         ))}
         <Text style={[styles.footer, { color: theme.textSecondary }]}>
           {repScheme.length} tiers · {expandLadderSteps(exercises, repScheme).length} total steps
+        </Text>
+      </View>
+    );
+  }
+
+  if (isRounds) {
+    const { rounds } = structureConfig;
+
+    return (
+      <View style={[styles.card, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
+        <Text style={[styles.title, { color: theme.text }]}>{typeDefinition.label} · Rounds circuit</Text>
+        <Text style={[styles.ladderScheme, { color: theme.primary }]}>
+          {rounds} {rounds === 1 ? 'round' : 'rounds'}
+        </Text>
+        <View style={[styles.tierBlock, { borderBottomColor: theme.border }]}>
+          <Text style={[styles.tierLabel, { color: theme.textSecondary }]}>Each round</Text>
+          {exercises.map((exercise) => (
+            <Text key={exercise.exerciseType} style={[styles.exercise, { color: theme.text }]}>
+              {exercise.targetReps} {formatExerciseLabel(exercise.exerciseType)}
+            </Text>
+          ))}
+        </View>
+        <Text style={[styles.footer, { color: theme.textSecondary }]}>
+          {rounds} rounds · {expandRoundsSteps(exercises, rounds).length} total steps
         </Text>
       </View>
     );

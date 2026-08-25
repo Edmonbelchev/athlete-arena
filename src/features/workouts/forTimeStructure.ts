@@ -5,12 +5,14 @@ import type {
   ForTimeStructureConfig,
   LadderForTimeStructureConfig,
   LinearForTimeStructureConfig,
+  RoundsForTimeStructureConfig,
 } from '@/types/customWorkouts';
 
 export type {
   ForTimeWorkoutStructure,
   LinearForTimeStructureConfig,
   LadderForTimeStructureConfig,
+  RoundsForTimeStructureConfig,
   ForTimeStructureConfig,
 } from '@/types/customWorkouts';
 
@@ -24,6 +26,18 @@ export function isLadderForTimeStructure(
   config: ForTimeStructureConfig | null | undefined,
 ): config is LadderForTimeStructureConfig {
   return config?.structure === 'ladder';
+}
+
+export function isRoundsForTimeStructure(
+  config: ForTimeStructureConfig | null | undefined,
+): config is RoundsForTimeStructureConfig {
+  return config?.structure === 'rounds';
+}
+
+export function shouldAggregateForTimeBreakdown(
+  config: ForTimeStructureConfig | null | undefined,
+): boolean {
+  return isLadderForTimeStructure(config) || isRoundsForTimeStructure(config);
 }
 
 export function parseRepScheme(input: string): number[] {
@@ -55,12 +69,34 @@ export function expandLadderSteps(
   return steps;
 }
 
+export function expandRoundsSteps(
+  exercises: CustomWorkoutExercise[],
+  rounds: number,
+): CustomWorkoutExercise[] {
+  const steps: CustomWorkoutExercise[] = [];
+
+  for (let roundIndex = 0; roundIndex < rounds; roundIndex += 1) {
+    for (const exercise of exercises) {
+      steps.push({
+        exerciseType: exercise.exerciseType,
+        targetReps: exercise.targetReps,
+      });
+    }
+  }
+
+  return steps;
+}
+
 export function resolveForTimeSteps(
   exercises: CustomWorkoutExercise[],
   structureConfig: ForTimeStructureConfig | null | undefined,
 ): CustomWorkoutExercise[] {
   if (isLadderForTimeStructure(structureConfig)) {
     return expandLadderSteps(exercises, structureConfig.repScheme);
+  }
+
+  if (isRoundsForTimeStructure(structureConfig)) {
+    return expandRoundsSteps(exercises, structureConfig.rounds);
   }
 
   return exercises;
@@ -72,6 +108,10 @@ export function getForTimeStepCount(
 ): number {
   if (isLadderForTimeStructure(structureConfig)) {
     return structureConfig.repScheme.length * exercises.length;
+  }
+
+  if (isRoundsForTimeStructure(structureConfig)) {
+    return structureConfig.rounds * exercises.length;
   }
 
   return exercises.length;
@@ -86,22 +126,40 @@ export function getForTimeStepContext(
   tierIndex?: number;
   tierCount?: number;
 } {
-  if (!isLadderForTimeStructure(structureConfig) || blockExercises.length === 0) {
+  if (blockExercises.length === 0) {
     return {};
   }
 
-  const tierIndex = Math.floor(stepIndex / blockExercises.length);
-  const tierReps = structureConfig.repScheme[tierIndex];
+  if (isLadderForTimeStructure(structureConfig)) {
+    const tierIndex = Math.floor(stepIndex / blockExercises.length);
+    const tierReps = structureConfig.repScheme[tierIndex];
 
-  if (!tierReps) {
-    return {};
+    if (!tierReps) {
+      return {};
+    }
+
+    return {
+      tierLabel: `${tierReps} rep tier`,
+      tierIndex: tierIndex + 1,
+      tierCount: structureConfig.repScheme.length,
+    };
   }
 
-  return {
-    tierLabel: `${tierReps} rep tier`,
-    tierIndex: tierIndex + 1,
-    tierCount: structureConfig.repScheme.length,
-  };
+  if (isRoundsForTimeStructure(structureConfig)) {
+    const roundIndex = Math.floor(stepIndex / blockExercises.length);
+
+    if (roundIndex >= structureConfig.rounds) {
+      return {};
+    }
+
+    return {
+      tierLabel: `Round ${roundIndex + 1} of ${structureConfig.rounds}`,
+      tierIndex: roundIndex + 1,
+      tierCount: structureConfig.rounds,
+    };
+  }
+
+  return {};
 }
 
 export function buildAggregatedExerciseBreakdown(
@@ -160,6 +218,16 @@ export function parseStructureConfig(value: unknown): ForTimeStructureConfig | n
     return { structure: 'ladder', repScheme };
   }
 
+  if (record.structure === 'rounds') {
+    const rounds = Number(record.rounds);
+
+    if (Number.isFinite(rounds) && rounds > 0) {
+      return { structure: 'rounds', rounds: Math.floor(rounds) };
+    }
+
+    return null;
+  }
+
   if (record.structure === 'linear') {
     return { structure: 'linear' };
   }
@@ -169,13 +237,23 @@ export function parseStructureConfig(value: unknown): ForTimeStructureConfig | n
 
 export function serializeStructureConfig(
   config: ForTimeStructureConfig | null | undefined,
-): { structure: 'ladder'; repScheme: number[] } | null {
+):
+  | { structure: 'ladder'; repScheme: number[] }
+  | { structure: 'rounds'; rounds: number }
+  | null {
   if (!config || config.structure === 'linear') {
     return null;
   }
 
+  if (config.structure === 'ladder') {
+    return {
+      structure: 'ladder',
+      repScheme: config.repScheme,
+    };
+  }
+
   return {
-    structure: 'ladder',
-    repScheme: config.repScheme,
+    structure: 'rounds',
+    rounds: config.rounds,
   };
 }

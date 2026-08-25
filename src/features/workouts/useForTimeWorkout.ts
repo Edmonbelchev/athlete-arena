@@ -2,7 +2,7 @@ import { useCallback, useMemo, useRef, useState } from 'react';
 
 import {
   buildAggregatedExerciseBreakdown,
-  isLadderForTimeStructure,
+  shouldAggregateForTimeBreakdown,
   resolveForTimeSteps,
 } from '@/features/workouts/forTimeStructure';
 import { buildExerciseBreakdownFromSteps } from '@/services/customWorkoutService';
@@ -35,7 +35,7 @@ export function useForTimeWorkout({ config, onComplete }: UseForTimeWorkoutOptio
 
   const buildBreakdown = useCallback(
     (stepTotals: number[]) => {
-      if (isLadderForTimeStructure(config.structureConfig)) {
+      if (shouldAggregateForTimeBreakdown(config.structureConfig)) {
         return buildAggregatedExerciseBreakdown(steps, stepTotals);
       }
 

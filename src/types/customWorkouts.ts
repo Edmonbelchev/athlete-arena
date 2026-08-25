@@ -8,7 +8,7 @@ export interface CustomWorkoutExercise {
   targetReps: number;
 }
 
-export type ForTimeWorkoutStructure = 'linear' | 'ladder';
+export type ForTimeWorkoutStructure = 'linear' | 'ladder' | 'rounds';
 
 export interface LinearForTimeStructureConfig {
   structure: 'linear';
@@ -19,7 +19,15 @@ export interface LadderForTimeStructureConfig {
   repScheme: number[];
 }
 
-export type ForTimeStructureConfig = LinearForTimeStructureConfig | LadderForTimeStructureConfig;
+export interface RoundsForTimeStructureConfig {
+  structure: 'rounds';
+  rounds: number;
+}
+
+export type ForTimeStructureConfig =
+  | LinearForTimeStructureConfig
+  | LadderForTimeStructureConfig
+  | RoundsForTimeStructureConfig;
 
 export interface CustomWorkoutTemplateSummary {
   templateId: string;
