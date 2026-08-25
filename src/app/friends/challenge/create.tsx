@@ -384,7 +384,11 @@ export default function CreateFriendChallengeScreen() {
             })}
           </View>
 
-          <FriendChallengeRewardInfo />
+          <FriendChallengeRewardInfo
+            challengeKind={challengeKind}
+            exerciseType={exerciseType}
+            targetReps={targetReps}
+          />
 
           {challengeKind === 'workout' ? (
             <>

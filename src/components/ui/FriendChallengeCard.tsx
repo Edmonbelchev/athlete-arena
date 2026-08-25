@@ -4,6 +4,8 @@ import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { formatExerciseLabel } from '@/constants/challenges';
 import { formatCoinAmount } from '@/constants/coins';
 import {
+  calculateFriendChallengeCoins,
+  calculateFriendChallengeConsolationXp,
   FRIEND_CHALLENGE_PARTICIPATION_COINS,
   FRIEND_CHALLENGE_PARTICIPATION_XP,
   FRIEND_CHALLENGE_WINNER_TOTAL_COINS,
@@ -56,6 +58,9 @@ export function FriendChallengeCard({
   const raceStarted = hasFriendChallengeStarted(challenge);
   const myRaceSeconds = getMyRaceSeconds(challenge);
   const opponentRaceSeconds = getOpponentRaceSeconds(challenge);
+  const exerciseType = challenge.exerciseType ?? 'push_ups';
+  const winnerCoins = calculateFriendChallengeCoins(exerciseType, challenge.targetReps);
+  const runnerUpXp = calculateFriendChallengeConsolationXp(exerciseType, challenge.targetReps);
 
   const { elapsedSeconds, secondsRemaining, isExpired } = useFriendChallengeRaceTimer({
     startedAt: challenge.startedAt,
@@ -178,7 +183,9 @@ export function FriendChallengeCard({
         <View style={styles.actions}>
           {renderStatusLine()}
           <Text style={[styles.reward, { color: theme.xp }]}>
-            Finish +{FRIEND_CHALLENGE_PARTICIPATION_XP} XP & {formatCoinAmount(FRIEND_CHALLENGE_PARTICIPATION_COINS)} · Winner +{FRIEND_CHALLENGE_WINNER_TOTAL_XP} XP & {formatCoinAmount(FRIEND_CHALLENGE_WINNER_TOTAL_COINS)}
+            {isWorkout
+              ? `Finish +${FRIEND_CHALLENGE_PARTICIPATION_XP} XP & ${formatCoinAmount(FRIEND_CHALLENGE_PARTICIPATION_COINS)} · Winner +${FRIEND_CHALLENGE_WINNER_TOTAL_XP} XP & ${formatCoinAmount(FRIEND_CHALLENGE_WINNER_TOTAL_COINS)}`
+              : `Winner +${challenge.xpReward} XP & ${formatCoinAmount(winnerCoins)} · Runner-up +${runnerUpXp} XP`}
           </Text>
           <PrimaryButton
             label={

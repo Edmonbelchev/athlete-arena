@@ -33,7 +33,13 @@ export const FRIEND_CHALLENGE_TIME_MAX_SECONDS = 5400;
 export const FRIEND_RACE_TIMER_START_HINT = 'Timer starts on your first rep';
 
 export {
+  calculateFriendChallengeCoins,
+  calculateFriendChallengeConsolationXp,
+  calculateFriendChallengeXp,
   formatFriendChallengeRewardPreview,
+  formatFriendChallengeWorkoutRewardPreview,
+  FRIEND_CHALLENGE_MAX_COINS,
+  FRIEND_CHALLENGE_MAX_XP,
   FRIEND_CHALLENGE_PARTICIPATION_XP,
   FRIEND_CHALLENGE_WINNER_TOTAL_XP,
   FRIEND_CHALLENGE_WINNER_TOTAL_COINS,

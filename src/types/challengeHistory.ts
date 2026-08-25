@@ -51,7 +51,10 @@ export function getHistoryResultLabel(entry: ChallengeHistoryEntry, myUserId?: s
 
   if (entry.status === 'completed') {
     const earned = entry.xpEarned ?? entry.xpReward;
-    const coins = getFriendChallengeEarnedRewards(entry.xpEarned, null).coins;
+    const coins = getFriendChallengeEarnedRewards(entry.xpEarned, null, {
+      exerciseType: entry.exerciseType,
+      targetReps: entry.targetReps,
+    }).coins;
 
     if (entry.winnerUserId && myUserId) {
       const coinSuffix = coins > 0 ? ` · ${formatCoinAmount(coins)}` : '';

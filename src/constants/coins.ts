@@ -1,13 +1,15 @@
 import { DAILY_MISSION_COIN_REWARD } from '@/constants/dailyMissionRewards';
 import {
+  FRIEND_CHALLENGE_MAX_COINS,
   FRIEND_CHALLENGE_PARTICIPATION_COINS,
   FRIEND_CHALLENGE_WINNER_TOTAL_COINS,
 } from '@/constants/friendChallengeRewards';
 
-/** Coin rewards - keep in sync with supabase/migrations/078_friend_workout_challenges.sql */
+/** Coin rewards - keep in sync with supabase friend challenge migrations */
 
 export { DAILY_MISSION_COIN_REWARD };
-export const FRIEND_CHALLENGE_MAX_COINS = FRIEND_CHALLENGE_WINNER_TOTAL_COINS;
+export { FRIEND_CHALLENGE_MAX_COINS };
+export const FRIEND_CHALLENGE_WORKOUT_WINNER_TOTAL_COINS = FRIEND_CHALLENGE_WINNER_TOTAL_COINS;
 /** Best coin segment on the daily spin wheel (031_daily_spin_wheel.sql). */
 export const DAILY_SPIN_MAX_COIN_REWARD = 100;
 
@@ -20,7 +22,7 @@ export const COIN_EARN_SOURCES = [
   {
     id: 'friend_race_win',
     label: 'Win a friend challenge',
-    amount: FRIEND_CHALLENGE_WINNER_TOTAL_COINS,
+    amount: FRIEND_CHALLENGE_WORKOUT_WINNER_TOTAL_COINS,
   },
   {
     id: 'daily_spin',
