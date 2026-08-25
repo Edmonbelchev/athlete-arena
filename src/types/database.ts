@@ -1011,12 +1011,14 @@ export interface Database {
       save_custom_workout_session: {
         Args: {
           p_template_id: string | null;
+          p_catalog_workout_id?: string | null;
           p_title: string;
           p_time_limit_seconds: number;
           p_completed_rounds: number;
           p_total_reps: number;
           p_exercise_breakdown: Json;
           p_started_at: string;
+          p_elapsed_seconds?: number | null;
         };
         Returns: string;
       };

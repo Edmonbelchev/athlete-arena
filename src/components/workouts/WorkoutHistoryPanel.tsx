@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { formatWorkoutTimeLimit } from '@/constants/customWorkouts';
 import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import type { WorkoutSessionHistoryEntry } from '@/types/catalogWorkouts';
+import { formatWorkoutSessionScore, type WorkoutSessionHistoryEntry } from '@/types/catalogWorkouts';
 
 interface WorkoutHistoryPanelProps {
   sessions: WorkoutSessionHistoryEntry[];
@@ -42,10 +42,12 @@ export function WorkoutHistoryPanel({
               style={[styles.row, { backgroundColor: theme.card, borderColor: theme.border }]}>
               <View style={styles.rowCopy}>
                 <Text style={[styles.rowTitle, { color: theme.text }]}>
-                  {session.completedRounds} rounds · {session.totalReps} reps
+                  {formatWorkoutSessionScore(session)}
                 </Text>
                 <Text style={[styles.rowMeta, { color: theme.textSecondary }]}>
-                  {formatWorkoutTimeLimit(session.timeLimitSeconds)} cap · {formatSessionDate(session.completedAt)}
+                  {session.workoutType === 'for_time'
+                    ? formatSessionDate(session.completedAt)
+                    : `${formatWorkoutTimeLimit(session.timeLimitSeconds)} cap · ${formatSessionDate(session.completedAt)}`}
                 </Text>
               </View>
             </View>

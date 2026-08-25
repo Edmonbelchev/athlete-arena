@@ -8,7 +8,6 @@ import {
   RefreshControl,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -19,11 +18,15 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { CreateWorkoutModal } from '@/components/workouts/CreateWorkoutModal';
 import { SharedWorkoutPreviewModal } from '@/components/workouts/SharedWorkoutPreviewModal';
+import { WorkoutBrowseToolbar } from '@/components/workouts/WorkoutBrowseToolbar';
 import { WorkoutTemplateCard } from '@/components/workouts/WorkoutTemplateCard';
+import { WorkoutTypeSectionHeader } from '@/components/workouts/WorkoutTypeSectionHeader';
 import { getCustomWorkoutSessionPath } from '@/constants/customWorkouts';
 import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { usePremium } from '@/features/subscription/usePremium';
 import { setPendingCustomWorkoutLaunch } from '@/features/workouts/customWorkoutLaunchStore';
+import { useWorkoutBrowseList } from '@/features/workouts/useWorkoutBrowseList';
+import type { WorkoutBrowseRow } from '@/features/workouts/workoutBrowseList';
 import { cloneCustomWorkoutExercises } from '@/features/workouts/useAmrapWorkout';
 import { useTheme } from '@/hooks/use-theme';
 import { formatUserError } from '@/lib/errors';
@@ -35,9 +38,6 @@ import {
   softDeleteCustomWorkoutTemplate,
 } from '@/services/customWorkoutService';
 import type { CustomWorkoutTemplateDetail, CustomWorkoutTemplateSummary } from '@/types/customWorkouts';
-import { getWorkoutSharerDisplayName } from '@/types/customWorkouts';
-
-const PAGE_SIZE = 12;
 
 type WorkoutLibraryFilter = 'all' | 'mine' | 'shared';
 
@@ -61,8 +61,6 @@ export default function WorkoutLibraryScreen() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<WorkoutLibraryFilter>('all');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [startingTemplateId, setStartingTemplateId] = useState<string | null>(null);
   const [previewTemplateId, setPreviewTemplateId] = useState<string | null>(null);
   const [previewDetail, setPreviewDetail] = useState<CustomWorkoutTemplateDetail | null>(null);
@@ -99,9 +97,7 @@ export default function WorkoutLibraryScreen() {
   const ownedCount = useMemo(() => templates.filter((template) => template.isOwner).length, [templates]);
   const sharedCount = useMemo(() => templates.filter((template) => !template.isOwner).length, [templates]);
 
-  const filteredTemplates = useMemo(() => {
-    const normalizedQuery = searchQuery.trim().toLowerCase();
-
+  const ownershipFilteredTemplates = useMemo(() => {
     return templates.filter((template) => {
       if (filter === 'mine' && !template.isOwner) {
         return false;
@@ -111,32 +107,14 @@ export default function WorkoutLibraryScreen() {
         return false;
       }
 
-      if (!normalizedQuery) {
-        return true;
-      }
-
-      const haystack = [
-        template.title,
-        template.isOwner ? 'your template' : getWorkoutSharerDisplayName(template),
-      ]
-        .join(' ')
-        .toLowerCase();
-
-      return haystack.includes(normalizedQuery);
+      return true;
     });
-  }, [filter, searchQuery, templates]);
+  }, [filter, templates]);
 
-  const visibleTemplates = useMemo(
-    () => filteredTemplates.slice(0, visibleCount),
-    [filteredTemplates, visibleCount],
-  );
-
-  const hasMore = filteredTemplates.length > visibleCount;
-  const remainingCount = filteredTemplates.length - visibleCount;
-
-  useEffect(() => {
-    setVisibleCount(PAGE_SIZE);
-  }, [filter, searchQuery, templates.length]);
+  const browse = useWorkoutBrowseList({
+    items: ownershipFilteredTemplates,
+    getKey: (template) => template.templateId,
+  });
 
   const refresh = useCallback(async (options?: { silent?: boolean }) => {
     if (options?.silent) {
@@ -274,6 +252,35 @@ export default function WorkoutLibraryScreen() {
     return templates.length;
   }
 
+  function renderRow({ item }: { item: WorkoutBrowseRow<CustomWorkoutTemplateSummary> }) {
+    if (item.kind === 'section') {
+      return <WorkoutTypeSectionHeader label={item.label} />;
+    }
+
+    const template = item.item;
+
+    return (
+      <WorkoutTemplateCard
+        template={template}
+        loading={startingTemplateId === template.templateId}
+        removing={actionTemplateId === template.templateId}
+        onStart={() => void handleStartTemplate(template.templateId)}
+        onEdit={template.isOwner && isPremium ? () => openCreateModal(template.templateId) : undefined}
+        onDelete={
+          template.isOwner
+            ? () => setConfirmDialog({ action: 'delete-owned', templateId: template.templateId })
+            : undefined
+        }
+        onView={!template.isOwner ? () => void openPreview(template.templateId) : undefined}
+        onRemove={
+          !template.isOwner
+            ? () => setConfirmDialog({ action: 'remove-shared', templateId: template.templateId })
+            : undefined
+        }
+      />
+    );
+  }
+
   const listHeader = (
     <View style={styles.headerContent}>
       <Pressable
@@ -385,30 +392,19 @@ export default function WorkoutLibraryScreen() {
               );
             })}
           </View>
-
-          <TextInput
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            placeholder="Search workouts or friends"
-            placeholderTextColor={theme.textSecondary}
-            autoCapitalize="none"
-            autoCorrect={false}
-            clearButtonMode="while-editing"
-            style={[
-              styles.searchInput,
-              {
-                backgroundColor: theme.backgroundSelected,
-                borderColor: theme.border,
-                color: theme.text,
-              },
-            ]}
-          />
-
-          <Text style={[styles.resultsLabel, { color: theme.textSecondary }]}>
-            Showing {visibleTemplates.length} of {filteredTemplates.length}
-            {filteredTemplates.length === 1 ? ' workout' : ' workouts'}
-          </Text>
         </View>
+      ) : null}
+
+      {templates.length > 0 ? (
+        <WorkoutBrowseToolbar
+          searchQuery={browse.searchQuery}
+          onSearchQueryChange={browse.setSearchQuery}
+          typeFilter={browse.typeFilter}
+          onTypeFilterChange={browse.setTypeFilter}
+          availableTypes={browse.availableTypes}
+          totalCount={browse.filteredItems.length}
+          visibleCount={browse.visibleItems.length}
+        />
       ) : null}
 
       {error ? (
@@ -437,12 +433,12 @@ export default function WorkoutLibraryScreen() {
         </View>
       ) : null}
 
-      {!isLoading && templates.length > 0 && filteredTemplates.length === 0 ? (
+      {!isLoading && templates.length > 0 && browse.filteredItems.length === 0 ? (
         <View style={[styles.emptyCard, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
           <AppIcon name="target" size={28} color={theme.textSecondary} weight="semibold" />
           <Text style={[styles.emptyTitle, { color: theme.text }]}>No matches</Text>
           <Text style={[styles.emptyBody, { color: theme.textSecondary }]}>
-            Try another search term or switch the library filter.
+            Try another search term, workout type, or library filter.
           </Text>
         </View>
       ) : null}
@@ -452,40 +448,19 @@ export default function WorkoutLibraryScreen() {
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]} edges={['left', 'right', 'bottom']}>
       <FlatList
-        data={visibleTemplates}
-        keyExtractor={(item) => item.templateId}
-        renderItem={({ item }) => (
-          <WorkoutTemplateCard
-            template={item}
-            loading={startingTemplateId === item.templateId}
-            removing={actionTemplateId === item.templateId}
-            onStart={() => void handleStartTemplate(item.templateId)}
-            onEdit={
-              item.isOwner && isPremium ? () => openCreateModal(item.templateId) : undefined
-            }
-            onDelete={
-              item.isOwner
-                ? () => setConfirmDialog({ action: 'delete-owned', templateId: item.templateId })
-                : undefined
-            }
-            onView={!item.isOwner ? () => void openPreview(item.templateId) : undefined}
-            onRemove={
-              !item.isOwner
-                ? () => setConfirmDialog({ action: 'remove-shared', templateId: item.templateId })
-                : undefined
-            }
-          />
-        )}
+        data={!isLoading && templates.length > 0 ? browse.listRows : []}
+        keyExtractor={(item) => (item.kind === 'section' ? `section-${item.workoutType}` : item.key)}
+        renderItem={renderRow}
         ItemSeparatorComponent={() => <View style={styles.listSeparator} />}
         ListHeaderComponent={listHeader}
         ListFooterComponent={
-          hasMore ? (
+          browse.hasMore ? (
             <Pressable
               accessibilityRole="button"
-              onPress={() => setVisibleCount((current) => current + PAGE_SIZE)}
+              onPress={browse.showMore}
               style={[styles.showMoreButton, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
               <Text style={[styles.showMoreText, { color: theme.primary }]}>
-                Show more ({remainingCount})
+                Show more ({browse.remainingCount})
               </Text>
             </Pressable>
           ) : (
@@ -712,18 +687,6 @@ const styles = StyleSheet.create({
   segmentCountText: {
     fontSize: 11,
     fontWeight: '800',
-  },
-  searchInput: {
-    borderWidth: 1,
-    borderRadius: Radius.lg,
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two,
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  resultsLabel: {
-    fontSize: 12,
-    fontWeight: '600',
   },
   messageCard: {
     borderWidth: 1,

@@ -65,8 +65,9 @@ export function SharedWorkoutPreviewModal({
                   </Text>
                 ) : null}
                 <Text style={[styles.meta, { color: theme.textSecondary }]}>
-                  {formatWorkoutTimeLimit(detail.timeLimitSeconds)} · {detail.exercises.length} exercises ·{' '}
-                  {getCustomWorkoutTypeLabel(detail.workoutType)}
+                  {detail.workoutType === 'for_time'
+                    ? `${getCustomWorkoutTypeLabel(detail.workoutType)} · ${detail.exercises.length} exercises`
+                    : `${formatWorkoutTimeLimit(detail.timeLimitSeconds)} · ${detail.exercises.length} exercises · ${getCustomWorkoutTypeLabel(detail.workoutType)}`}
                 </Text>
                 <WorkoutCircuitPreview workoutType={detail.workoutType} exercises={detail.exercises} />
               </ScrollView>

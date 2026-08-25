@@ -17,6 +17,16 @@ export const DEFAULT_CUSTOM_WORKOUT_EXERCISES: Array<{ exerciseType: ExerciseTyp
   { exerciseType: 'squats', targetReps: 15 },
 ];
 
+export const DEFAULT_FOR_TIME_EXERCISES: Array<{ exerciseType: ExerciseType; targetReps: number }> = [
+  { exerciseType: 'burpees', targetReps: 50 },
+  { exerciseType: 'push_ups', targetReps: 50 },
+  { exerciseType: 'squats', targetReps: 250 },
+  { exerciseType: 'push_ups', targetReps: 50 },
+  { exerciseType: 'burpees', targetReps: 50 },
+];
+
+export const FOR_TIME_TIME_LIMIT_SECONDS = 0;
+
 export interface CustomWorkoutTypeDefinition {
   type: CustomWorkoutType;
   label: string;
@@ -34,6 +44,15 @@ export const CUSTOM_WORKOUT_TYPES: CustomWorkoutTypeDefinition[] = [
     description: 'As many rounds as possible before the timer ends.',
     createDescription:
       'Set a time cap and repeat your exercises. Finish every exercise in order, then start the next round until time runs out.',
+    available: true,
+  },
+  {
+    type: 'for_time',
+    label: 'For Time',
+    shortLabel: 'For Time',
+    description: 'Complete the full circuit once — fastest time wins.',
+    createDescription:
+      'Build a fixed circuit. Finish every exercise in order once; the timer stops when the last rep is done.',
     available: true,
   },
 ];
@@ -56,6 +75,10 @@ export function getCustomWorkoutTypeLabel(workoutType: CustomWorkoutType): strin
 }
 
 export function formatWorkoutTimeLimit(seconds: number): string {
+  if (seconds <= 0) {
+    return 'No time cap';
+  }
+
   const minutes = Math.floor(seconds / 60);
   const remainder = seconds % 60;
 

@@ -92,7 +92,14 @@ export function WorkoutTemplateCard({
           </View>
 
           <View style={styles.metaRow}>
-            <MetaChip label={formatWorkoutTimeLimit(template.timeLimitSeconds)} themeText={theme.textSecondary} />
+            <MetaChip
+              label={
+                template.workoutType === 'for_time'
+                  ? typeDefinition.shortLabel
+                  : formatWorkoutTimeLimit(template.timeLimitSeconds)
+              }
+              themeText={theme.textSecondary}
+            />
             <MetaChip
               label={`${template.exerciseCount} exercise${template.exerciseCount === 1 ? '' : 's'}`}
               themeText={theme.textSecondary}

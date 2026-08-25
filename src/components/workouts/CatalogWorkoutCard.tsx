@@ -40,7 +40,9 @@ export function CatalogWorkoutCard({ workout, onPress }: CatalogWorkoutCardProps
         ) : null}
         <View style={styles.metaRow}>
           <Text style={[styles.meta, { color: theme.textSecondary }]}>
-            {getCustomWorkoutTypeLabel(workout.workoutType)} · {formatWorkoutTimeLimit(workout.timeLimitSeconds)}
+          {workout.workoutType === 'for_time'
+            ? getCustomWorkoutTypeLabel(workout.workoutType)
+            : `${getCustomWorkoutTypeLabel(workout.workoutType)} · ${formatWorkoutTimeLimit(workout.timeLimitSeconds)}`}
           </Text>
           {workout.leaderboardMetric ? (
             <View style={[styles.leaderboardPill, { backgroundColor: `${theme.streak}18` }]}>

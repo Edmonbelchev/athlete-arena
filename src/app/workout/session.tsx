@@ -8,6 +8,8 @@ import { ChallengeWorkoutMode } from '@/components/challenges/ChallengeWorkoutMo
 import { ChallengeWorkoutSetup } from '@/components/challenges/ChallengeWorkoutSetup';
 import { AmrapCompleteOverlay } from '@/components/workouts/AmrapCompleteOverlay';
 import { AmrapWorkoutHud } from '@/components/workouts/AmrapWorkoutHud';
+import { ForTimeCompleteOverlay } from '@/components/workouts/ForTimeCompleteOverlay';
+import { ForTimeWorkoutHud } from '@/components/workouts/ForTimeWorkoutHud';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import {
   formatWorkoutTimeLimit,
@@ -19,6 +21,7 @@ import { useFriendChallengeRaceTimer } from '@/features/friends/useFriendChallen
 import { consumePendingCustomWorkoutLaunch } from '@/features/workouts/customWorkoutLaunchStore';
 import { useMissionComplete } from '@/features/challenges/MissionCompleteProvider';
 import { useAmrapWorkout } from '@/features/workouts/useAmrapWorkout';
+import { useForTimeWorkout } from '@/features/workouts/useForTimeWorkout';
 import { useProfile } from '@/features/profile/useProfile';
 import { useDrainNativeCameraOnLeave } from '@/hooks/use-drain-native-camera-on-leave';
 import { useRepFeedback } from '@/hooks/use-rep-feedback';
@@ -26,8 +29,8 @@ import { useWorkoutSession } from '@/hooks/use-workout-session';
 import { formatUserError } from '@/lib/errors';
 import { leaveScreen } from '@/lib/navigation';
 import { supportsNativePoseDetection } from '@/lib/runtime';
-import { saveCustomWorkoutSession } from '@/services/customWorkoutService';
-import type { AmrapWorkoutResult, CustomWorkoutLaunchConfig } from '@/types/customWorkouts';
+import { saveCustomWorkoutSession, saveForTimeWorkoutSession } from '@/services/customWorkoutService';
+import type { AmrapWorkoutResult, CustomWorkoutLaunchConfig, ForTimeWorkoutResult } from '@/types/customWorkouts';
 import { useTheme } from '@/hooks/use-theme';
 import { useUserSettings } from '@/features/settings/UserSettingsProvider';
 
@@ -203,6 +206,173 @@ function AmrapWorkoutSession({ config }: { config: CustomWorkoutLaunchConfig }) 
   );
 }
 
+function ForTimeWorkoutSession({ config }: { config: CustomWorkoutLaunchConfig }) {
+  const theme = useTheme();
+  const router = useRouter();
+  const { preferences } = useUserSettings();
+  const { refresh: refreshProfile } = useProfile();
+  const { refreshMissionsAndCelebrate } = useMissionComplete();
+  const sessionKey = config.catalogWorkoutId ?? config.templateId ?? `${config.workoutType}:${config.title}`;
+  const { workoutStarted, startWorkout: markWorkoutStarted } = useWorkoutSession(
+    `custom-${config.workoutType}`,
+    sessionKey,
+  );
+  const [savedResult, setSavedResult] = useState<ForTimeWorkoutResult | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const savedResultRef = useRef<ForTimeWorkoutResult | null>(null);
+  const posePreviewLayoutRef = useRef<PosePreviewLayoutState>({
+    isLandscape: false,
+    settled: false,
+  });
+
+  const forTime = useForTimeWorkout({
+    config,
+    onComplete: (result) => {
+      savedResultRef.current = result;
+      setSavedResult(result);
+      void persistResult(result);
+    },
+  });
+
+  const persistResult = useCallback(async (result: ForTimeWorkoutResult) => {
+    setIsSaving(true);
+    setSaveError(null);
+
+    try {
+      await saveForTimeWorkoutSession(result);
+      await refreshMissionsAndCelebrate();
+      void refreshProfile();
+    } catch (err) {
+      setSaveError(formatUserError(err, 'Failed to save workout result'));
+    } finally {
+      setIsSaving(false);
+    }
+  }, [refreshMissionsAndCelebrate, refreshProfile]);
+
+  const { elapsedSeconds } = useFriendChallengeRaceTimer({
+    startedAt: forTime.startedAt,
+    completedAt: forTime.completedAt,
+    maxSeconds: null,
+    enabled: workoutStarted && Boolean(forTime.startedAt),
+  });
+
+  const canTrack = workoutStarted && Boolean(forTime.startedAt) && !forTime.completed;
+  const showWorkout = workoutStarted || forTime.completed;
+  const cameraActive = useDrainNativeCameraOnLeave(showWorkout && !forTime.completed);
+
+  const handleRepDetected = useCallback(() => {
+    forTime.registerRep();
+  }, [forTime.registerRep]);
+
+  const {
+    phase: posePhase,
+    trackingStatus,
+    trackingMessage,
+    pullUpBarLineY,
+    processLandmarks,
+  } = useExercisePoseDetection({
+    exerciseType: forTime.currentExercise?.exerciseType ?? 'push_ups',
+    exerciseSessionKey: forTime.currentExerciseIndex,
+    enabled: canTrack && cameraActive,
+    posePreviewLayoutRef,
+    onRepDetected: handleRepDetected,
+  });
+
+  const autoRepCounting = Platform.OS === 'web' || supportsNativePoseDetection();
+  const showSimulateButton = !__DEV__ && canTrack && !autoRepCounting;
+
+  useRepFeedback(forTime.currentExerciseReps, {
+    enabled: canTrack,
+    soundEnabled: preferences.repSoundEnabled,
+  });
+
+  const handleLeave = useCallback(() => {
+    leaveScreen(router, '/(tabs)/workouts');
+  }, [router]);
+
+  function handleCameraReady() {
+    forTime.startWorkout();
+  }
+
+  const setupSubtitle = useMemo(() => {
+    const typeLabel = getCustomWorkoutTypeLabel(config.workoutType);
+    return `${typeLabel} · ${config.exercises.length} exercises · finish the circuit to stop the clock`;
+  }, [config]);
+
+  if (showWorkout && forTime.completed && savedResult) {
+    return (
+      <ChallengeWorkoutMode
+        exerciseType={forTime.currentExercise.exerciseType}
+        currentReps={forTime.currentExerciseReps}
+        targetReps={forTime.currentExercise.targetReps}
+        trackingStatus={trackingStatus}
+        trackingMessage={trackingMessage}
+        repPhase={posePhase}
+        cameraActive={false}
+        pullUpBarLineY={null}
+        completed
+        onContinue={handleLeave}
+        completeOverlay={<ForTimeCompleteOverlay result={savedResult} />}
+        footer={
+          saveError ? (
+            <Text style={[styles.error, { color: theme.danger }]}>{saveError}</Text>
+          ) : isSaving ? (
+            <Text style={[styles.meta, { color: theme.textSecondary }]}>Saving result…</Text>
+          ) : undefined
+        }
+      />
+    );
+  }
+
+  if (showWorkout) {
+    return (
+      <ChallengeWorkoutMode
+        exerciseType={forTime.currentExercise.exerciseType}
+        currentReps={forTime.currentExerciseReps}
+        targetReps={forTime.currentExercise.targetReps}
+        trackingStatus={trackingStatus}
+        trackingMessage={trackingMessage}
+        repPhase={posePhase}
+        cameraActive={cameraActive}
+        pullUpBarLineY={forTime.currentExercise.exerciseType === 'pull_ups' ? pullUpBarLineY : null}
+        posePreviewLayoutRef={posePreviewLayoutRef}
+        onCameraReady={handleCameraReady}
+        onLandmarksDetected={processLandmarks}
+        hudOverlay={
+          <ForTimeWorkoutHud
+            workoutTypeLabel={getCustomWorkoutTypeLabel(config.workoutType)}
+            currentExercise={forTime.currentExercise}
+            currentExerciseIndex={forTime.currentExerciseIndex}
+            exerciseCount={forTime.exercises.length}
+            currentExerciseReps={forTime.currentExerciseReps}
+            elapsedSeconds={elapsedSeconds}
+          />
+        }
+        footer={
+          showSimulateButton ? (
+            <PrimaryButton label="+ Simulate Rep" variant="secondary" onPress={forTime.registerRep} />
+          ) : undefined
+        }
+        onDevSimulateRep={forTime.registerRep}
+      />
+    );
+  }
+
+  return (
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]} edges={['bottom']}>
+      <ChallengeWorkoutSetup
+        exerciseLabel={config.title}
+        exerciseType={forTime.currentExercise.exerciseType}
+        targetReps={forTime.currentExercise.targetReps}
+        subtitle={setupSubtitle}
+        onStart={markWorkoutStarted}
+        onCancel={handleLeave}
+      />
+    </SafeAreaView>
+  );
+}
+
 export default function CustomWorkoutSessionScreen() {
   const theme = useTheme();
   const router = useRouter();
@@ -224,6 +394,10 @@ export default function CustomWorkoutSessionScreen() {
 
   if (config.workoutType === 'amrap') {
     return <AmrapWorkoutSession config={config} />;
+  }
+
+  if (config.workoutType === 'for_time') {
+    return <ForTimeWorkoutSession config={config} />;
   }
 
   return (

@@ -34,7 +34,10 @@ import {
 } from '@/services/workoutCatalogService';
 import type { CatalogWorkoutDetail } from '@/types/catalogWorkouts';
 import type { WorkoutLeaderboardEntry, WorkoutLeaderboardPeriod } from '@/types/catalogWorkouts';
-import { formatWorkoutAmrapScore } from '@/types/catalogWorkouts';
+import {
+  formatWorkoutAmrapScore,
+  formatWorkoutForTimeScore,
+} from '@/types/catalogWorkouts';
 
 export default function CatalogWorkoutScreen() {
   const theme = useTheme();
@@ -105,7 +108,7 @@ export default function CatalogWorkoutScreen() {
   }, [id, leaderboardPeriod, loadLeaderboard, workout?.leaderboardMetric]);
 
   function handleStartWorkout() {
-    if (!workout || workout.workoutType !== 'amrap') {
+    if (!workout || (workout.workoutType !== 'amrap' && workout.workoutType !== 'for_time')) {
       return;
     }
 
@@ -121,9 +124,13 @@ export default function CatalogWorkoutScreen() {
   }
 
   const bestScoreLabel =
-    workout?.leaderboardMetric && workout.myBestRounds !== null && workout.myBestReps !== null
-      ? formatWorkoutAmrapScore(workout.myBestRounds, workout.myBestReps)
-      : null;
+    workout?.leaderboardMetric === 'fastest_time' && workout.myBestElapsedSeconds !== null
+      ? formatWorkoutForTimeScore(workout.myBestElapsedSeconds)
+      : workout?.leaderboardMetric === 'most_rounds' &&
+          workout.myBestRounds !== null &&
+          workout.myBestReps !== null
+        ? formatWorkoutAmrapScore(workout.myBestRounds, workout.myBestReps)
+        : null;
 
   return (
     <>
@@ -168,7 +175,10 @@ export default function CatalogWorkoutScreen() {
                 <Text style={[styles.description, { color: theme.textSecondary }]}>{workout.description}</Text>
               ) : null}
               <Text style={[styles.meta, { color: theme.textSecondary }]}>
-                {getCustomWorkoutTypeLabel(workout.workoutType)} · {formatWorkoutTimeLimit(workout.timeLimitSeconds)}
+                {getCustomWorkoutTypeLabel(workout.workoutType)}
+                {workout.workoutType === 'amrap'
+                  ? ` · ${formatWorkoutTimeLimit(workout.timeLimitSeconds)}`
+                  : ' · finish the circuit'}
               </Text>
               {bestScoreLabel ? (
                 <Text style={[styles.bestScore, { color: theme.text }]}>
@@ -179,7 +189,7 @@ export default function CatalogWorkoutScreen() {
 
             <WorkoutCircuitPreview workoutType={workout.workoutType} exercises={workout.exercises} />
 
-            {workout.workoutType === 'amrap' ? (
+            {workout.workoutType === 'amrap' || workout.workoutType === 'for_time' ? (
               <PrimaryButton label="Start workout" onPress={handleStartWorkout} />
             ) : (
               <View style={[styles.comingSoon, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
@@ -195,6 +205,7 @@ export default function CatalogWorkoutScreen() {
               <WorkoutLeaderboardPanel
                 entries={leaderboard}
                 period={leaderboardPeriod}
+                metric={workout.leaderboardMetric}
                 onPeriodChange={setLeaderboardPeriod}
                 isLoading={isLeaderboardLoading}
                 error={leaderboardError}

@@ -22,6 +22,8 @@ import {
   CUSTOM_WORKOUT_TYPES,
   DEFAULT_CUSTOM_WORKOUT_EXERCISES,
   DEFAULT_CUSTOM_WORKOUT_TIME_SECONDS,
+  DEFAULT_FOR_TIME_EXERCISES,
+  FOR_TIME_TIME_LIMIT_SECONDS,
   formatWorkoutTimeLimit,
   getCustomWorkoutSessionPath,
   getCustomWorkoutTypeDefinition,
@@ -84,6 +86,7 @@ export function CreateWorkoutModal({
   const [shareMessage, setShareMessage] = useState<string | null>(null);
 
   const typeDefinition = getCustomWorkoutTypeDefinition(workoutType);
+  const isForTime = workoutType === 'for_time';
   const isBusy = isSaving || isSharing || isLoadingTemplate;
   const modalTitle = templateId ? 'Edit workout' : 'Create workout';
 
@@ -171,6 +174,21 @@ export function CreateWorkoutModal({
   const removeExercise = useCallback((index: number) => {
     setExercises((current) => current.filter((_, exerciseIndex) => exerciseIndex !== index));
   }, []);
+
+  function handleWorkoutTypeChange(nextType: CustomWorkoutType) {
+    setWorkoutType(nextType);
+
+    if (nextType === 'for_time') {
+      setTimeLimitSeconds(FOR_TIME_TIME_LIMIT_SECONDS);
+      setExercises(cloneCustomWorkoutExercises(DEFAULT_FOR_TIME_EXERCISES));
+      return;
+    }
+
+    if (workoutType === 'for_time') {
+      setTimeLimitSeconds(DEFAULT_CUSTOM_WORKOUT_TIME_SECONDS);
+      setExercises(cloneCustomWorkoutExercises(DEFAULT_CUSTOM_WORKOUT_EXERCISES));
+    }
+  }
 
   const buildLaunchConfig = useCallback(() => {
     return {
@@ -291,7 +309,7 @@ export function CreateWorkoutModal({
                       <Pressable
                         key={option.type}
                         disabled={disabled || isBusy}
-                        onPress={() => setWorkoutType(option.type)}
+                        onPress={() => handleWorkoutTypeChange(option.type)}
                         style={[
                           styles.typeCard,
                           {
@@ -321,34 +339,36 @@ export function CreateWorkoutModal({
                 placeholder="Friday workout"
               />
 
-              <View style={styles.section}>
-                <Text style={[styles.sectionTitle, { color: theme.text }]}>Time cap</Text>
-                <View style={styles.presetRow}>
-                  {CUSTOM_WORKOUT_TIME_PRESETS.map((preset) => {
-                    const selected = preset.seconds === timeLimitSeconds;
-                    return (
-                      <Pressable
-                        key={preset.seconds}
-                        disabled={isBusy}
-                        onPress={() => setTimeLimitSeconds(preset.seconds)}
-                        style={[
-                          styles.presetChip,
-                          {
-                            backgroundColor: selected ? theme.primary : theme.backgroundElement,
-                            borderColor: selected ? theme.primary : theme.border,
-                          },
-                        ]}>
-                        <Text style={[styles.presetLabel, { color: selected ? '#FFFFFF' : theme.text }]}>
-                          {preset.label}
-                        </Text>
-                      </Pressable>
-                    );
-                  })}
+              {!isForTime ? (
+                <View style={styles.section}>
+                  <Text style={[styles.sectionTitle, { color: theme.text }]}>Time cap</Text>
+                  <View style={styles.presetRow}>
+                    {CUSTOM_WORKOUT_TIME_PRESETS.map((preset) => {
+                      const selected = preset.seconds === timeLimitSeconds;
+                      return (
+                        <Pressable
+                          key={preset.seconds}
+                          disabled={isBusy}
+                          onPress={() => setTimeLimitSeconds(preset.seconds)}
+                          style={[
+                            styles.presetChip,
+                            {
+                              backgroundColor: selected ? theme.primary : theme.backgroundElement,
+                              borderColor: selected ? theme.primary : theme.border,
+                            },
+                          ]}>
+                          <Text style={[styles.presetLabel, { color: selected ? '#FFFFFF' : theme.text }]}>
+                            {preset.label}
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                  <Text style={[styles.helper, { color: theme.textSecondary }]}>
+                    Selected: {formatWorkoutTimeLimit(timeLimitSeconds)}
+                  </Text>
                 </View>
-                <Text style={[styles.helper, { color: theme.textSecondary }]}>
-                  Selected: {formatWorkoutTimeLimit(timeLimitSeconds)}
-                </Text>
-              </View>
+              ) : null}
 
               <View style={styles.section}>
                 <View style={styles.sectionHeader}>
@@ -381,7 +401,9 @@ export function CreateWorkoutModal({
                     </Pressable>
 
                     <View style={styles.repRow}>
-                      <Text style={[styles.repLabel, { color: theme.text }]}>Reps per round</Text>
+                      <Text style={[styles.repLabel, { color: theme.text }]}>
+                        {isForTime ? 'Reps' : 'Reps per round'}
+                      </Text>
                       <View style={styles.repControls}>
                         <Pressable
                           disabled={isBusy}

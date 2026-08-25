@@ -1,7 +1,7 @@
 import type { ExerciseType } from '@/constants/challenges';
 
 /** Supported custom workout styles. Extend as new modes ship. */
-export type CustomWorkoutType = 'amrap' | 'emom';
+export type CustomWorkoutType = 'amrap' | 'emom' | 'for_time';
 
 export interface CustomWorkoutExercise {
   exerciseType: ExerciseType;
@@ -41,6 +41,19 @@ export interface CustomWorkoutExerciseBreakdown {
   exerciseType: ExerciseType;
   targetReps: number;
   totalReps: number;
+}
+
+/** Result payload for a For Time circuit session. */
+export interface ForTimeWorkoutResult {
+  workoutType: 'for_time';
+  title: string;
+  templateId: string | null;
+  catalogWorkoutId: string | null;
+  elapsedSeconds: number;
+  totalReps: number;
+  exerciseBreakdown: CustomWorkoutExerciseBreakdown[];
+  startedAt: string;
+  completedAt: string;
 }
 
 /** Result payload for an AMRAP-style timed circuit session. */

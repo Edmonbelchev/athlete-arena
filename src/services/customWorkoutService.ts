@@ -3,6 +3,7 @@ import { assertSupabaseConfigured, supabase } from '@/lib/supabase';
 import type {
   CustomWorkoutExerciseBreakdown,
   AmrapWorkoutResult,
+  ForTimeWorkoutResult,
   CustomWorkoutTemplateDetail,
   CustomWorkoutTemplateSummary,
 } from '@/types/customWorkouts';
@@ -10,7 +11,7 @@ import type {
 function mapTemplateSummary(row: {
   template_id: string;
   title: string;
-  workout_type: 'amrap';
+  workout_type: 'amrap' | 'for_time' | 'emom';
   time_limit_seconds: number;
   exercise_count: number;
   created_at: string;
@@ -196,6 +197,7 @@ export async function saveCustomWorkoutSession(result: AmrapWorkoutResult): Prom
       total_reps: entry.totalReps,
     })),
     p_started_at: result.startedAt,
+    p_elapsed_seconds: null,
   });
 
   if (error) {
@@ -203,6 +205,43 @@ export async function saveCustomWorkoutSession(result: AmrapWorkoutResult): Prom
   }
 
   return data as string;
+}
+
+export async function saveForTimeWorkoutSession(result: ForTimeWorkoutResult): Promise<string> {
+  assertSupabaseConfigured();
+
+  const { data, error } = await supabase.rpc('save_custom_workout_session', {
+    p_template_id: result.templateId,
+    p_catalog_workout_id: result.catalogWorkoutId,
+    p_title: result.title,
+    p_time_limit_seconds: 0,
+    p_completed_rounds: 1,
+    p_total_reps: result.totalReps,
+    p_exercise_breakdown: result.exerciseBreakdown.map((entry) => ({
+      exercise_type: entry.exerciseType,
+      target_reps: entry.targetReps,
+      total_reps: entry.totalReps,
+    })),
+    p_started_at: result.startedAt,
+    p_elapsed_seconds: result.elapsedSeconds,
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  return data as string;
+}
+
+export function buildExerciseBreakdownFromSteps(
+  exercises: Array<{ exerciseType: ExerciseType; targetReps: number }>,
+  stepTotals: number[],
+): CustomWorkoutExerciseBreakdown[] {
+  return exercises.map((exercise, index) => ({
+    exerciseType: exercise.exerciseType,
+    targetReps: exercise.targetReps,
+    totalReps: stepTotals[index] ?? 0,
+  }));
 }
 
 export function buildExerciseBreakdown(

@@ -60,6 +60,7 @@ export async function getWorkoutCatalogDetail(catalogWorkoutId: string): Promise
     })),
     myBestRounds: first.my_best_rounds,
     myBestReps: first.my_best_reps,
+    myBestElapsedSeconds: first.my_best_elapsed_seconds ?? null,
     mySessionCount: first.my_session_count,
   };
 }
@@ -84,9 +85,11 @@ export async function getMyWorkoutSessions(options: {
   return (data ?? []).map((row) => ({
     sessionId: row.session_id,
     title: row.title,
+    workoutType: row.workout_type ?? null,
     timeLimitSeconds: row.time_limit_seconds,
     completedRounds: row.completed_rounds,
     totalReps: row.total_reps,
+    elapsedSeconds: row.elapsed_seconds ?? null,
     exerciseBreakdown: Array.isArray(row.exercise_breakdown)
       ? row.exercise_breakdown.map((entry) => ({
           exerciseType: entry.exercise_type as ExerciseType,
