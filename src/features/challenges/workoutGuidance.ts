@@ -112,6 +112,44 @@ interface TrackingBorderOptions {
   completed?: boolean;
 }
 
+export type WorkoutCoachSeverity = 'ready' | 'form' | 'tracking' | 'setup';
+
+/** Camera preview border color from tracking readiness and live coach severity. */
+export function getCoachBorderColor(
+  trackingStatus: PoseTrackingStatus,
+  severity: WorkoutCoachSeverity,
+  colors: TrackingBorderColors,
+  options?: TrackingBorderOptions,
+): string {
+  if (options?.completed) {
+    return colors.success;
+  }
+
+  if (options?.inactive) {
+    return colors.border;
+  }
+
+  if (severity === 'tracking') {
+    return colors.danger;
+  }
+
+  if (severity === 'form' || severity === 'setup') {
+    return colors.accent;
+  }
+
+  if (trackingStatus === 'ready') {
+    return colors.success;
+  }
+
+  switch (trackingStatus) {
+    case 'awaiting_hang':
+    case 'stabilizing':
+      return colors.accent;
+    default:
+      return colors.danger;
+  }
+}
+
 /** Camera preview border color from pose tracking readiness. */
 export function getTrackingBorderColor(
   status: PoseTrackingStatus,

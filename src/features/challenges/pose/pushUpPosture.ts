@@ -202,7 +202,7 @@ export function hasLeftPushUpFloor(
   return false;
 }
 
-function isUprightStandingFront(landmarks: PoseLandmark[]): boolean {
+export function isUprightStandingFront(landmarks: PoseLandmark[]): boolean {
   const shoulderY = getAverageShoulderY(landmarks);
   const hipY = getAverageHipY(landmarks);
   const wristY = getAverageWristY(landmarks);

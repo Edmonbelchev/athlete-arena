@@ -94,6 +94,10 @@ export class ElbowRepEngine {
     return repCompleted;
   }
 
+  get hasReachedBottom(): boolean {
+    return this.reachedBottom;
+  }
+
   reset(): void {
     this.phase = 'UP';
     this.reachedBottom = false;

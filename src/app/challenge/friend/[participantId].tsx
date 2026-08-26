@@ -268,7 +268,7 @@ export default function FriendChallengeScreen() {
   const {
     phase: posePhase,
     trackingStatus,
-    trackingMessage,
+    coachSeverity,
     pullUpBarLineY,
     processLandmarks,
   } = useExercisePoseDetection({
@@ -387,7 +387,7 @@ export default function FriendChallengeScreen() {
           currentReps={repCounter.currentReps}
           targetReps={challenge.targetReps}
           trackingStatus={trackingStatus}
-          trackingMessage={trackingMessage}
+          coachSeverity={coachSeverity}
           repPhase={posePhase}
           cameraActive={cameraActive && canAttempt && !overlayVariant}
           onContinue={handleLeave}

@@ -45,3 +45,7 @@ example
 
 # supabase
 supabase/.temp
+
+.tmp/*
+
+.tmp-video-frames/*

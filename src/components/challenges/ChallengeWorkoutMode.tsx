@@ -7,13 +7,15 @@ import { CameraPreview } from '@/components/CameraPreview';
 import type { PosePreviewLayoutState } from '@/components/CameraPreview.types';
 import { ChallengeRepHud, type ChallengeRepHudRaceTimer } from '@/components/challenges/ChallengeRepHud';
 import { WorkoutGuideAnimation } from '@/components/challenges/WorkoutGuideAnimation';
-import { WorkoutHintPanel } from '@/components/challenges/WorkoutHintPanel';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { DevSimulateRepButton } from '@/dev/DevSimulateRepButton';
 import type { ExerciseType } from '@/constants/challenges';
 import { Spacing } from '@/constants/theme';
 import type { ExercisePhase } from '@/features/challenges/poseDetection.types';
-import { getWorkoutSetupTips, getTrackingBorderColor } from '@/features/challenges/workoutGuidance';
+import {
+  getCoachBorderColor,
+  type WorkoutCoachSeverity,
+} from '@/features/challenges/workoutGuidance';
 import type { PoseLandmark } from '@/features/challenges/pose/landmarks';
 import type { PoseTrackingStatus } from '@/features/challenges/pose/poseQuality';
 import { useWorkoutGuideAnimationVisible } from '@/hooks/use-workout-guide-animation-visible';
@@ -25,7 +27,7 @@ interface ChallengeWorkoutModeProps {
   currentReps: number;
   targetReps: number;
   trackingStatus: PoseTrackingStatus;
-  trackingMessage: string | null;
+  coachSeverity?: WorkoutCoachSeverity;
   repPhase: ExercisePhase;
   cameraActive: boolean;
   pullUpBarLineY: number | null;
@@ -48,7 +50,7 @@ export function ChallengeWorkoutMode({
   currentReps,
   targetReps,
   trackingStatus,
-  trackingMessage,
+  coachSeverity = 'setup',
   repPhase,
   cameraActive,
   pullUpBarLineY,
@@ -67,13 +69,12 @@ export function ChallengeWorkoutMode({
 }: ChallengeWorkoutModeProps) {
   const theme = useTheme();
   const showCompletionOnly = completed && Boolean(completeOverlay);
-  const tips = getWorkoutSetupTips(exerciseType);
   const trackingReady = trackingStatus === 'ready';
   const showGuideAnimation = useWorkoutGuideAnimationVisible(
     trackingStatus,
     cameraActive && !completed,
   );
-  const trackingBorderColor = getTrackingBorderColor(trackingStatus, theme, {
+  const trackingBorderColor = getCoachBorderColor(trackingStatus, coachSeverity, theme, {
     inactive: !cameraActive,
     completed,
   });
@@ -100,50 +101,36 @@ export function ChallengeWorkoutMode({
   return (
     <SafeAreaView style={StyleSheet.flatten([styles.safeArea, { backgroundColor: '#000000' }])} edges={['top', 'bottom']}>
       <View style={styles.portraitColumn}>
-        <View style={styles.cameraColumn}>
-          <View
-            style={StyleSheet.flatten([
-              styles.cameraShell,
-              { borderColor: trackingBorderColor, borderWidth: TRACKING_BORDER_WIDTH },
-            ])}>
-            <CameraPreview
-              active={cameraActive}
-              fullscreen
-              hideStatusOverlay
-              posePreviewLayoutRef={posePreviewLayoutRef}
-              pullUpBarLineY={pullUpBarLineY}
-              exerciseType={exerciseType}
-              repPhase={repPhase}
-              repTrackingReady={trackingReady}
-              onCameraReady={onCameraReady}
-              onLandmarksDetected={onLandmarksDetected}
+        <View
+          style={StyleSheet.flatten([
+            styles.cameraShell,
+            { borderColor: trackingBorderColor, borderWidth: TRACKING_BORDER_WIDTH },
+          ])}>
+          <CameraPreview
+            active={cameraActive}
+            fullscreen
+            hideStatusOverlay
+            posePreviewLayoutRef={posePreviewLayoutRef}
+            pullUpBarLineY={pullUpBarLineY}
+            exerciseType={exerciseType}
+            repPhase={repPhase}
+            repTrackingReady={trackingReady}
+            onCameraReady={onCameraReady}
+            onLandmarksDetected={onLandmarksDetected}
+          />
+          {showGuideAnimation ? (
+            <View style={styles.guideOverlay} pointerEvents="none">
+              <WorkoutGuideAnimation exerciseType={exerciseType} variant="overlay" />
+            </View>
+          ) : null}
+          {hudOverlay ?? (
+            <ChallengeRepHud
+              currentReps={currentReps}
+              targetReps={targetReps}
+              completed={completed}
+              raceTimer={raceTimer}
             />
-            {showGuideAnimation ? (
-              <View style={styles.guideOverlay} pointerEvents="none">
-                <WorkoutGuideAnimation exerciseType={exerciseType} variant="overlay" />
-              </View>
-            ) : null}
-            {hudOverlay ?? (
-              <ChallengeRepHud
-                currentReps={currentReps}
-                targetReps={targetReps}
-                completed={completed}
-                raceTimer={raceTimer}
-              />
-            )}
-          </View>
-
-          <View style={StyleSheet.flatten([styles.portraitHintWrap, { backgroundColor: theme.background }])}>
-            <WorkoutHintPanel
-              exerciseType={exerciseType}
-              tips={tips}
-              trackingStatus={trackingStatus}
-              trackingMessage={trackingMessage}
-              repPhase={repPhase}
-              trackingReady={trackingReady}
-              compact
-            />
-          </View>
+          )}
         </View>
       </View>
 
@@ -172,9 +159,6 @@ const styles = StyleSheet.create({
   portraitColumn: {
     flex: 1,
   },
-  cameraColumn: {
-    flex: 1,
-  },
   cameraShell: {
     flex: 1,
     position: 'relative',
@@ -183,10 +167,7 @@ const styles = StyleSheet.create({
   guideOverlay: {
     position: 'absolute',
     right: Spacing.three,
-    bottom: Spacing.three,
-  },
-  portraitHintWrap: {
-    maxHeight: 220,
+    bottom: Spacing.five,
   },
   footer: {
     paddingHorizontal: Spacing.three,

@@ -36,6 +36,8 @@ export class PushUpRepEngine {
   private repTopShoulderY: number | null = null;
   private offFloorFrames = 0;
   private plankBreakFrames = 0;
+  private repAttemptActive = false;
+  private previousPhase: PushUpPhase = 'UP';
   /** True once rep counting has started - resume uses relaxed posture + instant re-arm. */
   private hadActiveSet = false;
 
@@ -84,6 +86,7 @@ export class PushUpRepEngine {
       if (this.offFloorFrames >= PUSH_UP_POSTURE.offFloorFramesBeforeRelease) {
         this.releaseSet();
       }
+      this.previousPhase = this.phase;
       return false;
     }
 
@@ -97,6 +100,7 @@ export class PushUpRepEngine {
         if (this.plankBreakFrames >= this.plankBreakFramesBeforeRelease()) {
           this.releaseSet();
         }
+        this.previousPhase = this.phase;
         return false;
       }
     } else {
@@ -114,6 +118,7 @@ export class PushUpRepEngine {
         this.armSet(landmarks, resolvedViewMode ?? 'front');
 
         if (!this.repCountingEnabled) {
+          this.previousPhase = this.phase;
           return false;
         }
       }
@@ -123,6 +128,7 @@ export class PushUpRepEngine {
     }
 
     if (!this.isArmed) {
+      this.previousPhase = this.phase;
       return false;
     }
 
@@ -133,6 +139,7 @@ export class PushUpRepEngine {
         this.accumulateTopHoldFrames(landmarks);
 
         if (this.topHoldFrames < PUSH_UP_POSTURE.topHoldFramesBeforeReps) {
+          this.previousPhase = this.phase;
           return false;
         }
 
@@ -145,11 +152,40 @@ export class PushUpRepEngine {
 
     const repCompleted = this.elbowEngine.update(landmarks);
 
-    if (!repCompleted) {
-      return false;
+    if (
+      this.repCountingEnabled &&
+      this.previousPhase === 'UP' &&
+      (this.phase === 'DESCENDING' || this.phase === 'DOWN')
+    ) {
+      this.repAttemptActive = true;
     }
 
-    return isValidPushUpRepCompletion(landmarks, this.capturedFloorWristY);
+    if (repCompleted && isValidPushUpRepCompletion(landmarks, this.capturedFloorWristY)) {
+      this.repAttemptActive = false;
+      this.previousPhase = this.phase;
+      return true;
+    }
+
+    if (repCompleted) {
+      this.repAttemptActive = false;
+    } else {
+      this.finalizeShallowAttemptIfNeeded();
+    }
+
+    this.previousPhase = this.phase;
+    return false;
+  }
+
+  private finalizeShallowAttemptIfNeeded(): void {
+    if (!this.repCountingEnabled || !this.repAttemptActive) {
+      return;
+    }
+
+    if (this.phase !== 'UP' || this.previousPhase === 'UP') {
+      return;
+    }
+
+    this.repAttemptActive = false;
   }
 
   private usesResumePosture(): boolean {
@@ -191,6 +227,8 @@ export class PushUpRepEngine {
   private enableRepCounting(): void {
     this.repCountingEnabled = true;
     this.hadActiveSet = true;
+    this.repAttemptActive = false;
+    this.previousPhase = 'UP';
     this.elbowEngine.reset();
   }
 
@@ -266,7 +304,8 @@ export class PushUpRepEngine {
     this.repTopShoulderY = null;
     this.offFloorFrames = 0;
     this.plankBreakFrames = 0;
-    // Keep viewMode after the first counted set so resume uses relaxed posture checks.
+    this.repAttemptActive = false;
+    this.previousPhase = 'UP';
   }
 
   reset(): void {
@@ -280,6 +319,8 @@ export class PushUpRepEngine {
     this.repTopShoulderY = null;
     this.offFloorFrames = 0;
     this.plankBreakFrames = 0;
+    this.repAttemptActive = false;
+    this.previousPhase = 'UP';
     this.hadActiveSet = false;
   }
 }

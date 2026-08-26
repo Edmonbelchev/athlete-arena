@@ -142,7 +142,7 @@ export default function ChallengeScreen() {
   const {
     phase: posePhase,
     trackingStatus,
-    trackingMessage,
+    coachSeverity,
     pullUpBarLineY,
     processLandmarks,
   } = useExercisePoseDetection({
@@ -212,7 +212,7 @@ export default function ChallengeScreen() {
         currentReps={repCounter.currentReps}
         targetReps={challenge.target_reps}
         trackingStatus={trackingStatus}
-        trackingMessage={trackingMessage}
+        coachSeverity={coachSeverity}
         repPhase={posePhase}
         cameraActive={!isCompleted && cameraActive}
         onContinue={handleLeave}

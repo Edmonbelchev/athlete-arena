@@ -143,7 +143,7 @@ function AmrapWorkoutSession({ config }: { config: CustomWorkoutLaunchConfig }) 
   const {
     phase: posePhase,
     trackingStatus,
-    trackingMessage,
+    coachSeverity,
     pullUpBarLineY,
     processLandmarks,
   } = useExercisePoseDetection({
@@ -178,7 +178,7 @@ function AmrapWorkoutSession({ config }: { config: CustomWorkoutLaunchConfig }) 
         currentReps={amrap.currentExerciseReps}
         targetReps={amrap.currentExercise.targetReps}
         trackingStatus={trackingStatus}
-        trackingMessage={trackingMessage}
+        coachSeverity={coachSeverity}
         repPhase={posePhase}
         cameraActive={false}
         pullUpBarLineY={null}
@@ -203,7 +203,7 @@ function AmrapWorkoutSession({ config }: { config: CustomWorkoutLaunchConfig }) 
         currentReps={amrap.currentExerciseReps}
         targetReps={amrap.currentExercise.targetReps}
         trackingStatus={trackingStatus}
-        trackingMessage={trackingMessage}
+        coachSeverity={coachSeverity}
         repPhase={posePhase}
         cameraActive={cameraActive}
         pullUpBarLineY={amrap.currentExercise.exerciseType === 'pull_ups' ? pullUpBarLineY : null}
@@ -326,7 +326,7 @@ function ForTimeWorkoutSession({ config }: { config: CustomWorkoutLaunchConfig }
   const {
     phase: posePhase,
     trackingStatus,
-    trackingMessage,
+    coachSeverity,
     pullUpBarLineY,
     processLandmarks,
   } = useExercisePoseDetection({
@@ -368,7 +368,7 @@ function ForTimeWorkoutSession({ config }: { config: CustomWorkoutLaunchConfig }
         currentReps={forTime.currentExerciseReps}
         targetReps={forTime.currentExercise.targetReps}
         trackingStatus={trackingStatus}
-        trackingMessage={trackingMessage}
+        coachSeverity={coachSeverity}
         repPhase={posePhase}
         cameraActive={false}
         pullUpBarLineY={null}
@@ -393,7 +393,7 @@ function ForTimeWorkoutSession({ config }: { config: CustomWorkoutLaunchConfig }
         currentReps={forTime.currentExerciseReps}
         targetReps={forTime.currentExercise.targetReps}
         trackingStatus={trackingStatus}
-        trackingMessage={trackingMessage}
+        coachSeverity={coachSeverity}
         repPhase={posePhase}
         cameraActive={cameraActive}
         pullUpBarLineY={forTime.currentExercise.exerciseType === 'pull_ups' ? pullUpBarLineY : null}
