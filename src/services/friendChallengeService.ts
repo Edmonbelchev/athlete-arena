@@ -110,6 +110,7 @@ export async function getFriendsWithActiveFriendChallenges(): Promise<FriendWith
         username: challenge.opponentUsername,
         displayName: challenge.opponentDisplayName,
         activeCount: 1,
+        historyCount: 0,
         latestCreatedAt: challenge.createdAt,
       });
     }
@@ -127,6 +128,7 @@ export async function getFriendsWithActiveFriendChallenges(): Promise<FriendWith
       username: record.friend_username,
       displayName: record.friend_display_name,
       activeCount: record.active_count,
+      historyCount: 0,
       latestCreatedAt: record.latest_created_at,
     };
   });

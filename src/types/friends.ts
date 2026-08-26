@@ -54,8 +54,11 @@ export interface FriendWithActiveChallengesSummary {
   username: string;
   displayName: string | null;
   activeCount: number;
+  historyCount: number;
   latestCreatedAt: string;
 }
+
+export type FriendChallengePartnerSummary = FriendWithActiveChallengesSummary;
 
 export interface FriendChallenge {
   participantId: string;

@@ -14,7 +14,7 @@ export default function ChallengesTabScreen() {
       edges={['left', 'right', 'bottom']}
       style={StyleSheet.flatten([styles.safeArea, { backgroundColor: theme.background }])}>
       <View style={styles.header}>
-        <TabScreenHeader title="Challenges" subtitle="Active friend speed races" />
+        <TabScreenHeader title="Challenges" subtitle="Active races and history with friends" />
       </View>
       <FriendChallengesScreenContent />
     </SafeAreaView>

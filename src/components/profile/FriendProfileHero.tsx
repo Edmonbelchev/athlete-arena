@@ -11,6 +11,7 @@ interface FriendProfileHeroProps {
   isFriend: boolean;
   isSelf?: boolean;
   onChallenge: () => void;
+  onViewHistory?: () => void;
   onAddFriend?: () => void;
   isAddingFriend?: boolean;
 }
@@ -20,6 +21,7 @@ export function FriendProfileHero({
   isFriend,
   isSelf = false,
   onChallenge,
+  onViewHistory,
   onAddFriend,
   isAddingFriend = false,
 }: FriendProfileHeroProps) {
@@ -53,11 +55,16 @@ export function FriendProfileHero({
       </View>
 
       {!isSelf ? (
-        <PrimaryButton
-          label={isFriend ? 'Challenge Friend' : 'Add Friend'}
-          loading={isAddingFriend}
-          onPress={isFriend ? onChallenge : onAddFriend}
-        />
+        <View style={styles.actions}>
+          <PrimaryButton
+            label={isFriend ? 'Challenge Friend' : 'Add Friend'}
+            loading={isAddingFriend}
+            onPress={isFriend ? onChallenge : onAddFriend}
+          />
+          {isFriend && onViewHistory ? (
+            <PrimaryButton label="Race History" variant="secondary" onPress={onViewHistory} />
+          ) : null}
+        </View>
       ) : null}
     </View>
   );
@@ -101,5 +108,9 @@ const styles = StyleSheet.create({
   levelValue: {
     fontSize: 18,
     fontWeight: '900',
+  },
+  actions: {
+    alignSelf: 'stretch',
+    gap: Spacing.two,
   },
 });

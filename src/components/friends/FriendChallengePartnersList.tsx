@@ -1,21 +1,39 @@
 import { router } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { formatFriendChallengePartnerMeta } from '@/features/friends/friendChallengeGroups';
 import { ProfileAvatar } from '@/components/profile/ProfileAvatar';
 import { AppIcon } from '@/components/ui/AppIcon';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { Radius, Spacing } from '@/constants/theme';
-import type { FriendWithActiveChallengesSummary } from '@/types/friends';
+import type { FriendChallengePartnerSummary } from '@/types/friends';
 import { useTheme } from '@/hooks/use-theme';
 
-interface FriendsWithActiveChallengesListProps {
-  friends: FriendWithActiveChallengesSummary[];
+interface FriendChallengePartnersListProps {
+  partners: FriendChallengePartnerSummary[];
+  emptyTitle?: string;
+  emptyCopy?: string;
 }
 
-export function FriendsWithActiveChallengesList({ friends }: FriendsWithActiveChallengesListProps) {
+function openFriendChallenges(partner: FriendChallengePartnerSummary) {
+  router.push({
+    pathname: '/friends/challenges/[friendId]',
+    params: {
+      friendId: partner.friendId,
+      username: partner.username,
+      displayName: partner.displayName ?? '',
+    },
+  });
+}
+
+export function FriendChallengePartnersList({
+  partners,
+  emptyTitle = 'No friend races yet',
+  emptyCopy = 'Start a speed race from a friend\'s profile or accept an incoming challenge.',
+}: FriendChallengePartnersListProps) {
   const theme = useTheme();
 
-  if (friends.length === 0) {
+  if (partners.length === 0) {
     return (
       <View
         style={StyleSheet.flatten([
@@ -25,10 +43,8 @@ export function FriendsWithActiveChallengesList({ friends }: FriendsWithActiveCh
         <View style={StyleSheet.flatten([styles.emptyIcon, { backgroundColor: theme.backgroundSelected }])}>
           <AppIcon name="swords" size={28} color={theme.primary} />
         </View>
-        <Text style={StyleSheet.flatten([styles.emptyTitle, { color: theme.text }])}>No active races</Text>
-        <Text style={StyleSheet.flatten([styles.emptyCopy, { color: theme.textSecondary }])}>
-          Start a speed race from a friend&apos;s profile or accept an incoming challenge.
-        </Text>
+        <Text style={StyleSheet.flatten([styles.emptyTitle, { color: theme.text }])}>{emptyTitle}</Text>
+        <Text style={StyleSheet.flatten([styles.emptyCopy, { color: theme.textSecondary }])}>{emptyCopy}</Text>
         <PrimaryButton label="Go to Friends" onPress={() => router.push('/(tabs)/friends')} />
       </View>
     );
@@ -36,24 +52,15 @@ export function FriendsWithActiveChallengesList({ friends }: FriendsWithActiveCh
 
   return (
     <View style={styles.list}>
-      {friends.map((friend) => {
-        const displayName = friend.displayName ?? friend.username;
+      {partners.map((partner) => {
+        const displayName = partner.displayName ?? partner.username;
 
         return (
           <Pressable
-            key={friend.friendId}
+            key={partner.friendId}
             accessibilityRole="button"
-            accessibilityLabel={`View challenges with ${displayName}`}
-            onPress={() =>
-              router.push({
-                pathname: '/friends/challenges/[friendId]',
-                params: {
-                  friendId: friend.friendId,
-                  username: friend.username,
-                  displayName: friend.displayName ?? '',
-                },
-              })
-            }
+            accessibilityLabel={`View races with ${displayName}`}
+            onPress={() => openFriendChallenges(partner)}
             style={({ pressed }) =>
               StyleSheet.flatten([
                 styles.row,
@@ -69,13 +76,15 @@ export function FriendsWithActiveChallengesList({ friends }: FriendsWithActiveCh
             <View style={styles.copy}>
               <Text style={StyleSheet.flatten([styles.name, { color: theme.text }])}>{displayName}</Text>
               <Text style={StyleSheet.flatten([styles.meta, { color: theme.textSecondary }])}>
-                @{friend.username} · {friend.activeCount} active {friend.activeCount === 1 ? 'race' : 'races'}
+                {formatFriendChallengePartnerMeta(partner)}
               </Text>
             </View>
 
-            <View style={StyleSheet.flatten([styles.badge, { backgroundColor: theme.primary }])}>
-              <Text style={styles.badgeText}>{friend.activeCount}</Text>
-            </View>
+            {partner.activeCount > 0 ? (
+              <View style={StyleSheet.flatten([styles.badge, { backgroundColor: theme.primary }])}>
+                <Text style={styles.badgeText}>{partner.activeCount}</Text>
+              </View>
+            ) : null}
           </Pressable>
         );
       })}

@@ -67,6 +67,21 @@ export default function FriendProfileScreen() {
     await Promise.all([refresh(), refreshAchievements()]);
   }
 
+  function handleViewHistory() {
+    if (!profile) {
+      return;
+    }
+
+    router.push({
+      pathname: '/friends/challenges/[friendId]',
+      params: {
+        friendId: profile.userId,
+        username: profile.username,
+        displayName: profile.displayName ?? profile.username,
+      },
+    });
+  }
+
   function handleChallenge() {
     if (!profile) {
       return;
@@ -159,6 +174,7 @@ export default function FriendProfileScreen() {
             isFriend={isFriend}
             isSelf={isSelf}
             onChallenge={handleChallenge}
+            onViewHistory={isFriend ? handleViewHistory : undefined}
             onAddFriend={() => void handleAddFriend()}
             isAddingFriend={isAddingFriend}
           />

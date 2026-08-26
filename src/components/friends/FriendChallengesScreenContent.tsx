@@ -9,10 +9,11 @@ import {
   View,
 } from 'react-native';
 
-import { FriendsWithActiveChallengesList } from '@/components/friends/FriendsWithActiveChallengesList';
+import { FriendChallengePartnersList } from '@/components/friends/FriendChallengePartnersList';
+import { HomeSection } from '@/components/home/HomeSection';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
-import { useFriendsWithActiveChallenges } from '@/features/friends/useFriendsWithActiveChallenges';
+import { useFriendChallengePartners } from '@/features/friends/useFriendChallengePartners';
 import { useChallengeNotificationRefresh } from '@/features/notifications/useChallengeNotificationRefresh';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -22,7 +23,8 @@ interface FriendChallengesScreenContentProps {
 
 export function FriendChallengesScreenContent({ onRefresh }: FriendChallengesScreenContentProps) {
   const theme = useTheme();
-  const { friends, isLoading, error, refresh } = useFriendsWithActiveChallenges();
+  const { partners, activePartners, historyOnlyPartners, isLoading, error, refresh } =
+    useFriendChallengePartners();
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const handleRefresh = useCallback(async () => {
@@ -43,7 +45,7 @@ export function FriendChallengesScreenContent({ onRefresh }: FriendChallengesScr
     }, [refresh]),
   );
 
-  if (isLoading && friends.length === 0) {
+  if (isLoading && partners.length === 0) {
     return (
       <View style={StyleSheet.flatten([styles.loading, { backgroundColor: theme.background }])}>
         <ActivityIndicator size="large" color={theme.primary} />
@@ -62,7 +64,7 @@ export function FriendChallengesScreenContent({ onRefresh }: FriendChallengesScr
         />
       }>
       <Text style={StyleSheet.flatten([styles.subtitle, { color: theme.textSecondary }])}>
-        Friends with active speed races. Open a friend to view races and history.
+        Open a friend to see active races and your full head-to-head history.
       </Text>
 
       {error ? (
@@ -72,7 +74,23 @@ export function FriendChallengesScreenContent({ onRefresh }: FriendChallengesScr
         </View>
       ) : null}
 
-      <FriendsWithActiveChallengesList friends={friends} />
+      {activePartners.length > 0 ? (
+        <HomeSection title="Active Races" subtitle="Friends with races in progress">
+          <FriendChallengePartnersList partners={activePartners} />
+        </HomeSection>
+      ) : null}
+
+      {historyOnlyPartners.length > 0 ? (
+        <HomeSection title="Race History" subtitle="Past races with friends">
+          <FriendChallengePartnersList
+            partners={historyOnlyPartners}
+            emptyTitle="No completed races yet"
+            emptyCopy="Finish a friend challenge to see it here."
+          />
+        </HomeSection>
+      ) : null}
+
+      {partners.length === 0 ? <FriendChallengePartnersList partners={partners} /> : null}
     </ScrollView>
   );
 }
