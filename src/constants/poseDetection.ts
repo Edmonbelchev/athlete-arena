@@ -237,27 +237,31 @@ export const BURPEE_POSTURE = {
   maxStandingWristAboveHip: isNativeMobile ? 0.04 : 0.035,
 } as const;
 
-/** Jumping jack rep validation - open and closed require arms and legs together on the same frame. */
+/** Jumping jack rep validation - peaks must clear open thresholds, then return near start. */
 export const JUMPING_JACK_POSTURE = {
-  /** Feet-together spread relative to shoulder width (rep completion). */
+  /** Feet-together spread relative to shoulder width (strict closed / hints). */
   maxClosedAnkleSpreadRatio: isNativeMobile ? 0.66 : 0.62,
   /** Feet-apart spread relative to shoulder width (open position). */
-  minOpenAnkleSpreadRatio: isNativeMobile ? 0.82 : 0.85,
+  minOpenAnkleSpreadRatio: isNativeMobile ? 0.76 : 0.80,
+  /** Looser return-to-start so fast reps still count between jacks. */
+  maxRepClosedAnkleSpreadRatio: isNativeMobile ? 0.74 : 0.70,
   /** Relaxed closed thresholds only while arming the set. */
   maxReadyAnkleSpreadRatio: isNativeMobile ? 0.72 : 0.68,
   /** Wrists near shoulder height while closed (y grows down). */
   maxClosedArmRaise: isNativeMobile ? 0.06 : 0.055,
+  maxRepClosedArmRaise: isNativeMobile ? 0.11 : 0.10,
   maxReadyArmRaise: isNativeMobile ? 0.09 : 0.08,
   /** Wrists clearly above shoulders at the open position. */
-  minOpenArmRaise: isNativeMobile ? 0.08 : 0.085,
+  minOpenArmRaise: isNativeMobile ? 0.065 : 0.07,
   readyFramesRequired: isNativeMobile ? 3 : 4,
-  openHoldFrames: isNativeMobile ? 2 : 2,
+  /** Minimum frames between counted reps (avoids double-counting one jack). */
+  minRepCooldownFrames: isNativeMobile ? 2 : 3,
   /** Disarm only after tracking is lost for several frames (not mid-jack). */
   lostTrackingFramesToDisarm: isNativeMobile ? 12 : 8,
 } as const;
 
-/** Faster landmark follow for quick jumping jack motion. */
-export const POSE_LANDMARK_SMOOTH_ALPHA_JUMPING_JACK = isNativeMobile ? 0.68 : 1;
+/** Minimal smoothing lag so quick jack peaks are not washed out. */
+export const POSE_LANDMARK_SMOOTH_ALPHA_JUMPING_JACK = isNativeMobile ? 0.92 : 1;
 
 /** EMA smoothing for native camera landmarks (0 = frozen, 1 = raw). */
 export const POSE_LANDMARK_SMOOTH_ALPHA = isNativeMobile ? 0.52 : 1;

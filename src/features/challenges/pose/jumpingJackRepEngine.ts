@@ -3,20 +3,60 @@ import type { JumpingJackPhase } from '@/features/challenges/poseDetection.types
 
 import type { PoseLandmark } from './landmarks';
 import {
+  getJumpingJackAnkleSpreadRatio,
+  getJumpingJackArmRaise,
   getJumpingJackStanceHint,
   hasJumpingJackTrackingLandmarks,
-  isJumpingJackClosed,
-  isJumpingJackOpen,
   isJumpingJackReadyClosed,
 } from './jumpingJackPosture';
+
+function hasOpenedEnoughPeak(peakSpread: number, peakArmRaise: number): boolean {
+  return (
+    peakSpread >= JUMPING_JACK_POSTURE.minOpenAnkleSpreadRatio &&
+    peakArmRaise >= JUMPING_JACK_POSTURE.minOpenArmRaise
+  );
+}
+
+function hasReturnedEnough(spread: number, armRaise: number): boolean {
+  return (
+    spread <= JUMPING_JACK_POSTURE.maxRepClosedAnkleSpreadRatio &&
+    armRaise <= JUMPING_JACK_POSTURE.maxRepClosedArmRaise
+  );
+}
+
+function resolveJumpingJackPhase(
+  spread: number,
+  armRaise: number,
+  openedEnough: boolean,
+  returnedEnough: boolean,
+): JumpingJackPhase {
+  if (returnedEnough && !openedEnough) {
+    return 'CLOSED';
+  }
+
+  if (
+    spread >= JUMPING_JACK_POSTURE.minOpenAnkleSpreadRatio &&
+    armRaise >= JUMPING_JACK_POSTURE.minOpenArmRaise
+  ) {
+    return 'OPEN';
+  }
+
+  if (openedEnough && !returnedEnough) {
+    return 'CLOSING';
+  }
+
+  return 'OPENING';
+}
 
 export class JumpingJackRepEngine {
   phase: JumpingJackPhase = 'CLOSED';
   private readyFrames = 0;
   private lostTrackingFrames = 0;
   private isArmed = false;
-  private reachedOpen = false;
-  private openHoldFrames = 0;
+  private peaksInitialized = false;
+  private cyclePeakSpread = 0;
+  private cyclePeakArmRaise = 0;
+  private framesSinceRep = Number.MAX_SAFE_INTEGER;
 
   get armed(): boolean {
     return this.isArmed;
@@ -53,6 +93,8 @@ export class JumpingJackRepEngine {
 
       if (!this.isArmed && this.readyFrames >= JUMPING_JACK_POSTURE.readyFramesRequired) {
         this.isArmed = true;
+        this.peaksInitialized = false;
+        this.framesSinceRep = Number.MAX_SAFE_INTEGER;
       }
     } else if (!this.isArmed) {
       this.readyFrames = 0;
@@ -63,36 +105,36 @@ export class JumpingJackRepEngine {
       return false;
     }
 
-    const open = isJumpingJackOpen(landmarks);
-    const closed = isJumpingJackClosed(landmarks);
+    const spread = getJumpingJackAnkleSpreadRatio(landmarks);
+    const armRaise = getJumpingJackArmRaise(landmarks);
+
+    if (spread === null || armRaise === null) {
+      return false;
+    }
+
+    if (!this.peaksInitialized) {
+      this.resetCyclePeaks(spread, armRaise);
+      this.peaksInitialized = true;
+    }
+
+    this.framesSinceRep += 1;
+    this.cyclePeakSpread = Math.max(this.cyclePeakSpread, spread);
+    this.cyclePeakArmRaise = Math.max(this.cyclePeakArmRaise, armRaise);
+
+    const openedEnough = hasOpenedEnoughPeak(this.cyclePeakSpread, this.cyclePeakArmRaise);
+    const returnedEnough = hasReturnedEnough(spread, armRaise);
+    this.phase = resolveJumpingJackPhase(spread, armRaise, openedEnough, returnedEnough);
 
     let repCompleted = false;
 
-    if (closed) {
-      if (this.reachedOpen && (this.phase === 'CLOSING' || this.phase === 'OPEN')) {
-        repCompleted = true;
-      }
-
-      this.phase = 'CLOSED';
-      this.reachedOpen = false;
-      this.openHoldFrames = 0;
-    } else if (open) {
-      this.openHoldFrames += 1;
-
-      if (this.openHoldFrames >= JUMPING_JACK_POSTURE.openHoldFrames) {
-        this.reachedOpen = true;
-        this.phase = 'OPEN';
-      } else {
-        this.phase = 'OPENING';
-      }
-    } else {
-      this.openHoldFrames = 0;
-
-      if (this.reachedOpen) {
-        this.phase = 'CLOSING';
-      } else {
-        this.phase = 'OPENING';
-      }
+    if (
+      openedEnough &&
+      returnedEnough &&
+      this.framesSinceRep >= JUMPING_JACK_POSTURE.minRepCooldownFrames
+    ) {
+      repCompleted = true;
+      this.resetCyclePeaks(spread, armRaise);
+      this.framesSinceRep = 0;
     }
 
     return repCompleted;
@@ -104,10 +146,17 @@ export class JumpingJackRepEngine {
     this.lostTrackingFrames = 0;
   }
 
+  private resetCyclePeaks(spread: number, armRaise: number): void {
+    this.cyclePeakSpread = spread;
+    this.cyclePeakArmRaise = armRaise;
+  }
+
   private releaseSet(): void {
     this.isArmed = false;
-    this.reachedOpen = false;
-    this.openHoldFrames = 0;
+    this.peaksInitialized = false;
+    this.cyclePeakSpread = 0;
+    this.cyclePeakArmRaise = 0;
+    this.framesSinceRep = Number.MAX_SAFE_INTEGER;
     this.lostTrackingFrames = 0;
     this.phase = 'CLOSED';
   }
