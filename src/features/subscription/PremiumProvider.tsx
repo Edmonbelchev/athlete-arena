@@ -1,4 +1,5 @@
 import Purchases from 'react-native-purchases';
+import { router } from 'expo-router';
 import {
   createContext,
   useCallback,
@@ -10,7 +11,6 @@ import {
   type ReactNode,
 } from 'react';
 
-import { PremiumPaywallModal } from '@/components/subscription/PremiumPaywallModal';
 import { useAuth } from '@/features/auth';
 import type { PremiumPaywallContext } from '@/features/subscription/premiumPaywallContent';
 import {
@@ -32,11 +32,6 @@ export interface ShowPremiumPaywallOptions {
   skipIntro?: boolean;
 }
 
-interface PremiumPaywallRequest {
-  context: PremiumPaywallContext;
-  initialStep: 'intro' | 'paywall';
-}
-
 interface PremiumContextValue extends PremiumStatus {
   subscription: PremiumSubscriptionDetails | null;
   managementUrl: string | null;
@@ -44,6 +39,10 @@ interface PremiumContextValue extends PremiumStatus {
   error: string | null;
   refresh: () => Promise<void>;
   showPremiumPaywall: (options?: ShowPremiumPaywallOptions) => Promise<boolean>;
+  completePremiumPaywall: (unlocked: boolean) => void;
+  dismissPremiumPaywall: () => void;
+  triggerPaywallRestore: () => Promise<boolean>;
+  paywallRestoreLoading: boolean;
   restorePurchases: () => Promise<boolean>;
 }
 
@@ -65,7 +64,6 @@ export function PremiumProvider({ children }: { children: ReactNode }) {
   const [managementUrl, setManagementUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [paywallRequest, setPaywallRequest] = useState<PremiumPaywallRequest | null>(null);
   const [isRestoreLoading, setIsRestoreLoading] = useState(false);
   const paywallResolveRef = useRef<((unlocked: boolean) => void) | null>(null);
 
@@ -212,40 +210,58 @@ export function PremiumProvider({ children }: { children: ReactNode }) {
     [refresh, refreshRevenueCat, syncSupabaseFromRevenueCat],
   );
 
-  const closePaywall = useCallback(
-    async (unlocked: boolean) => {
-      setPaywallRequest(null);
-      await finalizePaywall(unlocked);
+  const completePremiumPaywall = useCallback(
+    (unlocked: boolean) => {
       paywallResolveRef.current?.(unlocked);
       paywallResolveRef.current = null;
+      void finalizePaywall(unlocked);
     },
     [finalizePaywall],
   );
 
   const showPremiumPaywall = useCallback(
-    async (options?: ShowPremiumPaywallOptions) => {
+    (options?: ShowPremiumPaywallOptions) => {
       if (!session?.user.id) {
-        return false;
+        return Promise.resolve(false);
+      }
+
+      if (paywallResolveRef.current) {
+        return Promise.resolve(false);
       }
 
       if (isRevenueCatConfigured()) {
-        try {
-          await identifyRevenueCatUser(session.user.id);
-        } catch {
+        void identifyRevenueCatUser(session.user.id).catch(() => {
           // Paywall can still open; purchase may fail to attach without login.
-        }
+        });
       }
 
       return new Promise<boolean>((resolve) => {
         paywallResolveRef.current = resolve;
-        setPaywallRequest({
-          context: options?.context ?? 'default',
-          initialStep: options?.skipIntro ? 'paywall' : 'intro',
+        router.push({
+          pathname: '/premium-paywall',
+          params: {
+            context: options?.context ?? 'default',
+            skipIntro: options?.skipIntro ? '1' : '0',
+          },
         });
       });
     },
     [session?.user.id],
   );
+
+  const dismissPremiumPaywall = useCallback(() => {
+    if (!paywallResolveRef.current) {
+      return;
+    }
+
+    completePremiumPaywall(false);
+
+    if (typeof router.canDismiss === 'function' && router.canDismiss()) {
+      router.dismiss();
+    } else if (router.canGoBack()) {
+      router.back();
+    }
+  }, [completePremiumPaywall]);
 
   const restorePurchases = useCallback(async () => {
     if (!session?.user.id) {
@@ -270,18 +286,15 @@ export function PremiumProvider({ children }: { children: ReactNode }) {
     return restored || supabaseStatus.isPremium || revenueCatPremium;
   }, [refresh, revenueCatPremium, session?.user.id, supabaseStatus.isPremium, syncSupabaseFromRevenueCat]);
 
-  const handlePaywallRestore = useCallback(async () => {
+  const triggerPaywallRestore = useCallback(async () => {
     setIsRestoreLoading(true);
 
     try {
-      const restored = await restorePurchases();
-      if (restored) {
-        await closePaywall(true);
-      }
+      return await restorePurchases();
     } finally {
       setIsRestoreLoading(false);
     }
-  }, [closePaywall, restorePurchases]);
+  }, [restorePurchases]);
 
   const value = useMemo(
     () => ({
@@ -294,6 +307,10 @@ export function PremiumProvider({ children }: { children: ReactNode }) {
       error,
       refresh,
       showPremiumPaywall,
+      completePremiumPaywall,
+      dismissPremiumPaywall,
+      triggerPaywallRestore,
+      paywallRestoreLoading: isRestoreLoading,
       restorePurchases,
     }),
     [
@@ -305,23 +322,15 @@ export function PremiumProvider({ children }: { children: ReactNode }) {
       error,
       refresh,
       showPremiumPaywall,
+      completePremiumPaywall,
+      dismissPremiumPaywall,
+      triggerPaywallRestore,
+      isRestoreLoading,
       restorePurchases,
     ],
   );
 
-  return (
-    <PremiumContext.Provider value={value}>
-      {children}
-      <PremiumPaywallModal
-        visible={paywallRequest !== null}
-        context={paywallRequest?.context ?? 'default'}
-        initialStep={paywallRequest?.initialStep ?? 'intro'}
-        restoreLoading={isRestoreLoading}
-        onRestore={() => void handlePaywallRestore()}
-        onClose={(unlocked) => void closePaywall(unlocked)}
-      />
-    </PremiumContext.Provider>
-  );
+  return <PremiumContext.Provider value={value}>{children}</PremiumContext.Provider>;
 }
 
 export function usePremium(): PremiumContextValue {

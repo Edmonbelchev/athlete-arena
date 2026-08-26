@@ -25,8 +25,7 @@ import { useTheme } from '@/hooks/use-theme';
 
 type PaywallStep = 'intro' | 'paywall';
 
-export interface PremiumPaywallModalProps {
-  visible: boolean;
+export interface PremiumPaywallContentProps {
   context: PremiumPaywallContext;
   initialStep?: PaywallStep;
   restoreLoading?: boolean;
@@ -34,24 +33,21 @@ export interface PremiumPaywallModalProps {
   onClose: (unlocked: boolean) => void;
 }
 
-export function PremiumPaywallModal({
-  visible,
+export function PremiumPaywallContent({
   context,
   initialStep = 'intro',
   restoreLoading = false,
   onRestore,
   onClose,
-}: PremiumPaywallModalProps) {
+}: PremiumPaywallContentProps) {
   const theme = useTheme();
   const [step, setStep] = useState<PaywallStep>(initialStep);
   const content = getPremiumPaywallContent(context);
   const canPurchase = Platform.OS !== 'web' && isRevenueCatConfigured();
 
   useEffect(() => {
-    if (visible) {
-      setStep(initialStep);
-    }
-  }, [initialStep, visible]);
+    setStep(initialStep);
+  }, [initialStep]);
 
   function handleClose(unlocked = false) {
     onClose(unlocked);
@@ -70,111 +66,127 @@ export function PremiumPaywallModal({
     setStep('paywall');
   }
 
+  if (step === 'intro') {
+    return (
+      <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]} edges={['top', 'bottom']}>
+        <ScrollView contentContainerStyle={styles.introContent} keyboardShouldPersistTaps="handled">
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Close"
+            onPress={() => handleClose(false)}
+            style={styles.closeButton}>
+            <AppIcon name="close" size={22} color={theme.textSecondary} />
+          </Pressable>
+
+          <View style={[styles.heroBadge, { backgroundColor: `${theme.streak}18`, borderColor: theme.streak }]}>
+            <AppIcon name="crown" size={32} color={theme.streak} weight="bold" />
+          </View>
+
+          <Text style={[styles.title, { color: theme.text }]}>{content.title}</Text>
+          <Text style={[styles.subtitle, { color: theme.textSecondary }]}>{content.subtitle}</Text>
+
+          <View style={[styles.benefitsCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
+            <Text style={[styles.benefitsTitle, { color: theme.text }]}>What&apos;s included</Text>
+            {PREMIUM_BENEFITS.map((benefit) => (
+              <View key={benefit} style={styles.benefitRow}>
+                <AppIcon name="checkmark" size={16} color={theme.success} weight="bold" />
+                <Text style={[styles.benefitText, { color: theme.text }]}>{benefit}</Text>
+              </View>
+            ))}
+            <Text style={[styles.benefitSoon, { color: theme.textSecondary }]}>
+              More premium features coming soon
+            </Text>
+          </View>
+
+          {!canPurchase ? (
+            <Text style={[styles.platformNote, { color: theme.textSecondary }]}>
+              Subscriptions are available in the iOS and Android apps.
+            </Text>
+          ) : null}
+
+          <PrimaryButton
+            label={canPurchase ? content.ctaLabel : 'Got it'}
+            onPress={() => (canPurchase ? handleContinue() : handleClose(false))}
+          />
+
+          {canPurchase ? (
+            <PrimaryButton label="Not now" variant="secondary" onPress={() => handleClose(false)} />
+          ) : null}
+
+          {canPurchase ? (
+            <Pressable
+              accessibilityRole="button"
+              onPress={onRestore}
+              disabled={restoreLoading}
+              style={styles.restoreButton}>
+              {restoreLoading ? (
+                <ActivityIndicator color={theme.primary} />
+              ) : (
+                <Text style={[styles.restoreText, { color: theme.primary }]}>Restore purchases</Text>
+              )}
+            </Pressable>
+          ) : null}
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
+
+  return (
+    <View style={[styles.paywallShell, { backgroundColor: theme.background }]}>
+      <SafeAreaView edges={['top']} style={styles.paywallHeader}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Close paywall"
+          onPress={() => handleClose(false)}
+          style={styles.paywallClose}>
+          <AppIcon name="close" size={22} color={theme.text} />
+        </Pressable>
+      </SafeAreaView>
+
+      {canPurchase ? (
+        <RevenueCatUI.Paywall
+          style={styles.paywallView}
+          options={{ displayCloseButton: false }}
+          onPurchaseCompleted={({ customerInfo }) => {
+            if (customerHasPremiumEntitlement(customerInfo)) {
+              handlePurchaseSuccess();
+            }
+          }}
+          onRestoreCompleted={({ customerInfo }) => {
+            if (customerHasPremiumEntitlement(customerInfo)) {
+              handlePurchaseSuccess();
+            }
+          }}
+          onDismiss={() => handleClose(false)}
+        />
+      ) : (
+        <View style={styles.unavailableBlock}>
+          <Text style={[styles.platformNote, { color: theme.textSecondary }]}>
+            Subscriptions are available in the iOS and Android apps.
+          </Text>
+          <PrimaryButton label="Close" variant="secondary" onPress={() => handleClose(false)} />
+        </View>
+      )}
+    </View>
+  );
+}
+
+export interface PremiumPaywallModalProps extends PremiumPaywallContentProps {
+  visible: boolean;
+}
+
+/** @deprecated Prefer the `/premium-paywall` route via `showPremiumPaywall`. */
+export function PremiumPaywallModal({ visible, ...contentProps }: PremiumPaywallModalProps) {
+  const presentationStyle = Platform.OS === 'ios' ? 'overFullScreen' : undefined;
+
   return (
     <Modal
       visible={visible}
       animationType="slide"
-      presentationStyle={step === 'paywall' ? 'fullScreen' : 'pageSheet'}
-      onRequestClose={() => handleClose(false)}>
-      {step === 'intro' ? (
-        <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]} edges={['top', 'bottom']}>
-          <ScrollView contentContainerStyle={styles.introContent} keyboardShouldPersistTaps="handled">
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Close"
-              onPress={() => handleClose(false)}
-              style={styles.closeButton}>
-              <AppIcon name="close" size={22} color={theme.textSecondary} />
-            </Pressable>
-
-            <View style={[styles.heroBadge, { backgroundColor: `${theme.streak}18`, borderColor: theme.streak }]}>
-              <AppIcon name="crown" size={32} color={theme.streak} weight="bold" />
-            </View>
-
-            <Text style={[styles.title, { color: theme.text }]}>{content.title}</Text>
-            <Text style={[styles.subtitle, { color: theme.textSecondary }]}>{content.subtitle}</Text>
-
-            <View style={[styles.benefitsCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
-              <Text style={[styles.benefitsTitle, { color: theme.text }]}>What&apos;s included</Text>
-              {PREMIUM_BENEFITS.map((benefit) => (
-                <View key={benefit} style={styles.benefitRow}>
-                  <AppIcon name="checkmark" size={16} color={theme.success} weight="bold" />
-                  <Text style={[styles.benefitText, { color: theme.text }]}>{benefit}</Text>
-                </View>
-              ))}
-              <Text style={[styles.benefitSoon, { color: theme.textSecondary }]}>
-                More premium features coming soon
-              </Text>
-            </View>
-
-            {!canPurchase ? (
-              <Text style={[styles.platformNote, { color: theme.textSecondary }]}>
-                Subscriptions are available in the iOS and Android apps.
-              </Text>
-            ) : null}
-
-            <PrimaryButton
-              label={canPurchase ? content.ctaLabel : 'Got it'}
-              onPress={() => (canPurchase ? handleContinue() : handleClose(false))}
-            />
-
-            {canPurchase ? (
-              <PrimaryButton label="Not now" variant="secondary" onPress={() => handleClose(false)} />
-            ) : null}
-
-            {canPurchase ? (
-              <Pressable
-                accessibilityRole="button"
-                onPress={onRestore}
-                disabled={restoreLoading}
-                style={styles.restoreButton}>
-                {restoreLoading ? (
-                  <ActivityIndicator color={theme.primary} />
-                ) : (
-                  <Text style={[styles.restoreText, { color: theme.primary }]}>Restore purchases</Text>
-                )}
-              </Pressable>
-            ) : null}
-          </ScrollView>
-        </SafeAreaView>
-      ) : (
-        <View style={[styles.paywallShell, { backgroundColor: theme.background }]}>
-          <SafeAreaView edges={['top']} style={styles.paywallHeader}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Close paywall"
-              onPress={() => handleClose(false)}
-              style={styles.paywallClose}>
-              <AppIcon name="close" size={22} color={theme.text} />
-            </Pressable>
-          </SafeAreaView>
-
-          {canPurchase ? (
-            <RevenueCatUI.Paywall
-              style={styles.paywallView}
-              options={{ displayCloseButton: false }}
-              onPurchaseCompleted={({ customerInfo }) => {
-                if (customerHasPremiumEntitlement(customerInfo)) {
-                  handlePurchaseSuccess();
-                }
-              }}
-              onRestoreCompleted={({ customerInfo }) => {
-                if (customerHasPremiumEntitlement(customerInfo)) {
-                  handlePurchaseSuccess();
-                }
-              }}
-              onDismiss={() => handleClose(false)}
-            />
-          ) : (
-            <View style={styles.unavailableBlock}>
-              <Text style={[styles.platformNote, { color: theme.textSecondary }]}>
-                Subscriptions are available in the iOS and Android apps.
-              </Text>
-              <PrimaryButton label="Close" variant="secondary" onPress={() => handleClose(false)} />
-            </View>
-          )}
-        </View>
-      )}
+      statusBarTranslucent
+      {...(presentationStyle ? { presentationStyle } : {})}
+      onRequestClose={() => contentProps.onClose(false)}>
+      <PremiumPaywallContent {...contentProps} />
     </Modal>
   );
 }

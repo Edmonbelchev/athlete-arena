@@ -93,8 +93,14 @@ export default function CreateFriendChallengeScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { quota, refresh: refreshQuota } = useFriendChallengeRequestQuota();
-  const { showPremiumPaywall } = usePremium();
+  const { showPremiumPaywall, dismissPremiumPaywall } = usePremium();
   const { items } = useShop();
+
+  useEffect(() => {
+    return () => {
+      dismissPremiumPaywall();
+    };
+  }, [dismissPremiumPaywall]);
   const ownedEmotes = useMemo(() => getOwnedEmotes(items), [items]);
   const selectedFriend = useMemo(
     () => friends.find((friend) => friend.friendId === selectedFriendId) ?? null,

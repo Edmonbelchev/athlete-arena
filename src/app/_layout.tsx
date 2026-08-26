@@ -214,6 +214,13 @@ function RootNavigator() {
             }}
           />
           <Stack.Screen
+            name="premium-paywall"
+            options={{
+              presentation: 'modal',
+              headerShown: false,
+            }}
+          />
+          <Stack.Screen
             name="profile/subscription"
             options={{
               presentation: 'modal',
