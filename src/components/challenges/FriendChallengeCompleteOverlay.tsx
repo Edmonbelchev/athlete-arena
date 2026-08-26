@@ -11,7 +11,7 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { EmoteDisplay } from '@/components/shop/EmoteDisplay';
-import { formatXpAndCoins } from '@/constants/coins';
+import { XpCoinRewardLabel } from '@/components/rewards/XpCoinRewardLabel';
 import { formatRaceTime } from '@/constants/friendChallenges';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -193,8 +193,7 @@ export function FriendChallengeCompleteOverlay({
   const iconBackground =
     variant === 'winner' ? theme.streak : variant === 'lost' ? theme.primary : theme.success;
   const showEmote = variant === 'winner' || variant === 'finished' || variant === 'tie';
-  const rewardLabel =
-    coins > 0 ? `${formatXpAndCoins(xp, coins)} earned` : xp > 0 ? `+${xp} XP earned` : null;
+  const showRewards = coins > 0 || xp > 0;
 
   return (
     <View style={styles.overlay}>
@@ -234,10 +233,8 @@ export function FriendChallengeCompleteOverlay({
           </View>
         ) : null}
 
-        {rewardLabel ? (
-          <Text style={StyleSheet.flatten([styles.reward, { color: theme.xp }])}>
-            {rewardLabel}
-          </Text>
+        {showRewards ? (
+          <XpCoinRewardLabel xp={xp} coins={coins} suffix=" earned" style={StyleSheet.flatten([styles.reward, { color: theme.xp }])} />
         ) : null}
 
         {copy.subtitle ? (

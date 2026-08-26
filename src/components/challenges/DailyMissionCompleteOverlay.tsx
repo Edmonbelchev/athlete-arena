@@ -11,9 +11,8 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { WorkoutGuideAnimation } from '@/components/challenges/WorkoutGuideAnimation';
-import { EmoteDisplay } from '@/components/shop/EmoteDisplay';
+import { XpCoinRewardLabel } from '@/components/rewards/XpCoinRewardLabel';
 import type { ExerciseType } from '@/constants/challenges';
-import { formatXpAndCoins } from '@/constants/coins';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -26,7 +25,6 @@ interface DailyMissionCompleteOverlayProps {
   exerciseType: ExerciseType;
   xp: number;
   coins: number;
-  emote: string | null | undefined;
   showWeeklyStreakComplete?: boolean;
 }
 
@@ -129,7 +127,6 @@ export function DailyMissionCompleteOverlay({
   exerciseType,
   xp,
   coins,
-  emote,
   showWeeklyStreakComplete = false,
 }: DailyMissionCompleteOverlayProps) {
   const theme = useTheme();
@@ -169,13 +166,12 @@ export function DailyMissionCompleteOverlay({
           </View>
         ) : null}
 
-        <View style={styles.emoteWrap}>
-          <EmoteDisplay emoji={emote} />
-        </View>
-
-        <Text style={StyleSheet.flatten([styles.reward, { color: theme.xp }])}>
-          {formatXpAndCoins(xp, coins)} earned
-        </Text>
+        <XpCoinRewardLabel
+          xp={xp}
+          coins={coins}
+          suffix=" earned"
+          style={StyleSheet.flatten([styles.reward, { color: theme.xp }])}
+        />
       </View>
     </View>
   );
@@ -254,10 +250,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '900',
     textAlign: 'center',
-  },
-  emoteWrap: {
-    minHeight: 44,
-    justifyContent: 'center',
   },
   reward: {
     fontSize: 20,

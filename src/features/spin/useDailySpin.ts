@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { FALLBACK_SPIN_SEGMENTS } from '@/constants/spinWheel';
 import { useAuth } from '@/features/auth';
 import { useProfile } from '@/features/profile/useProfile';
+import { useShop } from '@/features/shop/ShopProvider';
 import { formatUserError } from '@/lib/errors';
 import { getDailySpinStatus, spinDailyWheel } from '@/services/spinService';
 import type { DailySpinStatus, SpinResult, SpinSegment } from '@/types/spin';
@@ -21,6 +22,7 @@ interface UseDailySpinResult {
 export function useDailySpin(): UseDailySpinResult {
   const { session } = useAuth();
   const { patchProfile } = useProfile();
+  const { patchSummary } = useShop();
   const [status, setStatus] = useState<DailySpinStatus | null>(null);
   const [isLoading, setIsLoading] = useState(Boolean(session));
   const [isSpinning, setIsSpinning] = useState(false);
@@ -50,6 +52,11 @@ export function useDailySpin(): UseDailySpinResult {
   const commitSpinResult = useCallback(
     (result: SpinResult) => {
       patchProfile({ coin_balance: result.coinBalance });
+      patchSummary({
+        coinBalance: result.coinBalance,
+        coinMultiplier: result.coinMultiplier,
+        coinMultiplierExpiresAt: result.coinMultiplierExpiresAt,
+      });
 
       setStatus((current) =>
         current
@@ -64,7 +71,7 @@ export function useDailySpin(): UseDailySpinResult {
           : current,
       );
     },
-    [patchProfile],
+    [patchProfile, patchSummary],
   );
 
   const spin = useCallback(async () => {

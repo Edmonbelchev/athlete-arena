@@ -72,19 +72,6 @@ export function ShopProvider({ children }: { children: ReactNode }) {
     setSummary((current) => ({ ...current, ...patch }));
   }, []);
 
-  useEffect(() => {
-    if (!session?.user.id) {
-      setItems([]);
-      setSummary(emptySummary);
-      setIsLoading(false);
-      setError(null);
-      return;
-    }
-
-    setIsLoading(false);
-    setError(null);
-  }, [session?.user.id]);
-
   const refresh = useCallback(async () => {
     if (!session?.user.id) {
       setItems([]);
@@ -109,6 +96,18 @@ export function ShopProvider({ children }: { children: ReactNode }) {
       setIsLoading(false);
     }
   }, [session?.user.id]);
+
+  useEffect(() => {
+    if (!session?.user.id) {
+      setItems([]);
+      setSummary(emptySummary);
+      setIsLoading(false);
+      setError(null);
+      return;
+    }
+
+    void refresh();
+  }, [session?.user.id, refresh]);
 
   const purchaseItem = useCallback(
     async (itemId: string) => {

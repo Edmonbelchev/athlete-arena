@@ -42,17 +42,17 @@ export default function RootLayout() {
       <UserSettingsProvider>
         <PremiumProvider>
           <AchievementUnlockProvider>
-            <MissionCompleteProvider>
-              <ProfileProvider>
-                <ShopProvider>
+            <ProfileProvider>
+              <ShopProvider>
+                <MissionCompleteProvider>
                   <FriendsProvider>
                     <NotificationProvider>
                       <ThemedRootNavigator />
                     </NotificationProvider>
                   </FriendsProvider>
-                </ShopProvider>
-              </ProfileProvider>
-            </MissionCompleteProvider>
+                </MissionCompleteProvider>
+              </ShopProvider>
+            </ProfileProvider>
           </AchievementUnlockProvider>
         </PremiumProvider>
       </UserSettingsProvider>

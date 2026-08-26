@@ -2,9 +2,9 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInUp, FadeOutUp } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { XpCoinRewardLabel } from '@/components/rewards/XpCoinRewardLabel';
 import { AppIcon } from '@/components/ui/AppIcon';
 import { formatExerciseLabel } from '@/constants/challenges';
-import { formatXpAndCoins } from '@/constants/coins';
 import { Spacing } from '@/constants/theme';
 import type { DailyMissionCompletePayload } from '@/features/challenges/dailyMissionCelebration';
 import { useTheme } from '@/hooks/use-theme';
@@ -22,7 +22,6 @@ export function MissionCompleteToast({ mission, onDismiss, onPress }: MissionCom
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const exerciseLabel = formatExerciseLabel(mission.exerciseType, true);
-  const rewardLabel = formatXpAndCoins(mission.xp ?? 0, mission.coins ?? 0);
 
   return (
     <View pointerEvents="box-none" style={styles.passThroughLayer}>
@@ -51,8 +50,14 @@ export function MissionCompleteToast({ mission, onDismiss, onPress }: MissionCom
 
           <View style={styles.copy}>
             <Text style={StyleSheet.flatten([styles.title, { color: theme.text }])}>Quest complete</Text>
+            <XpCoinRewardLabel
+              xp={mission.xp ?? 0}
+              coins={mission.coins ?? 0}
+              compact
+              style={StyleSheet.flatten([styles.subtitle, { color: theme.textSecondary }])}
+            />
             <Text style={StyleSheet.flatten([styles.subtitle, { color: theme.textSecondary }])}>
-              {mission.targetReps} {exerciseLabel} · {rewardLabel}
+              {mission.targetReps} {exerciseLabel}
             </Text>
           </View>
 

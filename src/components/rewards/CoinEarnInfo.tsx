@@ -1,9 +1,11 @@
 import { StyleSheet, Text, View } from 'react-native';
 
-import { CoinBadge } from '@/components/shop/CoinBadge';
+import { CoinRewardPreview } from '@/components/rewards/CoinRewardPreview';
 import { COIN_EARN_SOURCES } from '@/constants/coins';
 import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+
+const MULTIPLIER_ELIGIBLE_SOURCES = new Set(['daily_challenge', 'friend_race_win']);
 
 export function CoinEarnInfo() {
   const theme = useTheme();
@@ -20,7 +22,10 @@ export function CoinEarnInfo() {
           <Text style={StyleSheet.flatten([styles.label, { color: theme.textSecondary }])}>
             {source.label}
           </Text>
-          <CoinBadge amount={source.amount} />
+          <CoinRewardPreview
+            amount={source.amount}
+            appliesMultiplier={MULTIPLIER_ELIGIBLE_SOURCES.has(source.id)}
+          />
         </View>
       ))}
     </View>
