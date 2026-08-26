@@ -18,6 +18,7 @@ import {
 } from '@/features/challenges/workoutGuidance';
 import type { PoseLandmark } from '@/features/challenges/pose/landmarks';
 import type { PoseTrackingStatus } from '@/features/challenges/pose/poseQuality';
+import { useKeepAwakeWhileActive } from '@/hooks/use-keep-awake-while-active';
 import { useWorkoutGuideAnimationVisible } from '@/hooks/use-workout-guide-animation-visible';
 import { useWorkoutOrientation } from '@/hooks/use-workout-orientation';
 import { useTheme } from '@/hooks/use-theme';
@@ -80,6 +81,7 @@ export function ChallengeWorkoutMode({
   });
 
   useWorkoutOrientation(!showCompletionOnly);
+  useKeepAwakeWhileActive(!showCompletionOnly);
 
   if (showCompletionOnly) {
     return (
