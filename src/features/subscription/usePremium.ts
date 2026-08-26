@@ -1,1 +1,1 @@
-export { PremiumProvider, usePremium } from '@/features/subscription/PremiumProvider';
+export { PremiumProvider, usePremium, type ShowPremiumPaywallOptions } from '@/features/subscription/PremiumProvider';

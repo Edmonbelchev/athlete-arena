@@ -101,7 +101,7 @@ export async function getRevenueCatCustomerInfo(): Promise<CustomerInfo | null> 
   return Purchases.getCustomerInfo();
 }
 
-async function waitForPremiumEntitlement(maxAttempts = 5, delayMs = 400): Promise<boolean> {
+export async function waitForPremiumEntitlement(maxAttempts = 5, delayMs = 400): Promise<boolean> {
   for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
     const customerInfo = await Purchases.getCustomerInfo();
     if (customerHasPremiumEntitlement(customerInfo)) {

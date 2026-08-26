@@ -39,8 +39,8 @@ export default function RootLayout() {
 
   return (
     <AuthProvider>
-      <PremiumProvider>
-        <UserSettingsProvider>
+      <UserSettingsProvider>
+        <PremiumProvider>
           <AchievementUnlockProvider>
             <MissionCompleteProvider>
               <ProfileProvider>
@@ -54,8 +54,8 @@ export default function RootLayout() {
               </ProfileProvider>
             </MissionCompleteProvider>
           </AchievementUnlockProvider>
-        </UserSettingsProvider>
-      </PremiumProvider>
+        </PremiumProvider>
+      </UserSettingsProvider>
     </AuthProvider>
   );
 }

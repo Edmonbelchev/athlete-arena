@@ -77,7 +77,9 @@ export default function WorkoutLibraryScreen() {
 
   async function openCreateModal(templateId?: string | null) {
     if (!isPremium) {
-      const unlocked = await showPremiumPaywall();
+      const unlocked = await showPremiumPaywall({
+        context: templateId ? 'edit_workout' : 'create_workout',
+      });
       if (!unlocked) {
         return;
       }
@@ -168,13 +170,13 @@ export default function WorkoutLibraryScreen() {
   }, [deepLinkTemplateId, handledDeepLinkTemplateId, openPreview]);
 
   useEffect(() => {
-    if (!editTemplateId || editTemplateId === handledEditTemplateId || !isPremium) {
+    if (!editTemplateId || editTemplateId === handledEditTemplateId) {
       return;
     }
 
     setHandledEditTemplateId(editTemplateId);
-    openCreateModal(editTemplateId);
-  }, [editTemplateId, handledEditTemplateId, isPremium]);
+    void openCreateModal(editTemplateId);
+  }, [editTemplateId, handledEditTemplateId]);
 
   function closePreview() {
     if (startingTemplateId || actionTemplateId) {

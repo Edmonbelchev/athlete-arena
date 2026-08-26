@@ -51,7 +51,7 @@ export default function SubscriptionScreen() {
     setActionError(null);
     setActionLoading('upgrade');
     try {
-      await showPremiumPaywall();
+      await showPremiumPaywall({ context: 'membership', skipIntro: true });
     } catch {
       setActionError('Could not open the subscription paywall.');
     } finally {
