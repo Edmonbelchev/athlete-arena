@@ -1,5 +1,5 @@
 import {
-  CUSTOM_WORKOUT_TYPES,
+  AVAILABLE_CUSTOM_WORKOUT_TYPES,
   getCustomWorkoutTypeLabel,
 } from '@/constants/customWorkouts';
 import type { CustomWorkoutType } from '@/types/customWorkouts';
@@ -42,7 +42,7 @@ export function filterWorkoutsByType<T extends WorkoutBrowseItem>(
 }
 
 const WORKOUT_TYPE_ORDER = new Map(
-  CUSTOM_WORKOUT_TYPES.map((entry, index) => [entry.type, index]),
+  AVAILABLE_CUSTOM_WORKOUT_TYPES.map((entry, index) => [entry.type, index]),
 );
 
 export function sortWorkoutsForBrowse<T extends WorkoutBrowseItem>(
@@ -66,7 +66,7 @@ export function sortWorkoutsForBrowse<T extends WorkoutBrowseItem>(
 export function getAvailableWorkoutTypes<T extends WorkoutBrowseItem>(items: T[]): CustomWorkoutType[] {
   const present = new Set(items.map((item) => item.workoutType));
 
-  return CUSTOM_WORKOUT_TYPES.map((entry) => entry.type).filter((type) => present.has(type));
+  return AVAILABLE_CUSTOM_WORKOUT_TYPES.map((entry) => entry.type).filter((type) => present.has(type));
 }
 
 export function buildWorkoutBrowseRows<T extends WorkoutBrowseItem>(
