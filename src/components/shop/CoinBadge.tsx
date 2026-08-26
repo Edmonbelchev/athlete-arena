@@ -30,6 +30,7 @@ export function CoinBadge({ amount, large = false }: CoinBadgeProps) {
 const styles = StyleSheet.create({
   badge: {
     width: FitContentWidth as DimensionValue,
+    alignSelf: 'flex-start',
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.one,

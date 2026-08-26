@@ -1,4 +1,4 @@
-import { router, useFocusEffect } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
@@ -22,6 +22,12 @@ import { useTheme } from '@/hooks/use-theme';
 
 export default function FriendsScreen() {
   const theme = useTheme();
+  const { friendshipId: focusFriendshipIdParam } = useLocalSearchParams<{
+    friendshipId?: string | string[];
+  }>();
+  const focusFriendshipId = Array.isArray(focusFriendshipIdParam)
+    ? focusFriendshipIdParam[0]
+    : focusFriendshipIdParam;
   const { friends, requests, isLoading, error, refresh } = useFriends();
   const { count: activeChallengeCount, refresh: refreshActiveChallengeCount } =
     useActiveFriendChallengeCount();
@@ -91,12 +97,19 @@ export default function FriendsScreen() {
             <Text style={StyleSheet.flatten([styles.sectionTitle, { color: theme.textSecondary }])}>
               FRIEND REQUESTS
             </Text>
-            {requests.map((request) => (
+            {requests.map((request) => {
+              const isFocusedRequest = focusFriendshipId === request.friendshipId;
+
+              return (
               <View
                 key={request.friendshipId}
                 style={StyleSheet.flatten([
                   styles.requestCard,
-                  { backgroundColor: theme.backgroundElement, borderColor: theme.border },
+                  {
+                    backgroundColor: theme.backgroundElement,
+                    borderColor: isFocusedRequest ? theme.primary : theme.border,
+                    borderWidth: isFocusedRequest ? 2 : 1,
+                  },
                 ])}>
                 <Text style={StyleSheet.flatten([styles.requestName, { color: theme.text }])}>
                   {request.displayName ?? request.username}
@@ -118,7 +131,8 @@ export default function FriendsScreen() {
                   />
                 </View>
               </View>
-            ))}
+              );
+            })}
           </View>
         ) : null}
 
@@ -191,7 +205,6 @@ const styles = StyleSheet.create({
   requestCard: {
     padding: Spacing.three,
     borderRadius: 16,
-    borderWidth: 1,
     gap: Spacing.two,
   },
   requestName: {

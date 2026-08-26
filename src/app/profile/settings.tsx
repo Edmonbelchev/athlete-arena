@@ -131,7 +131,7 @@ export default function SettingsScreen() {
             <Text style={StyleSheet.flatten([styles.supportCopy, { color: theme.textSecondary }])}>
               {isPremium
                 ? 'You have Premium access. View your plan, renewal date, and billing details.'
-                : 'Upgrade to create, edit, and share custom workouts.'}
+                : 'Upgrade to create, edit, and share custom workouts, and send unlimited friend challenges.'}
             </Text>
             <PrimaryButton
               label={isPremium ? 'View membership' : 'Upgrade to Premium'}

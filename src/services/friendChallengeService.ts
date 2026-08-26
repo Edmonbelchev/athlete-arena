@@ -1,7 +1,8 @@
 import { mapFriendWorkoutExercises } from '@/features/friends/friendChallengeWorkout';
 import { assertSupabaseConfigured, supabase } from '@/lib/supabase';
 import type { ExerciseType } from '@/constants/challenges';
-import type { ChallengeStatus, FriendChallenge, FriendWithActiveChallengesSummary } from '@/types/friends';
+import { FRIEND_CHALLENGE_MONTHLY_REQUEST_LIMIT } from '@/constants/friendChallenges';
+import type { ChallengeStatus, FriendChallenge, FriendChallengeRequestQuota, FriendWithActiveChallengesSummary } from '@/types/friends';
 import type { FriendChallengeRpcRow } from '@/types/database';
 
 function mapFriendChallenge(row: FriendChallengeRpcRow): FriendChallenge {
@@ -49,6 +50,32 @@ function mapFriendChallenge(row: FriendChallengeRpcRow): FriendChallenge {
     workoutType: row.workout_type,
     structureConfig: row.structure_config,
     workoutExercises: mapFriendWorkoutExercises(row.workout_exercises),
+  };
+}
+
+export async function getMyFriendChallengeRequestQuota(): Promise<FriendChallengeRequestQuota> {
+  assertSupabaseConfigured();
+
+  const { data, error } = await supabase.rpc('get_my_friend_challenge_request_quota');
+
+  if (error) {
+    throw error;
+  }
+
+  const row = (data ?? [])[0] as
+    | {
+        used_count: number;
+        monthly_limit: number | null;
+        is_premium: boolean;
+        can_create: boolean;
+      }
+    | undefined;
+
+  return {
+    usedCount: row?.used_count ?? 0,
+    monthlyLimit: row?.is_premium ? null : (row?.monthly_limit ?? FRIEND_CHALLENGE_MONTHLY_REQUEST_LIMIT),
+    isPremium: row?.is_premium ?? false,
+    canCreate: row?.can_create ?? true,
   };
 }
 

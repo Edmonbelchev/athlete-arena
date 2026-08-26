@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { FriendChallengeRequestQuotaBar } from '@/components/friends/FriendChallengeRequestQuotaBar';
 import { AchievementBadges } from '@/components/sidebar/AchievementBadges';
 import { DailyMotivationCard } from '@/components/sidebar/DailyMotivationCard';
 import { CoinBadge } from '@/components/shop/CoinBadge';
@@ -24,6 +25,7 @@ import type { AppIconName } from '@/constants/icons';
 import { Radius, Spacing } from '@/constants/theme';
 import { getAuthErrorMessage } from '@/features/auth/authErrors';
 import { useAuth } from '@/features/auth';
+import { useFriendChallengeRequestQuota } from '@/features/friends/useFriendChallengeRequestQuota';
 import { usePremium } from '@/features/subscription/usePremium';
 import { useProfile } from '@/features/profile/useProfile';
 import { useSidebar } from '@/features/sidebar/SidebarProvider';
@@ -77,7 +79,8 @@ export function AppSidebar() {
   const { isOpen, close } = useSidebar();
   const { signOut } = useAuth();
   const { profile, refresh: refreshProfile } = useProfile();
-  const { isPremium } = usePremium();
+  const { isPremium, showPremiumPaywall } = usePremium();
+  const { quota, refresh: refreshChallengeQuota } = useFriendChallengeRequestQuota();
   const { achievements, refresh: refreshAchievements } = useAchievementPreview();
   const [logoutError, setLogoutError] = useState<string | null>(null);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -90,8 +93,9 @@ export function AppSidebar() {
   useEffect(() => {
     if (isOpen) {
       void refreshAchievements();
+      void refreshChallengeQuota();
     }
-  }, [isOpen, refreshAchievements]);
+  }, [isOpen, refreshAchievements, refreshChallengeQuota]);
 
   const navigate = useCallback(
     (href: Href) => {
@@ -180,6 +184,18 @@ export function AppSidebar() {
               level={xpProgress.level}
               currentXp={xpProgress.currentLevelXp}
               targetXp={xpProgress.xpToNextLevel}
+            />
+
+            <FriendChallengeRequestQuotaBar
+              quota={quota}
+              onUpgrade={() => {
+                close();
+                void showPremiumPaywall({ context: 'challenge_requests' }).then((unlocked) => {
+                  if (unlocked) {
+                    void refreshChallengeQuota();
+                  }
+                });
+              }}
             />
 
             <View style={styles.navSections}>

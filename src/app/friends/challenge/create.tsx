@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { FriendChallengeRequestQuotaBar } from '@/components/friends/FriendChallengeRequestQuotaBar';
 import { FriendChallengeRewardInfo } from '@/components/friends/FriendChallengeRewardInfo';
 import { FriendChallengeWorkoutPicker } from '@/components/friends/FriendChallengeWorkoutPicker';
 import { ProfileAvatar } from '@/components/profile/ProfileAvatar';
@@ -23,6 +24,7 @@ import {
     FRIEND_CHALLENGE_TIME_PRESETS,
     formatRaceTimeLimit,
     getDefaultRepsForExercise,
+    isFriendChallengeRequestLimitError,
 } from '@/constants/friendChallenges';
 import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import {
@@ -31,7 +33,9 @@ import {
     parseFriendChallengeWorkoutKey,
     type FriendChallengeWorkoutOption,
 } from '@/features/friends/friendChallengeWorkoutPicker';
+import { useFriendChallengeRequestQuota } from '@/features/friends/useFriendChallengeRequestQuota';
 import { useFriends } from '@/features/friends/useFriends';
+import { usePremium } from '@/features/subscription/usePremium';
 import { useShop } from '@/features/shop/ShopProvider';
 import { getOwnedEmotes } from '@/features/shop/shopUtils';
 import { parseStructureConfig } from '@/features/workouts/forTimeStructure';
@@ -88,6 +92,8 @@ export default function CreateFriendChallengeScreen() {
   const [selectedEmoteId, setSelectedEmoteId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { quota, refresh: refreshQuota } = useFriendChallengeRequestQuota();
+  const { showPremiumPaywall } = usePremium();
   const { items } = useShop();
   const ownedEmotes = useMemo(() => getOwnedEmotes(items), [items]);
   const selectedFriend = useMemo(
@@ -250,9 +256,22 @@ export default function CreateFriendChallengeScreen() {
     }
   }
 
+  async function handleUpgradeForUnlimited() {
+    const unlocked = await showPremiumPaywall({ context: 'challenge_requests' });
+    if (unlocked) {
+      await refreshQuota();
+      setError(null);
+    }
+  }
+
   async function handleSubmit() {
     if (!selectedFriendId) {
       setError('Select a friend to challenge');
+      return;
+    }
+
+    if (!quota.canCreate) {
+      setError('You have reached your monthly challenge request limit.');
       return;
     }
 
@@ -285,7 +304,13 @@ export default function CreateFriendChallengeScreen() {
           pathname: '/challenge/friend/[participantId]',
           params: { participantId },
         });
+        void refreshQuota();
       } catch (err) {
+        if (isFriendChallengeRequestLimitError(err)) {
+          setError(formatUserError(err, 'Failed to send challenge'));
+          await refreshQuota();
+          return;
+        }
         setError(formatUserError(err, 'Failed to send challenge'));
       } finally {
         setIsSubmitting(false);
@@ -309,12 +334,25 @@ export default function CreateFriendChallengeScreen() {
         pathname: '/challenge/friend/[participantId]',
         params: { participantId },
       });
+      void refreshQuota();
     } catch (err) {
+      if (isFriendChallengeRequestLimitError(err)) {
+        setError(formatUserError(err, 'Failed to send challenge'));
+        await refreshQuota();
+        return;
+      }
       setError(formatUserError(err, 'Failed to send challenge'));
     } finally {
       setIsSubmitting(false);
     }
   }
+
+  const atRequestLimit = !quota.canCreate;
+  const submitDisabled =
+    !selectedFriendId ||
+    atRequestLimit ||
+    (challengeKind === 'workout' &&
+      (!selectedWorkoutKey || !selectedWorkoutOption || isWorkoutPreviewLoading));
 
   return (
     <>
@@ -333,6 +371,12 @@ export default function CreateFriendChallengeScreen() {
               ? `Set up a speed race with ${selectedDisplayName ?? 'your friend'}`
               : `Create a custom challenge${selectedUsername ? ` for @${selectedUsername}` : ''}`}
           </Text>
+
+          <FriendChallengeRequestQuotaBar
+            quota={quota}
+            showUpgradeButton={atRequestLimit}
+            onUpgrade={() => void handleUpgradeForUnlimited()}
+          />
 
           <Text style={StyleSheet.flatten([styles.label, { color: theme.textSecondary }])}>FRIEND</Text>
           {isFriendLocked ? (
@@ -555,13 +599,9 @@ export default function CreateFriendChallengeScreen() {
           ) : null}
 
           <PrimaryButton
-            label="Send Challenge"
+            label={atRequestLimit ? 'Monthly limit reached' : 'Send Challenge'}
             loading={isSubmitting}
-            disabled={
-              !selectedFriendId ||
-              (challengeKind === 'workout' &&
-                (!selectedWorkoutKey || !selectedWorkoutOption || isWorkoutPreviewLoading))
-            }
+            disabled={submitDisabled}
             onPress={() => void handleSubmit()}
           />
         </ScrollView>

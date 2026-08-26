@@ -13,6 +13,14 @@ export const FRIEND_CHALLENGE_REP_PRESETS: Record<ExerciseType, readonly number[
 export const FRIEND_CHALLENGE_REP_MIN = 1;
 export const FRIEND_CHALLENGE_REP_MAX = 1000;
 
+/** Free-plan cap on friend challenges sent per calendar month (UTC). Premium is unlimited. */
+export const FRIEND_CHALLENGE_MONTHLY_REQUEST_LIMIT = 10;
+
+export function isFriendChallengeRequestLimitError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return message.includes('Monthly challenge request limit reached');
+}
+
 /** Optional timer presets in seconds. `null` = no time cap per attempt. */
 export const FRIEND_CHALLENGE_TIME_PRESETS: readonly { label: string; seconds: number | null }[] = [
   { label: 'No cap', seconds: null },

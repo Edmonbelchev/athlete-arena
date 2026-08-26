@@ -3,6 +3,7 @@ import { router } from 'expo-router';
 import type { ChallengeNotification } from '@/features/notifications/types';
 import {
   isChallengeNotificationType,
+  isFriendNotificationType,
   isSystemNotificationType,
   isWorkoutNotificationType,
   type NotificationInboxTab,
@@ -29,6 +30,15 @@ function readTemplateIdFromWorkoutLibraryUrl(url: string): string | null {
 function readSystemMessageIdFromUrl(url: string): string | null {
   const match = url.match(/\/system-message\/([^/?#]+)/i);
   return match?.[1] ?? null;
+}
+
+function isFriendsTabUrl(url: string): boolean {
+  const normalized = url.split('?')[0]?.replace(/\/+$/, '') ?? '';
+  return (
+    normalized === '/(tabs)/friends' ||
+    normalized === '/friends' ||
+    normalized.endsWith('/friends')
+  );
 }
 
 function readNotificationsTabFromUrl(url: string): NotificationInboxTab | null {
@@ -62,6 +72,13 @@ export function routeToNotificationsInbox(
   });
 }
 
+export function routeToFriendsScreen(options?: { friendshipId?: string | null }): void {
+  router.push({
+    pathname: '/(tabs)/friends',
+    ...(options?.friendshipId ? { params: { friendshipId: options.friendshipId } } : {}),
+  });
+}
+
 export function routeFromInboxNotification(notification: ChallengeNotification): void {
   if (isSystemNotificationType(notification.type) && notification.messageId) {
     router.push({
@@ -87,6 +104,11 @@ export function routeFromInboxNotification(notification: ChallengeNotification):
     return;
   }
 
+  if (isFriendNotificationType(notification.type)) {
+    routeToFriendsScreen({ friendshipId: notification.friendshipId });
+    return;
+  }
+
   routeToNotificationsInbox('activity');
 }
 
@@ -95,6 +117,7 @@ export function routeFromPushNotificationData(data: Record<string, unknown> | un
   const participantId = readString(data?.participantId);
   const templateId = readString(data?.templateId);
   const messageId = readString(data?.messageId);
+  const friendshipId = readString(data?.friendshipId);
 
   if (type === 'system_message') {
     routeToNotificationsInbox('system', { messageId });
@@ -102,7 +125,7 @@ export function routeFromPushNotificationData(data: Record<string, unknown> | un
   }
 
   if (type === 'friend_request_received' || type === 'friend_request_accepted') {
-    routeToNotificationsInbox('activity');
+    routeToFriendsScreen({ friendshipId });
     return;
   }
 
@@ -133,6 +156,11 @@ export function routeFromPushNotificationData(data: Record<string, unknown> | un
     const notificationsTab = readNotificationsTabFromUrl(url);
     if (notificationsTab) {
       routeToNotificationsInbox(notificationsTab);
+      return;
+    }
+
+    if (isFriendsTabUrl(url)) {
+      routeToFriendsScreen({ friendshipId });
       return;
     }
 

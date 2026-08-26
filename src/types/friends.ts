@@ -10,6 +10,13 @@ export type ChallengeStatus = 'pending' | 'in_progress' | 'completed' | 'decline
 
 export type FriendChallengeKind = 'exercise' | 'workout';
 
+export interface FriendChallengeRequestQuota {
+  usedCount: number;
+  monthlyLimit: number | null;
+  isPremium: boolean;
+  canCreate: boolean;
+}
+
 export interface FriendSummary {
   friendshipId: string;
   friendId: string;

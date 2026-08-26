@@ -115,7 +115,7 @@ export default function SubscriptionScreen() {
             <RefreshControl refreshing={isRefreshing} onRefresh={() => void handleRefresh()} tintColor={theme.primary} />
           }>
           <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
-            Premium unlocks custom workout create, edit, and share today. More features are on the way.
+            Premium unlocks custom workout create, edit, share, and unlimited friend challenge requests.
           </Text>
 
           <View style={[styles.benefitsCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
@@ -123,6 +123,7 @@ export default function SubscriptionScreen() {
             <Text style={[styles.benefit, { color: theme.text }]}>Create custom workouts</Text>
             <Text style={[styles.benefit, { color: theme.text }]}>Edit saved templates</Text>
             <Text style={[styles.benefit, { color: theme.text }]}>Share workouts with friends</Text>
+            <Text style={[styles.benefit, { color: theme.text }]}>Unlimited friend challenge requests</Text>
             <Text style={[styles.benefitSoon, { color: theme.textSecondary }]}>
               More premium features coming soon
             </Text>
