@@ -201,6 +201,17 @@ export function getRepPhaseHint(exerciseType: ExerciseType, phase: ExercisePhase
         return 'Drive through your heels to stand';
       }
       return 'Stand tall with both legs in frame';
+    case 'jumping_squats':
+      if (phase === 'DESCENDING' || phase === 'BOTTOM') {
+        return 'Drop into a squat with both feet down';
+      }
+      if (phase === 'ASCENDING') {
+        return 'Drive up and jump off the floor';
+      }
+      if (phase === 'JUMP') {
+        return 'Jump - both feet must leave the ground';
+      }
+      return 'Stand tall with both legs in frame';
     case 'burpees':
       if (phase === 'DROP') {
         return 'Drop down to the floor';

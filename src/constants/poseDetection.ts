@@ -25,6 +25,8 @@ export const POSE_QUALITY = {
   partialFramesBeforeResetPullUpArmed: isNativeMobile ? 8 : 6,
   /** Partial-tracking frames before resetting an armed push-up set. */
   partialFramesBeforeResetPushUpArmed: isNativeMobile ? 45 : 30,
+  /** Partial-tracking frames before resetting an armed jump-squat set. */
+  partialFramesBeforeResetJumpingSquatArmed: isNativeMobile ? 60 : 45,
   /** Skeleton overlay visibility - slightly higher to reduce flicker. */
   skeletonMinVisibility: isNativeMobile ? 0.4 : 0.5,
 } as const;
@@ -260,11 +262,23 @@ export const JUMPING_JACK_POSTURE = {
   lostTrackingFramesToDisarm: isNativeMobile ? 12 : 8,
 } as const;
 
+/** Jump squat - slight hop during the ascent after squat depth. */
+export const JUMPING_SQUAT_POSTURE = {
+  /** Ankle lift off the floor baseline (primary jump signal). */
+  minAnkleRise: isNativeMobile ? 0.001 : 0.0008,
+  /** Backup when a floor camera compresses ankle motion: hips rise with a small ankle lift. */
+  minHipRise: isNativeMobile ? 0.007 : 0.006,
+  minAnkleRiseWithHip: isNativeMobile ? 0.0004 : 0.0003,
+} as const;
+
 /** Minimal smoothing lag so quick jack peaks are not washed out. */
 export const POSE_LANDMARK_SMOOTH_ALPHA_JUMPING_JACK = isNativeMobile ? 0.92 : 1;
 
 /** EMA smoothing for native camera landmarks (0 = frozen, 1 = raw). */
 export const POSE_LANDMARK_SMOOTH_ALPHA = isNativeMobile ? 0.52 : 1;
+
+/** Same smoothing as regular squats. */
+export const POSE_LANDMARK_SMOOTH_ALPHA_JUMPING_SQUAT = POSE_LANDMARK_SMOOTH_ALPHA;
 
 /** Faster landmark follow for pull-ups so quick peaks are not smoothed away. */
 export const POSE_LANDMARK_SMOOTH_ALPHA_PULL_UP = isNativeMobile ? 0.68 : 1;
@@ -317,6 +331,14 @@ export const POSE_GUIDANCE: Record<ExerciseType, { title: string; tips: readonly
       'Prop your phone in portrait and step back until your full body is visible',
       'Start with feet together and arms at your sides',
       'Jump feet out while raising both arms overhead, then return to closed to count a rep',
+    ],
+  },
+  jumping_squats: {
+    title: 'Jump squat setup',
+    tips: [
+      'Prop your phone on the floor in portrait and step back until both legs are visible',
+      'Same as squats: squat to depth, then stand back up',
+      'Each rep must include a small jump during the way up - both feet leave the floor',
     ],
   },
 };

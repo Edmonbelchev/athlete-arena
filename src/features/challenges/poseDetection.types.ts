@@ -12,7 +12,10 @@ export type BurpeePhase = 'STANDING' | 'DROP' | 'FLOOR' | 'JUMP';
 /** Jumping jack pose phases - closed stance ↔ open stance. */
 export type JumpingJackPhase = 'CLOSED' | 'OPENING' | 'OPEN' | 'CLOSING';
 
-export type ExercisePhase = PushUpPhase | SquatPhase | BurpeePhase | JumpingJackPhase;
+/** Jump squat pose phases - squat depth then explosive jump. */
+export type JumpingSquatPhase = SquatPhase | 'JUMP';
+
+export type ExercisePhase = PushUpPhase | SquatPhase | BurpeePhase | JumpingJackPhase | JumpingSquatPhase;
 
 export interface PoseFrame {
   timestamp: number;

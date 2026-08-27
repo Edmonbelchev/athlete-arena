@@ -7,6 +7,7 @@ export const EXERCISE_TYPES = [
   'burpees',
   'half_burpees',
   'jumping_jacks',
+  'jumping_squats',
 ] as const;
 
 export type ExerciseType = (typeof EXERCISE_TYPES)[number];
@@ -43,6 +44,7 @@ export const CHALLENGE_CONFIG: Record<ExerciseType, readonly ChallengeTier[]> = 
   burpees: [{ reps: 10 }, { reps: 15 }, { reps: 20 }, { reps: 30 }],
   half_burpees: [{ reps: 10 }, { reps: 15 }, { reps: 20 }, { reps: 30 }],
   jumping_jacks: [{ reps: 20 }, { reps: 30 }, { reps: 40 }, { reps: 50 }],
+  jumping_squats: [{ reps: 20 }, { reps: 30 }, { reps: 40 }, { reps: 50 }],
 } as const;
 
 export const EXERCISE_LABELS: Record<DisplayExerciseType, string> = {
@@ -52,6 +54,7 @@ export const EXERCISE_LABELS: Record<DisplayExerciseType, string> = {
   burpees: 'Burpees',
   half_burpees: 'Half Burpees',
   jumping_jacks: 'Jumping Jacks',
+  jumping_squats: 'Jumping Squats',
   dips: 'Dips',
 };
 

@@ -13,6 +13,7 @@ import type { PoseLandmark } from './pose/landmarks';
 import { PullUpRepEngine } from './pose/pullUpRepEngine';
 import { PushUpRepEngine } from './pose/pushUpRepEngine';
 import { SquatRepEngine } from './pose/squatRepEngine';
+import { JumpingSquatRepEngine } from './pose/jumpingSquatRepEngine';
 import { JumpingJackRepEngine } from './pose/jumpingJackRepEngine';
 import { PoseQualityGate, type PoseQualityResult, type PoseTrackingStatus } from './pose/poseQuality';
 import { getCoachSeverity } from './workoutCoachDisplay';
@@ -43,6 +44,8 @@ function getEngineArmed(engine: RepEngine, exerciseType: ExerciseType): boolean 
       return (engine as PushUpRepEngine).armed;
     case 'squats':
       return (engine as SquatRepEngine).armed;
+    case 'jumping_squats':
+      return (engine as JumpingSquatRepEngine).armed;
     case 'jumping_jacks':
       return (engine as JumpingJackRepEngine).armed;
     default:
@@ -66,6 +69,8 @@ function resolveExerciseTrackingStatus(
       );
     case 'squats':
       return resolveSquatTrackingStatus(quality, (engine as SquatRepEngine).armed);
+    case 'jumping_squats':
+      return resolveSquatTrackingStatus(quality, (engine as JumpingSquatRepEngine).armed);
     case 'burpees':
       return resolveBurpeeTrackingStatus(quality);
     case 'half_burpees':
@@ -132,14 +137,24 @@ export function useExercisePoseDetection({
           exerciseType === 'push_ups' &&
           ((engineRef.current as PushUpRepEngine).armed ||
             (engineRef.current as PushUpRepEngine).hasStartedSet);
+        const jumpingSquatArmedEmpty =
+          exerciseType === 'jumping_squats' &&
+          (engineRef.current as JumpingSquatRepEngine).armed;
 
         const quality = qualityGateRef.current.evaluate([], {
           pullUpArmed: exerciseType === 'pull_ups' ? pullUpArmedEmpty : undefined,
           pushUpArmed: exerciseType === 'push_ups' ? pushUpArmedEmpty : undefined,
+          jumpingSquatArmed:
+            exerciseType === 'jumping_squats' ? jumpingSquatArmedEmpty : undefined,
           isLandscape: false,
         });
 
-        if (quality.shouldResetEngine && !pullUpArmedEmpty && !pushUpArmedEmpty) {
+        if (
+          quality.shouldResetEngine &&
+          !pullUpArmedEmpty &&
+          !pushUpArmedEmpty &&
+          !jumpingSquatArmedEmpty
+        ) {
           engineRef.current.reset();
           setPhase(getInitialExercisePhase(exerciseType));
           if (exerciseType === 'pull_ups') {
@@ -172,14 +187,23 @@ export function useExercisePoseDetection({
       const pushUpArmed = Boolean(
         pushUpEngine && (pushUpEngine.armed || pushUpEngine.hasStartedSet),
       );
+      const jumpingSquatArmed =
+        exerciseType === 'jumping_squats' &&
+        (engineRef.current as JumpingSquatRepEngine).armed;
 
       const quality = qualityGateRef.current.evaluate(landmarks, {
         pullUpArmed: exerciseType === 'pull_ups' ? pullUpArmed : undefined,
         pushUpArmed: exerciseType === 'push_ups' ? pushUpArmed : undefined,
+        jumpingSquatArmed: exerciseType === 'jumping_squats' ? jumpingSquatArmed : undefined,
         isLandscape,
       });
 
-      if (quality.shouldResetEngine && !pullUpArmed && !(pushUpEngine?.hasStartedSet ?? false)) {
+      if (
+        quality.shouldResetEngine &&
+        !pullUpArmed &&
+        !(pushUpEngine?.hasStartedSet ?? false) &&
+        !jumpingSquatArmed
+      ) {
         engineRef.current.reset();
         setPhase(getInitialExercisePhase(exerciseType));
         if (exerciseType === 'pull_ups') {
@@ -193,7 +217,8 @@ export function useExercisePoseDetection({
         quality.canCountReps ||
         armedBeforeUpdate ||
         (exerciseType === 'push_ups' && landmarks.length > 0) ||
-        (exerciseType === 'jumping_jacks' && (engine as JumpingJackRepEngine).armed);
+        (exerciseType === 'jumping_jacks' && (engine as JumpingJackRepEngine).armed) ||
+        (exerciseType === 'jumping_squats' && (engine as JumpingSquatRepEngine).armed);
 
       const resolvedTrackingStatus = resolveExerciseTrackingStatus(
         exerciseType,
@@ -232,8 +257,10 @@ export function useExercisePoseDetection({
 
       const pushUpCounting =
         exerciseType === 'push_ups' && (engine as PushUpRepEngine).repCountingActive;
+      const jumpingSquatCounting =
+        exerciseType === 'jumping_squats' && (engine as JumpingSquatRepEngine).armed;
 
-      if (repCompleted && (quality.canCountReps || pushUpCounting)) {
+      if (repCompleted && (quality.canCountReps || pushUpCounting || jumpingSquatCounting)) {
         onRepDetectedRef.current();
       }
     },

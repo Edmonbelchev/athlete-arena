@@ -27,6 +27,8 @@ export interface PoseQualityOptions {
   pullUpArmed?: boolean;
   /** Push-up engine is armed - tolerate brief partial tracking without resetting the set. */
   pushUpArmed?: boolean;
+  /** Jump-squat engine is armed - legs/feet only (torso may leave frame on a floor camera). */
+  jumpingSquatArmed?: boolean;
   /** Wider-than-tall preview - use stricter visibility and warmup gates. */
   isLandscape?: boolean;
 }
@@ -346,7 +348,18 @@ function checkRequiredLandmarks(
     return { ok: true, message: null };
   }
 
-  if (exerciseType === 'squats') {
+  if (exerciseType === 'jumping_squats' && options?.jumpingSquatArmed) {
+    if (!hasBothSquatLegChains(landmarks)) {
+      return {
+        ok: false,
+        message: 'Keep both legs in frame from hips to ankles',
+      };
+    }
+
+    return { ok: true, message: null };
+  }
+
+  if (exerciseType === 'squats' || exerciseType === 'jumping_squats') {
     if (!hasBothSquatLegChains(landmarks)) {
       return {
         ok: false,
@@ -422,7 +435,9 @@ export class PoseQualityGate {
           ? POSE_QUALITY.partialFramesBeforeResetPullUpArmed
           : this.exerciseType === 'push_ups' && options?.pushUpArmed === true
             ? POSE_QUALITY.partialFramesBeforeResetPushUpArmed
-            : POSE_QUALITY.partialFramesBeforeReset;
+            : this.exerciseType === 'jumping_squats' && options?.jumpingSquatArmed === true
+              ? POSE_QUALITY.partialFramesBeforeResetJumpingSquatArmed
+              : POSE_QUALITY.partialFramesBeforeReset;
 
       return {
         status: 'partial',

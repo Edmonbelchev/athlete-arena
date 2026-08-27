@@ -48,6 +48,12 @@ export const FRIEND_CHALLENGE_REWARD_RULES: Record<ExerciseType, FriendChallenge
     maxXp: FRIEND_CHALLENGE_MAX_XP,
     maxCoins: FRIEND_CHALLENGE_MAX_COINS,
   },
+  jumping_squats: {
+    xpPerRep: 1,
+    coinEveryReps: 10,
+    maxXp: FRIEND_CHALLENGE_MAX_XP,
+    maxCoins: FRIEND_CHALLENGE_MAX_COINS,
+  },
 };
 
 /** Flat workout challenge rewards — keep in sync with 078_friend_workout_challenges.sql */

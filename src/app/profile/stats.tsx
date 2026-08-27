@@ -68,7 +68,8 @@ export default function StatsScreen() {
     movementStats.totalDips > 0 ||
     movementStats.totalBurpees > 0 ||
     movementStats.totalHalfBurpees > 0 ||
-    movementStats.totalJumpingJacks > 0;
+    movementStats.totalJumpingJacks > 0 ||
+    movementStats.totalJumpingSquats > 0;
 
   const hasOtherStats =
     movementStats.totalSteps > 0 ||
@@ -123,6 +124,7 @@ export default function StatsScreen() {
               <StatCard label="Burpees" value={formatCount(movementStats.totalBurpees)} accentColor={theme.primary} />
               <StatCard label="Half Burpees" value={formatCount(movementStats.totalHalfBurpees)} accentColor={theme.primary} />
               <StatCard label="Jumping Jacks" value={formatCount(movementStats.totalJumpingJacks)} accentColor={theme.primary} />
+              <StatCard label="Jumping Squats" value={formatCount(movementStats.totalJumpingSquats)} accentColor={theme.primary} />
               {movementStats.totalDips > 0 ? (
                 <StatCard label="Dips" value={formatCount(movementStats.totalDips)} accentColor={theme.primary} />
               ) : null}

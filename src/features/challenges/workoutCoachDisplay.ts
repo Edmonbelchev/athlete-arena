@@ -8,6 +8,7 @@ import type { PoseQualityResult, PoseTrackingStatus } from './pose/poseQuality';
 import { PullUpRepEngine } from './pose/pullUpRepEngine';
 import { PushUpRepEngine } from './pose/pushUpRepEngine';
 import { SquatRepEngine } from './pose/squatRepEngine';
+import { JumpingSquatRepEngine } from './pose/jumpingSquatRepEngine';
 import { JumpingJackRepEngine } from './pose/jumpingJackRepEngine';
 
 function isLandmarkVisible(
@@ -60,6 +61,8 @@ function getSetupSeverity(
     }
     case 'squats':
       return (engine as SquatRepEngine).armed ? 'ready' : 'setup';
+    case 'jumping_squats':
+      return (engine as JumpingSquatRepEngine).armed ? 'ready' : 'setup';
     case 'jumping_jacks':
       return (engine as JumpingJackRepEngine).armed ? 'ready' : 'setup';
     default:

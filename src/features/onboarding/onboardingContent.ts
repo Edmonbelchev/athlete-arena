@@ -69,6 +69,11 @@ export const ONBOARDING_EXERCISE_BENEFITS: OnboardingBenefit[] = [
     muscles: 'Full body - legs, chest, shoulders, and core',
     note: 'A high-intensity compound move combining squat, plank, and jump.',
   },
+  {
+    exercise: 'Jumping Squats',
+    muscles: 'Quadriceps, glutes, hamstrings, and calves',
+    note: 'A squat followed by an explosive jump - builds lower-body power.',
+  },
 ];
 
 export const ONBOARDING_GENERAL_NOTE =

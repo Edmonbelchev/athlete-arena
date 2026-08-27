@@ -36,6 +36,23 @@ export function getRepCycleProgress(
     }
   }
 
+  if (exerciseType === 'jumping_squats') {
+    switch (phase) {
+      case 'STANDING':
+        return 0.05;
+      case 'DESCENDING':
+        return 0.35;
+      case 'BOTTOM':
+        return 0.55;
+      case 'ASCENDING':
+        return 0.75;
+      case 'JUMP':
+        return 0.95;
+      default:
+        return 0;
+    }
+  }
+
   if (exerciseType === 'jumping_jacks') {
     switch (phase) {
       case 'CLOSED':

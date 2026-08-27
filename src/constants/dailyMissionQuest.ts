@@ -33,6 +33,10 @@ export const DAILY_MISSION_QUEST: Partial<Record<ExerciseType, DailyMissionQuest
     questTitle: 'Jumping Jack Jam',
     objectiveVerb: 'Complete',
   },
+  jumping_squats: {
+    questTitle: 'Jump Squat Jump',
+    objectiveVerb: 'Complete',
+  },
 };
 
 export function getDailyMissionQuestMeta(exerciseType: ExerciseType): DailyMissionQuestMeta {
