@@ -11,7 +11,12 @@ export interface FriendChallengeRewardRule {
   maxCoins: number;
 }
 
-export const FRIEND_CHALLENGE_REWARD_RULES: Record<ExerciseType, FriendChallengeRewardRule> = {
+type FriendChallengeRewardExerciseType = ExerciseType | 'dips';
+
+export const FRIEND_CHALLENGE_REWARD_RULES: Record<
+  FriendChallengeRewardExerciseType,
+  FriendChallengeRewardRule
+> = {
   push_ups: {
     xpPerRep: 2,
     coinEveryReps: 5,
@@ -54,7 +59,29 @@ export const FRIEND_CHALLENGE_REWARD_RULES: Record<ExerciseType, FriendChallenge
     maxXp: FRIEND_CHALLENGE_MAX_XP,
     maxCoins: FRIEND_CHALLENGE_MAX_COINS,
   },
+  dips: {
+    xpPerRep: 3,
+    coinEveryReps: 3,
+    maxXp: FRIEND_CHALLENGE_MAX_XP,
+    maxCoins: FRIEND_CHALLENGE_MAX_COINS,
+  },
 };
+
+export function getFriendChallengeRewardRule(
+  exerciseType: string | null | undefined,
+): FriendChallengeRewardRule | null {
+  if (!exerciseType) {
+    return null;
+  }
+
+  return FRIEND_CHALLENGE_REWARD_RULES[exerciseType as FriendChallengeRewardExerciseType] ?? null;
+}
+
+export function isFriendChallengeExerciseType(
+  exerciseType: string | null | undefined,
+): exerciseType is FriendChallengeRewardExerciseType {
+  return getFriendChallengeRewardRule(exerciseType) !== null;
+}
 
 /** Flat workout challenge rewards — keep in sync with 078_friend_workout_challenges.sql */
 export const FRIEND_CHALLENGE_PARTICIPATION_XP = 150;
@@ -69,12 +96,20 @@ export const FRIEND_CHALLENGE_WINNER_TOTAL_COINS =
   FRIEND_CHALLENGE_PARTICIPATION_COINS + FRIEND_CHALLENGE_WINNER_BONUS_COINS;
 
 export function calculateFriendChallengeXp(exerciseType: ExerciseType, reps: number): number {
-  const rule = FRIEND_CHALLENGE_REWARD_RULES[exerciseType];
+  const rule = getFriendChallengeRewardRule(exerciseType);
+  if (!rule) {
+    return 0;
+  }
+
   return Math.min(Math.floor(Math.max(reps, 0) * rule.xpPerRep), rule.maxXp);
 }
 
 export function calculateFriendChallengeCoins(exerciseType: ExerciseType, reps: number): number {
-  const rule = FRIEND_CHALLENGE_REWARD_RULES[exerciseType];
+  const rule = getFriendChallengeRewardRule(exerciseType);
+  if (!rule) {
+    return 0;
+  }
+
   return Math.min(Math.floor(Math.max(reps, 0) / rule.coinEveryReps), rule.maxCoins);
 }
 
@@ -86,7 +121,10 @@ export function calculateFriendChallengeConsolationXp(
 }
 
 export function formatFriendChallengeRewardRule(exerciseType: ExerciseType): string {
-  const rule = FRIEND_CHALLENGE_REWARD_RULES[exerciseType];
+  const rule = getFriendChallengeRewardRule(exerciseType);
+  if (!rule) {
+    return formatExerciseLabel(exerciseType);
+  }
   const label = formatExerciseLabel(exerciseType);
 
   return `${label}: ${rule.xpPerRep} XP/rep (max ${rule.maxXp} XP) · 1 coin/${rule.coinEveryReps} reps (max ${rule.maxCoins} coins)`;
@@ -119,7 +157,11 @@ export function getFriendChallengeEarnedRewards(
     };
   }
 
-  if (options?.exerciseType !== undefined && options.targetReps !== undefined) {
+  if (
+    options?.exerciseType !== undefined &&
+    options.targetReps !== undefined &&
+    isFriendChallengeExerciseType(options.exerciseType)
+  ) {
     const winnerXp = calculateFriendChallengeXp(options.exerciseType, options.targetReps);
 
     return {

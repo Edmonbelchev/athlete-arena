@@ -1,17 +1,36 @@
 import { Stack, useFocusEffect } from 'expo-router';
 import { useCallback } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { ChallengeHistoryCard } from '@/components/ui/ChallengeHistoryCard';
+import { ActivityHistoryCard } from '@/components/history/ActivityHistoryCard';
+import { ActivityHistoryFilterBar } from '@/components/history/ActivityHistoryFilterBar';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
-import { useChallengeHistory } from '@/features/challenges/useChallengeHistory';
+import { useActivityHistory } from '@/features/challenges/useActivityHistory';
 import { useTheme } from '@/hooks/use-theme';
+import { getActivityHistoryEmptyMessage } from '@/types/activityHistory';
 
 export default function ChallengeHistoryScreen() {
   const theme = useTheme();
-  const { entries, isLoading, error, refresh } = useChallengeHistory();
+  const {
+    filter,
+    changeFilter,
+    entries,
+    hasMore,
+    isLoading,
+    isLoadingMore,
+    error,
+    refresh,
+    loadMore,
+  } = useActivityHistory();
 
   useFocusEffect(
     useCallback(() => {
@@ -21,19 +40,34 @@ export default function ChallengeHistoryScreen() {
 
   return (
     <>
-      <Stack.Screen options={{ title: 'Challenge History', headerShown: true }} />
+      <Stack.Screen options={{ title: 'History', headerShown: true }} />
       <SafeAreaView
         style={StyleSheet.flatten([styles.safeArea, { backgroundColor: theme.background }])}
         edges={['bottom']}>
-        {isLoading ? (
-          <View style={styles.loading}>
-            <ActivityIndicator size="large" color={theme.primary} />
-          </View>
-        ) : (
-          <ScrollView contentContainerStyle={styles.content}>
+        <View style={styles.page}>
+          <View style={styles.header}>
             <Text style={StyleSheet.flatten([styles.subtitle, { color: theme.textSecondary }])}>
-              Past daily and friend challenges with your results.
+              Quests, friend races, and workout runs — filter and browse your past activity.
             </Text>
+            <ActivityHistoryFilterBar filter={filter} onFilterChange={changeFilter} />
+          </View>
+
+          <ScrollView
+            style={styles.listScroll}
+            contentContainerStyle={styles.listContent}
+            keyboardShouldPersistTaps="handled"
+            refreshControl={
+              <RefreshControl
+                refreshing={isLoading && entries.length > 0}
+                onRefresh={() => void refresh()}
+                tintColor={theme.primary}
+              />
+            }>
+            {isLoading && entries.length === 0 ? (
+              <View style={styles.loading}>
+                <ActivityIndicator size="large" color={theme.primary} />
+              </View>
+            ) : null}
 
             {error ? (
               <View style={styles.errorBlock}>
@@ -42,15 +76,26 @@ export default function ChallengeHistoryScreen() {
               </View>
             ) : null}
 
-            {entries.length === 0 && !error ? (
+            {!isLoading && entries.length === 0 && !error ? (
               <Text style={StyleSheet.flatten([styles.empty, { color: theme.textSecondary }])}>
-                No completed challenges yet. Finish a daily or friend challenge to see it here.
+                {getActivityHistoryEmptyMessage(filter)}
               </Text>
-            ) : (
-              entries.map((entry) => <ChallengeHistoryCard key={`${entry.kind}-${entry.entryId}`} entry={entry} />)
-            )}
+            ) : null}
+
+            {entries.map((entry) => (
+              <ActivityHistoryCard key={`${entry.category}-${entry.entryId}`} entry={entry} />
+            ))}
+
+            {hasMore && entries.length > 0 ? (
+              <PrimaryButton
+                label={isLoadingMore ? 'Loading…' : 'Load more'}
+                variant="secondary"
+                loading={isLoadingMore}
+                onPress={() => void loadMore()}
+              />
+            ) : null}
           </ScrollView>
-        )}
+        </View>
       </SafeAreaView>
     </>
   );
@@ -60,21 +105,34 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
   },
-  loading: {
+  page: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  content: {
-    padding: Spacing.four,
-    gap: Spacing.three,
     maxWidth: MaxContentWidth,
     alignSelf: 'center',
     width: '100%',
   },
+  header: {
+    paddingHorizontal: Spacing.four,
+    paddingTop: Spacing.four,
+    paddingBottom: Spacing.three,
+    gap: Spacing.three,
+  },
   subtitle: {
     fontSize: 14,
     lineHeight: 20,
+  },
+  listScroll: {
+    flex: 1,
+  },
+  listContent: {
+    paddingHorizontal: Spacing.four,
+    paddingBottom: Spacing.four,
+    gap: Spacing.three,
+    flexGrow: 1,
+  },
+  loading: {
+    paddingVertical: Spacing.six,
+    alignItems: 'center',
   },
   empty: {
     fontSize: 14,

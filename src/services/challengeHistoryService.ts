@@ -1,12 +1,13 @@
 import { assertSupabaseConfigured, supabase } from '@/lib/supabase';
 import type { ExerciseType } from '@/constants/challenges';
-import type { ChallengeHistoryEntry, ChallengeHistoryKind } from '@/types/challengeHistory';
+import type { CustomWorkoutType } from '@/types/customWorkouts';
+import type { ChallengeHistoryEntry, ChallengeHistoryKind, ChallengeHistoryFriendKind } from '@/types/challengeHistory';
 import type { ChallengeStatus } from '@/types/friends';
 
 function mapHistoryEntry(row: {
   entry_id: string;
   kind: string;
-  exercise_type: ExerciseType;
+  exercise_type: ExerciseType | null;
   target_reps: number;
   completed_reps: number;
   xp_reward: number;
@@ -20,6 +21,11 @@ function mapHistoryEntry(row: {
   opponent_race_seconds?: number | null;
   winner_user_id?: string | null;
   xp_earned?: number | null;
+  friend_challenge_kind?: string | null;
+  workout_title?: string | null;
+  workout_type?: CustomWorkoutType | null;
+  completed_rounds?: number | null;
+  opponent_completed_rounds?: number | null;
 }): ChallengeHistoryEntry {
   return {
     entryId: row.entry_id,
@@ -38,6 +44,11 @@ function mapHistoryEntry(row: {
     opponentRaceSeconds: row.opponent_race_seconds ?? null,
     winnerUserId: row.winner_user_id ?? null,
     xpEarned: row.xp_earned ?? null,
+    friendChallengeKind: (row.friend_challenge_kind as ChallengeHistoryFriendKind | null) ?? null,
+    workoutTitle: row.workout_title ?? null,
+    workoutType: row.workout_type ?? null,
+    completedRounds: row.completed_rounds ?? null,
+    opponentCompletedRounds: row.opponent_completed_rounds ?? null,
   };
 }
 

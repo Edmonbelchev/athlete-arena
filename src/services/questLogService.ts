@@ -32,6 +32,11 @@ function mapQuestLogEntry(row: QuestLogRow): ChallengeHistoryEntry {
     opponentRaceSeconds: null,
     winnerUserId: null,
     xpEarned: null,
+    friendChallengeKind: null,
+    workoutTitle: null,
+    workoutType: null,
+    completedRounds: null,
+    opponentCompletedRounds: null,
   };
 }
 

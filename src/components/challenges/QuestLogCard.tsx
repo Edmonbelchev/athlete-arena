@@ -27,6 +27,11 @@ function formatQuestDate(isoDate: string): string {
 
 export function QuestLogCard({ entry }: QuestLogCardProps) {
   const theme = useTheme();
+
+  if (!entry.exerciseType) {
+    return null;
+  }
+
   const quest = getDailyMissionQuestMeta(entry.exerciseType);
   const missionIndex = Math.max(EXERCISE_TYPES.indexOf(entry.exerciseType as ExerciseType), 0);
   const accentColor = theme[getQuestAccentColor(missionIndex)];

@@ -1,6 +1,5 @@
 import { StyleSheet, Text, View } from 'react-native';
 
-import { formatExerciseLabel } from '@/constants/challenges';
 import { Radius, Spacing } from '@/constants/theme';
 import { useAuth } from '@/features/auth';
 import {
@@ -8,6 +7,7 @@ import {
   getHistoryResultLabel,
   getHistoryScoreLine,
   getHistoryStatusColorKey,
+  getHistoryTitle,
   type ChallengeHistoryEntry,
 } from '@/types/challengeHistory';
 import { useTheme } from '@/hooks/use-theme';
@@ -47,9 +47,7 @@ export function ChallengeHistoryCard({ entry }: ChallengeHistoryCardProps) {
         <Text style={[styles.date, { color: theme.textSecondary }]}>{formatHistoryDate(entry.resultAt)}</Text>
       </View>
 
-      <Text style={[styles.title, { color: theme.text }]}>
-        {entry.targetReps} {formatExerciseLabel(entry.exerciseType, true)}
-      </Text>
+      <Text style={[styles.title, { color: theme.text }]}>{getHistoryTitle(entry)}</Text>
 
       <Text style={[styles.score, { color: theme.text }]}>{getHistoryScoreLine(entry)}</Text>
 

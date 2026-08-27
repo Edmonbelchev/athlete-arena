@@ -154,7 +154,7 @@ function RootNavigator() {
             options={{
               presentation: 'modal',
               headerShown: true,
-              title: 'Challenge History',
+              title: 'History',
             }}
           />
           <Stack.Screen

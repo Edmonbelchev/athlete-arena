@@ -1,16 +1,22 @@
 import type { ExerciseType } from '@/constants/challenges';
+import { formatExerciseLabel } from '@/constants/challenges';
 import { formatRaceTime } from '@/constants/friendChallenges';
 import { formatCoinAmount } from '@/constants/coins';
-import { getFriendChallengeEarnedRewards } from '@/constants/friendChallengeRewards';
+import {
+  getFriendChallengeEarnedRewards,
+  isFriendChallengeExerciseType,
+} from '@/constants/friendChallengeRewards';
 import { DAILY_MISSION_COIN_REWARD } from '@/constants/dailyMissionRewards';
 import type { ChallengeStatus } from '@/types/friends';
+import type { CustomWorkoutType } from '@/types/customWorkouts';
 
 export type ChallengeHistoryKind = 'daily' | 'friend';
+export type ChallengeHistoryFriendKind = 'exercise' | 'workout';
 
 export interface ChallengeHistoryEntry {
   entryId: string;
   kind: ChallengeHistoryKind;
-  exerciseType: ExerciseType;
+  exerciseType: ExerciseType | null;
   targetReps: number;
   completedReps: number;
   xpReward: number;
@@ -24,6 +30,11 @@ export interface ChallengeHistoryEntry {
   opponentRaceSeconds: number | null;
   winnerUserId: string | null;
   xpEarned: number | null;
+  friendChallengeKind: ChallengeHistoryFriendKind | null;
+  workoutTitle: string | null;
+  workoutType: CustomWorkoutType | null;
+  completedRounds: number | null;
+  opponentCompletedRounds: number | null;
 }
 
 export function getHistoryOpponentName(entry: ChallengeHistoryEntry): string | null {
@@ -52,7 +63,9 @@ export function getHistoryResultLabel(entry: ChallengeHistoryEntry, myUserId?: s
   if (entry.status === 'completed') {
     const earned = entry.xpEarned ?? entry.xpReward;
     const coins = getFriendChallengeEarnedRewards(entry.xpEarned, null, {
-      exerciseType: entry.exerciseType,
+      exerciseType: isFriendChallengeExerciseType(entry.exerciseType)
+        ? entry.exerciseType
+        : undefined,
       targetReps: entry.targetReps,
     }).coins;
 
@@ -80,13 +93,45 @@ export function getHistoryResultLabel(entry: ChallengeHistoryEntry, myUserId?: s
 }
 
 export function getHistoryKindLabel(entry: ChallengeHistoryEntry): string {
-  return entry.kind === 'daily' ? 'Daily challenge' : 'Friend speed race';
+  if (entry.kind === 'daily') {
+    return 'Daily challenge';
+  }
+
+  if (entry.friendChallengeKind === 'workout') {
+    return entry.workoutType === 'for_time' ? 'Friend For Time' : 'Friend workout';
+  }
+
+  return entry.raceSeconds !== null ? 'Friend speed race' : 'Friend challenge';
+}
+
+export function getHistoryTitle(entry: ChallengeHistoryEntry): string {
+  if (entry.workoutTitle) {
+    return entry.workoutTitle;
+  }
+
+  if (entry.exerciseType) {
+    return `${entry.targetReps} ${formatExerciseLabel(entry.exerciseType, true)}`;
+  }
+
+  return 'Friend challenge';
 }
 
 export function getHistoryScoreLine(entry: ChallengeHistoryEntry): string {
   if (entry.kind === 'friend' && entry.opponentUsername) {
     const opponent = getHistoryOpponentName(entry) ?? entry.opponentUsername;
     const opponentReps = entry.opponentCompletedReps ?? 0;
+
+    if (entry.friendChallengeKind === 'workout') {
+      if (entry.workoutType === 'for_time' && entry.raceSeconds !== null) {
+        const opponentTime =
+          entry.opponentRaceSeconds !== null ? formatRaceTime(entry.opponentRaceSeconds) : '--:--';
+        return `You ${formatRaceTime(entry.raceSeconds)} · ${opponent} ${opponentTime}`;
+      }
+
+      const myRounds = entry.completedRounds ?? 0;
+      const opponentRounds = entry.opponentCompletedRounds ?? 0;
+      return `You ${myRounds} rounds · ${opponent} ${opponentRounds} rounds`;
+    }
 
     if (entry.raceSeconds !== null) {
       const opponentTime =
@@ -95,6 +140,14 @@ export function getHistoryScoreLine(entry: ChallengeHistoryEntry): string {
     }
 
     return `You ${entry.completedReps}/${entry.targetReps} · ${opponent} ${opponentReps}/${entry.targetReps}`;
+  }
+
+  if (entry.friendChallengeKind === 'workout') {
+    if (entry.workoutType === 'for_time' && entry.raceSeconds !== null) {
+      return `Finished in ${formatRaceTime(entry.raceSeconds)}`;
+    }
+
+    return `${entry.completedRounds ?? 0} rounds completed`;
   }
 
   return `${entry.completedReps} / ${entry.targetReps} reps`;
