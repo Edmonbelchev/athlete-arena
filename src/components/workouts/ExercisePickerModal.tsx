@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import { ExerciseBrowseSection } from '@/components/challenges/ExerciseBrowseSection';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
-import { EXERCISE_LABELS, EXERCISE_TYPES, type ExerciseType } from '@/constants/challenges';
+import { EXERCISE_TYPES, type ExerciseType } from '@/constants/challenges';
 import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -27,8 +28,8 @@ type ExercisePickerModalProps = {
 export function ExercisePickerModal(props: ExercisePickerModalProps) {
   const { visible, onClose, mode, allowedExerciseTypes, title: titleOverride, subtitle: subtitleOverride } = props;
   const theme = useTheme();
-  const [query, setQuery] = useState('');
   const [selectedTypes, setSelectedTypes] = useState<ExerciseType[]>([]);
+  const [browseKey, setBrowseKey] = useState(0);
 
   const availableExercises = useMemo(
     () =>
@@ -38,29 +39,16 @@ export function ExercisePickerModal(props: ExercisePickerModalProps) {
     [allowedExerciseTypes],
   );
 
-  const filteredExercises = useMemo(() => {
-    const normalized = query.trim().toLowerCase();
-    if (!normalized) {
-      return availableExercises;
-    }
-
-    return availableExercises.filter((exerciseType) => {
-      const label = EXERCISE_LABELS[exerciseType].toLowerCase();
-      return label.includes(normalized) || exerciseType.replace(/_/g, ' ').includes(normalized);
-    });
-  }, [availableExercises, query]);
-
   useEffect(() => {
     if (!visible) {
       return;
     }
 
-    setQuery('');
     setSelectedTypes([]);
+    setBrowseKey((current) => current + 1);
   }, [visible]);
 
   function handleClose() {
-    setQuery('');
     setSelectedTypes([]);
     onClose();
   }
@@ -71,7 +59,6 @@ export function ExercisePickerModal(props: ExercisePickerModalProps) {
     }
 
     props.onSelect(exerciseType);
-    setQuery('');
     setSelectedTypes([]);
   }
 
@@ -93,7 +80,6 @@ export function ExercisePickerModal(props: ExercisePickerModalProps) {
     }
 
     props.onAdd(selectedTypes);
-    setQuery('');
     setSelectedTypes([]);
   }
 
@@ -114,73 +100,20 @@ export function ExercisePickerModal(props: ExercisePickerModalProps) {
             <Text style={[styles.subtitle, { color: theme.textSecondary }]}>{subtitle}</Text>
           ) : null}
 
-          <TextInput
-            value={query}
-            onChangeText={setQuery}
-            placeholder="Search exercises"
-            placeholderTextColor={theme.textSecondary}
-            autoCapitalize="none"
-            autoCorrect={false}
-            clearButtonMode="while-editing"
-            style={[
-              styles.searchInput,
-              {
-                backgroundColor: theme.backgroundElement,
-                borderColor: theme.border,
-                color: theme.text,
-              },
-            ]}
-          />
-
           <ScrollView
             style={styles.listScroll}
             contentContainerStyle={styles.listContent}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}>
-            {filteredExercises.length === 0 ? (
-              <Text style={[styles.empty, { color: theme.textSecondary }]}>No exercises match your search.</Text>
-            ) : (
-              filteredExercises.map((exerciseType) => {
-                const isSelected =
-                  mode === 'single'
-                    ? exerciseType === props.selectedExerciseType
-                    : selectedTypes.includes(exerciseType);
-
-                return (
-                  <Pressable
-                    key={exerciseType}
-                    onPress={() =>
-                      mode === 'single' ? handleSingleSelect(exerciseType) : toggleMultiSelect(exerciseType)
-                    }
-                    style={[
-                      styles.option,
-                      {
-                        backgroundColor: isSelected ? theme.backgroundSelected : theme.backgroundElement,
-                        borderColor: isSelected ? theme.primary : theme.border,
-                      },
-                    ]}>
-                    {mode === 'multi' ? (
-                      <View
-                        style={[
-                          styles.checkbox,
-                          {
-                            borderColor: isSelected ? theme.primary : theme.border,
-                            backgroundColor: isSelected ? theme.primary : 'transparent',
-                          },
-                        ]}>
-                        {isSelected ? <Text style={styles.checkmark}>✓</Text> : null}
-                      </View>
-                    ) : null}
-                    <Text style={[styles.optionLabel, { color: theme.text }]}>
-                      {EXERCISE_LABELS[exerciseType]}
-                    </Text>
-                    {mode === 'single' && isSelected ? (
-                      <Text style={[styles.selectedBadge, { color: theme.primary }]}>Selected</Text>
-                    ) : null}
-                  </Pressable>
-                );
-              })
-            )}
+            <ExerciseBrowseSection
+              key={browseKey}
+              exerciseTypes={availableExercises}
+              mode={mode}
+              selectedExerciseType={mode === 'single' ? props.selectedExerciseType : undefined}
+              selectedExerciseTypes={mode === 'multi' ? selectedTypes : undefined}
+              onSelectExercise={mode === 'single' ? handleSingleSelect : undefined}
+              onToggleExercise={mode === 'multi' ? toggleMultiSelect : undefined}
+            />
           </ScrollView>
 
           {mode === 'multi' ? (
@@ -192,7 +125,9 @@ export function ExercisePickerModal(props: ExercisePickerModalProps) {
               />
               <PrimaryButton label="Cancel" variant="secondary" onPress={handleClose} />
             </View>
-          ) : null}
+          ) : (
+            <PrimaryButton label="Cancel" variant="secondary" onPress={handleClose} />
+          )}
         </View>
       </View>
     </Modal>
@@ -205,7 +140,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   backdrop: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: 'rgba(15, 23, 42, 0.45)',
   },
   sheet: {
@@ -235,60 +170,11 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     marginTop: -Spacing.one,
   },
-  searchInput: {
-    borderWidth: 1,
-    borderRadius: Radius.lg,
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two,
-    fontSize: 16,
-    fontWeight: '600',
-  },
   listScroll: {
     flexGrow: 0,
   },
   listContent: {
-    gap: Spacing.two,
     paddingBottom: Spacing.two,
-  },
-  option: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.two,
-    borderWidth: 1,
-    borderRadius: Radius.lg,
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.three,
-  },
-  checkbox: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    borderWidth: 1.5,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  checkmark: {
-    color: '#FFFFFF',
-    fontSize: 13,
-    fontWeight: '900',
-    lineHeight: 14,
-  },
-  optionLabel: {
-    flex: 1,
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  selectedBadge: {
-    fontSize: 12,
-    fontWeight: '800',
-    textTransform: 'uppercase',
-    letterSpacing: 0.4,
-  },
-  empty: {
-    fontSize: 14,
-    fontWeight: '500',
-    textAlign: 'center',
-    paddingVertical: Spacing.four,
   },
   footer: {
     gap: Spacing.two,

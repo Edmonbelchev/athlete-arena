@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { FriendChallengeExercisePicker } from '@/components/friends/FriendChallengeExercisePicker';
 import { FriendChallengeRequestQuotaBar } from '@/components/friends/FriendChallengeRequestQuotaBar';
 import { FriendChallengeRewardInfo } from '@/components/friends/FriendChallengeRewardInfo';
 import { FriendChallengeWorkoutPicker } from '@/components/friends/FriendChallengeWorkoutPicker';
@@ -11,11 +12,7 @@ import { EmotePicker } from '@/components/shop/EmotePicker';
 import { AuthTextInput } from '@/components/ui/AuthTextInput';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { WorkoutCircuitPreview } from '@/components/workouts/WorkoutCircuitPreview';
-import {
-    EXERCISE_LABELS,
-    EXERCISE_TYPES,
-    type ExerciseType,
-} from '@/constants/challenges';
+import { EXERCISE_LABELS, type ExerciseType } from '@/constants/challenges';
 
 import {
     FRIEND_CHALLENGE_REP_MAX,
@@ -442,7 +439,6 @@ export default function CreateFriendChallengeScreen() {
 
           {challengeKind === 'workout' ? (
             <>
-              <Text style={StyleSheet.flatten([styles.label, { color: theme.textSecondary }])}>WORKOUT</Text>
               <FriendChallengeWorkoutPicker
                 selectedWorkoutKey={selectedWorkoutKey}
                 onSelectWorkout={handleSelectWorkout}
@@ -460,32 +456,10 @@ export default function CreateFriendChallengeScreen() {
             </>
           ) : (
             <>
-          <Text style={StyleSheet.flatten([styles.label, { color: theme.textSecondary }])}>EXERCISE</Text>
-          <View style={styles.exerciseRow}>
-            {EXERCISE_TYPES.map((type) => {
-              const selected = exerciseType === type;
-              return (
-                <Pressable
-                  key={type}
-                  onPress={() => handleExerciseChange(type)}
-                  style={StyleSheet.flatten([
-                    styles.exerciseChip,
-                    {
-                      backgroundColor: selected ? theme.primary : theme.backgroundElement,
-                      borderColor: selected ? theme.primary : theme.border,
-                    },
-                  ])}>
-                  <Text
-                    style={StyleSheet.flatten([
-                      styles.exerciseChipText,
-                      { color: selected ? '#FFFFFF' : theme.text },
-                    ])}>
-                    {EXERCISE_LABELS[type]}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
+          <FriendChallengeExercisePicker
+            selectedExerciseType={exerciseType}
+            onSelectExercise={handleExerciseChange}
+          />
 
           <Text style={StyleSheet.flatten([styles.label, { color: theme.textSecondary }])}>TARGET REPS</Text>
           <View style={styles.repRow}>

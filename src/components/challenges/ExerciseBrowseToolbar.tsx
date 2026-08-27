@@ -1,64 +1,27 @@
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { StyleSheet, Text, TextInput, View } from 'react-native';
 
-import { getCustomWorkoutTypeLabel } from '@/constants/customWorkouts';
 import { Radius, Spacing } from '@/constants/theme';
-import type { WorkoutTypeFilter } from '@/features/workouts/workoutBrowseList';
-import type { CustomWorkoutType } from '@/types/customWorkouts';
 import { useTheme } from '@/hooks/use-theme';
 
-interface WorkoutBrowseToolbarProps {
+interface ExerciseBrowseToolbarProps {
   searchQuery: string;
   onSearchQueryChange: (value: string) => void;
-  typeFilter: WorkoutTypeFilter;
-  onTypeFilterChange: (value: WorkoutTypeFilter) => void;
-  availableTypes: CustomWorkoutType[];
   totalCount: number;
   visibleCount: number;
   searchPlaceholder?: string;
   variant?: 'card' | 'plain';
 }
 
-export function WorkoutBrowseToolbar({
+export function ExerciseBrowseToolbar({
   searchQuery,
   onSearchQueryChange,
-  typeFilter,
-  onTypeFilterChange,
-  availableTypes,
   totalCount,
   visibleCount,
-  searchPlaceholder = 'Search by title',
-  variant = 'card',
-}: WorkoutBrowseToolbarProps) {
+  searchPlaceholder = 'Search exercises',
+  variant = 'plain',
+}: ExerciseBrowseToolbarProps) {
   const theme = useTheme();
-  const typeOptions: WorkoutTypeFilter[] = ['all', ...availableTypes];
   const showCount = totalCount > visibleCount;
-
-  const typeFilters = (
-    <View style={styles.segmentRow}>
-      {typeOptions.map((option) => {
-        const isActive = option === typeFilter;
-        const label = option === 'all' ? 'All' : getCustomWorkoutTypeLabel(option);
-
-        return (
-          <Pressable
-            key={option}
-            accessibilityRole="button"
-            onPress={() => onTypeFilterChange(option)}
-            style={[
-              styles.segmentButton,
-              {
-                backgroundColor: isActive ? theme.primary : theme.backgroundSelected,
-                borderColor: isActive ? theme.primary : 'transparent',
-              },
-            ]}>
-            <Text style={[styles.segmentLabel, { color: isActive ? '#FFFFFF' : theme.text }]}>
-              {label}
-            </Text>
-          </Pressable>
-        );
-      })}
-    </View>
-  );
 
   const searchInput = (
     <TextInput
@@ -83,7 +46,6 @@ export function WorkoutBrowseToolbar({
   if (variant === 'plain') {
     return (
       <View style={styles.plainContainer}>
-        {typeFilters}
         {searchInput}
         {showCount ? (
           <Text style={[styles.resultsLabel, { color: theme.textSecondary }]}>
@@ -97,12 +59,11 @@ export function WorkoutBrowseToolbar({
   return (
     <View style={[styles.card, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
       <Text style={[styles.label, { color: theme.textSecondary }]}>Browse</Text>
-      {typeFilters}
       {searchInput}
       {showCount ? (
         <Text style={[styles.resultsLabel, { color: theme.textSecondary }]}>
           Showing {visibleCount} of {totalCount}
-          {totalCount === 1 ? ' workout' : ' workouts'}
+          {totalCount === 1 ? ' exercise' : ' exercises'}
         </Text>
       ) : null}
     </View>
@@ -124,21 +85,6 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     letterSpacing: 0.6,
     textTransform: 'uppercase',
-  },
-  segmentRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: Spacing.two,
-  },
-  segmentButton: {
-    borderWidth: 1,
-    borderRadius: Radius.lg,
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two,
-  },
-  segmentLabel: {
-    fontSize: 14,
-    fontWeight: '700',
   },
   searchInput: {
     borderWidth: 1,
