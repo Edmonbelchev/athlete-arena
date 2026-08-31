@@ -5,13 +5,15 @@ import { formatExerciseLabel } from '@/constants/challenges';
 import { formatWorkoutTimeLimit, getCustomWorkoutTypeLabel } from '@/constants/customWorkouts';
 import { Radius, Spacing } from '@/constants/theme';
 import type { AmrapWorkoutResult } from '@/types/customWorkouts';
+import type { DailyWorkoutBonus } from '@/types/titles';
 import { useTheme } from '@/hooks/use-theme';
 
 interface AmrapCompleteOverlayProps {
   result: AmrapWorkoutResult;
+  dailyBonus?: DailyWorkoutBonus | null;
 }
 
-export function AmrapCompleteOverlay({ result }: AmrapCompleteOverlayProps) {
+export function AmrapCompleteOverlay({ result, dailyBonus = null }: AmrapCompleteOverlayProps) {
   const theme = useTheme();
   const typeLabel = getCustomWorkoutTypeLabel(result.workoutType);
 
@@ -35,6 +37,15 @@ export function AmrapCompleteOverlay({ result }: AmrapCompleteOverlayProps) {
           <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Total reps</Text>
         </View>
       </View>
+
+      {dailyBonus ? (
+        <View style={[styles.bonusCard, { backgroundColor: theme.backgroundElement, borderColor: theme.primary }]}>
+          <Text style={[styles.bonusTitle, { color: theme.text }]}>Daily workout bonus</Text>
+          <Text style={[styles.bonusCopy, { color: theme.textSecondary }]}>
+            +{dailyBonus.xp} XP · +{dailyBonus.coins.toLocaleString()} coins
+          </Text>
+        </View>
+      ) : null}
 
       <View style={[styles.breakdownCard, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
         <Text style={[styles.breakdownTitle, { color: theme.text }]}>Exercise breakdown</Text>
@@ -132,5 +143,20 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
     textAlign: 'center',
+  },
+  bonusCard: {
+    borderWidth: 1,
+    borderRadius: Radius.lg,
+    padding: Spacing.three,
+    gap: Spacing.half,
+    alignItems: 'center',
+  },
+  bonusTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  bonusCopy: {
+    fontSize: 14,
+    fontWeight: '700',
   },
 });

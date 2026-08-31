@@ -23,10 +23,9 @@ import {
   getForTimeStepContext,
   getForTimeStepCount,
 } from '@/features/workouts/forTimeStructure';
-import { useMissionComplete } from '@/features/challenges/MissionCompleteProvider';
+import { useFinalizeWorkoutSave } from '@/features/workouts/useFinalizeWorkoutSave';
 import { useAmrapWorkout } from '@/features/workouts/useAmrapWorkout';
 import { useForTimeWorkout } from '@/features/workouts/useForTimeWorkout';
-import { useProfile } from '@/features/profile/useProfile';
 import { useDrainNativeCameraOnLeave } from '@/hooks/use-drain-native-camera-on-leave';
 import { useRepFeedback } from '@/hooks/use-rep-feedback';
 import { useWorkoutSession } from '@/hooks/use-workout-session';
@@ -36,6 +35,7 @@ import { supportsNativePoseDetection } from '@/lib/runtime';
 import { saveCustomWorkoutSession, saveForTimeWorkoutSession } from '@/services/customWorkoutService';
 import { completeFriendWorkoutChallenge } from '@/services/friendChallengeService';
 import type { AmrapWorkoutResult, CustomWorkoutLaunchConfig, ForTimeWorkoutResult } from '@/types/customWorkouts';
+import type { DailyWorkoutBonus } from '@/types/titles';
 import { useTheme } from '@/hooks/use-theme';
 import { useUserSettings } from '@/features/settings/UserSettingsProvider';
 
@@ -61,14 +61,14 @@ function AmrapWorkoutSession({ config }: { config: CustomWorkoutLaunchConfig }) 
   const theme = useTheme();
   const router = useRouter();
   const { preferences } = useUserSettings();
-  const { refresh: refreshProfile } = useProfile();
-  const { refreshMissionsAndCelebrate } = useMissionComplete();
+  const finalizeWorkoutSave = useFinalizeWorkoutSave();
   const sessionKey = config.catalogWorkoutId ?? config.templateId ?? `${config.workoutType}:${config.title}`;
   const { workoutStarted, startWorkout: markWorkoutStarted } = useWorkoutSession(
     `custom-${config.workoutType}`,
     sessionKey,
   );
   const [savedResult, setSavedResult] = useState<AmrapWorkoutResult | null>(null);
+  const [dailyWorkoutBonus, setDailyWorkoutBonus] = useState<DailyWorkoutBonus | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const savedResultRef = useRef<AmrapWorkoutResult | null>(null);
@@ -91,7 +91,8 @@ function AmrapWorkoutSession({ config }: { config: CustomWorkoutLaunchConfig }) 
     setSaveError(null);
 
     try {
-      await saveCustomWorkoutSession(result);
+      const saveResult = await saveCustomWorkoutSession(result);
+      setDailyWorkoutBonus(saveResult.dailyBonus);
       if (config.friendChallengeParticipantId) {
         await syncFriendWorkoutChallengeCompletion(config.friendChallengeParticipantId, {
           startedAt: result.startedAt,
@@ -99,14 +100,13 @@ function AmrapWorkoutSession({ config }: { config: CustomWorkoutLaunchConfig }) 
           totalReps: result.totalReps,
         });
       }
-      await refreshMissionsAndCelebrate();
-      void refreshProfile();
+      await finalizeWorkoutSave(saveResult);
     } catch (err) {
       setSaveError(formatUserError(err, 'Failed to save workout result'));
     } finally {
       setIsSaving(false);
     }
-  }, [config.friendChallengeParticipantId, refreshMissionsAndCelebrate, refreshProfile]);
+  }, [config.friendChallengeParticipantId, finalizeWorkoutSave]);
 
   const handleLeave = useCallback(() => {
     if (config.friendChallengeParticipantId) {
@@ -184,7 +184,7 @@ function AmrapWorkoutSession({ config }: { config: CustomWorkoutLaunchConfig }) 
         pullUpBarLineY={null}
         completed
         onContinue={handleLeave}
-        completeOverlay={<AmrapCompleteOverlay result={savedResult} />}
+        completeOverlay={<AmrapCompleteOverlay result={savedResult} dailyBonus={dailyWorkoutBonus} />}
         footer={
           saveError ? (
             <Text style={[styles.error, { color: theme.danger }]}>{saveError}</Text>
@@ -248,14 +248,14 @@ function ForTimeWorkoutSession({ config }: { config: CustomWorkoutLaunchConfig }
   const theme = useTheme();
   const router = useRouter();
   const { preferences } = useUserSettings();
-  const { refresh: refreshProfile } = useProfile();
-  const { refreshMissionsAndCelebrate } = useMissionComplete();
+  const finalizeWorkoutSave = useFinalizeWorkoutSave();
   const sessionKey = config.catalogWorkoutId ?? config.templateId ?? `${config.workoutType}:${config.title}`;
   const { workoutStarted, startWorkout: markWorkoutStarted } = useWorkoutSession(
     `custom-${config.workoutType}`,
     sessionKey,
   );
   const [savedResult, setSavedResult] = useState<ForTimeWorkoutResult | null>(null);
+  const [dailyWorkoutBonus, setDailyWorkoutBonus] = useState<DailyWorkoutBonus | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const savedResultRef = useRef<ForTimeWorkoutResult | null>(null);
@@ -278,7 +278,8 @@ function ForTimeWorkoutSession({ config }: { config: CustomWorkoutLaunchConfig }
     setSaveError(null);
 
     try {
-      await saveForTimeWorkoutSession(result);
+      const saveResult = await saveForTimeWorkoutSession(result);
+      setDailyWorkoutBonus(saveResult.dailyBonus);
       if (config.friendChallengeParticipantId) {
         await syncFriendWorkoutChallengeCompletion(config.friendChallengeParticipantId, {
           startedAt: result.startedAt,
@@ -287,14 +288,13 @@ function ForTimeWorkoutSession({ config }: { config: CustomWorkoutLaunchConfig }
           elapsedSeconds: result.elapsedSeconds,
         });
       }
-      await refreshMissionsAndCelebrate();
-      void refreshProfile();
+      await finalizeWorkoutSave(saveResult);
     } catch (err) {
       setSaveError(formatUserError(err, 'Failed to save workout result'));
     } finally {
       setIsSaving(false);
     }
-  }, [config.friendChallengeParticipantId, refreshMissionsAndCelebrate, refreshProfile]);
+  }, [config.friendChallengeParticipantId, finalizeWorkoutSave]);
 
   const handleLeave = useCallback(() => {
     if (config.friendChallengeParticipantId) {
@@ -374,7 +374,7 @@ function ForTimeWorkoutSession({ config }: { config: CustomWorkoutLaunchConfig }
         pullUpBarLineY={null}
         completed
         onContinue={handleLeave}
-        completeOverlay={<ForTimeCompleteOverlay result={savedResult} />}
+        completeOverlay={<ForTimeCompleteOverlay result={savedResult} dailyBonus={dailyWorkoutBonus} />}
         footer={
           saveError ? (
             <Text style={[styles.error, { color: theme.danger }]}>{saveError}</Text>

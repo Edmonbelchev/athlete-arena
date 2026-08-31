@@ -40,6 +40,7 @@ export interface FriendPublicProfile {
   avatarUrl: string | null;
   avatar: ShopAvatarDisplay | null;
   frame: ShopFrameDisplay | null;
+  equippedTitleName: string | null;
 }
 
 export interface FriendRequest {

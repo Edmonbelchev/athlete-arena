@@ -138,6 +138,7 @@ export async function getFriendProfile(userId: string): Promise<FriendPublicProf
         avatar_background: string | null;
         frame_border_color: string | null;
         frame_border_width: number | null;
+        equipped_title_name: string | null;
       }
     | undefined;
 
@@ -158,5 +159,6 @@ export async function getFriendProfile(userId: string): Promise<FriendPublicProf
     avatarUrl: row.avatar_url,
     avatar: cosmetics.avatar,
     frame: cosmetics.frame,
+    equippedTitleName: row.equipped_title_name ?? null,
   };
 }

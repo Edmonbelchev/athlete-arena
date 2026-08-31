@@ -15,7 +15,8 @@ export type AchievementRequirementType =
   | 'friends_count'
   | 'goals_created'
   | 'goals_completed'
-  | 'login_streak';
+  | 'login_streak'
+  | 'workouts_completed';
 
 export interface AchievementRequirement {
   type: AchievementRequirementType;

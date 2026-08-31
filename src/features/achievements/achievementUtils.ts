@@ -22,6 +22,7 @@ const REQUIREMENT_LABELS: Record<AchievementRequirementType, string> = {
   goals_created: 'Goals created',
   goals_completed: 'Goals completed',
   login_streak: 'Consecutive login days',
+  workouts_completed: 'Workouts completed',
 };
 
 function isRequirementType(value: string): value is AchievementRequirementType {

@@ -16,6 +16,7 @@ export interface Profile {
   coin_balance: number;
   preferences: Json;
   daily_quest_reroll_used_on?: string | null;
+  equipped_title_id?: string | null;
   created_at: string;
   updated_at: string;
 }

@@ -188,7 +188,36 @@ export async function softDeleteCustomWorkoutTemplate(templateId: string): Promi
   }
 }
 
-export async function saveCustomWorkoutSession(result: AmrapWorkoutResult): Promise<string> {
+import type { AmrapWorkoutResult, ForTimeWorkoutResult } from '@/types/customWorkouts';
+import type { SaveWorkoutSessionResult } from '@/types/titles';
+
+function mapSaveWorkoutSessionResult(data: unknown): SaveWorkoutSessionResult {
+  if (!data || typeof data !== 'object') {
+    throw new Error('Invalid workout save response');
+  }
+
+  const payload = data as {
+    session_id?: string;
+    daily_bonus?: { xp?: number; coins?: number } | null;
+  };
+
+  if (!payload.session_id) {
+    throw new Error('Invalid workout save response');
+  }
+
+  const bonus = payload.daily_bonus;
+  const dailyBonus =
+    bonus && typeof bonus.xp === 'number' && typeof bonus.coins === 'number'
+      ? { xp: bonus.xp, coins: bonus.coins }
+      : null;
+
+  return {
+    sessionId: payload.session_id,
+    dailyBonus,
+  };
+}
+
+export async function saveCustomWorkoutSession(result: AmrapWorkoutResult): Promise<SaveWorkoutSessionResult> {
   assertSupabaseConfigured();
 
   const { data, error } = await supabase.rpc('save_custom_workout_session', {
@@ -211,10 +240,10 @@ export async function saveCustomWorkoutSession(result: AmrapWorkoutResult): Prom
     throw error;
   }
 
-  return data as string;
+  return mapSaveWorkoutSessionResult(data);
 }
 
-export async function saveForTimeWorkoutSession(result: ForTimeWorkoutResult): Promise<string> {
+export async function saveForTimeWorkoutSession(result: ForTimeWorkoutResult): Promise<SaveWorkoutSessionResult> {
   assertSupabaseConfigured();
 
   const { data, error } = await supabase.rpc('save_custom_workout_session', {
@@ -237,7 +266,7 @@ export async function saveForTimeWorkoutSession(result: ForTimeWorkoutResult): P
     throw error;
   }
 
-  return data as string;
+  return mapSaveWorkoutSessionResult(data);
 }
 
 export function buildExerciseBreakdownFromSteps(

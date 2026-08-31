@@ -8,6 +8,7 @@ import { ActivityIndicator, Platform, StyleSheet, View } from 'react-native';
 import { AuthProvider, useAuth } from '@/features/auth';
 import { AuthDeepLinkHandler } from '@/features/auth/AuthDeepLinkHandler';
 import { AchievementUnlockProvider } from '@/features/achievements/AchievementUnlockProvider';
+import { TitleUnlockProvider } from '@/features/titles/TitleUnlockProvider';
 import { PremiumProvider } from '@/features/subscription/PremiumProvider';
 import { RevenueCatBootstrap } from '@/features/subscription/RevenueCatBootstrap';
 import { MissionCompleteProvider } from '@/features/challenges/MissionCompleteProvider';
@@ -42,6 +43,7 @@ export default function RootLayout() {
       <UserSettingsProvider>
         <PremiumProvider>
           <AchievementUnlockProvider>
+            <TitleUnlockProvider>
             <ProfileProvider>
               <ShopProvider>
                 <MissionCompleteProvider>
@@ -53,6 +55,7 @@ export default function RootLayout() {
                 </MissionCompleteProvider>
               </ShopProvider>
             </ProfileProvider>
+            </TitleUnlockProvider>
           </AchievementUnlockProvider>
         </PremiumProvider>
       </UserSettingsProvider>
@@ -187,6 +190,14 @@ function RootNavigator() {
               presentation: 'modal',
               headerShown: true,
               title: 'Achievements',
+            }}
+          />
+          <Stack.Screen
+            name="profile/titles"
+            options={{
+              presentation: 'modal',
+              headerShown: true,
+              title: 'Titles',
             }}
           />
           <Stack.Screen

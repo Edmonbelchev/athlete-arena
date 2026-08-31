@@ -22,6 +22,7 @@ import { StatCard } from '@/components/ui/StatCard';
 import { TabScreenHeader } from '@/components/sidebar/TabScreenHeader';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useAchievementPreview } from '@/features/achievements/useAchievementPreview';
+import { useTitles } from '@/features/titles/useTitles';
 import { getAuthErrorMessage } from '@/features/auth/authErrors';
 import { useAuth } from '@/features/auth';
 import { usePremium } from '@/features/subscription/usePremium';
@@ -51,6 +52,8 @@ export default function ProfileScreen() {
     error: achievementsError,
     refresh: refreshAchievements,
   } = useAchievementPreview();
+  const { titles, refresh: refreshTitles } = useTitles();
+  const equippedTitleName = titles.find((title) => title.equipped)?.name ?? null;
   const [logoutError, setLogoutError] = useState<string | null>(null);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
@@ -61,8 +64,8 @@ export default function ProfileScreen() {
   const error = profileError ?? statsError;
 
   const handleRefresh = useCallback(async () => {
-    await Promise.all([refreshProfile(), refreshStats(), refreshAchievements()]);
-  }, [refreshProfile, refreshStats, refreshAchievements]);
+    await Promise.all([refreshProfile(), refreshStats(), refreshAchievements(), refreshTitles()]);
+  }, [refreshProfile, refreshStats, refreshAchievements, refreshTitles]);
 
   useFocusEffect(
     useCallback(() => {
@@ -94,6 +97,12 @@ export default function ProfileScreen() {
         label: 'Achievements',
         icon: 'medal' as const,
         onPress: () => router.push('/profile/achievements'),
+      },
+      {
+        id: 'titles',
+        label: 'Titles',
+        icon: 'crown' as const,
+        onPress: () => router.push('/profile/titles'),
       },
       {
         id: 'history',
@@ -200,6 +209,7 @@ export default function ProfileScreen() {
         <ProfileHero
           displayName={displayName}
           username={username}
+          equippedTitleName={equippedTitleName}
           level={profile?.level ?? xpProgress.level}
           coinBalance={profile?.coin_balance ?? 0}
           avatarUrl={profile?.avatar_url}

@@ -1,6 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import { ProfileAvatar } from '@/components/profile/ProfileAvatar';
+import { UserTitleBadge } from '@/components/titles/UserTitleBadge';
 import { CoinBadge } from '@/components/shop/CoinBadge';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { Radius, Spacing } from '@/constants/theme';
@@ -10,6 +11,7 @@ import { useTheme } from '@/hooks/use-theme';
 interface ProfileHeroProps {
   displayName: string;
   username: string;
+  equippedTitleName?: string | null;
   level: number;
   coinBalance: number;
   avatarUrl?: string | null;
@@ -22,6 +24,7 @@ interface ProfileHeroProps {
 export function ProfileHero({
   displayName,
   username,
+  equippedTitleName = null,
   level,
   coinBalance,
   avatarUrl,
@@ -49,6 +52,7 @@ export function ProfileHero({
 
       <View style={styles.identity}>
         <Text style={StyleSheet.flatten([styles.displayName, { color: theme.text }])}>{displayName}</Text>
+        <UserTitleBadge title={equippedTitleName} />
         <Text style={StyleSheet.flatten([styles.username, { color: theme.textSecondary }])}>@{username}</Text>
       </View>
 

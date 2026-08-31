@@ -1,6 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import { ProfileAvatar } from '@/components/profile/ProfileAvatar';
+import { UserTitleBadge } from '@/components/titles/UserTitleBadge';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { Radius, Spacing } from '@/constants/theme';
 import type { FriendPublicProfile } from '@/types/friends';
@@ -44,6 +45,7 @@ export function FriendProfileHero({
 
       <View style={styles.identity}>
         <Text style={StyleSheet.flatten([styles.displayName, { color: theme.text }])}>{displayName}</Text>
+        <UserTitleBadge title={profile.equippedTitleName} />
         <Text style={StyleSheet.flatten([styles.username, { color: theme.textSecondary }])}>
           @{profile.username}
         </Text>
