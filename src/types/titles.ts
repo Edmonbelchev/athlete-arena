@@ -1,7 +1,11 @@
 export type TitleRequirementType =
   | 'workouts_completed'
   | 'friend_races_won'
-  | 'weekly_leaderboard_first';
+  | 'weekly_leaderboard_first'
+  | 'push_ups_total'
+  | 'squats_total'
+  | 'pull_ups_total'
+  | 'burpees_total';
 
 export interface TitleRecord {
   id: string;

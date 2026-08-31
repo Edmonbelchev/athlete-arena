@@ -9,6 +9,7 @@ import { useTheme } from '@/hooks/use-theme';
 
 interface AchievementCardProps {
   achievement: AchievementRecord;
+  linkedTitleName?: string | null;
 }
 
 function formatUnlockedDate(unlockedAt: string): string {
@@ -19,7 +20,7 @@ function formatUnlockedDate(unlockedAt: string): string {
   });
 }
 
-export function AchievementCard({ achievement }: AchievementCardProps) {
+export function AchievementCard({ achievement, linkedTitleName }: AchievementCardProps) {
   const theme = useTheme();
   const locked = !achievement.unlocked;
   const rewardLabel = formatAchievementReward(achievement.xpReward, achievement.coinReward);
@@ -59,6 +60,11 @@ export function AchievementCard({ achievement }: AchievementCardProps) {
           <Text style={StyleSheet.flatten([styles.description, { color: theme.textSecondary }])}>
             {achievement.description}
           </Text>
+          {linkedTitleName ? (
+            <Text style={StyleSheet.flatten([styles.linkedTitle, { color: theme.primary }])}>
+              Also unlocks title: {linkedTitleName}
+            </Text>
+          ) : null}
         </View>
       </View>
 
@@ -123,6 +129,11 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 18,
     fontWeight: '600',
+  },
+  linkedTitle: {
+    fontSize: 12,
+    lineHeight: 16,
+    fontWeight: '700',
   },
   metaRow: {
     flexDirection: 'row',

@@ -9,14 +9,14 @@ export type AchievementRequirementType =
   | 'push_ups_total'
   | 'squats_total'
   | 'pull_ups_total'
-  | 'dips_total'
   | 'burpees_total'
   | 'friend_races_won'
   | 'friends_count'
   | 'goals_created'
   | 'goals_completed'
   | 'login_streak'
-  | 'workouts_completed';
+  | 'workouts_completed'
+  | 'workouts_completed_month';
 
 export interface AchievementRequirement {
   type: AchievementRequirementType;

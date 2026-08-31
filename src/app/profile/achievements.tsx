@@ -15,7 +15,9 @@ import { AchievementCard } from '@/components/achievements/AchievementCard';
 import { AppIcon } from '@/components/ui/AppIcon';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
+import { findLinkedTitle } from '@/features/achievements/achievementTitleLinks';
 import { useAchievements } from '@/features/achievements/useAchievements';
+import { useTitles } from '@/features/titles/useTitles';
 import { leaveScreen } from '@/lib/navigation';
 import type { AchievementFilter } from '@/types/achievements';
 import { useTheme } from '@/hooks/use-theme';
@@ -32,6 +34,18 @@ export default function AchievementsScreen() {
   const [filter, setFilter] = useState<AchievementFilter>('all');
   const { achievements, unlockedCount, totalCount, isLoading, isSyncing, error, refresh } =
     useAchievements();
+  const { titles } = useTitles();
+
+  const linkedTitleByAchievementId = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const achievement of achievements) {
+      const title = findLinkedTitle(achievement.requirements, titles);
+      if (title) {
+        map.set(achievement.id, title.name);
+      }
+    }
+    return map;
+  }, [achievements, titles]);
 
   const headerOptions = {
     title: 'Achievements',
@@ -133,7 +147,11 @@ export default function AchievementsScreen() {
 
           <View style={styles.list}>
             {filteredAchievements.map((achievement) => (
-              <AchievementCard key={achievement.id} achievement={achievement} />
+              <AchievementCard
+                key={achievement.id}
+                achievement={achievement}
+                linkedTitleName={linkedTitleByAchievementId.get(achievement.id) ?? null}
+              />
             ))}
           </View>
 

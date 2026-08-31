@@ -12,17 +12,17 @@ const REQUIREMENT_LABELS: Record<AchievementRequirementType, string> = {
   level: 'Level reached',
   current_streak: 'Current streak (days)',
   longest_streak: 'Longest streak (days)',
-  push_ups_total: 'Push-ups completed',
-  squats_total: 'Squats completed',
-  pull_ups_total: 'Pull-ups completed',
-  dips_total: 'Dips completed',
-  burpees_total: 'Burpees completed',
+  push_ups_total: 'Push-ups from activities',
+  squats_total: 'Squats from activities',
+  pull_ups_total: 'Pull-ups from activities',
+  burpees_total: 'Burpees from activities',
   friend_races_won: 'Friend races won',
   friends_count: 'Friends added',
   goals_created: 'Goals created',
   goals_completed: 'Goals completed',
   login_streak: 'Consecutive login days',
   workouts_completed: 'Workouts completed',
+  workouts_completed_month: 'Workouts completed this month',
 };
 
 function isRequirementType(value: string): value is AchievementRequirementType {
