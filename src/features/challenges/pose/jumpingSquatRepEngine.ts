@@ -3,13 +3,13 @@ import type { JumpingSquatPhase } from '@/features/challenges/poseDetection.type
 
 import { getAverageAnkleY, getAverageHipY } from './burpeePosture';
 import type { PoseLandmark } from './landmarks';
-import {
-  getSquatKneeAngles,
-  getSquatStanceHint,
-  isSquatStandingReady,
-  isValidSquatStance,
-} from './squatPosture';
 import { isInHighZone, isInLowZone, isInMidZone, type AngleThresholdConfig } from './repEngineUtils';
+import {
+    getSquatKneeAngles,
+    getSquatStanceHint,
+    isSquatStandingReady,
+    isValidSquatStance,
+} from './squatPosture';
 
 function getSquatZones(): AngleThresholdConfig {
   return {

@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Platform, StyleSheet, Text, View } from 'react-native';
 import {
-  Delegate,
-  MediapipeCamera,
-  RunningMode,
-  usePoseDetection,
-  type Landmark,
-  type ViewCoordinator,
+    Delegate,
+    MediapipeCamera,
+    RunningMode,
+    usePoseDetection,
+    type Landmark,
+    type ViewCoordinator,
 } from 'react-native-mediapipe-posedetection';
 import { useCameraPermission } from 'react-native-vision-camera';
 
@@ -14,12 +14,12 @@ import type { CameraPreviewProps } from '@/components/CameraPreview.types';
 import { RepCycleProgressBar } from '@/components/challenges/RepCycleProgressBar';
 import { PoseSkeletonOverlay } from '@/components/settings/PoseSkeletonOverlay';
 import { PullUpBarLineOverlay } from '@/components/settings/PullUpBarLineOverlay';
-import { POSE_LANDSCAPE_POST_SETTLE_FRAMES, POSE_LANDMARK_SMOOTH_ALPHA, POSE_LANDMARK_SMOOTH_ALPHA_JUMPING_JACK, POSE_LANDMARK_SMOOTH_ALPHA_JUMPING_SQUAT, POSE_LANDMARK_SMOOTH_ALPHA_PULL_UP } from '@/constants/poseDetection';
+import { POSE_LANDMARK_SMOOTH_ALPHA, POSE_LANDMARK_SMOOTH_ALPHA_JUMPING_JACK, POSE_LANDMARK_SMOOTH_ALPHA_JUMPING_SQUAT, POSE_LANDMARK_SMOOTH_ALPHA_PULL_UP, POSE_LANDSCAPE_POST_SETTLE_FRAMES } from '@/constants/poseDetection';
 import { Radius, Spacing } from '@/constants/theme';
 import {
-  isDisplayFrameStale,
-  POSE_DISPLAY_STALE_MS,
-  shouldEmitDisplayFrame,
+    isDisplayFrameStale,
+    POSE_DISPLAY_STALE_MS,
+    shouldEmitDisplayFrame,
 } from '@/features/challenges/pose/displayFrameThrottle';
 import type { PoseLandmark } from '@/features/challenges/pose/landmarks';
 import { mapLandmarksToViewNormalized } from '@/features/challenges/pose/mapLandmarksToView';
@@ -158,6 +158,14 @@ function VisionCameraPreviewActive({
     [posePreviewLayoutRef],
   );
 
+  const clearPoseTrackingFrame = useCallback(() => {
+    landmarkSmootherRef.current.reset();
+    lastDisplayFrameAtRef.current = 0;
+    setLatestLandmarks(null);
+    setTrackingBody(false);
+    onLandmarksRef.current?.([]);
+  }, []);
+
   const handleResults = useCallback(
     (
       landmarks: Landmark[],
@@ -196,7 +204,7 @@ function VisionCameraPreviewActive({
 
       if (!arePoseLandmarksPlausible(viewLandmarks)) {
         syncPreviewLayoutState(true);
-        onLandmarksRef.current?.([]);
+        clearPoseTrackingFrame();
         return;
       }
 
@@ -216,7 +224,7 @@ function VisionCameraPreviewActive({
         }
       }
     },
-    [syncPreviewLayoutState],
+    [clearPoseTrackingFrame, syncPreviewLayoutState],
   );
 
   const onPoseResults = useCallback(
@@ -231,9 +239,12 @@ function VisionCameraPreviewActive({
       const firstPose = result.results[0]?.landmarks[0];
       if (firstPose?.length >= 33) {
         handleResults(firstPose, result, viewCoordinator);
+        return;
       }
+
+      clearPoseTrackingFrame();
     },
-    [handleResults],
+    [clearPoseTrackingFrame, handleResults],
   );
 
   const onPoseError = useCallback((error: { message: string }) => {
@@ -266,15 +277,12 @@ function VisionCameraPreviewActive({
       }
 
       if (isDisplayFrameStale(lastDisplayFrameAtRef.current)) {
-        setLatestLandmarks(null);
-        setTrackingBody(false);
-        lastDisplayFrameAtRef.current = 0;
-        onLandmarksRef.current?.([]);
+        clearPoseTrackingFrame();
       }
     }, POSE_DISPLAY_STALE_MS / 2);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [clearPoseTrackingFrame]);
 
   viewDimensionsRef.current = poseDetection.cameraViewDimensions;
 

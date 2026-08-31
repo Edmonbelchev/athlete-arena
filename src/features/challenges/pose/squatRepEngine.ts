@@ -1,14 +1,14 @@
-import type { SquatPhase } from '@/features/challenges/poseDetection.types';
 import { SQUAT_POSTURE, SQUAT_THRESHOLDS } from '@/constants/poseDetection';
+import type { SquatPhase } from '@/features/challenges/poseDetection.types';
 
 import type { PoseLandmark } from './landmarks';
-import {
-  getSquatKneeAngles,
-  getSquatStanceHint,
-  isSquatStandingReady,
-  isValidSquatStance,
-} from './squatPosture';
 import { isInHighZone, isInLowZone, isInMidZone, type AngleThresholdConfig } from './repEngineUtils';
+import {
+    getSquatKneeAngles,
+    getSquatStanceHint,
+    isSquatStandingReady,
+    isValidSquatStance,
+} from './squatPosture';
 
 function getSquatZones(): AngleThresholdConfig {
   return {
