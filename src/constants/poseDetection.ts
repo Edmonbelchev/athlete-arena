@@ -163,8 +163,8 @@ export const PULL_UP_POSTURE = {
 export const SQUAT_THRESHOLDS = {
   /** Knee angle (degrees) - standing upright. */
   standingAngle: 155,
-  /** Knee angle (degrees) - bottom of squat. */
-  bottomAngle: 100,
+  /** Knee angle (degrees) - bottom of squat (hip crease ~ parallel; camera/smoothing reads shallower). */
+  bottomAngle: 110,
   hysteresis: isNativeMobile ? 15 : 20,
 } as const;
 
