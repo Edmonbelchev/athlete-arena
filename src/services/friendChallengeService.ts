@@ -1,5 +1,6 @@
 import { mapFriendWorkoutExercises } from '@/features/friends/friendChallengeWorkout';
 import { assertSupabaseConfigured, supabase } from '@/lib/supabase';
+import { clearMovementStatsCache } from '@/services/statsService';
 import type { ExerciseType } from '@/constants/challenges';
 import { FRIEND_CHALLENGE_MONTHLY_REQUEST_LIMIT } from '@/constants/friendChallenges';
 import type { ChallengeStatus, FriendChallenge, FriendChallengeRequestQuota, FriendWithActiveChallengesSummary } from '@/types/friends';
@@ -300,6 +301,8 @@ export async function completeFriendChallenge(
   if (error) {
     throw error;
   }
+
+  clearMovementStatsCache();
 }
 
 export async function createFriendWorkoutChallenge(
@@ -404,4 +407,6 @@ export async function completeFriendWorkoutChallenge(input: {
   if (error) {
     throw error;
   }
+
+  clearMovementStatsCache();
 }

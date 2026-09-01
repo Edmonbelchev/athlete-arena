@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 
 import { useAuth } from '@/features/auth';
 import { formatUserError } from '@/lib/errors';
@@ -47,10 +47,6 @@ export function useAchievementPreview(
       setIsLoading(false);
     }
   }, [limit, session?.user.id]);
-
-  useEffect(() => {
-    void refresh();
-  }, [refresh]);
 
   return {
     achievements: preview.recentUnlocked,

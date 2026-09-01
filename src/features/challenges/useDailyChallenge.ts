@@ -104,11 +104,14 @@ export function useDailyChallenge(): UseDailyChallengeResult {
   }, [session]);
 
   useEffect(() => {
-    void refresh();
-  }, [refresh]);
+    return subscribeDailyChallengeRefresh((missions) => {
+      if (missions) {
+        setMissions(missions);
+        setIsLoading(false);
+        setError(null);
+        return;
+      }
 
-  useEffect(() => {
-    return subscribeDailyChallengeRefresh(() => {
       void refresh({ silent: true });
     });
   }, [refresh]);

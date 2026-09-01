@@ -96,7 +96,11 @@ export default function StatsScreen() {
         <ScrollView
           contentContainerStyle={styles.content}
           refreshControl={
-            <RefreshControl refreshing={isLoading} onRefresh={() => void refresh()} tintColor={theme.primary} />
+            <RefreshControl
+              refreshing={isLoading}
+              onRefresh={() => void refresh({ bypassCache: true })}
+              tintColor={theme.primary}
+            />
           }>
           <View
             style={[
