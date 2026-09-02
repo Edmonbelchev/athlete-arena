@@ -1,5 +1,4 @@
 import type { ExerciseType } from '@/constants/challenges';
-import { formatExerciseLabel } from '@/constants/challenges';
 import {
   challengeNotificationId,
   type ChallengeNotification,
@@ -7,7 +6,7 @@ import {
 } from '@/features/notifications/types';
 import { assertSupabaseConfigured, supabase } from '@/lib/supabase';
 import { getFriendChallengeByParticipantId, getMyFriendChallenges } from '@/services/friendChallengeService';
-import { getCreatorDisplayName, getOpponentDisplayName, type FriendChallenge } from '@/types/friends';
+import { getCreatorDisplayName, getFriendChallengeTitle, getOpponentDisplayName, type FriendChallenge } from '@/types/friends';
 
 interface NotificationCopy {
   title: string;
@@ -17,8 +16,10 @@ interface NotificationCopy {
 
 interface ChallengeSummary {
   participantId: string;
+  challengeKind: FriendChallenge['challengeKind'];
   targetReps: number;
-  exerciseType: ExerciseType;
+  exerciseType: ExerciseType | null;
+  workoutTitle: string | null;
   creatorUsername: string;
   creatorDisplayName: string | null;
   opponentUsername: string;
@@ -53,7 +54,7 @@ async function loadChallengeSummaryByChallengeId(
 
   const { data: challenge, error: challengeError } = await supabase
     .from('friend_challenges')
-    .select('id, creator_id, exercise_type, target_reps')
+    .select('id, creator_id, challenge_kind, exercise_type, target_reps, workout_title')
     .eq('id', challengeId)
     .maybeSingle();
 
@@ -96,8 +97,10 @@ async function loadChallengeSummaryByChallengeId(
 
   return {
     participantId: mine.id,
+    challengeKind: challenge.challenge_kind ?? 'exercise',
     targetReps: challenge.target_reps,
-    exerciseType: challenge.exercise_type as ExerciseType,
+    exerciseType: challenge.exercise_type as ExerciseType | null,
+    workoutTitle: challenge.workout_title,
     creatorUsername: creatorProfile.username,
     creatorDisplayName: creatorProfile.display_name,
     opponentUsername: opponentProfile.username,
@@ -106,20 +109,32 @@ async function loadChallengeSummaryByChallengeId(
   };
 }
 
+function getChallengeNotificationLabel(
+  challenge: Pick<FriendChallenge, 'challengeKind' | 'workoutTitle' | 'targetReps' | 'exerciseType'>,
+): string {
+  return getFriendChallengeTitle(challenge as FriendChallenge);
+}
+
+function getChallengeNotificationKindSuffix(
+  challenge: Pick<FriendChallenge, 'challengeKind'>,
+): string {
+  return challenge.challengeKind === 'workout' ? 'challenge' : 'race';
+}
+
 function buildCopyFromChallenge(
   type: ChallengeNotificationType,
   challenge: FriendChallenge,
 ): NotificationCopy {
-  const exerciseLabel = formatExerciseLabel(challenge.exerciseType, true);
-  const repLabel = `${challenge.targetReps} ${exerciseLabel}`;
+  const challengeLabel = getChallengeNotificationLabel(challenge);
+  const kindSuffix = getChallengeNotificationKindSuffix(challenge);
 
   switch (type) {
     case 'challenge_received': {
       const challenger = getCreatorDisplayName(challenge);
       return {
         participantId: challenge.participantId,
-        title: 'New challenge!',
-        message: `${challenger} challenged you to ${repLabel}`,
+        title: challenge.challengeKind === 'workout' ? 'Workout challenge' : 'New challenge!',
+        message: `${challenger} challenged you to ${challengeLabel}`,
       };
     }
     case 'challenge_accepted': {
@@ -127,7 +142,7 @@ function buildCopyFromChallenge(
       return {
         participantId: challenge.participantId,
         title: 'Challenge accepted',
-        message: `${opponent} accepted your ${repLabel} race`,
+        message: `${opponent} accepted your ${challengeLabel} ${kindSuffix}`,
       };
     }
     case 'challenge_declined': {
@@ -140,14 +155,14 @@ function buildCopyFromChallenge(
         return {
           participantId: challenge.participantId,
           title: 'Opponent forfeited',
-          message: `${opponent} forfeited your ${repLabel} race`,
+          message: `${opponent} forfeited your ${challengeLabel} ${kindSuffix}`,
         };
       }
 
       return {
         participantId: challenge.participantId,
         title: 'Challenge declined',
-        message: `${opponent} declined your ${repLabel} race`,
+        message: `${opponent} declined your ${challengeLabel} ${kindSuffix}`,
       };
     }
   }
@@ -157,8 +172,8 @@ function buildCopyFromSummary(
   type: ChallengeNotificationType,
   summary: ChallengeSummary,
 ): NotificationCopy {
-  const exerciseLabel = formatExerciseLabel(summary.exerciseType, true);
-  const repLabel = `${summary.targetReps} ${exerciseLabel}`;
+  const challengeLabel = getChallengeNotificationLabel(summary);
+  const kindSuffix = getChallengeNotificationKindSuffix(summary);
   const creatorName = summary.creatorDisplayName ?? summary.creatorUsername;
   const opponentName = summary.opponentDisplayName ?? summary.opponentUsername;
 
@@ -166,20 +181,20 @@ function buildCopyFromSummary(
     case 'challenge_received':
       return {
         participantId: summary.participantId,
-        title: 'New challenge!',
-        message: `${creatorName} challenged you to ${repLabel}`,
+        title: summary.challengeKind === 'workout' ? 'Workout challenge' : 'New challenge!',
+        message: `${creatorName} challenged you to ${challengeLabel}`,
       };
     case 'challenge_accepted':
       return {
         participantId: summary.participantId,
         title: 'Challenge accepted',
-        message: `${opponentName} accepted your ${repLabel} race`,
+        message: `${opponentName} accepted your ${challengeLabel} ${kindSuffix}`,
       };
     case 'challenge_declined':
       return {
         participantId: summary.participantId,
         title: 'Challenge declined',
-        message: `${opponentName} declined your ${repLabel} race`,
+        message: `${opponentName} declined your ${challengeLabel} ${kindSuffix}`,
       };
   }
 }
@@ -271,11 +286,19 @@ export async function syncChallengeNotifications(
     for (const challenge of challenges) {
       for (const type of getSyncNotificationTypes(challenge)) {
         const stableId = challengeNotificationId(type, challenge.challengeId);
-        if (knownIds.has(stableId)) {
+        const copy = buildCopyFromChallenge(type, challenge);
+        const existingIndex = mergedChallenge.findIndex((notification) => notification.id === stableId);
+
+        if (existingIndex >= 0) {
+          mergedChallenge[existingIndex] = {
+            ...mergedChallenge[existingIndex],
+            title: copy.title,
+            message: copy.message,
+            participantId: copy.participantId,
+          };
           continue;
         }
 
-        const copy = buildCopyFromChallenge(type, challenge);
         mergedChallenge.push({
           id: stableId,
           type,
