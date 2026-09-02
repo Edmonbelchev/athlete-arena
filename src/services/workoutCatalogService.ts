@@ -1,4 +1,5 @@
 import { mapPublicCosmetics } from '@/features/friends/friendCosmeticsUtils';
+import { normalizeCustomWorkoutType } from '@/constants/customWorkouts';
 import { assertSupabaseConfigured, supabase } from '@/lib/supabase';
 import type {
   CatalogWorkoutDetail,
@@ -9,6 +10,41 @@ import type {
 } from '@/types/catalogWorkouts';
 import type { ExerciseType } from '@/constants/challenges';
 import { parseStructureConfig } from '@/features/workouts/forTimeStructure';
+
+type WorkoutExerciseBreakdownRow = {
+  exercise_type: ExerciseType;
+  target_reps: number;
+  total_reps: number;
+};
+
+function mapExerciseBreakdown(value: unknown): WorkoutExerciseBreakdownRow[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.flatMap((entry) => {
+    if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
+      return [];
+    }
+
+    const row = entry as Record<string, unknown>;
+    if (
+      typeof row.exercise_type !== 'string' ||
+      typeof row.target_reps !== 'number' ||
+      typeof row.total_reps !== 'number'
+    ) {
+      return [];
+    }
+
+    return [
+      {
+        exercise_type: row.exercise_type as ExerciseType,
+        target_reps: row.target_reps,
+        total_reps: row.total_reps,
+      },
+    ];
+  });
+}
 
 export async function getWorkoutCatalog(): Promise<CatalogWorkoutSummary[]> {
   assertSupabaseConfigured();
@@ -23,7 +59,7 @@ export async function getWorkoutCatalog(): Promise<CatalogWorkoutSummary[]> {
     catalogWorkoutId: row.catalog_workout_id,
     title: row.title,
     description: row.description,
-    workoutType: row.workout_type,
+    workoutType: normalizeCustomWorkoutType(row.workout_type),
     timeLimitSeconds: row.time_limit_seconds,
     leaderboardMetric: row.leaderboard_metric,
     exerciseCount: row.exercise_count,
@@ -52,7 +88,7 @@ export async function getWorkoutCatalogDetail(catalogWorkoutId: string): Promise
     catalogWorkoutId: first.catalog_workout_id,
     title: first.title,
     description: first.description,
-    workoutType: first.workout_type,
+    workoutType: normalizeCustomWorkoutType(first.workout_type),
     timeLimitSeconds: first.time_limit_seconds,
     leaderboardMetric: first.leaderboard_metric,
     exercises: data.map((row) => ({
@@ -87,18 +123,16 @@ export async function getMyWorkoutSessions(options: {
   return (data ?? []).map((row) => ({
     sessionId: row.session_id,
     title: row.title,
-    workoutType: row.workout_type ?? null,
+    workoutType: row.workout_type ? normalizeCustomWorkoutType(row.workout_type) : null,
     timeLimitSeconds: row.time_limit_seconds,
     completedRounds: row.completed_rounds,
     totalReps: row.total_reps,
     elapsedSeconds: row.elapsed_seconds ?? null,
-    exerciseBreakdown: Array.isArray(row.exercise_breakdown)
-      ? row.exercise_breakdown.map((entry) => ({
-          exerciseType: entry.exercise_type as ExerciseType,
-          targetReps: entry.target_reps as number,
-          totalReps: entry.total_reps as number,
-        }))
-      : [],
+    exerciseBreakdown: mapExerciseBreakdown(row.exercise_breakdown).map((entry) => ({
+      exerciseType: entry.exercise_type,
+      targetReps: entry.target_reps,
+      totalReps: entry.total_reps,
+    })),
     startedAt: row.started_at,
     completedAt: row.completed_at,
   }));

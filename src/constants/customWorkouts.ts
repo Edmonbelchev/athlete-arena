@@ -79,22 +79,65 @@ export const CUSTOM_WORKOUT_TYPES: CustomWorkoutTypeDefinition[] = [
       'Build a fixed circuit. Finish every exercise in order once; the timer stops when the last rep is done.',
     available: true,
   },
+  {
+    type: 'emom',
+    label: 'EMOM',
+    shortLabel: 'EMOM',
+    description: 'Every minute on the minute.',
+    createDescription: 'Complete the prescribed work at the start of each minute.',
+    available: false,
+  },
 ];
 
 export const AVAILABLE_CUSTOM_WORKOUT_TYPES = CUSTOM_WORKOUT_TYPES.filter((entry) => entry.available);
 
-export function getCustomWorkoutTypeDefinition(
-  workoutType: CustomWorkoutType,
-): CustomWorkoutTypeDefinition {
-  const match = CUSTOM_WORKOUT_TYPES.find((entry) => entry.type === workoutType);
-  if (!match) {
-    throw new Error(`Unknown workout type: ${workoutType}`);
+const CUSTOM_WORKOUT_TYPE_BY_KEY = Object.fromEntries(
+  CUSTOM_WORKOUT_TYPES.map((entry) => [entry.type, entry]),
+) as Record<CustomWorkoutType, CustomWorkoutTypeDefinition>;
+
+export function normalizeCustomWorkoutType(value: unknown): CustomWorkoutType {
+  if (typeof value !== 'string') {
+    return 'amrap';
   }
 
-  return match;
+  const normalized = value.trim().toLowerCase();
+  if (normalized in CUSTOM_WORKOUT_TYPE_BY_KEY) {
+    return normalized as CustomWorkoutType;
+  }
+
+  return 'amrap';
 }
 
-export function getCustomWorkoutTypeLabel(workoutType: CustomWorkoutType): string {
+function formatUnknownWorkoutTypeLabel(workoutType: string): string {
+  return workoutType
+    .split('_')
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
+}
+
+export function getCustomWorkoutTypeDefinition(
+  workoutType: CustomWorkoutType | string,
+): CustomWorkoutTypeDefinition {
+  const normalized = typeof workoutType === 'string' ? workoutType.trim().toLowerCase() : workoutType;
+  const match = CUSTOM_WORKOUT_TYPE_BY_KEY[normalized as CustomWorkoutType];
+  if (match) {
+    return match;
+  }
+
+  const label = formatUnknownWorkoutTypeLabel(String(normalized));
+
+  return {
+    type: 'amrap',
+    label,
+    shortLabel: label,
+    description: 'This workout type is not fully supported in the app yet.',
+    createDescription: '',
+    available: false,
+  };
+}
+
+export function getCustomWorkoutTypeLabel(workoutType: CustomWorkoutType | string): string {
   return getCustomWorkoutTypeDefinition(workoutType).label;
 }
 

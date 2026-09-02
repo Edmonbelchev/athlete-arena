@@ -1,4 +1,5 @@
 import type { ExerciseType } from '@/constants/challenges';
+import { normalizeCustomWorkoutType } from '@/constants/customWorkouts';
 import { assertSupabaseConfigured, supabase } from '@/lib/supabase';
 import { clearMovementStatsCache } from '@/services/statsService';
 import type {
@@ -9,6 +10,7 @@ import type {
   CustomWorkoutTemplateSummary,
   ForTimeStructureConfig,
 } from '@/types/customWorkouts';
+import type { SaveWorkoutSessionResult } from '@/types/titles';
 import { parseStructureConfig, serializeStructureConfig } from '@/features/workouts/forTimeStructure';
 
 function mapTemplateSummary(row: {
@@ -26,7 +28,7 @@ function mapTemplateSummary(row: {
   return {
     templateId: row.template_id,
     title: row.title,
-    workoutType: row.workout_type,
+    workoutType: normalizeCustomWorkoutType(row.workout_type),
     timeLimitSeconds: row.time_limit_seconds,
     exerciseCount: row.exercise_count,
     createdAt: row.created_at,
@@ -71,7 +73,7 @@ export async function getCustomWorkoutTemplateDetail(
   return {
     templateId: first.template_id,
     title: first.title,
-    workoutType: first.workout_type,
+    workoutType: normalizeCustomWorkoutType(first.workout_type),
     timeLimitSeconds: first.time_limit_seconds,
     creatorId: first.creator_id,
     creatorUsername: first.creator_username,
@@ -188,9 +190,6 @@ export async function softDeleteCustomWorkoutTemplate(templateId: string): Promi
     throw error;
   }
 }
-
-import type { AmrapWorkoutResult, ForTimeWorkoutResult } from '@/types/customWorkouts';
-import type { SaveWorkoutSessionResult } from '@/types/titles';
 
 function mapSaveWorkoutSessionResult(data: unknown): SaveWorkoutSessionResult {
   if (!data || typeof data !== 'object') {

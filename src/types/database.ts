@@ -1004,7 +1004,7 @@ export interface Database {
         Returns: {
           template_id: string;
           title: string;
-          workout_type: 'amrap';
+          workout_type: 'amrap' | 'for_time' | 'emom';
           time_limit_seconds: number;
           exercise_count: number;
           created_at: string;
@@ -1012,6 +1012,82 @@ export interface Database {
           creator_username: string | null;
           creator_display_name: string | null;
           shared_at: string | null;
+        }[];
+      };
+      get_workout_catalog: {
+        Args: Record<string, never>;
+        Returns: {
+          catalog_workout_id: string;
+          title: string;
+          description: string | null;
+          workout_type: 'amrap' | 'for_time' | 'emom';
+          time_limit_seconds: number;
+          leaderboard_metric: 'most_rounds' | 'fastest_time' | null;
+          exercise_count: number;
+          sort_order: number;
+        }[];
+      };
+      get_workout_catalog_detail: {
+        Args: {
+          p_catalog_workout_id: string;
+        };
+        Returns: {
+          catalog_workout_id: string;
+          title: string;
+          description: string | null;
+          workout_type: 'amrap' | 'for_time' | 'emom';
+          time_limit_seconds: number;
+          leaderboard_metric: 'most_rounds' | 'fastest_time' | null;
+          structure_config: Json | null;
+          exercise_id: string;
+          sort_order: number;
+          exercise_type: Database['public']['Enums']['exercise_type'];
+          target_reps: number;
+          my_best_rounds: number | null;
+          my_best_reps: number | null;
+          my_best_elapsed_seconds: number | null;
+          my_session_count: number;
+        }[];
+      };
+      get_my_workout_sessions: {
+        Args: {
+          p_catalog_workout_id?: string | null;
+          p_template_id?: string | null;
+          p_limit?: number;
+        };
+        Returns: {
+          session_id: string;
+          title: string;
+          workout_type: 'amrap' | 'for_time' | 'emom';
+          time_limit_seconds: number;
+          completed_rounds: number;
+          total_reps: number;
+          elapsed_seconds: number | null;
+          exercise_breakdown: Json;
+          started_at: string;
+          completed_at: string;
+        }[];
+      };
+      get_catalog_workout_leaderboard: {
+        Args: {
+          p_catalog_workout_id: string;
+          p_period?: string;
+          p_limit?: number;
+        };
+        Returns: {
+          rank: number;
+          user_id: string;
+          username: string;
+          display_name: string | null;
+          level: number;
+          score_amount: number;
+          tiebreak_amount: number;
+          avatar_url: string | null;
+          avatar_icon: string | null;
+          avatar_background: string | null;
+          frame_border_color: string | null;
+          frame_border_width: number | null;
+          is_current_user: boolean;
         }[];
       };
       get_custom_workout_template_detail: {

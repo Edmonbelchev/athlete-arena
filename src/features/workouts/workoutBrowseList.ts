@@ -65,8 +65,12 @@ export function sortWorkoutsForBrowse<T extends WorkoutBrowseItem>(
 
 export function getAvailableWorkoutTypes<T extends WorkoutBrowseItem>(items: T[]): CustomWorkoutType[] {
   const present = new Set(items.map((item) => item.workoutType));
+  const ordered = AVAILABLE_CUSTOM_WORKOUT_TYPES.map((entry) => entry.type).filter((type) =>
+    present.has(type),
+  );
+  const extras = [...present].filter((type) => !ordered.includes(type));
 
-  return AVAILABLE_CUSTOM_WORKOUT_TYPES.map((entry) => entry.type).filter((type) => present.has(type));
+  return [...ordered, ...extras];
 }
 
 export function buildWorkoutBrowseRows<T extends WorkoutBrowseItem>(
