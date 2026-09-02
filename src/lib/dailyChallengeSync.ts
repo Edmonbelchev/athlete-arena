@@ -1,5 +1,5 @@
 import type { ExerciseType } from '@/constants/challenges';
-import type { ChallengeStatus } from '@/types';
+import type { ChallengeStatus, DailyChallengeHome } from '@/types';
 
 export interface DailyMissionPatch {
   userChallengeId: string;
@@ -10,7 +10,7 @@ export interface DailyMissionPatch {
   completedAt?: string | null;
 }
 
-type RefreshListener = () => void;
+type RefreshListener = (missions?: DailyChallengeHome[]) => void;
 type PatchListener = (patch: DailyMissionPatch) => void;
 
 const refreshListeners = new Set<RefreshListener>();
@@ -23,9 +23,9 @@ export function subscribeDailyChallengeRefresh(listener: RefreshListener): () =>
   };
 }
 
-export function notifyDailyChallengeRefresh(): void {
+export function notifyDailyChallengeRefresh(missions?: DailyChallengeHome[]): void {
   for (const listener of refreshListeners) {
-    listener();
+    listener(missions);
   }
 }
 
