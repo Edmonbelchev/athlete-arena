@@ -134,7 +134,7 @@ export class PullUpRepEngine {
       this.topPostureHoldFrames = 0;
     }
 
-    if (!isInHighZone(elbowAngle, this.thresholds)) {
+    if (elbowAngle <= PULL_UP_POSTURE.maxTopElbowAngle) {
       this.hasPulledThisRep = true;
     }
 

@@ -413,7 +413,7 @@ export function isPullUpTopPosture(
     wristY === null ||
     elbowAngle === null ||
     barLineY === null ||
-    isInHighZone(elbowAngle, elbowThresholds)
+    elbowAngle > PULL_UP_POSTURE.maxTopElbowAngle
   ) {
     return false;
   }

@@ -125,9 +125,9 @@ export const PULL_UP_THRESHOLDS = {
 /** Pull-up rep validation - dead hang on bar + chin/head over bar at top. */
 export const PULL_UP_POSTURE = {
   /** Chin (lower face) at or above the bar line (y grows downward). */
-  chinOverBarMargin: isNativeMobile ? 0.055 : 0.025,
+  chinOverBarMargin: isNativeMobile ? 0.060 : 0.030,
   /** Ear height proxy when filming from behind. */
-  earOverBarMargin: isNativeMobile ? 0.055 : 0.035,
+  earOverBarMargin: isNativeMobile ? 0.060 : 0.040,
   /** Shoulder-at-bar fallback when no face/ears are visible. */
   shoulderNearBarMargin: isNativeMobile ? 0.2 : 0.16,
   /** Wrists stay near the captured bar line through the rep. */
@@ -158,6 +158,8 @@ export const PULL_UP_POSTURE = {
   offBarFramesBeforeRelease: isNativeMobile ? 4 : 5,
   /** Wrists below hips by at least this much before the bar line is dropped (y grows down). */
   minWristBelowHipMargin: isNativeMobile ? 0.02 : 0.025,
+  /** Max elbow angle (degrees) at the top — head-over-bar only counts when arms are bent past this. */
+  maxTopElbowAngle: isNativeMobile ? 135 : 138,
 } as const;
 
 export const SQUAT_THRESHOLDS = {
