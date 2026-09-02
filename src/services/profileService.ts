@@ -22,11 +22,8 @@ export async function getProfile(userId: string): Promise<Profile | null> {
   return data;
 }
 
-export async function getProfileStats(
-  _userId: string,
-  options?: { bypassCache?: boolean },
-): Promise<ProfileStats> {
-  const movement = await getMovementStats(options);
+export async function getProfileStats(_userId: string): Promise<ProfileStats> {
+  const movement = await getMovementStats();
   return movementStatsToProfileStats(movement);
 }
 

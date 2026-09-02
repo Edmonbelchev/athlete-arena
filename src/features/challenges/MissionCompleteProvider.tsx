@@ -22,10 +22,7 @@ import {
   loadCelebratedMissionKeys,
   markMissionCelebrated,
 } from '@/features/challenges/missionCelebrationStorage';
-import {
-  notifyDailyChallengeRefresh,
-  subscribeDailyChallengeRefresh,
-} from '@/lib/dailyChallengeSync';
+import { notifyDailyChallengeRefresh } from '@/lib/dailyChallengeSync';
 import { getDailyChallengeHome } from '@/services/challengeService';
 import type { DailyChallengeHome } from '@/types';
 
@@ -99,7 +96,7 @@ export function MissionCompleteProvider({ children }: { children: ReactNode }) {
       });
     }
 
-    notifyDailyChallengeRefresh(after);
+    notifyDailyChallengeRefresh();
 
     return after;
   }, [enqueueCelebration]);
@@ -119,23 +116,16 @@ export function MissionCompleteProvider({ children }: { children: ReactNode }) {
   }, [dismissActiveMission]);
 
   useEffect(() => {
-    return subscribeDailyChallengeRefresh((missions) => {
-      if (missions) {
-        missionsSnapshotRef.current = missions;
-      }
-    });
-  }, []);
-
-  useEffect(() => {
     let cancelled = false;
 
-    void loadCelebratedMissionKeys()
-      .then((celebratedKeys) => {
+    void Promise.all([loadCelebratedMissionKeys(), getDailyChallengeHome()])
+      .then(([celebratedKeys, missions]) => {
         if (cancelled) {
           return;
         }
 
         celebratedKeysRef.current = celebratedKeys;
+        missionsSnapshotRef.current = missions;
         isReadyRef.current = true;
       })
       .catch(() => {

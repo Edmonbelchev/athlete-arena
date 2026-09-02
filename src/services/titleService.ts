@@ -32,20 +32,6 @@ function mapTitle(row: TitleRpcRow): TitleRecord | null {
   };
 }
 
-export async function getEquippedTitleName(userId: string): Promise<string | null> {
-  assertSupabaseConfigured();
-
-  const { data, error } = await supabase.rpc('get_equipped_title_name', {
-    p_user_id: userId,
-  });
-
-  if (error) {
-    throw error;
-  }
-
-  return typeof data === 'string' && data.length > 0 ? data : null;
-}
-
 export async function getMyTitles(): Promise<TitleRecord[]> {
   assertSupabaseConfigured();
 

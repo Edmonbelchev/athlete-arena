@@ -22,6 +22,7 @@ import { StatCard } from '@/components/ui/StatCard';
 import { TabScreenHeader } from '@/components/sidebar/TabScreenHeader';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useAchievementPreview } from '@/features/achievements/useAchievementPreview';
+import { useTitles } from '@/features/titles/useTitles';
 import { getAuthErrorMessage } from '@/features/auth/authErrors';
 import { useAuth } from '@/features/auth';
 import { usePremium } from '@/features/subscription/usePremium';
@@ -30,14 +31,14 @@ import { useProfileStats } from '@/features/profile/useProfileStats';
 import { xpProgressInCurrentLevel } from '@/features/xp/levelUtils';
 import { formatUserError } from '@/lib/errors';
 import { deleteMyAccount } from '@/services/accountService';
-import { getEquippedTitleName } from '@/services/titleService';
 import { useTheme } from '@/hooks/use-theme';
 
 export default function ProfileScreen() {
   const theme = useTheme();
   const { session, signOut } = useAuth();
   const { isPremium } = usePremium();
-  const { profile, isLoading: isProfileLoading, error: profileError } = useProfile();
+  const { profile, isLoading: isProfileLoading, error: profileError, refresh: refreshProfile } =
+    useProfile();
   const {
     stats,
     isLoading: isStatsLoading,
@@ -51,7 +52,8 @@ export default function ProfileScreen() {
     error: achievementsError,
     refresh: refreshAchievements,
   } = useAchievementPreview();
-  const [equippedTitleName, setEquippedTitleName] = useState<string | null>(null);
+  const { titles, refresh: refreshTitles } = useTitles();
+  const equippedTitleName = titles.find((title) => title.equipped)?.name ?? null;
   const [logoutError, setLogoutError] = useState<string | null>(null);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
@@ -61,20 +63,9 @@ export default function ProfileScreen() {
   const isLoading = isProfileLoading || isStatsLoading;
   const error = profileError ?? statsError;
 
-  const handleRefresh = useCallback(
-    async (options?: { bypassCache?: boolean }) => {
-      if (!session?.user.id) {
-        return;
-      }
-
-      await Promise.all([
-        refreshStats(options),
-        refreshAchievements(),
-        getEquippedTitleName(session.user.id).then(setEquippedTitleName),
-      ]);
-    },
-    [refreshAchievements, refreshStats, session?.user.id],
-  );
+  const handleRefresh = useCallback(async () => {
+    await Promise.all([refreshProfile(), refreshStats(), refreshAchievements(), refreshTitles()]);
+  }, [refreshProfile, refreshStats, refreshAchievements, refreshTitles]);
 
   useFocusEffect(
     useCallback(() => {
@@ -205,7 +196,7 @@ export default function ProfileScreen() {
         refreshControl={
           <RefreshControl
             refreshing={isLoading || isAchievementsLoading}
-            onRefresh={() => void handleRefresh({ bypassCache: true })}
+            onRefresh={() => void handleRefresh()}
             tintColor={theme.primary}
           />
         }>

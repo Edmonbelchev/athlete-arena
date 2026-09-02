@@ -4,8 +4,7 @@ import { equipUserTitle, getMyTitles, syncUserTitles } from '@/services/titleSer
 import type { TitleRecord } from '@/types/titles';
 import { formatUserError } from '@/lib/errors';
 
-export function useTitles(options?: { syncOnLoad?: boolean }) {
-  const syncOnLoad = options?.syncOnLoad ?? true;
+export function useTitles() {
   const [titles, setTitles] = useState<TitleRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
@@ -16,9 +15,7 @@ export function useTitles(options?: { syncOnLoad?: boolean }) {
     setError(null);
 
     try {
-      if (syncOnLoad) {
-        await syncUserTitles();
-      }
+      await syncUserTitles();
       const nextTitles = await getMyTitles();
       setTitles(nextTitles);
     } catch (err) {
@@ -26,7 +23,7 @@ export function useTitles(options?: { syncOnLoad?: boolean }) {
     } finally {
       setIsLoading(false);
     }
-  }, [syncOnLoad]);
+  }, []);
 
   useEffect(() => {
     void refresh();

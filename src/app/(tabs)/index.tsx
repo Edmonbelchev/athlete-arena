@@ -76,7 +76,12 @@ export default function HomeScreen() {
   const handleRefresh = useCallback(async () => {
     setActionError(null);
     await Promise.all([
-      refreshMissionsAndCelebrate().catch(() => refreshChallenge({ silent: true })),
+      refreshProfile(),
+      refreshMissionsAndCelebrate()
+        .then(() => {
+          notifyDailyChallengeRefresh();
+        })
+        .catch(() => refreshChallenge({ silent: true })),
       refreshActiveFriendChallengeCount(),
       refreshWeeklyStreak(),
       refreshSpin().catch(() => undefined),
@@ -85,6 +90,7 @@ export default function HomeScreen() {
     refreshActiveFriendChallengeCount,
     refreshChallenge,
     refreshMissionsAndCelebrate,
+    refreshProfile,
     refreshSpin,
     refreshWeeklyStreak,
   ]);

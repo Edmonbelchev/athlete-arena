@@ -34,7 +34,7 @@ export default function AchievementsScreen() {
   const [filter, setFilter] = useState<AchievementFilter>('all');
   const { achievements, unlockedCount, totalCount, isLoading, isSyncing, error, refresh } =
     useAchievements();
-  const { titles } = useTitles({ syncOnLoad: false });
+  const { titles } = useTitles();
 
   const linkedTitleByAchievementId = useMemo(() => {
     const map = new Map<string, string>();

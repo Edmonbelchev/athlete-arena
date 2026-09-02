@@ -1,18 +1,14 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import { useAuth } from '@/features/auth';
 import { getProfileStats } from '@/services/profileService';
 import type { ProfileStats } from '@/types/profile';
 
-interface RefreshOptions {
-  bypassCache?: boolean;
-}
-
 interface UseProfileStatsResult {
   stats: ProfileStats;
   isLoading: boolean;
   error: string | null;
-  refresh: (options?: RefreshOptions) => Promise<void>;
+  refresh: () => Promise<void>;
 }
 
 const EMPTY_STATS: ProfileStats = {
@@ -33,7 +29,7 @@ export function useProfileStats(): UseProfileStatsResult {
   const [isLoading, setIsLoading] = useState(Boolean(session));
   const [error, setError] = useState<string | null>(null);
 
-  const refresh = useCallback(async (options?: RefreshOptions) => {
+  const refresh = useCallback(async () => {
     if (!session?.user.id) {
       setStats(EMPTY_STATS);
       setIsLoading(false);
@@ -45,7 +41,7 @@ export function useProfileStats(): UseProfileStatsResult {
     setError(null);
 
     try {
-      const nextStats = await getProfileStats(session.user.id, options);
+      const nextStats = await getProfileStats(session.user.id);
       setStats(nextStats);
     } catch (err) {
       setStats(EMPTY_STATS);
@@ -54,6 +50,10 @@ export function useProfileStats(): UseProfileStatsResult {
       setIsLoading(false);
     }
   }, [session?.user.id]);
+
+  useEffect(() => {
+    void refresh();
+  }, [refresh]);
 
   return {
     stats,

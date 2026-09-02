@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import { useAuth } from '@/features/auth';
 import { formatUserError } from '@/lib/errors';
@@ -6,16 +6,12 @@ import { getGoalHistory, getMovementStats } from '@/services/statsService';
 import type { GoalHistoryEntry, MovementStats } from '@/types/stats';
 import { EMPTY_MOVEMENT_STATS } from '@/types/stats';
 
-interface RefreshOptions {
-  bypassCache?: boolean;
-}
-
 interface UseUserStatsResult {
   movementStats: MovementStats;
   goalHistory: GoalHistoryEntry[];
   isLoading: boolean;
   error: string | null;
-  refresh: (options?: RefreshOptions) => Promise<void>;
+  refresh: () => Promise<void>;
 }
 
 export function useUserStats(): UseUserStatsResult {
@@ -25,7 +21,7 @@ export function useUserStats(): UseUserStatsResult {
   const [isLoading, setIsLoading] = useState(Boolean(session));
   const [error, setError] = useState<string | null>(null);
 
-  const refresh = useCallback(async (options?: RefreshOptions) => {
+  const refresh = useCallback(async () => {
     if (!session) {
       setMovementStats(EMPTY_MOVEMENT_STATS);
       setGoalHistory([]);
@@ -39,7 +35,7 @@ export function useUserStats(): UseUserStatsResult {
 
     try {
       const [nextStats, nextHistory] = await Promise.all([
-        getMovementStats(options),
+        getMovementStats(),
         getGoalHistory(),
       ]);
       setMovementStats(nextStats);
@@ -52,6 +48,10 @@ export function useUserStats(): UseUserStatsResult {
       setIsLoading(false);
     }
   }, [session]);
+
+  useEffect(() => {
+    void refresh();
+  }, [refresh]);
 
   return {
     movementStats,

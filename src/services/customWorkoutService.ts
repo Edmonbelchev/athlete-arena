@@ -1,7 +1,6 @@
 import type { ExerciseType } from '@/constants/challenges';
 import { normalizeCustomWorkoutType } from '@/constants/customWorkouts';
 import { assertSupabaseConfigured, supabase } from '@/lib/supabase';
-import { clearMovementStatsCache } from '@/services/statsService';
 import type {
   CustomWorkoutExerciseBreakdown,
   AmrapWorkoutResult,
@@ -210,8 +209,6 @@ function mapSaveWorkoutSessionResult(data: unknown): SaveWorkoutSessionResult {
     bonus && typeof bonus.xp === 'number' && typeof bonus.coins === 'number'
       ? { xp: bonus.xp, coins: bonus.coins }
       : null;
-
-  clearMovementStatsCache();
 
   return {
     sessionId: payload.session_id,

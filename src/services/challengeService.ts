@@ -1,7 +1,6 @@
 import { EXERCISE_TYPES, type ExerciseType } from '@/constants/challenges';
 import { DAILY_MISSION_XP_REWARD } from '@/constants/dailyMissionRewards';
 import { assertSupabaseConfigured, supabase } from '@/lib/supabase';
-import { clearMovementStatsCache } from '@/services/statsService';
 import type { Database } from '@/types/database';
 import type { DailyChallenge, DailyChallengeHome } from '@/types';
 
@@ -305,12 +304,7 @@ export async function completeChallenge(
     throw new Error('Failed to complete challenge');
   }
 
-  const result = data as DailyChallengeRow;
-  if (result.status === 'completed') {
-    clearMovementStatsCache();
-  }
-
-  return result;
+  return data as DailyChallengeRow;
 }
 
 export async function finalizeDailyMission(challengeId: string): Promise<DailyChallenge> {
@@ -328,7 +322,6 @@ export async function finalizeDailyMission(challengeId: string): Promise<DailyCh
     throw new Error('Failed to finalize daily mission');
   }
 
-  clearMovementStatsCache();
   return data as DailyChallengeRow;
 }
 

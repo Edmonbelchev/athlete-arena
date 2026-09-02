@@ -83,14 +83,6 @@ function mapMovementStats(row: MovementStatsRow | null | undefined): MovementSta
   };
 }
 
-const MOVEMENT_STATS_CACHE_TTL_MS = 60_000;
-
-let movementStatsCache: { data: MovementStats; fetchedAt: number } | null = null;
-
-export function clearMovementStatsCache(): void {
-  movementStatsCache = null;
-}
-
 export async function getGoalHistory(limit = 50): Promise<GoalHistoryEntry[]> {
   assertSupabaseConfigured();
 
@@ -105,19 +97,8 @@ export async function getGoalHistory(limit = 50): Promise<GoalHistoryEntry[]> {
   return (data ?? []).map((row) => mapGoalHistoryEntry(row as GoalHistoryRow));
 }
 
-export async function getMovementStats(options?: {
-  bypassCache?: boolean;
-}): Promise<MovementStats> {
+export async function getMovementStats(): Promise<MovementStats> {
   assertSupabaseConfigured();
-
-  const now = Date.now();
-  if (
-    !options?.bypassCache &&
-    movementStatsCache &&
-    now - movementStatsCache.fetchedAt < MOVEMENT_STATS_CACHE_TTL_MS
-  ) {
-    return movementStatsCache.data;
-  }
 
   const { data, error } = await supabase.rpc('get_user_movement_stats');
 
@@ -126,7 +107,5 @@ export async function getMovementStats(options?: {
   }
 
   const row = Array.isArray(data) ? data[0] : data;
-  const mapped = mapMovementStats(row as MovementStatsRow | undefined);
-  movementStatsCache = { data: mapped, fetchedAt: now };
-  return mapped;
+  return mapMovementStats(row as MovementStatsRow | undefined);
 }
