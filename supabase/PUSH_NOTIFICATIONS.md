@@ -6,6 +6,9 @@ Events that trigger push:
 
 - Friend request received / accepted
 - Friend speed race received / accepted / declined
+- Friend workout waiting (2 hours after opponent finishes, if you have not started; once per challenge)
+- Daily spin ready (scheduled, 12:00 local time)
+- Streak at risk (scheduled, 20:00 local time if mission incomplete)
 
 ## 1. Link Expo + EAS
 
@@ -95,8 +98,37 @@ Each inserted outbox row sends push notifications to all tokens registered for t
 - Check Edge Function logs in Supabase Dashboard if the webhook runs but no push arrives
 - Confirm `extra.eas.projectId` matches your Expo project
 
+## 7. Schedule engagement reminders
+
+Deploy the scheduler edge function:
+
+```bash
+supabase functions deploy engagement-push --no-verify-jwt
+```
+
+In Supabase Dashboard → **Integrations → Cron** (or Edge Function schedules), run `engagement-push` **every hour** (`0 * * * *`).
+
+The function calls `run_engagement_push_scheduler()`, which:
+
+| Notification | Local time | Condition |
+|--------------|------------|-----------|
+| Daily spin ready | 12:00 | No spin claimed today (UTC spin day) |
+| Streak at risk | 20:00 | Weekly mission streak ≥ 2, no mission completed today |
+| Friend workout waiting | — | 2 hours after opponent finishes, if you have not started; max one push per challenge, batched if several are due |
+
+Users can turn each type off in **Settings → Notifications**. Timezone comes from the device and is stored in `profiles.preferences.timezone`.
+
+Manual test (SQL editor):
+
+```sql
+select public.run_engagement_push_scheduler();
+```
+
+Also apply migrations `096_engagement_push_notifications.sql` and `097_friend_waiting_push_delay.sql`.
+
 ## Client files
 
 - `src/services/pushNotificationService.ts` — permission + token registration
 - `src/features/notifications/usePushNotifications.ts` — app lifecycle hook
 - `src/features/notifications/pushNotificationRouting.ts` — tap → deep link
+- `src/app/profile/settings.tsx` — notification preference toggles

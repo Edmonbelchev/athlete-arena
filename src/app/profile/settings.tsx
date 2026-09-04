@@ -17,10 +17,11 @@ import { useUserSettings } from '@/features/settings/UserSettingsProvider';
 import { leaveScreen } from '@/lib/navigation';
 import { useTheme } from '@/hooks/use-theme';
 
-type SettingsTab = 'appearance';
+type SettingsTab = 'appearance' | 'notifications';
 
 const SETTINGS_TABS: { id: SettingsTab; label: string }[] = [
   { id: 'appearance', label: 'Appearance' },
+  { id: 'notifications', label: 'Notifications' },
 ];
 
 export default function SettingsScreen() {
@@ -33,6 +34,7 @@ export default function SettingsScreen() {
     setShowPoseSkeleton,
     setShowRepProgressBar,
     setRepSoundEnabled,
+    setNotificationPreference,
     isSaving,
     saveError,
   } = useUserSettings();
@@ -62,7 +64,7 @@ export default function SettingsScreen() {
         edges={['bottom']}>
         <ScrollView contentContainerStyle={styles.content}>
           <Text style={StyleSheet.flatten([styles.subtitle, { color: theme.textSecondary }])}>
-            Customize how Athlete Arena looks and how the camera behaves during challenges.
+            Customize appearance, camera behavior, and which push notifications you receive.
           </Text>
 
           <View style={StyleSheet.flatten([styles.tabRow, { backgroundColor: theme.backgroundSelected }])}>
@@ -121,6 +123,38 @@ export default function SettingsScreen() {
                 description="Play a soft ding when a rep is counted during workouts."
                 value={preferences.repSoundEnabled}
                 onValueChange={setRepSoundEnabled}
+                disabled={isSaving}
+              />
+            </View>
+          ) : null}
+
+          {activeTab === 'notifications' ? (
+            <View style={styles.section}>
+              <Text style={StyleSheet.flatten([styles.sectionTitle, { color: theme.text }])}>
+                Reminders
+              </Text>
+              <Text style={StyleSheet.flatten([styles.supportCopy, { color: theme.textSecondary }])}>
+                Push notifications are delivered in your local timezone ({preferences.timezone}).
+              </Text>
+              <SettingsToggleRow
+                label="Daily spin ready"
+                description="Midday reminder when your free spin is available (12:00 local time)."
+                value={preferences.notifications.dailySpin}
+                onValueChange={(enabled) => setNotificationPreference('dailySpin', enabled)}
+                disabled={isSaving}
+              />
+              <SettingsToggleRow
+                label="Streak at risk"
+                description="Evening reminder if you have not completed a daily mission yet."
+                value={preferences.notifications.streakAtRisk}
+                onValueChange={(enabled) => setNotificationPreference('streakAtRisk', enabled)}
+                disabled={isSaving}
+              />
+              <SettingsToggleRow
+                label="Friend challenge waiting"
+                description="Two hours after a friend finishes a workout challenge, if you have not started yet (once per challenge)."
+                value={preferences.notifications.friendWaiting}
+                onValueChange={(enabled) => setNotificationPreference('friendWaiting', enabled)}
                 disabled={isSaving}
               />
             </View>

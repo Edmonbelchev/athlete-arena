@@ -12,10 +12,12 @@ import { useColorScheme as useSystemColorScheme } from 'react-native';
 
 import {
   getDefaultUserPreferences,
+  getDeviceTimezone,
   getUserPreferencesStorageKey,
   mergeUserPreferences,
   parseUserPreferences,
   USER_PREFERENCES_STORAGE_KEY,
+  type NotificationPreferences,
   type UserPreferences,
 } from '@/features/settings/userPreferences';
 import type { ThemePreference } from '@/features/settings/themeTypes';
@@ -33,6 +35,10 @@ interface UserSettingsContextValue {
   setShowPoseSkeleton: (show: boolean) => void;
   setShowRepProgressBar: (show: boolean) => void;
   setRepSoundEnabled: (enabled: boolean) => void;
+  setNotificationPreference: (
+    key: keyof NotificationPreferences,
+    enabled: boolean,
+  ) => void;
   completeOnboarding: () => Promise<void>;
   isReady: boolean;
   isSaving: boolean;
@@ -166,6 +172,17 @@ export function UserSettingsProvider({ children }: { children: React.ReactNode }
     };
   }, [defaults, persistLocally, userId]);
 
+  useEffect(() => {
+    if (!isReady || !userId) {
+      return;
+    }
+
+    const deviceTimezone = getDeviceTimezone();
+    if (preferencesRef.current.timezone !== deviceTimezone) {
+      void persistToAccount({ timezone: deviceTimezone });
+    }
+  }, [isReady, persistToAccount, userId]);
+
   const setTheme = useCallback(
     (theme: ThemePreference) => {
       void persistToAccount({ theme });
@@ -194,6 +211,18 @@ export function UserSettingsProvider({ children }: { children: React.ReactNode }
     [persistToAccount],
   );
 
+  const setNotificationPreference = useCallback(
+    (key: keyof NotificationPreferences, enabled: boolean) => {
+      void persistToAccount({
+        notifications: {
+          ...preferencesRef.current.notifications,
+          [key]: enabled,
+        },
+      });
+    },
+    [persistToAccount],
+  );
+
   const completeOnboarding = useCallback(async () => {
     await persistToAccount({ hasCompletedOnboarding: true });
   }, [persistToAccount]);
@@ -206,6 +235,7 @@ export function UserSettingsProvider({ children }: { children: React.ReactNode }
       setShowPoseSkeleton,
       setShowRepProgressBar,
       setRepSoundEnabled,
+      setNotificationPreference,
       completeOnboarding,
       isReady,
       isSaving,
@@ -217,6 +247,7 @@ export function UserSettingsProvider({ children }: { children: React.ReactNode }
       setShowPoseSkeleton,
       setShowRepProgressBar,
       setRepSoundEnabled,
+      setNotificationPreference,
       completeOnboarding,
       isReady,
       isSaving,

@@ -1,4 +1,5 @@
 import {
+  getDefaultUserPreferences,
   mergeUserPreferences,
   parseUserPreferences,
   type UserPreferences,
@@ -23,13 +24,10 @@ export async function getUserPreferences(userId: string): Promise<UserPreference
     return null;
   }
 
-  return parseUserPreferences(data.preferences, {
-    theme: 'light',
-    showPoseSkeleton: false,
-    showRepProgressBar: true,
-    repSoundEnabled: true,
-    hasCompletedOnboarding: true,
-  });
+  return parseUserPreferences(
+    data.preferences,
+    getDefaultUserPreferences(false),
+  );
 }
 
 export async function updateUserPreferences(

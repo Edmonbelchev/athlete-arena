@@ -129,6 +129,24 @@ export function routeFromPushNotificationData(data: Record<string, unknown> | un
     return;
   }
 
+  if (type === 'friend_challenge_waiting' && participantId) {
+    router.push({
+      pathname: '/challenge/friend/[participantId]',
+      params: { participantId },
+    });
+    return;
+  }
+
+  if (type === 'daily_spin') {
+    router.push('/spin' as never);
+    return;
+  }
+
+  if (type === 'streak_at_risk') {
+    router.push('/profile/quest-log' as never);
+    return;
+  }
+
   if (type === 'workout_shared' && templateId) {
     router.push({
       pathname: '/(tabs)/workouts/library',
