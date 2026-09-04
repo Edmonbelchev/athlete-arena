@@ -12,6 +12,7 @@ const PAYWALL_CONTEXTS = new Set<PremiumPaywallContext>([
   'default',
   'create_workout',
   'edit_workout',
+  'start_workout',
   'membership',
   'challenge_requests',
 ]);

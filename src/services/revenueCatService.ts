@@ -9,6 +9,37 @@ import {
   type PremiumSubscriptionDetails,
 } from '@/types/subscription';
 
+function isHarmlessRevenueCatAttributeSyncMessage(message: string): boolean {
+  return (
+    message.includes('Error when syncing subscriber attributes') ||
+    message.includes('One or more of the attributes sent could not be saved')
+  );
+}
+
+function logRevenueCatMessage(logLevel: LOG_LEVEL, message: string): void {
+  if (__DEV__ && logLevel === LOG_LEVEL.ERROR && isHarmlessRevenueCatAttributeSyncMessage(message)) {
+    console.warn(`[RevenueCat] ${message}`);
+    return;
+  }
+
+  switch (logLevel) {
+    case LOG_LEVEL.DEBUG:
+      console.debug(`[RevenueCat] ${message}`);
+      break;
+    case LOG_LEVEL.INFO:
+      console.info(`[RevenueCat] ${message}`);
+      break;
+    case LOG_LEVEL.WARN:
+      console.warn(`[RevenueCat] ${message}`);
+      break;
+    case LOG_LEVEL.ERROR:
+      console.error(`[RevenueCat] ${message}`);
+      break;
+    default:
+      console.log(`[RevenueCat] ${message}`);
+  }
+}
+
 export function getRevenueCatApiKey(): string | null {
   if (Platform.OS === 'ios') {
     return env.revenueCatIosApiKey || null;
@@ -65,7 +96,8 @@ export async function configureRevenueCat(): Promise<void> {
   }
 
   if (__DEV__) {
-    Purchases.setLogLevel(LOG_LEVEL.VERBOSE);
+    Purchases.setLogHandler(logRevenueCatMessage);
+    Purchases.setLogLevel(LOG_LEVEL.WARN);
   }
 
   Purchases.configure({ apiKey });

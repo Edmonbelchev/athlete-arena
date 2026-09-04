@@ -2,6 +2,7 @@ export type PremiumPaywallContext =
   | 'default'
   | 'create_workout'
   | 'edit_workout'
+  | 'start_workout'
   | 'membership'
   | 'challenge_requests';
 
@@ -30,6 +31,12 @@ export function getPremiumPaywallContent(context: PremiumPaywallContext): Premiu
       return {
         title: 'Edit your workouts',
         subtitle: 'Premium lets you update saved templates anytime.',
+        ctaLabel: 'See plans',
+      };
+    case 'start_workout':
+      return {
+        title: 'Unlock your workouts',
+        subtitle: 'Renew Premium to start the custom workouts you created. Arena workouts stay free for everyone.',
         ctaLabel: 'See plans',
       };
     case 'membership':

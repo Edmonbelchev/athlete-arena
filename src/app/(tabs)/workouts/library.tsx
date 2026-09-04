@@ -188,12 +188,24 @@ export default function WorkoutLibraryScreen() {
     setConfirmDialog(null);
   }
 
-  async function handleStartTemplate(templateId: string, detail?: CustomWorkoutTemplateDetail | null) {
+  async function handleStartTemplate(
+    templateId: string,
+    detail?: CustomWorkoutTemplateDetail | null,
+    isOwner = detail?.isOwner ?? false,
+  ) {
+    if (isOwner && !isPremium) {
+      const unlocked = await showPremiumPaywall({ context: 'start_workout' });
+      if (!unlocked) {
+        return;
+      }
+    }
+
     setStartingTemplateId(templateId);
     setError(null);
 
     try {
       const workoutDetail = detail ?? (await getCustomWorkoutTemplateDetail(templateId));
+
       setPendingCustomWorkoutLaunch({
         workoutType: workoutDetail.workoutType,
         title: workoutDetail.title,
@@ -261,13 +273,15 @@ export default function WorkoutLibraryScreen() {
     }
 
     const template = item.item;
+    const isLocked = template.isOwner && !isPremium;
 
     return (
       <WorkoutTemplateCard
         template={template}
+        locked={isLocked}
         loading={startingTemplateId === template.templateId}
         removing={actionTemplateId === template.templateId}
-        onStart={() => void handleStartTemplate(template.templateId)}
+        onStart={() => void handleStartTemplate(template.templateId, null, template.isOwner)}
         onEdit={template.isOwner && isPremium ? () => openCreateModal(template.templateId) : undefined}
         onDelete={
           template.isOwner
@@ -338,7 +352,9 @@ export default function WorkoutLibraryScreen() {
 
         {!isPremium ? (
           <Text style={[styles.createHint, { color: theme.textSecondary }]}>
-            Premium feature · Arena workouts are free for everyone
+            {ownedCount > 0
+              ? 'Renew Premium to start your saved workouts. Arena workouts are free for everyone.'
+              : 'Premium feature · Arena workouts are free for everyone'}
           </Text>
         ) : null}
       </View>
@@ -501,7 +517,11 @@ export default function WorkoutLibraryScreen() {
         onClose={closePreview}
         onStart={() => {
           if (previewTemplateId) {
-            void handleStartTemplate(previewTemplateId, previewDetail);
+            void handleStartTemplate(
+              previewTemplateId,
+              previewDetail,
+              previewDetail?.isOwner ?? false,
+            );
           }
         }}
         onRemove={() => {

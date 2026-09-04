@@ -15,6 +15,7 @@ interface WorkoutTemplateCardProps {
   template: CustomWorkoutTemplateSummary;
   loading?: boolean;
   removing?: boolean;
+  locked?: boolean;
   onStart: () => void;
   onEdit?: () => void;
   onView?: () => void;
@@ -59,6 +60,7 @@ export function WorkoutTemplateCard({
   template,
   loading = false,
   removing = false,
+  locked = false,
   onStart,
   onEdit,
   onView,
@@ -73,10 +75,26 @@ export function WorkoutTemplateCard({
   const isBusy = loading || removing;
 
   return (
-    <View style={[styles.card, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
+    <View
+      style={[
+        styles.card,
+        {
+          backgroundColor: theme.backgroundElement,
+          borderColor: theme.border,
+          opacity: locked ? 0.82 : 1,
+        },
+      ]}>
       <View style={styles.headerRow}>
-        <View style={[styles.iconWrap, { backgroundColor: `${theme.primary}18` }]}>
-          <AppIcon name="dumbbell" size={20} color={theme.primary} weight="semibold" />
+        <View
+          style={[
+            styles.iconWrap,
+            { backgroundColor: locked ? `${theme.streak}18` : `${theme.primary}18` },
+          ]}>
+          {locked ? (
+            <AppIcon name="crown" size={20} color={theme.streak} weight="semibold" />
+          ) : (
+            <AppIcon name="dumbbell" size={20} color={theme.primary} weight="semibold" />
+          )}
         </View>
 
         <View style={styles.copy}>
@@ -115,7 +133,9 @@ export function WorkoutTemplateCard({
               </Text>
             </View>
           ) : (
-            <Text style={[styles.ownerLabel, { color: theme.textSecondary }]}>Your template</Text>
+            <Text style={[styles.ownerLabel, { color: theme.textSecondary }]}>
+              {locked ? 'Premium required to start' : 'Your template'}
+            </Text>
           )}
         </View>
       </View>
@@ -123,7 +143,12 @@ export function WorkoutTemplateCard({
       <View style={[styles.divider, { backgroundColor: theme.border }]} />
 
       <View style={styles.actions}>
-        <PrimaryButton label="Start" onPress={onStart} loading={loading} disabled={isBusy && !loading} />
+        <PrimaryButton
+          label={locked ? 'Upgrade to start' : 'Start'}
+          onPress={onStart}
+          loading={loading}
+          disabled={isBusy && !loading}
+        />
 
         {isShared ? (
           <>

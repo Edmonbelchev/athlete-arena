@@ -80,6 +80,56 @@ function getDefaultFormState() {
   };
 }
 
+function getDefaultExercisesForContext(
+  type: CustomWorkoutType,
+  structure: ForTimeWorkoutStructure,
+): CustomWorkoutExercise[] {
+  if (type !== 'for_time') {
+    return DEFAULT_CUSTOM_WORKOUT_EXERCISES;
+  }
+
+  if (structure === 'ladder') {
+    return DEFAULT_LADDER_EXERCISES;
+  }
+
+  if (structure === 'rounds') {
+    return DEFAULT_ROUNDS_EXERCISES;
+  }
+
+  return DEFAULT_FOR_TIME_EXERCISES;
+}
+
+function exercisesMatchDefaults(
+  exercises: CustomWorkoutExercise[],
+  defaults: CustomWorkoutExercise[],
+): boolean {
+  if (exercises.length !== defaults.length) {
+    return false;
+  }
+
+  return exercises.every(
+    (exercise, index) =>
+      exercise.exerciseType === defaults[index]?.exerciseType &&
+      exercise.targetReps === defaults[index]?.targetReps,
+  );
+}
+
+function adaptExercisesForContext(
+  exercises: CustomWorkoutExercise[],
+  options: { ladderMode: boolean; fromLadder: boolean },
+): CustomWorkoutExercise[] {
+  return cloneCustomWorkoutExercises(
+    exercises.map((exercise) => ({
+      exerciseType: exercise.exerciseType,
+      targetReps: options.ladderMode
+        ? 1
+        : options.fromLadder && exercise.targetReps === 1
+          ? getDefaultRepsForExercise(exercise.exerciseType)
+          : exercise.targetReps,
+    })),
+  );
+}
+
 export function CreateWorkoutModal({
   visible,
   templateId,
@@ -240,38 +290,73 @@ export function CreateWorkoutModal({
   }, []);
 
   function handleWorkoutTypeChange(nextType: CustomWorkoutType) {
+    if (nextType === workoutType) {
+      return;
+    }
+
+    const previousDefaults = getDefaultExercisesForContext(workoutType, forTimeStructure);
+    const shouldResetExercises = exercisesMatchDefaults(exercises, previousDefaults);
+
     setWorkoutType(nextType);
 
     if (nextType === 'for_time') {
       setTimeLimitSeconds(FOR_TIME_TIME_LIMIT_SECONDS);
       setForTimeStructure('linear');
-      setExercises(cloneCustomWorkoutExercises(DEFAULT_FOR_TIME_EXERCISES));
+      setExercises(
+        shouldResetExercises
+          ? cloneCustomWorkoutExercises(DEFAULT_FOR_TIME_EXERCISES)
+          : adaptExercisesForContext(exercises, { ladderMode: false, fromLadder: forTimeStructure === 'ladder' }),
+      );
       return;
     }
 
     if (workoutType === 'for_time') {
       setTimeLimitSeconds(DEFAULT_CUSTOM_WORKOUT_TIME_SECONDS);
       setForTimeStructure('linear');
-      setExercises(cloneCustomWorkoutExercises(DEFAULT_CUSTOM_WORKOUT_EXERCISES));
+      setExercises(
+        shouldResetExercises
+          ? cloneCustomWorkoutExercises(DEFAULT_CUSTOM_WORKOUT_EXERCISES)
+          : adaptExercisesForContext(exercises, { ladderMode: false, fromLadder: forTimeStructure === 'ladder' }),
+      );
     }
   }
 
   function handleForTimeStructureChange(nextStructure: ForTimeWorkoutStructure) {
+    if (nextStructure === forTimeStructure) {
+      return;
+    }
+
+    const previousDefaults = getDefaultExercisesForContext('for_time', forTimeStructure);
+    const shouldResetExercises = exercisesMatchDefaults(exercises, previousDefaults);
+    const fromLadder = forTimeStructure === 'ladder';
+
     setForTimeStructure(nextStructure);
 
     if (nextStructure === 'ladder') {
       setRepSchemeInput(formatRepScheme(DEFAULT_LADDER_REP_SCHEME));
-      setExercises(cloneCustomWorkoutExercises(DEFAULT_LADDER_EXERCISES));
+      setExercises(
+        shouldResetExercises
+          ? cloneCustomWorkoutExercises(DEFAULT_LADDER_EXERCISES)
+          : adaptExercisesForContext(exercises, { ladderMode: true, fromLadder }),
+      );
       return;
     }
 
     if (nextStructure === 'rounds') {
       setRoundsCount(DEFAULT_ROUNDS_COUNT);
-      setExercises(cloneCustomWorkoutExercises(DEFAULT_ROUNDS_EXERCISES));
+      setExercises(
+        shouldResetExercises
+          ? cloneCustomWorkoutExercises(DEFAULT_ROUNDS_EXERCISES)
+          : adaptExercisesForContext(exercises, { ladderMode: false, fromLadder }),
+      );
       return;
     }
 
-    setExercises(cloneCustomWorkoutExercises(DEFAULT_FOR_TIME_EXERCISES));
+    setExercises(
+      shouldResetExercises
+        ? cloneCustomWorkoutExercises(DEFAULT_FOR_TIME_EXERCISES)
+        : adaptExercisesForContext(exercises, { ladderMode: false, fromLadder }),
+    );
   }
 
   const buildLaunchConfig = useCallback(() => {
