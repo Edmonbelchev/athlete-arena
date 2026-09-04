@@ -1,6 +1,6 @@
 import { setAudioModeAsync, useAudioPlayer } from 'expo-audio';
 import * as Haptics from 'expo-haptics';
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { Platform } from 'react-native';
 
 const REP_DING = require('@/assets/sounds/rep-ding.wav');
@@ -16,17 +16,27 @@ export function useRepFeedback(
   currentReps: number,
   { enabled = true, soundEnabled = true }: UseRepFeedbackOptions = {},
 ) {
-  const player = useAudioPlayer(REP_DING);
+  const playerA = useAudioPlayer(REP_DING);
+  const playerB = useAudioPlayer(REP_DING);
+  const activePlayerRef = useRef(0);
   const prevRepsRef = useRef(currentReps);
 
+  const playRepDing = useCallback(() => {
+    const player = activePlayerRef.current === 0 ? playerA : playerB;
+    activePlayerRef.current = 1 - activePlayerRef.current;
+    player.seekTo(0);
+    player.play();
+  }, [playerA, playerB]);
+
   useEffect(() => {
-    player.volume = REP_DING_VOLUME;
+    playerA.volume = REP_DING_VOLUME;
+    playerB.volume = REP_DING_VOLUME;
 
     void setAudioModeAsync({
       interruptionMode: 'mixWithOthers',
       playsInSilentMode: false,
     });
-  }, [player]);
+  }, [playerA, playerB]);
 
   useEffect(() => {
     if (!enabled) {
@@ -36,8 +46,7 @@ export function useRepFeedback(
 
     if (currentReps > prevRepsRef.current) {
       if (soundEnabled) {
-        player.seekTo(0);
-        player.play();
+        playRepDing();
       }
 
       if (Platform.OS !== 'web') {
@@ -46,5 +55,5 @@ export function useRepFeedback(
     }
 
     prevRepsRef.current = currentReps;
-  }, [currentReps, enabled, player, soundEnabled]);
+  }, [currentReps, enabled, playRepDing, soundEnabled]);
 }

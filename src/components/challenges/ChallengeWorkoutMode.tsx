@@ -18,6 +18,8 @@ import {
 } from '@/features/challenges/workoutGuidance';
 import type { PoseLandmark } from '@/features/challenges/pose/landmarks';
 import type { PoseTrackingStatus } from '@/features/challenges/pose/poseQuality';
+import { WorkoutExerciseTransitionOverlay } from '@/components/workouts/WorkoutExerciseTransitionOverlay';
+import { useExerciseTransitionAnnouncement } from '@/hooks/use-exercise-transition-announcement';
 import { useKeepAwakeWhileActive } from '@/hooks/use-keep-awake-while-active';
 import { useWorkoutGuideAnimationVisible } from '@/hooks/use-workout-guide-animation-visible';
 import { useWorkoutOrientation } from '@/hooks/use-workout-orientation';
@@ -41,6 +43,8 @@ interface ChallengeWorkoutModeProps {
   raceTimer?: ChallengeRepHudRaceTimer | null;
   footer?: ReactNode;
   hudOverlay?: ReactNode;
+  exerciseTransitionKey?: string | number;
+  repSoundEnabled?: boolean;
   onDevSimulateRep?: () => void;
   devSimulateDisabled?: boolean;
   devSimulateLoading?: boolean;
@@ -64,12 +68,22 @@ export function ChallengeWorkoutMode({
   raceTimer = null,
   footer,
   hudOverlay,
+  exerciseTransitionKey,
+  repSoundEnabled = true,
   onDevSimulateRep,
   devSimulateDisabled,
   devSimulateLoading,
 }: ChallengeWorkoutModeProps) {
   const theme = useTheme();
   const showCompletionOnly = completed && Boolean(completeOverlay);
+  const exerciseTransitionLabel = useExerciseTransitionAnnouncement(
+    exerciseType,
+    exerciseTransitionKey,
+    {
+      enabled: exerciseTransitionKey !== undefined && cameraActive && !completed,
+      soundEnabled: repSoundEnabled,
+    },
+  );
   const trackingReady = trackingStatus === 'ready';
   const showGuideAnimation = useWorkoutGuideAnimationVisible(
     trackingStatus,
@@ -133,6 +147,7 @@ export function ChallengeWorkoutMode({
               raceTimer={raceTimer}
             />
           )}
+          <WorkoutExerciseTransitionOverlay label={exerciseTransitionLabel} />
         </View>
       </View>
 

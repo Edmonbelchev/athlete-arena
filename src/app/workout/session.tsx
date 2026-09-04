@@ -157,7 +157,7 @@ function AmrapWorkoutSession({ config }: { config: CustomWorkoutLaunchConfig }) 
   const autoRepCounting = Platform.OS === 'web' || supportsNativePoseDetection();
   const showSimulateButton = !__DEV__ && canTrack && !autoRepCounting;
 
-  useRepFeedback(amrap.currentExerciseReps, {
+  useRepFeedback(amrap.totalReps, {
     enabled: canTrack,
     soundEnabled: preferences.repSoundEnabled,
   });
@@ -210,6 +210,8 @@ function AmrapWorkoutSession({ config }: { config: CustomWorkoutLaunchConfig }) 
         posePreviewLayoutRef={posePreviewLayoutRef}
         onCameraReady={handleCameraReady}
         onLandmarksDetected={processLandmarks}
+        exerciseTransitionKey={`${amrap.currentExerciseIndex}-${amrap.completedRounds}`}
+        repSoundEnabled={preferences.repSoundEnabled}
         hudOverlay={
           <AmrapWorkoutHud
             workoutTypeLabel={getCustomWorkoutTypeLabel(config.workoutType)}
@@ -340,7 +342,7 @@ function ForTimeWorkoutSession({ config }: { config: CustomWorkoutLaunchConfig }
   const autoRepCounting = Platform.OS === 'web' || supportsNativePoseDetection();
   const showSimulateButton = !__DEV__ && canTrack && !autoRepCounting;
 
-  useRepFeedback(forTime.currentExerciseReps, {
+  useRepFeedback(forTime.totalReps, {
     enabled: canTrack,
     soundEnabled: preferences.repSoundEnabled,
   });
@@ -400,6 +402,8 @@ function ForTimeWorkoutSession({ config }: { config: CustomWorkoutLaunchConfig }
         posePreviewLayoutRef={posePreviewLayoutRef}
         onCameraReady={handleCameraReady}
         onLandmarksDetected={processLandmarks}
+        exerciseTransitionKey={forTime.currentExerciseIndex}
+        repSoundEnabled={preferences.repSoundEnabled}
         hudOverlay={
           <ForTimeWorkoutHud
             workoutTypeLabel={getCustomWorkoutTypeLabel(config.workoutType)}
