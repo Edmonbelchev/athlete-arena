@@ -112,7 +112,7 @@ The function calls `run_engagement_push_scheduler()`, which:
 
 | Notification | Local time | Condition |
 |--------------|------------|-----------|
-| Daily spin ready | 12:00 | No spin claimed today (UTC spin day) |
+| Daily spin ready | 12:00 | No spin since local midnight (device timezone) |
 | Streak at risk | 20:00 | Weekly mission streak ≥ 2, no mission completed today |
 | Friend workout waiting | — | 2 hours after opponent finishes, if you have not started; max one push per challenge, batched if several are due |
 
