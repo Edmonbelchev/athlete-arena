@@ -243,25 +243,36 @@ export const BURPEE_POSTURE = {
 
 /** Jumping jack rep validation - peaks must clear open thresholds, then return near start. */
 export const JUMPING_JACK_POSTURE = {
+  /** Jumping jacks need stronger confidence because all four limbs drive the rep. */
+  minTrackingVisibility: isNativeMobile ? 0.5 : 0.55,
+  /** Keep the torso safely in frame; edge poses are frequently hallucinated. */
+  minBodyCenterX: 0.14,
+  maxBodyCenterX: 0.86,
+  minShoulderY: 0.08,
+  maxAnkleY: 0.97,
+  /** Reject a side-on body where shoulder width collapses and inflates foot ratios. */
+  minShoulderWidthToBodyHeight: isNativeMobile ? 0.13 : 0.15,
+  /** Maximum hip-center jump between frames before cycle progress is discarded. */
+  maxHipCenterShiftPerFrame: isNativeMobile ? 0.11 : 0.08,
   /** Feet-together spread relative to shoulder width (strict closed / hints). */
-  maxClosedAnkleSpreadRatio: isNativeMobile ? 0.66 : 0.62,
+  maxClosedAnkleSpreadRatio: isNativeMobile ? 0.7 : 0.66,
   /** Feet-apart spread relative to shoulder width (open position). */
-  minOpenAnkleSpreadRatio: isNativeMobile ? 0.76 : 0.80,
+  minOpenAnkleSpreadRatio: isNativeMobile ? 1.05 : 1.1,
   /** Looser return-to-start so fast reps still count between jacks. */
-  maxRepClosedAnkleSpreadRatio: isNativeMobile ? 0.74 : 0.70,
+  maxRepClosedAnkleSpreadRatio: isNativeMobile ? 0.78 : 0.74,
   /** Relaxed closed thresholds only while arming the set. */
-  maxReadyAnkleSpreadRatio: isNativeMobile ? 0.72 : 0.68,
-  /** Wrists near shoulder height while closed (y grows down). */
-  maxClosedArmRaise: isNativeMobile ? 0.06 : 0.055,
-  maxRepClosedArmRaise: isNativeMobile ? 0.11 : 0.10,
-  maxReadyArmRaise: isNativeMobile ? 0.09 : 0.08,
-  /** Wrists clearly above shoulders at the open position. */
-  minOpenArmRaise: isNativeMobile ? 0.065 : 0.07,
-  readyFramesRequired: isNativeMobile ? 3 : 4,
-  /** Minimum frames between counted reps (avoids double-counting one jack). */
-  minRepCooldownFrames: isNativeMobile ? 2 : 3,
-  /** Disarm only after tracking is lost for several frames (not mid-jack). */
-  lostTrackingFramesToDisarm: isNativeMobile ? 12 : 8,
+  maxReadyAnkleSpreadRatio: isNativeMobile ? 0.74 : 0.7,
+  /** Both wrists must be this far below their shoulders, relative to torso height. */
+  minClosedWristDropToTorsoRatio: isNativeMobile ? 0.38 : 0.44,
+  minReadyWristDropToTorsoRatio: isNativeMobile ? 0.48 : 0.52,
+  /** Both wrists must independently clear their shoulder at the open position. */
+  minOpenWristRaise: isNativeMobile ? 0.055 : 0.065,
+  readyFramesRequired: isNativeMobile ? 5 : 6,
+  /** Require stable open and closed positions, rather than single-frame peaks. */
+  openHoldFrames: isNativeMobile ? 2 : 3,
+  closedHoldFramesForRep: isNativeMobile ? 2 : 3,
+  /** Invalid tracking cancels the cycle immediately and quickly disarms the set. */
+  lostTrackingFramesToDisarm: isNativeMobile ? 2 : 2,
 } as const;
 
 /** Jump squat - slight hop during the ascent after squat depth. */
