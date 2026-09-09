@@ -125,9 +125,9 @@ export const PULL_UP_THRESHOLDS = {
 /** Pull-up rep validation - dead hang on bar + chin/head over bar at top. */
 export const PULL_UP_POSTURE = {
   /** Chin (lower face) at or above the bar line (y grows downward). */
-  chinOverBarMargin: isNativeMobile ? 0.060 : 0.030,
+  chinOverBarMargin: isNativeMobile ? 0.055 : 0.025,
   /** Ear height proxy when filming from behind. */
-  earOverBarMargin: isNativeMobile ? 0.060 : 0.040,
+  earOverBarMargin: isNativeMobile ? 0.055 : 0.035,
   /** Shoulder-at-bar fallback when no face/ears are visible. */
   shoulderNearBarMargin: isNativeMobile ? 0.2 : 0.16,
   /** Wrists stay near the captured bar line through the rep. */
@@ -158,15 +158,13 @@ export const PULL_UP_POSTURE = {
   offBarFramesBeforeRelease: isNativeMobile ? 4 : 5,
   /** Wrists below hips by at least this much before the bar line is dropped (y grows down). */
   minWristBelowHipMargin: isNativeMobile ? 0.02 : 0.025,
-  /** Max elbow angle (degrees) at the top — head-over-bar only counts when arms are bent past this. */
-  maxTopElbowAngle: isNativeMobile ? 135 : 138,
 } as const;
 
 export const SQUAT_THRESHOLDS = {
   /** Knee angle (degrees) - standing upright. */
   standingAngle: 155,
-  /** Knee angle (degrees) - bottom of squat (hip crease ~ parallel; camera/smoothing reads shallower). */
-  bottomAngle: 110,
+  /** Knee angle (degrees) - bottom of squat. */
+  bottomAngle: 100,
   hysteresis: isNativeMobile ? 15 : 20,
 } as const;
 
@@ -243,36 +241,25 @@ export const BURPEE_POSTURE = {
 
 /** Jumping jack rep validation - peaks must clear open thresholds, then return near start. */
 export const JUMPING_JACK_POSTURE = {
-  /** Jumping jacks need stronger confidence because all four limbs drive the rep. */
-  minTrackingVisibility: isNativeMobile ? 0.5 : 0.55,
-  /** Keep the torso safely in frame; edge poses are frequently hallucinated. */
-  minBodyCenterX: 0.14,
-  maxBodyCenterX: 0.86,
-  minShoulderY: 0.08,
-  maxAnkleY: 0.97,
-  /** Reject a side-on body where shoulder width collapses and inflates foot ratios. */
-  minShoulderWidthToBodyHeight: isNativeMobile ? 0.13 : 0.15,
-  /** Maximum hip-center jump between frames before cycle progress is discarded. */
-  maxHipCenterShiftPerFrame: isNativeMobile ? 0.11 : 0.08,
   /** Feet-together spread relative to shoulder width (strict closed / hints). */
-  maxClosedAnkleSpreadRatio: isNativeMobile ? 0.7 : 0.66,
+  maxClosedAnkleSpreadRatio: isNativeMobile ? 0.66 : 0.62,
   /** Feet-apart spread relative to shoulder width (open position). */
-  minOpenAnkleSpreadRatio: isNativeMobile ? 1.05 : 1.1,
+  minOpenAnkleSpreadRatio: isNativeMobile ? 0.76 : 0.80,
   /** Looser return-to-start so fast reps still count between jacks. */
-  maxRepClosedAnkleSpreadRatio: isNativeMobile ? 0.78 : 0.74,
+  maxRepClosedAnkleSpreadRatio: isNativeMobile ? 0.74 : 0.70,
   /** Relaxed closed thresholds only while arming the set. */
-  maxReadyAnkleSpreadRatio: isNativeMobile ? 0.74 : 0.7,
-  /** Both wrists must be this far below their shoulders, relative to torso height. */
-  minClosedWristDropToTorsoRatio: isNativeMobile ? 0.38 : 0.44,
-  minReadyWristDropToTorsoRatio: isNativeMobile ? 0.48 : 0.52,
-  /** Both wrists must independently clear their shoulder at the open position. */
-  minOpenWristRaise: isNativeMobile ? 0.055 : 0.065,
-  readyFramesRequired: isNativeMobile ? 5 : 6,
-  /** Require stable open and closed positions, rather than single-frame peaks. */
-  openHoldFrames: isNativeMobile ? 2 : 3,
-  closedHoldFramesForRep: isNativeMobile ? 2 : 3,
-  /** Invalid tracking cancels the cycle immediately and quickly disarms the set. */
-  lostTrackingFramesToDisarm: isNativeMobile ? 2 : 2,
+  maxReadyAnkleSpreadRatio: isNativeMobile ? 0.72 : 0.68,
+  /** Wrists near shoulder height while closed (y grows down). */
+  maxClosedArmRaise: isNativeMobile ? 0.06 : 0.055,
+  maxRepClosedArmRaise: isNativeMobile ? 0.11 : 0.10,
+  maxReadyArmRaise: isNativeMobile ? 0.09 : 0.08,
+  /** Wrists clearly above shoulders at the open position. */
+  minOpenArmRaise: isNativeMobile ? 0.065 : 0.07,
+  readyFramesRequired: isNativeMobile ? 3 : 4,
+  /** Minimum frames between counted reps (avoids double-counting one jack). */
+  minRepCooldownFrames: isNativeMobile ? 2 : 3,
+  /** Disarm only after tracking is lost for several frames (not mid-jack). */
+  lostTrackingFramesToDisarm: isNativeMobile ? 12 : 8,
 } as const;
 
 /** Jump squat - slight hop during the ascent after squat depth. */

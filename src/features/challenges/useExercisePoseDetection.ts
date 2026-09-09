@@ -140,16 +140,6 @@ export function useExercisePoseDetection({
         const jumpingSquatArmedEmpty =
           exerciseType === 'jumping_squats' &&
           (engineRef.current as JumpingSquatRepEngine).armed;
-        const jumpingJackArmedEmpty =
-          exerciseType === 'jumping_jacks' &&
-          (engineRef.current as JumpingJackRepEngine).armed;
-
-        // Empty camera frames must cancel a partially completed jack immediately.
-        // Otherwise an OPEN state can survive leaving frame and count upon return.
-        if (exerciseType === 'jumping_jacks') {
-          engineRef.current.update([]);
-          setPhase(engineRef.current.phase);
-        }
 
         const quality = qualityGateRef.current.evaluate([], {
           pullUpArmed: exerciseType === 'pull_ups' ? pullUpArmedEmpty : undefined,
@@ -163,8 +153,7 @@ export function useExercisePoseDetection({
           quality.shouldResetEngine &&
           !pullUpArmedEmpty &&
           !pushUpArmedEmpty &&
-          !jumpingSquatArmedEmpty &&
-          !jumpingJackArmedEmpty
+          !jumpingSquatArmedEmpty
         ) {
           engineRef.current.reset();
           setPhase(getInitialExercisePhase(exerciseType));
