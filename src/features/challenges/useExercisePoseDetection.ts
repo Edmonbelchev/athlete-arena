@@ -141,6 +141,12 @@ export function useExercisePoseDetection({
           exerciseType === 'jumping_squats' &&
           (engineRef.current as JumpingSquatRepEngine).armed;
 
+        // A partial jumping-jack cycle must not survive leaving the camera.
+        if (exerciseType === 'jumping_jacks') {
+          engineRef.current.update([]);
+          setPhase(engineRef.current.phase);
+        }
+
         const quality = qualityGateRef.current.evaluate([], {
           pullUpArmed: exerciseType === 'pull_ups' ? pullUpArmedEmpty : undefined,
           pushUpArmed: exerciseType === 'push_ups' ? pushUpArmedEmpty : undefined,

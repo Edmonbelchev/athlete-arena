@@ -256,6 +256,9 @@ export const JUMPING_JACK_POSTURE = {
   /** Wrists clearly above shoulders at the open position. */
   minOpenArmRaise: isNativeMobile ? 0.065 : 0.07,
   readyFramesRequired: isNativeMobile ? 3 : 4,
+  /** Consecutive valid frames required at each end of a rep. */
+  openHoldFrames: 2,
+  closedHoldFramesForRep: 2,
   /** Minimum frames between counted reps (avoids double-counting one jack). */
   minRepCooldownFrames: isNativeMobile ? 2 : 3,
   /** Disarm only after tracking is lost for several frames (not mid-jack). */

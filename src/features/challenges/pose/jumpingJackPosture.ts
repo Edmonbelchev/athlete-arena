@@ -2,7 +2,6 @@ import { JUMPING_JACK_POSTURE, POSE_REP_MIN_VISIBILITY } from '@/constants/poseD
 
 import { PoseLandmarkIndex, type PoseLandmark } from './landmarks';
 import { getAverageShoulderY, getAverageWristY } from './pullUpPosture';
-import { getShoulderWidth } from './pushUpPosture';
 
 function isVisible(landmark: PoseLandmark | undefined): landmark is PoseLandmark {
   return Boolean(landmark && (landmark.visibility ?? 1) >= POSE_REP_MIN_VISIBILITY);
@@ -28,17 +27,34 @@ export function hasJumpingJackTrackingLandmarks(landmarks: PoseLandmark[]): bool
   return hasArms && hasLegs;
 }
 
-/** Ankle spread normalized by shoulder width (larger = feet farther apart). */
+/** Ankle spread normalized by the more stable torso width. */
 export function getJumpingJackAnkleSpreadRatio(landmarks: PoseLandmark[]): number | null {
   const leftAnkle = landmarks[PoseLandmarkIndex.LEFT_ANKLE];
   const rightAnkle = landmarks[PoseLandmarkIndex.RIGHT_ANKLE];
-  const shoulderWidth = getShoulderWidth(landmarks);
+  const leftShoulder = landmarks[PoseLandmarkIndex.LEFT_SHOULDER];
+  const rightShoulder = landmarks[PoseLandmarkIndex.RIGHT_SHOULDER];
+  const leftHip = landmarks[PoseLandmarkIndex.LEFT_HIP];
+  const rightHip = landmarks[PoseLandmarkIndex.RIGHT_HIP];
 
-  if (!isVisible(leftAnkle) || !isVisible(rightAnkle) || shoulderWidth === null || shoulderWidth <= 0) {
+  if (
+    !isVisible(leftAnkle) ||
+    !isVisible(rightAnkle) ||
+    !isVisible(leftShoulder) ||
+    !isVisible(rightShoulder) ||
+    !isVisible(leftHip) ||
+    !isVisible(rightHip)
+  ) {
     return null;
   }
 
-  return Math.abs(leftAnkle.x - rightAnkle.x) / shoulderWidth;
+  const torsoWidth = Math.max(
+    Math.abs(leftShoulder.x - rightShoulder.x),
+    Math.abs(leftHip.x - rightHip.x),
+  );
+
+  return torsoWidth > 0
+    ? Math.abs(leftAnkle.x - rightAnkle.x) / torsoWidth
+    : null;
 }
 
 /** Positive when wrists sit above shoulders (y grows downward). */
