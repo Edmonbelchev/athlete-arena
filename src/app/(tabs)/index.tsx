@@ -263,13 +263,6 @@ export default function HomeScreen() {
         <HomeSection title="Keep Going" subtitle="More ways to train and track">
           <View style={styles.linkBlocks}>
             <HomeLinkBlock
-              title="Personal Goals"
-              description="Set daily and weekly rep targets"
-              icon="target"
-              accentColor={theme.primary}
-              onPress={() => router.push('/profile/goals')}
-            />
-            <HomeLinkBlock
               title="Challenge Friends"
               description="Race a friend to the finish"
               icon="swords"

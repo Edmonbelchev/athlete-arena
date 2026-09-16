@@ -18,8 +18,6 @@ const REQUIREMENT_LABELS: Record<AchievementRequirementType, string> = {
   burpees_total: 'Burpees from activities',
   friend_races_won: 'Friend races won',
   friends_count: 'Friends added',
-  goals_created: 'Goals created',
-  goals_completed: 'Goals completed',
   login_streak: 'Consecutive login days',
   workouts_completed: 'Workouts completed',
   workouts_completed_month: 'Workouts completed this month',

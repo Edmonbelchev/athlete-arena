@@ -96,12 +96,6 @@ export default function ProfileScreen() {
         onPress: () => router.push('/profile/stats'),
       },
       {
-        id: 'goals',
-        label: 'Goals',
-        icon: 'target' as const,
-        onPress: () => router.push('/profile/goals'),
-      },
-      {
         id: 'achievements',
         label: 'Achievements',
         icon: 'medal' as const,

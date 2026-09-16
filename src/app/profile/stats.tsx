@@ -12,7 +12,6 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { HomeSection } from '@/components/home/HomeSection';
-import { GoalHistoryCard } from '@/components/stats/GoalHistoryCard';
 import { AppIcon } from '@/components/ui/AppIcon';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { StatCard } from '@/components/ui/StatCard';
@@ -25,20 +24,10 @@ function formatCount(value: number): string {
   return value.toLocaleString();
 }
 
-function formatDistance(value: number, unit: string): string {
-  if (value <= 0) {
-    return `0 ${unit}`;
-  }
-
-  return `${value.toLocaleString(undefined, {
-    maximumFractionDigits: 1,
-  })} ${unit}`;
-}
-
 export default function StatsScreen() {
   const theme = useTheme();
   const router = useRouter();
-  const { movementStats, goalHistory, isLoading, error, refresh } = useUserStats();
+  const { movementStats, isLoading, error, refresh } = useUserStats();
 
   useFocusEffect(
     useCallback(() => {
@@ -71,12 +60,10 @@ export default function StatsScreen() {
     movementStats.totalJumpingJacks > 0 ||
     movementStats.totalJumpingSquats > 0;
 
-  const hasOtherStats =
-    movementStats.totalSteps > 0 ||
-    movementStats.totalRunKm > 0 ||
-    movementStats.totalRunMi > 0;
+  const hasActivityStats =
+    movementStats.dailyMissionsCompleted > 0 || movementStats.friendRacesCompleted > 0;
 
-  if (isLoading && goalHistory.length === 0 && !hasRepStats && !hasOtherStats) {
+  if (isLoading && !hasRepStats && !hasActivityStats) {
     return (
       <>
         <Stack.Screen options={headerOptions} />
@@ -109,7 +96,7 @@ export default function StatsScreen() {
             ]}>
             <Text style={[styles.summaryTitle, { color: theme.text }]}>Lifetime movement</Text>
             <Text style={[styles.summaryCopy, { color: theme.textSecondary }]}>
-              Totals from daily missions, friend races, and manually logged goals.
+              Totals from daily missions, friend races, and custom workouts.
             </Text>
           </View>
 
@@ -135,18 +122,7 @@ export default function StatsScreen() {
             </View>
           </HomeSection>
 
-          <HomeSection title="Other activities" subtitle="From personal goals">
-            <View style={styles.statsGrid}>
-              <StatCard label="Steps" value={formatCount(movementStats.totalSteps)} accentColor={theme.streak} />
-              <StatCard
-                label="Running"
-                value={formatDistance(movementStats.totalRunKm, 'km')}
-                accentColor={theme.streak}
-              />
-            </View>
-          </HomeSection>
-
-          <HomeSection title="Activity summary" subtitle="Challenges and completed goals">
+          <HomeSection title="Activity summary" subtitle="Completed challenges">
             <View style={styles.statsGrid}>
               <StatCard
                 label="Daily missions"
@@ -156,34 +132,7 @@ export default function StatsScreen() {
                 label="Friend races"
                 value={formatCount(movementStats.friendRacesCompleted)}
               />
-              <StatCard
-                label="Goals completed"
-                value={formatCount(movementStats.goalsCompleted)}
-                accentColor={theme.success}
-              />
-              <StatCard
-                label="Daily goals hit"
-                value={formatCount(movementStats.goalsCompletedDaily)}
-              />
-              <StatCard
-                label="Weekly goals hit"
-                value={formatCount(movementStats.goalsCompletedWeekly)}
-              />
             </View>
-          </HomeSection>
-
-          <HomeSection title="Completed goals" subtitle="Your personal target history">
-            {goalHistory.length === 0 ? (
-              <Text style={[styles.empty, { color: theme.textSecondary }]}>
-                No completed goals yet. Finish a daily or weekly target to see it here.
-              </Text>
-            ) : (
-              <View style={styles.historyList}>
-                {goalHistory.map((entry) => (
-                  <GoalHistoryCard key={entry.id} entry={entry} />
-                ))}
-              </View>
-            )}
           </HomeSection>
         </ScrollView>
       </SafeAreaView>
@@ -231,14 +180,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: Spacing.three,
-  },
-  historyList: {
-    gap: Spacing.three,
-  },
-  empty: {
-    fontSize: 14,
-    lineHeight: 20,
-    fontWeight: '600',
   },
   errorBlock: {
     gap: Spacing.two,

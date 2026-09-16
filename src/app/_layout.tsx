@@ -201,14 +201,6 @@ function RootNavigator() {
             }}
           />
           <Stack.Screen
-            name="profile/goals"
-            options={{
-              presentation: 'modal',
-              headerShown: true,
-              title: 'Personal Goals',
-            }}
-          />
-          <Stack.Screen
             name="profile/stats"
             options={{
               presentation: 'modal',
