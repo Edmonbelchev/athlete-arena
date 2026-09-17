@@ -8,8 +8,12 @@ import { ChallengeWorkoutMode } from '@/components/challenges/ChallengeWorkoutMo
 import { ChallengeWorkoutSetup } from '@/components/challenges/ChallengeWorkoutSetup';
 import { AmrapCompleteOverlay } from '@/components/workouts/AmrapCompleteOverlay';
 import { AmrapWorkoutHud } from '@/components/workouts/AmrapWorkoutHud';
+import { EmomCompleteOverlay } from '@/components/workouts/EmomCompleteOverlay';
+import { EmomWorkoutHud } from '@/components/workouts/EmomWorkoutHud';
 import { ForTimeCompleteOverlay } from '@/components/workouts/ForTimeCompleteOverlay';
 import { ForTimeWorkoutHud } from '@/components/workouts/ForTimeWorkoutHud';
+import { WorkoutRoundCountdownOverlay } from '@/components/workouts/WorkoutRoundCountdownOverlay';
+import { WorkoutStartClockPromptOverlay } from '@/components/workouts/WorkoutStartClockPromptOverlay';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import {
   formatWorkoutTimeLimit,
@@ -25,16 +29,27 @@ import {
 } from '@/features/workouts/forTimeStructure';
 import { useFinalizeWorkoutSave } from '@/features/workouts/useFinalizeWorkoutSave';
 import { useAmrapWorkout } from '@/features/workouts/useAmrapWorkout';
+import { useEmomWorkout } from '@/features/workouts/useEmomWorkout';
 import { useForTimeWorkout } from '@/features/workouts/useForTimeWorkout';
+import { useEmomCountdownFeedback } from '@/hooks/use-emom-countdown-feedback';
 import { useDrainNativeCameraOnLeave } from '@/hooks/use-drain-native-camera-on-leave';
 import { useRepFeedback } from '@/hooks/use-rep-feedback';
 import { useWorkoutSession } from '@/hooks/use-workout-session';
 import { formatUserError } from '@/lib/errors';
 import { leaveScreen } from '@/lib/navigation';
 import { supportsNativePoseDetection } from '@/lib/runtime';
-import { saveCustomWorkoutSession, saveForTimeWorkoutSession } from '@/services/customWorkoutService';
+import {
+  saveCustomWorkoutSession,
+  saveEmomWorkoutSession,
+  saveForTimeWorkoutSession,
+} from '@/services/customWorkoutService';
 import { completeFriendWorkoutChallenge } from '@/services/friendChallengeService';
-import type { AmrapWorkoutResult, CustomWorkoutLaunchConfig, ForTimeWorkoutResult } from '@/types/customWorkouts';
+import type {
+  AmrapWorkoutResult,
+  CustomWorkoutLaunchConfig,
+  EmomWorkoutResult,
+  ForTimeWorkoutResult,
+} from '@/types/customWorkouts';
 import type { DailyWorkoutBonus } from '@/types/titles';
 import { useTheme } from '@/hooks/use-theme';
 import { useUserSettings } from '@/features/settings/UserSettingsProvider';
@@ -132,9 +147,14 @@ function AmrapWorkoutSession({ config }: { config: CustomWorkoutLaunchConfig }) 
     onExpire: handleTimerExpire,
   });
 
-  const canTrack = workoutStarted && Boolean(amrap.startedAt) && !amrap.completed;
+  const canTrack = workoutStarted && amrap.sessionLive && !amrap.completed;
   const showWorkout = workoutStarted || amrap.completed;
   const cameraActive = useDrainNativeCameraOnLeave(showWorkout && !amrap.completed);
+
+  useEmomCountdownFeedback(secondsRemaining ?? config.timeLimitSeconds, {
+    enabled: workoutStarted && Boolean(amrap.startedAt) && !amrap.completed,
+    soundEnabled: preferences.repSoundEnabled,
+  });
 
   const handleRepDetected = useCallback(() => {
     amrap.registerRep();
@@ -220,7 +240,16 @@ function AmrapWorkoutSession({ config }: { config: CustomWorkoutLaunchConfig }) 
             completedRounds={amrap.completedRounds}
             secondsRemaining={secondsRemaining}
             timeLimitSeconds={config.timeLimitSeconds}
+            timerStarted={Boolean(amrap.startedAt)}
           />
+        }
+        centerOverlay={
+          <>
+            <WorkoutStartClockPromptOverlay visible={amrap.sessionLive && !amrap.startedAt} />
+            {amrap.startedAt ? (
+              <WorkoutRoundCountdownOverlay secondsRemaining={secondsRemaining ?? config.timeLimitSeconds} />
+            ) : null}
+          </>
         }
         footer={
           showSimulateButton ? (
@@ -238,6 +267,204 @@ function AmrapWorkoutSession({ config }: { config: CustomWorkoutLaunchConfig }) 
         exerciseLabel={config.title}
         exerciseType={amrap.currentExercise.exerciseType}
         targetReps={amrap.currentExercise.targetReps}
+        subtitle={setupSubtitle}
+        onStart={markWorkoutStarted}
+        onCancel={handleLeave}
+      />
+    </SafeAreaView>
+  );
+}
+
+function EmomWorkoutSession({ config }: { config: CustomWorkoutLaunchConfig }) {
+  const theme = useTheme();
+  const router = useRouter();
+  const { preferences } = useUserSettings();
+  const finalizeWorkoutSave = useFinalizeWorkoutSave();
+  const sessionKey = config.catalogWorkoutId ?? config.templateId ?? `${config.workoutType}:${config.title}`;
+  const { workoutStarted, startWorkout: markWorkoutStarted } = useWorkoutSession(
+    `custom-${config.workoutType}`,
+    sessionKey,
+  );
+  const [savedResult, setSavedResult] = useState<EmomWorkoutResult | null>(null);
+  const [dailyWorkoutBonus, setDailyWorkoutBonus] = useState<DailyWorkoutBonus | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const savedResultRef = useRef<EmomWorkoutResult | null>(null);
+  const posePreviewLayoutRef = useRef<PosePreviewLayoutState>({
+    isLandscape: false,
+    settled: false,
+  });
+
+  const emom = useEmomWorkout({
+    config,
+    enabled: workoutStarted,
+    onComplete: (result) => {
+      savedResultRef.current = result;
+      setSavedResult(result);
+      void persistResult(result);
+    },
+  });
+
+  const persistResult = useCallback(async (result: EmomWorkoutResult) => {
+    setIsSaving(true);
+    setSaveError(null);
+
+    try {
+      const saveResult = await saveEmomWorkoutSession(result);
+      setDailyWorkoutBonus(saveResult.dailyBonus);
+      if (config.friendChallengeParticipantId) {
+        await syncFriendWorkoutChallengeCompletion(config.friendChallengeParticipantId, {
+          startedAt: result.startedAt,
+          completedRounds: result.completedIntervals,
+          totalReps: result.totalReps,
+        });
+      }
+      await finalizeWorkoutSave(saveResult);
+    } catch (err) {
+      setSaveError(formatUserError(err, 'Failed to save workout result'));
+    } finally {
+      setIsSaving(false);
+    }
+  }, [config.friendChallengeParticipantId, finalizeWorkoutSave]);
+
+  const handleLeave = useCallback(() => {
+    if (config.friendChallengeParticipantId) {
+      router.replace({
+        pathname: '/challenge/friend/[participantId]',
+        params: { participantId: config.friendChallengeParticipantId },
+      });
+      return;
+    }
+
+    leaveScreen(router, '/(tabs)/workouts');
+  }, [config.friendChallengeParticipantId, router]);
+
+  const canTrack =
+    workoutStarted && emom.sessionLive && !emom.completed && !emom.isResting;
+  const showWorkout = workoutStarted || emom.completed;
+  const cameraActive = useDrainNativeCameraOnLeave(showWorkout && !emom.completed);
+
+  useEmomCountdownFeedback(emom.clock.secondsRemainingInInterval, {
+    enabled: workoutStarted && Boolean(emom.startedAt) && !emom.completed,
+    soundEnabled: preferences.repSoundEnabled,
+  });
+
+  const handleRepDetected = useCallback(() => {
+    emom.registerRep();
+  }, [emom.registerRep]);
+
+  const {
+    phase: posePhase,
+    trackingStatus,
+    coachSeverity,
+    pullUpBarLineY,
+    processLandmarks,
+  } = useExercisePoseDetection({
+    exerciseType: emom.currentExercise?.exerciseType ?? 'push_ups',
+    exerciseSessionKey: `${emom.clock.currentIntervalIndex}-${emom.currentExerciseIndex}`,
+    enabled: canTrack && cameraActive,
+    posePreviewLayoutRef,
+    onRepDetected: handleRepDetected,
+  });
+
+  const autoRepCounting = Platform.OS === 'web' || supportsNativePoseDetection();
+  const showSimulateButton = !__DEV__ && canTrack && !autoRepCounting;
+
+  useRepFeedback(emom.totalReps, {
+    enabled: canTrack,
+    soundEnabled: preferences.repSoundEnabled,
+  });
+
+  function handleCameraReady() {
+    emom.startWorkout();
+  }
+
+  const setupSubtitle = useMemo(() => {
+    const typeLabel = getCustomWorkoutTypeLabel(config.workoutType);
+    const minutes = Math.floor(config.timeLimitSeconds / 60);
+    return `${minutes} min ${typeLabel} · ${config.exercises.length} exercises per minute`;
+  }, [config]);
+
+  if (showWorkout && emom.completed && savedResult) {
+    return (
+      <ChallengeWorkoutMode
+        exerciseType={emom.currentExercise.exerciseType}
+        currentReps={emom.currentExerciseReps}
+        targetReps={emom.currentExercise.targetReps}
+        trackingStatus={trackingStatus}
+        coachSeverity={coachSeverity}
+        repPhase={posePhase}
+        cameraActive={false}
+        pullUpBarLineY={null}
+        onCameraReady={() => {}}
+        onLandmarksDetected={() => {}}
+        completed
+        onContinue={handleLeave}
+        completeOverlay={<EmomCompleteOverlay result={savedResult} dailyBonus={dailyWorkoutBonus} />}
+        footer={
+          saveError ? (
+            <Text style={[styles.error, { color: theme.danger }]}>{saveError}</Text>
+          ) : isSaving ? (
+            <Text style={[styles.meta, { color: theme.textSecondary }]}>Saving result…</Text>
+          ) : undefined
+        }
+      />
+    );
+  }
+
+  if (showWorkout) {
+    return (
+      <ChallengeWorkoutMode
+        exerciseType={emom.currentExercise.exerciseType}
+        currentReps={emom.currentExerciseReps}
+        targetReps={emom.currentExercise.targetReps}
+        trackingStatus={trackingStatus}
+        coachSeverity={coachSeverity}
+        repPhase={posePhase}
+        cameraActive={cameraActive}
+        pullUpBarLineY={emom.currentExercise.exerciseType === 'pull_ups' ? pullUpBarLineY : null}
+        posePreviewLayoutRef={posePreviewLayoutRef}
+        onCameraReady={handleCameraReady}
+        onLandmarksDetected={processLandmarks}
+        exerciseTransitionKey={`${emom.clock.currentIntervalIndex}-${emom.currentExerciseIndex}`}
+        repSoundEnabled={preferences.repSoundEnabled}
+        hudOverlay={
+          <EmomWorkoutHud
+            currentExercise={emom.currentExercise}
+            currentExerciseReps={emom.currentExerciseReps}
+            currentIntervalIndex={emom.clock.currentIntervalIndex}
+            intervalCount={emom.clock.intervalCount}
+            secondsRemainingInInterval={emom.clock.secondsRemainingInInterval}
+            completedIntervals={emom.completedIntervals}
+            isResting={emom.isResting}
+            timeLimitSeconds={config.timeLimitSeconds}
+            timerStarted={Boolean(emom.startedAt)}
+          />
+        }
+        centerOverlay={
+          <>
+            <WorkoutStartClockPromptOverlay visible={emom.sessionLive && !emom.startedAt} />
+            {emom.startedAt ? (
+              <WorkoutRoundCountdownOverlay secondsRemaining={emom.clock.secondsRemainingInInterval} />
+            ) : null}
+          </>
+        }
+        footer={
+          showSimulateButton ? (
+            <PrimaryButton label="+ Simulate Rep" variant="secondary" onPress={emom.registerRep} />
+          ) : undefined
+        }
+        onDevSimulateRep={emom.registerRep}
+      />
+    );
+  }
+
+  return (
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]} edges={['bottom']}>
+      <ChallengeWorkoutSetup
+        exerciseLabel={config.title}
+        exerciseType={emom.currentExercise.exerciseType}
+        targetReps={emom.currentExercise.targetReps}
         subtitle={setupSubtitle}
         onStart={markWorkoutStarted}
         onCancel={handleLeave}
@@ -314,10 +541,10 @@ function ForTimeWorkoutSession({ config }: { config: CustomWorkoutLaunchConfig }
     startedAt: forTime.startedAt,
     completedAt: forTime.completedAt,
     maxSeconds: null,
-    enabled: workoutStarted && Boolean(forTime.startedAt),
+    enabled: workoutStarted && Boolean(forTime.startedAt) && !forTime.completed,
   });
 
-  const canTrack = workoutStarted && Boolean(forTime.startedAt) && !forTime.completed;
+  const canTrack = workoutStarted && forTime.sessionLive && !forTime.completed;
   const showWorkout = workoutStarted || forTime.completed;
   const cameraActive = useDrainNativeCameraOnLeave(showWorkout && !forTime.completed);
 
@@ -413,7 +640,11 @@ function ForTimeWorkoutSession({ config }: { config: CustomWorkoutLaunchConfig }
             currentExerciseReps={forTime.currentExerciseReps}
             elapsedSeconds={elapsedSeconds}
             tierLabel={stepContext.tierLabel}
+            timerStarted={Boolean(forTime.startedAt)}
           />
+        }
+        centerOverlay={
+          <WorkoutStartClockPromptOverlay visible={forTime.sessionLive && !forTime.startedAt} />
         }
         footer={
           showSimulateButton ? (
@@ -460,6 +691,10 @@ export default function CustomWorkoutSessionScreen() {
 
   if (config.workoutType === 'amrap') {
     return <AmrapWorkoutSession config={config} />;
+  }
+
+  if (config.workoutType === 'emom') {
+    return <EmomWorkoutSession config={config} />;
   }
 
   if (config.workoutType === 'for_time') {

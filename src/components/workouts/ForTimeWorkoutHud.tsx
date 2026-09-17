@@ -3,8 +3,8 @@ import { StyleSheet, Text, View } from 'react-native';
 import { formatExerciseLabel } from '@/constants/challenges';
 import { formatRaceTime } from '@/constants/friendChallenges';
 import { Radius, Spacing } from '@/constants/theme';
-import type { CustomWorkoutExercise } from '@/types/customWorkouts';
 import { useTheme } from '@/hooks/use-theme';
+import type { CustomWorkoutExercise } from '@/types/customWorkouts';
 
 interface ForTimeWorkoutHudProps {
   workoutTypeLabel: string;
@@ -14,6 +14,7 @@ interface ForTimeWorkoutHudProps {
   currentExerciseReps: number;
   elapsedSeconds: number;
   tierLabel?: string;
+  timerStarted?: boolean;
 }
 
 export function ForTimeWorkoutHud({
@@ -24,6 +25,7 @@ export function ForTimeWorkoutHud({
   currentExerciseReps,
   elapsedSeconds,
   tierLabel,
+  timerStarted = true,
 }: ForTimeWorkoutHudProps) {
   const theme = useTheme();
 
@@ -38,7 +40,9 @@ export function ForTimeWorkoutHud({
         </View>
         <View style={styles.chip}>
           <Text style={styles.chipLabel}>ELAPSED</Text>
-          <Text style={[styles.chipValue, { color: theme.streak }]}>{formatRaceTime(elapsedSeconds)}</Text>
+          <Text style={[styles.chipValue, { color: theme.streak }]}>
+            {formatRaceTime(timerStarted ? elapsedSeconds : 0)}
+          </Text>
         </View>
       </View>
 
@@ -49,7 +53,9 @@ export function ForTimeWorkoutHud({
           {currentExerciseReps}
           <Text style={styles.repTarget}> / {currentExercise.targetReps}</Text>
         </Text>
-        <Text style={styles.meta}>{workoutTypeLabel} · finish the circuit to stop the clock</Text>
+        {timerStarted ? (
+          <Text style={styles.meta}>{workoutTypeLabel} · finish the circuit to stop the clock</Text>
+        ) : null}
       </View>
     </View>
   );

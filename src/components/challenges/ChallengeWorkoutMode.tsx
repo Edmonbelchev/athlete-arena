@@ -43,6 +43,7 @@ interface ChallengeWorkoutModeProps {
   raceTimer?: ChallengeRepHudRaceTimer | null;
   footer?: ReactNode;
   hudOverlay?: ReactNode;
+  centerOverlay?: ReactNode;
   exerciseTransitionKey?: string | number;
   repSoundEnabled?: boolean;
   onDevSimulateRep?: () => void;
@@ -68,6 +69,7 @@ export function ChallengeWorkoutMode({
   raceTimer = null,
   footer,
   hudOverlay,
+  centerOverlay,
   exerciseTransitionKey,
   repSoundEnabled = true,
   onDevSimulateRep,
@@ -147,6 +149,7 @@ export function ChallengeWorkoutMode({
               raceTimer={raceTimer}
             />
           )}
+          {centerOverlay}
           <WorkoutExerciseTransitionOverlay label={exerciseTransitionLabel} />
         </View>
       </View>

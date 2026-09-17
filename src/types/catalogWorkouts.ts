@@ -80,12 +80,20 @@ export function formatWorkoutForTimeScore(elapsedSeconds: number): string {
   return formatRaceTime(elapsedSeconds);
 }
 
+export function formatWorkoutEmomScore(completedIntervals: number, totalReps: number): string {
+  return `${completedIntervals} min · ${totalReps} reps`;
+}
+
 export function formatWorkoutSessionScore(entry: Pick<
   WorkoutSessionHistoryEntry,
   'workoutType' | 'completedRounds' | 'totalReps' | 'elapsedSeconds' | 'timeLimitSeconds'
 >): string {
   if (entry.workoutType === 'for_time' && entry.elapsedSeconds !== null) {
     return formatWorkoutForTimeScore(entry.elapsedSeconds);
+  }
+
+  if (entry.workoutType === 'emom') {
+    return formatWorkoutEmomScore(entry.completedRounds, entry.totalReps);
   }
 
   return formatWorkoutAmrapScore(entry.completedRounds, entry.totalReps);

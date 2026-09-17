@@ -108,7 +108,12 @@ export default function CatalogWorkoutScreen() {
   }, [id, leaderboardPeriod, loadLeaderboard, workout?.leaderboardMetric]);
 
   function handleStartWorkout() {
-    if (!workout || (workout.workoutType !== 'amrap' && workout.workoutType !== 'for_time')) {
+    if (
+      !workout ||
+      (workout.workoutType !== 'amrap' &&
+        workout.workoutType !== 'for_time' &&
+        workout.workoutType !== 'emom')
+    ) {
       return;
     }
 
@@ -177,9 +182,9 @@ export default function CatalogWorkoutScreen() {
               ) : null}
               <Text style={[styles.meta, { color: theme.textSecondary }]}>
                 {getCustomWorkoutTypeLabel(workout.workoutType)}
-                {workout.workoutType === 'amrap'
-                  ? ` · ${formatWorkoutTimeLimit(workout.timeLimitSeconds)}`
-                  : ' · finish the circuit'}
+                {workout.workoutType === 'for_time'
+                  ? ' · finish the circuit'
+                  : ` · ${formatWorkoutTimeLimit(workout.timeLimitSeconds)}`}
               </Text>
               {bestScoreLabel ? (
                 <Text style={[styles.bestScore, { color: theme.text }]}>
@@ -194,7 +199,9 @@ export default function CatalogWorkoutScreen() {
               structureConfig={workout.structureConfig}
             />
 
-            {workout.workoutType === 'amrap' || workout.workoutType === 'for_time' ? (
+            {workout.workoutType === 'amrap' ||
+            workout.workoutType === 'for_time' ||
+            workout.workoutType === 'emom' ? (
               <PrimaryButton label="Start workout" onPress={handleStartWorkout} />
             ) : (
               <View style={[styles.comingSoon, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>

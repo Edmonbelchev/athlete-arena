@@ -83,9 +83,10 @@ export const CUSTOM_WORKOUT_TYPES: CustomWorkoutTypeDefinition[] = [
     type: 'emom',
     label: 'EMOM',
     shortLabel: 'EMOM',
-    description: 'Every minute on the minute.',
-    createDescription: 'Complete the prescribed work at the start of each minute.',
-    available: false,
+    description: 'Complete the circuit each minute, then rest until the next minute starts.',
+    createDescription:
+      'Set a total duration in minutes. Each minute, finish every exercise in order. Early finish gives you rest until the next minute.',
+    available: true,
   },
 ];
 

@@ -14,6 +14,7 @@ interface UseForTimeWorkoutOptions {
 }
 
 export function useForTimeWorkout({ config, onComplete }: UseForTimeWorkoutOptions) {
+  const [sessionLive, setSessionLive] = useState(false);
   const [startedAt, setStartedAt] = useState<string | null>(null);
   const [completedAt, setCompletedAt] = useState<string | null>(null);
   const [completed, setCompleted] = useState(false);
@@ -21,6 +22,7 @@ export function useForTimeWorkout({ config, onComplete }: UseForTimeWorkoutOptio
   const [currentExerciseReps, setCurrentExerciseReps] = useState(0);
   const [totalReps, setTotalReps] = useState(0);
   const completedRef = useRef(false);
+  const timerStartedRef = useRef(false);
   const snapshotRef = useRef({
     totalReps: 0,
     repTotalsByStep: [] as number[],
@@ -100,17 +102,22 @@ export function useForTimeWorkout({ config, onComplete }: UseForTimeWorkoutOptio
   );
 
   const startWorkout = useCallback(() => {
-    if (startedAt) {
+    if (sessionLive) {
       return;
     }
 
     snapshotRef.current.repTotalsByStep = steps.map(() => 0);
-    setStartedAt(new Date().toISOString());
-  }, [startedAt, steps]);
+    setSessionLive(true);
+  }, [sessionLive, steps]);
 
   const registerRep = useCallback(() => {
-    if (completedRef.current || !startedAt || steps.length === 0) {
+    if (completedRef.current || !sessionLive || steps.length === 0) {
       return;
+    }
+
+    if (!timerStartedRef.current) {
+      timerStartedRef.current = true;
+      setStartedAt(new Date().toISOString());
     }
 
     const exercise = steps[currentExerciseIndex];
@@ -141,7 +148,7 @@ export function useForTimeWorkout({ config, onComplete }: UseForTimeWorkoutOptio
 
     setCurrentExerciseIndex((value) => value + 1);
     setCurrentExerciseReps(0);
-  }, [currentExerciseIndex, currentExerciseReps, finishWorkout, startedAt, steps]);
+  }, [currentExerciseIndex, currentExerciseReps, finishWorkout, sessionLive, startedAt, steps]);
 
   return {
     steps,
@@ -149,6 +156,7 @@ export function useForTimeWorkout({ config, onComplete }: UseForTimeWorkoutOptio
     currentExerciseIndex,
     currentExerciseReps,
     totalReps,
+    sessionLive,
     startedAt,
     completedAt,
     completed,

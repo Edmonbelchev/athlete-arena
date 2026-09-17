@@ -5,6 +5,7 @@ import { clearMovementStatsCache } from '@/services/statsService';
 import type {
   CustomWorkoutExerciseBreakdown,
   AmrapWorkoutResult,
+  EmomWorkoutResult,
   ForTimeWorkoutResult,
   CustomWorkoutTemplateDetail,
   CustomWorkoutTemplateSummary,
@@ -228,6 +229,32 @@ export async function saveCustomWorkoutSession(result: AmrapWorkoutResult): Prom
     p_title: result.title,
     p_time_limit_seconds: result.timeLimitSeconds,
     p_completed_rounds: result.completedRounds,
+    p_total_reps: result.totalReps,
+    p_exercise_breakdown: result.exerciseBreakdown.map((entry) => ({
+      exercise_type: entry.exerciseType,
+      target_reps: entry.targetReps,
+      total_reps: entry.totalReps,
+    })),
+    p_started_at: result.startedAt,
+    p_elapsed_seconds: null,
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  return mapSaveWorkoutSessionResult(data);
+}
+
+export async function saveEmomWorkoutSession(result: EmomWorkoutResult): Promise<SaveWorkoutSessionResult> {
+  assertSupabaseConfigured();
+
+  const { data, error } = await supabase.rpc('save_custom_workout_session', {
+    p_template_id: result.templateId,
+    p_catalog_workout_id: result.catalogWorkoutId,
+    p_title: result.title,
+    p_time_limit_seconds: result.timeLimitSeconds,
+    p_completed_rounds: result.completedIntervals,
     p_total_reps: result.totalReps,
     p_exercise_breakdown: result.exerciseBreakdown.map((entry) => ({
       exercise_type: entry.exerciseType,

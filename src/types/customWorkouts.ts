@@ -92,6 +92,20 @@ export interface AmrapWorkoutResult {
   completedAt: string;
 }
 
+/** Result payload for an EMOM session (one circuit per minute). */
+export interface EmomWorkoutResult {
+  workoutType: 'emom';
+  title: string;
+  templateId: string | null;
+  catalogWorkoutId: string | null;
+  timeLimitSeconds: number;
+  completedIntervals: number;
+  totalReps: number;
+  exerciseBreakdown: CustomWorkoutExerciseBreakdown[];
+  startedAt: string;
+  completedAt: string;
+}
+
 export interface CustomWorkoutLaunchConfig {
   workoutType: CustomWorkoutType;
   title: string;

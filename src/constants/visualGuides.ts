@@ -31,7 +31,7 @@ export const VISUAL_GUIDE_BY_EXERCISE: Record<ExerciseType, VisualGuideExerciseC
   },
   jumping_jacks: {
     folder: 'jumping-jacks',
-    frameFiles: ['frame1.webp', 'frame2.webp', 'frame3.webp', 'frame4.webp'],
+    frameFiles: ['frame1.webp', 'frame2.webp'],
   },
   jumping_squats: {
     folder: 'squats',

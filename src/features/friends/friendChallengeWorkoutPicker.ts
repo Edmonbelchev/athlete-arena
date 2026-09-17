@@ -44,7 +44,7 @@ export function parseFriendChallengeWorkoutKey(
 function isSupportedChallengeWorkoutType(
   workoutType: FriendChallengeWorkoutOption['workoutType'],
 ): boolean {
-  return workoutType === 'amrap' || workoutType === 'for_time';
+  return workoutType === 'amrap' || workoutType === 'for_time' || workoutType === 'emom';
 }
 
 export function buildFriendChallengeWorkoutOptions(input: {
