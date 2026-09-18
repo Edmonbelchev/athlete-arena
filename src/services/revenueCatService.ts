@@ -89,6 +89,8 @@ export async function getRevenueCatAppUserId(): Promise<string | null> {
   return Purchases.getAppUserID();
 }
 
+let revenueCatConfigured = false;
+
 export async function configureRevenueCat(): Promise<void> {
   const apiKey = getRevenueCatApiKey();
   if (!apiKey) {
@@ -100,7 +102,12 @@ export async function configureRevenueCat(): Promise<void> {
     Purchases.setLogLevel(LOG_LEVEL.WARN);
   }
 
+  if (revenueCatConfigured) {
+    return;
+  }
+
   Purchases.configure({ apiKey });
+  revenueCatConfigured = true;
 }
 
 export async function identifyRevenueCatUser(userId: string): Promise<CustomerInfo | null> {

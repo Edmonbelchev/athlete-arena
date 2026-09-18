@@ -73,6 +73,7 @@ export default function WorkoutLibraryScreen() {
   const [handledDeepLinkTemplateId, setHandledDeepLinkTemplateId] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [createModalTemplateId, setCreateModalTemplateId] = useState<string | null>(null);
+  const [createModalEpoch, setCreateModalEpoch] = useState(0);
   const [handledEditTemplateId, setHandledEditTemplateId] = useState<string | null>(null);
 
   async function openCreateModal(templateId?: string | null) {
@@ -88,6 +89,7 @@ export default function WorkoutLibraryScreen() {
     }
 
     setCreateModalTemplateId(templateId ?? null);
+    setCreateModalEpoch((epoch) => epoch + 1);
     setShowCreateModal(true);
   }
 
@@ -198,6 +200,7 @@ export default function WorkoutLibraryScreen() {
       if (!unlocked) {
         return;
       }
+
     }
 
     setStartingTemplateId(templateId);
@@ -502,6 +505,7 @@ export default function WorkoutLibraryScreen() {
       />
 
       <CreateWorkoutModal
+        key={`create-workout-${createModalEpoch}`}
         visible={showCreateModal}
         templateId={createModalTemplateId}
         onClose={closeCreateModal}

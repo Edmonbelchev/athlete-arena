@@ -6,7 +6,7 @@ import {
   type PremiumPaywallContext,
 } from '@/features/subscription/premiumPaywallContent';
 import { usePremium } from '@/features/subscription/usePremium';
-import { leaveScreen } from '@/lib/navigation';
+import { leaveScreen, waitForModalDismiss, waitForUiSettle } from '@/lib/navigation';
 
 const PAYWALL_CONTEXTS = new Set<PremiumPaywallContext>([
   'default',
@@ -31,7 +31,8 @@ export default function PremiumPaywallScreen() {
     context?: string;
     skipIntro?: string;
   }>();
-  const { completePremiumPaywall, triggerPaywallRestore, paywallRestoreLoading } = usePremium();
+  const { finalizePremiumPaywall, resolvePremiumPaywall, triggerPaywallRestore, paywallRestoreLoading } =
+    usePremium();
   const closedRef = useRef(false);
 
   const paywallContext = parsePaywallContext(context);
@@ -43,17 +44,25 @@ export default function PremiumPaywallScreen() {
     }
 
     closedRef.current = true;
-    completePremiumPaywall(unlocked);
-    leaveScreen(router);
+    void (async () => {
+      await finalizePremiumPaywall(unlocked);
+      await waitForUiSettle();
+      leaveScreen(router);
+      await waitForModalDismiss();
+      resolvePremiumPaywall(unlocked);
+    })();
   }
 
   useEffect(() => {
     return () => {
       if (!closedRef.current) {
-        completePremiumPaywall(false);
+        void (async () => {
+          await finalizePremiumPaywall(false);
+          resolvePremiumPaywall(false);
+        })();
       }
     };
-  }, [completePremiumPaywall]);
+  }, [finalizePremiumPaywall, resolvePremiumPaywall]);
 
   return (
     <>

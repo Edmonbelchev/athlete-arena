@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Modal,
@@ -30,7 +30,7 @@ export interface PremiumPaywallContentProps {
   initialStep?: PaywallStep;
   restoreLoading?: boolean;
   onRestore: () => void;
-  onClose: (unlocked: boolean) => void;
+  onClose: (unlocked: boolean) => void | Promise<void>;
 }
 
 export function PremiumPaywallContent({
@@ -42,20 +42,39 @@ export function PremiumPaywallContent({
 }: PremiumPaywallContentProps) {
   const theme = useTheme();
   const [step, setStep] = useState<PaywallStep>(initialStep);
+  const [showNativePaywall, setShowNativePaywall] = useState(true);
+  const pendingSuccessCloseRef = useRef(false);
   const content = getPremiumPaywallContent(context);
   const canPurchase = Platform.OS !== 'web' && isRevenueCatConfigured();
 
   useEffect(() => {
     setStep(initialStep);
+    setShowNativePaywall(true);
+    pendingSuccessCloseRef.current = false;
   }, [initialStep]);
 
   function handleClose(unlocked = false) {
-    onClose(unlocked);
+    void onClose(unlocked);
   }
 
   function handlePurchaseSuccess() {
+    if (step === 'paywall' && showNativePaywall) {
+      pendingSuccessCloseRef.current = true;
+      setShowNativePaywall(false);
+      return;
+    }
+
     handleClose(true);
   }
+
+  useEffect(() => {
+    if (!pendingSuccessCloseRef.current || showNativePaywall) {
+      return;
+    }
+
+    pendingSuccessCloseRef.current = false;
+    void onClose(true);
+  }, [onClose, showNativePaywall]);
 
   function handleContinue() {
     if (!canPurchase) {
@@ -63,6 +82,7 @@ export function PremiumPaywallContent({
       return;
     }
 
+    setShowNativePaywall(true);
     setStep('paywall');
   }
 
@@ -128,6 +148,14 @@ export function PremiumPaywallContent({
           ) : null}
         </ScrollView>
       </SafeAreaView>
+    );
+  }
+
+  if (!showNativePaywall) {
+    return (
+      <View style={[styles.paywallShell, styles.paywallClosing, { backgroundColor: theme.background }]}>
+        <ActivityIndicator size="large" color={theme.primary} />
+      </View>
     );
   }
 
@@ -271,6 +299,10 @@ const styles = StyleSheet.create({
   },
   paywallShell: {
     flex: 1,
+  },
+  paywallClosing: {
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   paywallHeader: {
     paddingHorizontal: Spacing.two,

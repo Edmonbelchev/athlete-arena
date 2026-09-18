@@ -449,9 +449,11 @@ export function CreateWorkoutModal({
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={handleClose}>
-      <View style={styles.overlay}>
-        <Pressable style={styles.backdrop} onPress={handleClose} />
-        <View style={[styles.sheet, { backgroundColor: theme.background, borderColor: theme.border }]}>
+      <View style={styles.overlay} pointerEvents="box-none">
+        <Pressable style={styles.backdrop} onPress={handleClose} accessibilityLabel="Close create workout" />
+        <View
+          style={[styles.sheet, { backgroundColor: theme.background, borderColor: theme.border }]}
+          pointerEvents="auto">
           <View style={[styles.handle, { backgroundColor: theme.border }]} />
 
           {isLoadingTemplate ? (
@@ -806,6 +808,7 @@ const styles = StyleSheet.create({
   backdrop: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(15, 23, 42, 0.45)',
+    zIndex: 0,
   },
   sheet: {
     borderTopLeftRadius: Radius.xl,
@@ -816,6 +819,7 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing.five,
     maxHeight: '92%',
     gap: Spacing.two,
+    zIndex: 1,
   },
   handle: {
     alignSelf: 'center',

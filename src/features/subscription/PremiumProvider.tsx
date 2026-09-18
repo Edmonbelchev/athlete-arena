@@ -23,6 +23,7 @@ import {
   restorePremiumPurchases,
   waitForPremiumEntitlement,
 } from '@/services/revenueCatService';
+import { waitForModalDismiss } from '@/lib/navigation';
 import { getMyPremiumStatus, syncMyRevenueCatSubscription, type PremiumStatus } from '@/services/subscriptionService';
 import type { PremiumSubscriptionDetails } from '@/types/subscription';
 
@@ -39,7 +40,10 @@ interface PremiumContextValue extends PremiumStatus {
   error: string | null;
   refresh: () => Promise<void>;
   showPremiumPaywall: (options?: ShowPremiumPaywallOptions) => Promise<boolean>;
-  completePremiumPaywall: (unlocked: boolean) => void;
+  /** Sync subscription state after paywall closes; does not resolve `showPremiumPaywall`. */
+  finalizePremiumPaywall: (unlocked: boolean) => Promise<void>;
+  /** Resolve the pending `showPremiumPaywall` promise (call after the paywall route is gone). */
+  resolvePremiumPaywall: (unlocked: boolean) => void;
   dismissPremiumPaywall: () => void;
   triggerPaywallRestore: () => Promise<boolean>;
   paywallRestoreLoading: boolean;
@@ -210,14 +214,17 @@ export function PremiumProvider({ children }: { children: ReactNode }) {
     [refresh, refreshRevenueCat, syncSupabaseFromRevenueCat],
   );
 
-  const completePremiumPaywall = useCallback(
-    (unlocked: boolean) => {
-      paywallResolveRef.current?.(unlocked);
-      paywallResolveRef.current = null;
-      void finalizePaywall(unlocked);
+  const finalizePremiumPaywall = useCallback(
+    async (unlocked: boolean) => {
+      await finalizePaywall(unlocked);
     },
     [finalizePaywall],
   );
+
+  const resolvePremiumPaywall = useCallback((unlocked: boolean) => {
+    paywallResolveRef.current?.(unlocked);
+    paywallResolveRef.current = null;
+  }, []);
 
   const showPremiumPaywall = useCallback(
     (options?: ShowPremiumPaywallOptions) => {
@@ -254,14 +261,19 @@ export function PremiumProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    completePremiumPaywall(false);
+    void (async () => {
+      await finalizePremiumPaywall(false);
 
-    if (typeof router.canDismiss === 'function' && router.canDismiss()) {
-      router.dismiss();
-    } else if (router.canGoBack()) {
-      router.back();
-    }
-  }, [completePremiumPaywall]);
+      if (typeof router.canDismiss === 'function' && router.canDismiss()) {
+        router.dismiss();
+      } else if (router.canGoBack()) {
+        router.back();
+      }
+
+      await waitForModalDismiss();
+      resolvePremiumPaywall(false);
+    })();
+  }, [finalizePremiumPaywall, resolvePremiumPaywall]);
 
   const restorePurchases = useCallback(async () => {
     if (!session?.user.id) {
@@ -307,7 +319,8 @@ export function PremiumProvider({ children }: { children: ReactNode }) {
       error,
       refresh,
       showPremiumPaywall,
-      completePremiumPaywall,
+      finalizePremiumPaywall,
+      resolvePremiumPaywall,
       dismissPremiumPaywall,
       triggerPaywallRestore,
       paywallRestoreLoading: isRestoreLoading,
@@ -322,7 +335,8 @@ export function PremiumProvider({ children }: { children: ReactNode }) {
       error,
       refresh,
       showPremiumPaywall,
-      completePremiumPaywall,
+      finalizePremiumPaywall,
+      resolvePremiumPaywall,
       dismissPremiumPaywall,
       triggerPaywallRestore,
       isRestoreLoading,
