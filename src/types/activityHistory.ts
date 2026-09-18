@@ -26,6 +26,9 @@ export interface SoloWorkoutHistoryEntry {
   completedRounds: number;
   totalReps: number;
   elapsedSeconds: number | null;
+  /** Daily first-workout bonus for this session, when applicable. */
+  xpEarned: number | null;
+  coinsEarned: number | null;
 }
 
 export type ActivityHistoryEntry =
@@ -97,8 +100,14 @@ export function mapActivityHistoryRow(row: {
   total_reps: number | null;
   elapsed_seconds: number | null;
   time_limit_seconds: number | null;
+  coins_earned?: number | null;
 }): ActivityHistoryEntry {
   if (row.category === 'solo_workout') {
+    const xpEarned =
+      typeof row.xp_earned === 'number' && row.xp_earned > 0 ? row.xp_earned : null;
+    const coinsEarned =
+      typeof row.coins_earned === 'number' && row.coins_earned > 0 ? row.coins_earned : null;
+
     return {
       entryId: row.entry_id,
       category: 'solo_workout',
@@ -109,6 +118,8 @@ export function mapActivityHistoryRow(row: {
       completedRounds: row.completed_rounds ?? 0,
       totalReps: row.total_reps ?? row.completed_reps,
       elapsedSeconds: row.elapsed_seconds ?? row.race_seconds,
+      xpEarned,
+      coinsEarned: xpEarned !== null ? coinsEarned : null,
     };
   }
 

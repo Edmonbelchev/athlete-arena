@@ -1,5 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 
+import { AppIcon } from '@/components/ui/AppIcon';
+import { CoinIcon } from '@/components/ui/CoinIcon';
 import { getCustomWorkoutTypeLabel } from '@/constants/customWorkouts';
 import { formatRaceTime } from '@/constants/friendChallenges';
 import { Radius, Spacing } from '@/constants/theme';
@@ -23,6 +25,11 @@ function formatHistoryDate(isoDate: string): string {
 
 export function WorkoutHistoryCard({ entry }: WorkoutHistoryCardProps) {
   const theme = useTheme();
+  const showDailyBonus =
+    entry.xpEarned !== null &&
+    entry.xpEarned > 0 &&
+    entry.coinsEarned !== null &&
+    entry.coinsEarned > 0;
   const scoreLabel = formatWorkoutSessionScore({
     sessionId: entry.entryId,
     title: entry.workoutTitle,
@@ -51,6 +58,22 @@ export function WorkoutHistoryCard({ entry }: WorkoutHistoryCardProps) {
           : ''}
       </Text>
       <Text style={[styles.score, { color: theme.text }]}>{scoreLabel}</Text>
+
+      {showDailyBonus ? (
+        <View style={styles.rewardRow}>
+          <View style={[styles.rewardChip, { backgroundColor: `${theme.xp}14` }]}>
+            <AppIcon name="star" size={12} color={theme.xp} weight="semibold" />
+            <Text style={[styles.rewardText, { color: theme.xp }]}>+{entry.xpEarned} XP</Text>
+          </View>
+          <View style={[styles.rewardChip, { backgroundColor: `${theme.accent}14` }]}>
+            <CoinIcon size={12} />
+            <Text style={[styles.rewardText, { color: theme.accent }]}>
+              +{entry.coinsEarned?.toLocaleString()}
+            </Text>
+          </View>
+          <Text style={[styles.rewardHint, { color: theme.textSecondary }]}>First workout today</Text>
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -89,5 +112,29 @@ const styles = StyleSheet.create({
   score: {
     fontSize: 14,
     fontWeight: '600',
+  },
+  rewardRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: Spacing.one,
+    marginTop: Spacing.half,
+  },
+  rewardChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: Spacing.two,
+    paddingVertical: 4,
+    borderRadius: Radius.sm,
+  },
+  rewardText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  rewardHint: {
+    fontSize: 11,
+    fontWeight: '600',
+    width: '100%',
   },
 });
