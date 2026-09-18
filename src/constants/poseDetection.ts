@@ -27,6 +27,8 @@ export const POSE_QUALITY = {
   partialFramesBeforeResetPushUpArmed: isNativeMobile ? 45 : 30,
   /** Partial-tracking frames before resetting an armed jump-squat set. */
   partialFramesBeforeResetJumpingSquatArmed: isNativeMobile ? 60 : 45,
+  /** Partial-tracking frames before resetting an armed jumping-jack set. */
+  partialFramesBeforeResetJumpingJackArmed: isNativeMobile ? 55 : 40,
   /** Skeleton overlay visibility - slightly higher to reduce flicker. */
   skeletonMinVisibility: isNativeMobile ? 0.4 : 0.5,
 } as const;
@@ -245,24 +247,30 @@ export const JUMPING_JACK_POSTURE = {
   maxClosedAnkleSpreadRatio: isNativeMobile ? 0.66 : 0.62,
   /** Feet-apart spread relative to shoulder width (open position). */
   minOpenAnkleSpreadRatio: isNativeMobile ? 0.76 : 0.80,
-  /** Looser return-to-start so fast reps still count between jacks. */
-  maxRepClosedAnkleSpreadRatio: isNativeMobile ? 0.74 : 0.70,
+  /** Looser return-to-start (slight overlap with open min avoids a dead zone at speed). */
+  maxRepClosedAnkleSpreadRatio: isNativeMobile ? 0.78 : 0.72,
   /** Relaxed closed thresholds only while arming the set. */
   maxReadyAnkleSpreadRatio: isNativeMobile ? 0.72 : 0.68,
   /** Wrists near shoulder height while closed (y grows down). */
   maxClosedArmRaise: isNativeMobile ? 0.06 : 0.055,
-  maxRepClosedArmRaise: isNativeMobile ? 0.11 : 0.10,
+  maxRepClosedArmRaise: isNativeMobile ? 0.13 : 0.11,
   maxReadyArmRaise: isNativeMobile ? 0.09 : 0.08,
   /** Wrists clearly above shoulders at the open position. */
   minOpenArmRaise: isNativeMobile ? 0.065 : 0.07,
   readyFramesRequired: isNativeMobile ? 3 : 4,
-  /** Consecutive valid frames required at each end of a rep. */
-  openHoldFrames: 2,
-  closedHoldFramesForRep: 2,
-  /** Minimum frames between counted reps (avoids double-counting one jack). */
-  minRepCooldownFrames: isNativeMobile ? 2 : 3,
+  /** Consecutive valid frames required at the open peak (after feet/arms both reached open). */
+  openHoldFrames: isNativeMobile ? 1 : 2,
+  closedHoldFramesForRep: isNativeMobile ? 0 : 1,
+  /** Cycle state prevents double counts; keep at 0 so fast back-to-back jacks are not blocked. */
+  minRepCooldownFrames: isNativeMobile ? 0 : 1,
+  /** Frames after a close signal before abandoning the cycle on a new open (lets rep register). */
+  abandonCycleGraceFrames: isNativeMobile ? 4 : 3,
   /** Disarm only after tracking is lost for several frames (not mid-jack). */
-  lostTrackingFramesToDisarm: isNativeMobile ? 12 : 8,
+  lostTrackingFramesToDisarm: isNativeMobile ? 18 : 12,
+  /** Reject half-body / hallucinated legs (hip→ankle span in normalized view). */
+  minHipToAnkleSpan: isNativeMobile ? 0.11 : 0.12,
+  /** Hips must sit clearly below shoulders when the full body is in frame. */
+  minShoulderToHipSpan: isNativeMobile ? 0.07 : 0.08,
 } as const;
 
 /** Jump squat - slight hop during the ascent after squat depth. */

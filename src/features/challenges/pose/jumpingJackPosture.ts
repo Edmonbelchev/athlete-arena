@@ -1,10 +1,36 @@
-import { JUMPING_JACK_POSTURE, POSE_REP_MIN_VISIBILITY } from '@/constants/poseDetection';
+import {
+    JUMPING_JACK_POSTURE,
+    POSE_REP_MIN_VISIBILITY,
+    POSE_REP_MIN_VISIBILITY_ARMED,
+} from '@/constants/poseDetection';
 
 import { PoseLandmarkIndex, type PoseLandmark } from './landmarks';
 import { getAverageShoulderY, getAverageWristY } from './pullUpPosture';
 
 function isVisible(landmark: PoseLandmark | undefined): landmark is PoseLandmark {
   return Boolean(landmark && (landmark.visibility ?? 1) >= POSE_REP_MIN_VISIBILITY);
+}
+
+function isArmedVisible(landmark: PoseLandmark | undefined): landmark is PoseLandmark {
+  return Boolean(landmark && (landmark.visibility ?? 1) >= POSE_REP_MIN_VISIBILITY_ARMED);
+}
+
+/** Looser visibility while a jack set is active — wrists/ankles flicker during fast reps. */
+export function hasJumpingJackArmedTrackingLandmarks(landmarks: PoseLandmark[]): boolean {
+  const hasTorso =
+    isArmedVisible(landmarks[PoseLandmarkIndex.LEFT_SHOULDER]) &&
+    isArmedVisible(landmarks[PoseLandmarkIndex.RIGHT_SHOULDER]) &&
+    isArmedVisible(landmarks[PoseLandmarkIndex.LEFT_HIP]) &&
+    isArmedVisible(landmarks[PoseLandmarkIndex.RIGHT_HIP]);
+
+  const hasLeftChain =
+    isArmedVisible(landmarks[PoseLandmarkIndex.LEFT_WRIST]) &&
+    isArmedVisible(landmarks[PoseLandmarkIndex.LEFT_ANKLE]);
+  const hasRightChain =
+    isArmedVisible(landmarks[PoseLandmarkIndex.RIGHT_WRIST]) &&
+    isArmedVisible(landmarks[PoseLandmarkIndex.RIGHT_ANKLE]);
+
+  return hasTorso && (hasLeftChain || hasRightChain);
 }
 
 export function hasJumpingJackTrackingLandmarks(landmarks: PoseLandmark[]): boolean {
@@ -25,6 +51,57 @@ export function hasJumpingJackTrackingLandmarks(landmarks: PoseLandmark[]): bool
     isVisible(landmarks[PoseLandmarkIndex.RIGHT_ANKLE]);
 
   return hasArms && hasLegs;
+}
+
+/** Full body in frame with plausible proportions — blocks glitchy half-body skeletons. */
+export function isJumpingJackFullBodyStable(landmarks: PoseLandmark[]): boolean {
+  if (!hasJumpingJackTrackingLandmarks(landmarks)) {
+    return false;
+  }
+
+  const leftShoulder = landmarks[PoseLandmarkIndex.LEFT_SHOULDER];
+  const rightShoulder = landmarks[PoseLandmarkIndex.RIGHT_SHOULDER];
+  const leftHip = landmarks[PoseLandmarkIndex.LEFT_HIP];
+  const rightHip = landmarks[PoseLandmarkIndex.RIGHT_HIP];
+  const leftKnee = landmarks[PoseLandmarkIndex.LEFT_KNEE];
+  const rightKnee = landmarks[PoseLandmarkIndex.RIGHT_KNEE];
+  const leftAnkle = landmarks[PoseLandmarkIndex.LEFT_ANKLE];
+  const rightAnkle = landmarks[PoseLandmarkIndex.RIGHT_ANKLE];
+  const leftWrist = landmarks[PoseLandmarkIndex.LEFT_WRIST];
+  const rightWrist = landmarks[PoseLandmarkIndex.RIGHT_WRIST];
+
+  const shoulderY = (leftShoulder.y + rightShoulder.y) / 2;
+  const hipY = (leftHip.y + rightHip.y) / 2;
+
+  if (hipY - shoulderY < JUMPING_JACK_POSTURE.minShoulderToHipSpan) {
+    return false;
+  }
+
+  const leftLegSpan = leftAnkle.y - leftHip.y;
+  const rightLegSpan = rightAnkle.y - rightHip.y;
+
+  if (
+    leftLegSpan < JUMPING_JACK_POSTURE.minHipToAnkleSpan ||
+    rightLegSpan < JUMPING_JACK_POSTURE.minHipToAnkleSpan
+  ) {
+    return false;
+  }
+
+  if (leftKnee.y <= leftHip.y || rightKnee.y <= rightHip.y) {
+    return false;
+  }
+
+  if (leftAnkle.y <= leftKnee.y || rightAnkle.y <= rightKnee.y) {
+    return false;
+  }
+
+  for (const landmark of [leftAnkle, rightAnkle, leftWrist, rightWrist]) {
+    if (landmark.y < -0.05 || landmark.y > 1.15 || landmark.x < -0.15 || landmark.x > 1.15) {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 /** Ankle spread normalized by the more stable torso width. */

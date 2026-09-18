@@ -140,6 +140,9 @@ export function useExercisePoseDetection({
         const jumpingSquatArmedEmpty =
           exerciseType === 'jumping_squats' &&
           (engineRef.current as JumpingSquatRepEngine).armed;
+        const jumpingJackArmedEmpty =
+          exerciseType === 'jumping_jacks' &&
+          (engineRef.current as JumpingJackRepEngine).armed;
 
         // A partial jumping-jack cycle must not survive leaving the camera.
         if (exerciseType === 'jumping_jacks') {
@@ -152,6 +155,8 @@ export function useExercisePoseDetection({
           pushUpArmed: exerciseType === 'push_ups' ? pushUpArmedEmpty : undefined,
           jumpingSquatArmed:
             exerciseType === 'jumping_squats' ? jumpingSquatArmedEmpty : undefined,
+          jumpingJackArmed:
+            exerciseType === 'jumping_jacks' ? jumpingJackArmedEmpty : undefined,
           isLandscape: false,
         });
 
@@ -159,7 +164,8 @@ export function useExercisePoseDetection({
           quality.shouldResetEngine &&
           !pullUpArmedEmpty &&
           !pushUpArmedEmpty &&
-          !jumpingSquatArmedEmpty
+          !jumpingSquatArmedEmpty &&
+          !jumpingJackArmedEmpty
         ) {
           engineRef.current.reset();
           setPhase(getInitialExercisePhase(exerciseType));
@@ -196,11 +202,15 @@ export function useExercisePoseDetection({
       const jumpingSquatArmed =
         exerciseType === 'jumping_squats' &&
         (engineRef.current as JumpingSquatRepEngine).armed;
+      const jumpingJackArmed =
+        exerciseType === 'jumping_jacks' &&
+        (engineRef.current as JumpingJackRepEngine).armed;
 
       const quality = qualityGateRef.current.evaluate(landmarks, {
         pullUpArmed: exerciseType === 'pull_ups' ? pullUpArmed : undefined,
         pushUpArmed: exerciseType === 'push_ups' ? pushUpArmed : undefined,
         jumpingSquatArmed: exerciseType === 'jumping_squats' ? jumpingSquatArmed : undefined,
+        jumpingJackArmed: exerciseType === 'jumping_jacks' ? jumpingJackArmed : undefined,
         isLandscape,
       });
 
@@ -208,7 +218,8 @@ export function useExercisePoseDetection({
         quality.shouldResetEngine &&
         !pullUpArmed &&
         !(pushUpEngine?.hasStartedSet ?? false) &&
-        !jumpingSquatArmed
+        !jumpingSquatArmed &&
+        !jumpingJackArmed
       ) {
         engineRef.current.reset();
         setPhase(getInitialExercisePhase(exerciseType));
@@ -265,8 +276,14 @@ export function useExercisePoseDetection({
         exerciseType === 'push_ups' && (engine as PushUpRepEngine).repCountingActive;
       const jumpingSquatCounting =
         exerciseType === 'jumping_squats' && (engine as JumpingSquatRepEngine).armed;
+      // Engine only returns true when full-body stable; do not also require quality.canCountReps.
+      const jumpingJackCounting =
+        exerciseType === 'jumping_jacks' && (engine as JumpingJackRepEngine).armed;
 
-      if (repCompleted && (quality.canCountReps || pushUpCounting || jumpingSquatCounting)) {
+      if (
+        repCompleted &&
+        (quality.canCountReps || pushUpCounting || jumpingSquatCounting || jumpingJackCounting)
+      ) {
         onRepDetectedRef.current();
       }
     },

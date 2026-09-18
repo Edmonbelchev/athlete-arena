@@ -8,7 +8,10 @@ import {
 
 import { PoseLandmarkIndex, type PoseLandmark } from './landmarks';
 import { hasBurpeeTrackingLandmarks } from './burpeePosture';
-import { hasJumpingJackTrackingLandmarks } from './jumpingJackPosture';
+import {
+  hasJumpingJackTrackingLandmarks,
+  isJumpingJackFullBodyStable,
+} from './jumpingJackPosture';
 import { hasPullUpActiveTrackingLandmarks, hasPullUpTrackingLandmarks } from './pullUpPosture';
 import { hasPushUpTrackingLandmarks } from './pushUpPosture';
 import { hasBothSquatLegChains } from './squatPosture';
@@ -29,6 +32,8 @@ export interface PoseQualityOptions {
   pushUpArmed?: boolean;
   /** Jump-squat engine is armed - legs/feet only (torso may leave frame on a floor camera). */
   jumpingSquatArmed?: boolean;
+  /** Jumping-jack engine is armed - tolerate brief limb visibility dips without resetting the set. */
+  jumpingJackArmed?: boolean;
   /** Wider-than-tall preview - use stricter visibility and warmup gates. */
   isLandscape?: boolean;
 }
@@ -336,6 +341,13 @@ function checkRequiredLandmarks(
       };
     }
 
+    if (!isJumpingJackFullBodyStable(landmarks)) {
+      return {
+        ok: false,
+        message: 'Step back — keep your head, arms, and legs fully in frame',
+      };
+    }
+
     if (visibleCount < minVisibleTrackingPoints) {
       return {
         ok: false,
@@ -437,7 +449,9 @@ export class PoseQualityGate {
             ? POSE_QUALITY.partialFramesBeforeResetPushUpArmed
             : this.exerciseType === 'jumping_squats' && options?.jumpingSquatArmed === true
               ? POSE_QUALITY.partialFramesBeforeResetJumpingSquatArmed
-              : POSE_QUALITY.partialFramesBeforeReset;
+              : this.exerciseType === 'jumping_jacks' && options?.jumpingJackArmed === true
+                ? POSE_QUALITY.partialFramesBeforeResetJumpingJackArmed
+                : POSE_QUALITY.partialFramesBeforeReset;
 
       return {
         status: 'partial',
