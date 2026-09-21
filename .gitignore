@@ -16,6 +16,8 @@ expo-env.d.ts
 *.p8
 *.p12
 *.key
+*-firebase-adminsdk-*.json
+firebase-service-account.json
 *.mobileprovision
 
 # Metro

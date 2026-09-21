@@ -19,10 +19,7 @@ if (Platform.OS === 'ios' || Platform.OS === 'android') {
 function resolveExpoProjectId(): string | null {
   const fromConfig =
     Constants.expoConfig?.extra?.eas?.projectId ?? Constants.easConfig?.projectId ?? null;
-  const fromEnv =
-    process.env.EXPO_PUBLIC_EAS_PROJECT_ID?.trim() ||
-    process.env.EXPO_PUBLIC_EAS_PROJECT_ID?.trim() ||
-    null;
+  const fromEnv = process.env.EXPO_PUBLIC_EAS_PROJECT_ID?.trim() || null;
 
   return fromConfig || fromEnv;
 }
@@ -64,6 +61,11 @@ export async function requestPushNotificationPermissions(): Promise<boolean> {
     return true;
   }
 
+  if (Platform.OS === 'android') {
+    const { status } = await Notifications.requestPermissionsAsync();
+    return status === 'granted';
+  }
+
   const { status } = await Notifications.requestPermissionsAsync({
     ios: {
       allowAlert: true,
@@ -90,8 +92,19 @@ export async function getExpoPushToken(): Promise<string | null> {
     return null;
   }
 
-  const token = await Notifications.getExpoPushTokenAsync({ projectId });
-  return token.data;
+  try {
+    const token = await Notifications.getExpoPushTokenAsync({ projectId });
+    return token.data;
+  } catch (error) {
+    if (__DEV__) {
+      const hint =
+        Platform.OS === 'android'
+          ? '[push] Android: add google-services.json, upload FCM v1 key in EAS, then rebuild the native app.'
+          : '[push] iOS: configure APNs in EAS and use a device build (not Expo Go).';
+      console.warn(hint, error);
+    }
+    return null;
+  }
 }
 
 export async function registerPushTokenWithBackend(token: string): Promise<void> {

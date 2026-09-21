@@ -216,11 +216,11 @@ select publish_system_message(
 
 ## Push notifications
 
-Remote push uses Expo Push + Supabase Edge Functions. See **[supabase/PUSH_NOTIFICATIONS.md](./supabase/PUSH_NOTIFICATIONS.md)** for APNs credentials, migration `039`, edge function deploy, and webhook setup.
+Remote push uses Expo Push + Supabase Edge Functions. See **[supabase/PUSH_NOTIFICATIONS.md](./supabase/PUSH_NOTIFICATIONS.md)** for **iOS (APNs)** and **Android (FCM + `google-services.json`)**, migration `039`, edge function deploy, and webhook setup.
 
 Shared workout pushes deep-link to `/(tabs)/workouts/library?templateId=...`.
 
-After changing push config, create a **new iOS build** for TestFlight (`eas build --profile production --platform ios`).
+After changing push config, create a **new native build** (`eas build --profile production --platform ios` and/or `android`).
 
 ## Project structure
 

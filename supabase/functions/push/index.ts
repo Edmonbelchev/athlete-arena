@@ -67,6 +67,8 @@ Deno.serve(async (req) => {
     body: record.body,
     data: record.data ?? {},
     sound: 'default',
+    priority: 'high' as const,
+    channelId: 'default',
   }))
 
   const response = await fetch('https://exp.host/--/api/v2/push/send', {

@@ -1,6 +1,8 @@
-# Push notifications (TestFlight / production)
+# Push notifications (iOS + Android)
 
 Athlete Arena uses **Expo Push Notifications** with Supabase Edge Functions and a database outbox queue.
+
+The **same backend** delivers to iOS and Android. The app registers an Expo push token per device; the edge function sends to `https://exp.host/--/api/v2/push/send`.
 
 Events that trigger push:
 
@@ -25,9 +27,9 @@ Copy the project ID into:
 - `app.json` → `extra.eas.projectId`
 - `.env` → `EXPO_PUBLIC_EAS_PROJECT_ID`
 
-## 2. Configure Apple Push (TestFlight)
+## 2. Configure Apple Push (iOS / TestFlight)
 
-In [Expo credentials](https://expo.dev/accounts/_/projects/athlete-arena/credentials):
+In [Expo credentials](https://expo.dev/accounts/edmonbelchev/projects/athlete-arena/credentials):
 
 1. Open the iOS app credentials for `com.athletearena.app`
 2. Upload or generate an **APNs key** (`.p8`) for push notifications
@@ -43,6 +45,62 @@ eas submit --platform ios
 Push does not work in Expo Go. Use your TestFlight or dev client build on a physical device.
 
 Optional but recommended: create an [Expo access token](https://expo.dev/accounts/_/settings/access-tokens) with **Enhanced Security for Push Notifications** enabled.
+
+## 2b. Configure Android Push (FCM)
+
+Android needs **Firebase + EAS credentials** in addition to the app code (already wired for `platform: android` tokens and the `default` notification channel).
+
+### A. Firebase project
+
+1. Open [Firebase Console](https://console.firebase.google.com/) → create or select a project for Athlete Arena.
+2. **Add Android app** with package name **`com.athletearena.app`** (must match `app.json`).
+3. Download **`google-services.json`** and place it at the **repo root**:
+
+   `./google-services.json`
+
+   (`app.json` → `android.googleServicesFile` points here.) You may commit this file; it is not secret.
+
+### B. FCM v1 service account (EAS)
+
+Expo sends Android pushes via **FCM v1**. Upload the server key to EAS (not into the repo):
+
+1. Firebase → **Project settings** → **Service accounts** → **Generate new private key** (JSON).
+2. Add that JSON to `.gitignore` (never commit it).
+3. Upload to EAS:
+
+   ```bash
+   eas credentials
+   # Android → production (or preview) → Google Service Account
+   # → Manage FCM v1 key → Upload new service account key
+   ```
+
+   Or upload under [Project credentials → Android → FCM v1 service account key](https://expo.dev/accounts/edmonbelchev/projects/athlete-arena/credentials).
+
+See [Expo: FCM credentials](https://docs.expo.dev/push-notifications/fcm-credentials/).
+
+### C. Build a native Android app
+
+Push requires a **dev client or production APK/AAB**, not Expo Go:
+
+```bash
+eas build --profile production --platform android
+# or internal testing:
+eas build --profile preview --platform android
+```
+
+Install on a **physical device**, sign in, and accept the notification permission prompt (Android 13+).
+
+### D. Play Console / API key restrictions (if pushes fail with 403)
+
+If `google-services.json` uses a restricted API key, allow **FCM Registration API** and **Firebase Installations API**, and match Play **app signing** SHA-1 if you restrict by certificate.
+
+### Android checklist
+
+- [ ] `google-services.json` at repo root
+- [ ] FCM v1 JSON uploaded in EAS credentials
+- [ ] New Android build after adding `google-services.json`
+- [ ] `EXPO_ACCESS_TOKEN` set for edge function (same as iOS)
+- [ ] Row in `user_push_tokens` with `platform = 'android'` after login
 
 ## 3. Apply database migration
 
@@ -85,10 +143,19 @@ Each inserted outbox row sends push notifications to all tokens registered for t
 
 ## 6. Test on device
 
+**iOS**
+
 1. Install the latest TestFlight build
-2. Sign in and accept the iOS notification permission prompt
+2. Sign in and accept the notification permission prompt
 3. Trigger an event (e.g. send a friend request from another account)
-4. Put the app in the background and confirm the notification arrives
+4. Background the app and confirm the notification arrives
+
+**Android**
+
+1. Install the latest EAS Android build on a physical device
+2. Sign in → allow notifications when prompted
+3. Confirm SQL: `select * from user_push_tokens where platform = 'android'`
+4. Trigger the same event as iOS; notification should use channel **Athlete Arena** (`default`)
 
 ### Debug tips
 

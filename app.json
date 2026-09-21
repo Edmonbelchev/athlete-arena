@@ -19,6 +19,7 @@
     },
     "android": {
       "package": "com.athletearena.app",
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "backgroundColor": "#FFFFFF",
         "foregroundImage": "./assets/images/logo.png"

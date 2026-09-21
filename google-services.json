@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "185390060769",
+    "project_id": "athlete-arena-7b131",
+    "storage_bucket": "athlete-arena-7b131.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:185390060769:android:4c104223c3b9c3f24d93a0",
+        "android_client_info": {
+          "package_name": "com.athletearena.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDsqtJ36fbUfMZ0IkJyCUQezF-xpv_j42c"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
