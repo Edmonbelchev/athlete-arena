@@ -6,6 +6,7 @@ import { LeaderboardPodium } from '@/components/leaderboard/LeaderboardPodium';
 import { AppIcon } from '@/components/ui/AppIcon';
 import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import type { CustomWorkoutType } from '@/types/customWorkouts';
 import type { LeaderboardEntry } from '@/types/leaderboard';
 import {
   getWorkoutLeaderboardPeriodLabel,
@@ -20,6 +21,7 @@ interface WorkoutLeaderboardPanelProps {
   entries: WorkoutLeaderboardEntry[];
   period: WorkoutLeaderboardPeriod;
   metric: WorkoutLeaderboardMetric | null;
+  workoutType?: CustomWorkoutType | null;
   onPeriodChange: (period: WorkoutLeaderboardPeriod) => void;
   isLoading?: boolean;
   error?: string | null;
@@ -45,11 +47,19 @@ function mapToLeaderboardEntry(entry: WorkoutLeaderboardEntry): LeaderboardEntry
 function getScoreParts(
   entry: WorkoutLeaderboardEntry,
   metric: WorkoutLeaderboardMetric | null,
+  workoutType?: CustomWorkoutType | null,
 ): { display: string; subLabel: string } {
   if (metric === 'fastest_time') {
     return {
       display: formatRaceTime(entry.scoreAmount),
       subLabel: 'finish time',
+    };
+  }
+
+  if (workoutType === 'emom') {
+    return {
+      display: `${entry.scoreAmount} min`,
+      subLabel: `${entry.tiebreakAmount} reps`,
     };
   }
 
@@ -63,6 +73,7 @@ export function WorkoutLeaderboardPanel({
   entries,
   period,
   metric,
+  workoutType = null,
   onPeriodChange,
   isLoading = false,
   error = null,
@@ -97,11 +108,11 @@ export function WorkoutLeaderboardPanel({
     () =>
       Object.fromEntries(
         dedupedEntries.map((entry) => {
-          const parts = getScoreParts(entry, metric);
+          const parts = getScoreParts(entry, metric, workoutType);
           return [entry.userId, { value: parts.display, subLabel: parts.subLabel }];
         }),
       ),
-    [dedupedEntries, metric],
+    [dedupedEntries, metric, workoutType],
   );
 
   const entryByUserId = useMemo(
@@ -115,7 +126,8 @@ export function WorkoutLeaderboardPanel({
         <View style={styles.headerCopy}>
           <Text style={[styles.title, { color: theme.text }]}>Leaderboard</Text>
           <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
-            Ranked by {getWorkoutLeaderboardScoreLabel(metric).toLowerCase()} · {getWorkoutLeaderboardPeriodLabel(period)}
+            Ranked by {getWorkoutLeaderboardScoreLabel(metric, workoutType).toLowerCase()} ·{' '}
+            {getWorkoutLeaderboardPeriodLabel(period)}
           </Text>
         </View>
         <AppIcon name="crown" size={20} color={theme.streak} weight="semibold" />
@@ -163,7 +175,7 @@ export function WorkoutLeaderboardPanel({
           <View style={styles.list}>
             {listEntries.map((entry) => {
               const workoutEntry = entryByUserId.get(entry.userId);
-              const parts = workoutEntry ? getScoreParts(workoutEntry, metric) : null;
+              const parts = workoutEntry ? getScoreParts(workoutEntry, metric, workoutType) : null;
 
               return (
                 <LeaderboardListItem

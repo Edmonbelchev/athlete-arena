@@ -98,6 +98,10 @@ The **Workouts** tab is a hub with two sections:
 
 **Cindy AMRAP** — 20 minutes, 5 pull-ups / 10 push-ups / 15 squats per round. Leaderboard ranks by completed rounds, then total reps when rounds tie.
 
+**Cindy EMOM** — 20 one-minute intervals with the same 5 / 10 / 15 circuit each minute. Personal history only (no public leaderboard in the app).
+
+**Stimulus Travel WOD 7** — 15 minutes EMOM: 3 push-ups and 3 burpees each minute. Personal history only.
+
 Session history is always **per user** (your runs only, even on shared templates).
 
 ## Premium & RevenueCat

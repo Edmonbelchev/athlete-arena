@@ -4,7 +4,10 @@ import { AppIcon } from '@/components/ui/AppIcon';
 import { formatWorkoutTimeLimit, getCustomWorkoutTypeLabel } from '@/constants/customWorkouts';
 import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
-import type { CatalogWorkoutSummary } from '@/types/catalogWorkouts';
+import {
+  isCatalogWorkoutLeaderboardVisible,
+  type CatalogWorkoutSummary,
+} from '@/types/catalogWorkouts';
 
 interface CatalogWorkoutCardProps {
   workout: CatalogWorkoutSummary;
@@ -44,7 +47,7 @@ export function CatalogWorkoutCard({ workout, onPress }: CatalogWorkoutCardProps
             ? getCustomWorkoutTypeLabel(workout.workoutType)
             : `${getCustomWorkoutTypeLabel(workout.workoutType)} · ${formatWorkoutTimeLimit(workout.timeLimitSeconds)}`}
           </Text>
-          {workout.leaderboardMetric ? (
+          {isCatalogWorkoutLeaderboardVisible(workout.workoutType, workout.leaderboardMetric) ? (
             <View style={[styles.leaderboardPill, { backgroundColor: `${theme.streak}18` }]}>
               <AppIcon name="crown" size={12} color={theme.streak} weight="semibold" />
               <Text style={[styles.leaderboardPillText, { color: theme.streak }]}>Leaderboard</Text>

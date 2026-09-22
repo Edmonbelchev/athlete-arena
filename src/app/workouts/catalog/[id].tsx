@@ -23,6 +23,7 @@ import {
 } from '@/constants/customWorkouts';
 import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { setPendingCustomWorkoutLaunch } from '@/features/workouts/customWorkoutLaunchStore';
+import { isOfficialWorkoutCategoryType } from '@/features/workouts/officialWorkoutCategories';
 import { cloneCustomWorkoutExercises } from '@/features/workouts/useAmrapWorkout';
 import { useTheme } from '@/hooks/use-theme';
 import { formatUserError } from '@/lib/errors';
@@ -36,7 +37,9 @@ import type { CatalogWorkoutDetail } from '@/types/catalogWorkouts';
 import type { WorkoutLeaderboardEntry, WorkoutLeaderboardPeriod } from '@/types/catalogWorkouts';
 import {
   formatWorkoutAmrapScore,
+  formatWorkoutEmomScore,
   formatWorkoutForTimeScore,
+  isCatalogWorkoutLeaderboardVisible,
 } from '@/types/catalogWorkouts';
 
 export default function CatalogWorkoutScreen() {
@@ -99,13 +102,17 @@ export default function CatalogWorkoutScreen() {
     void loadWorkout();
   }, [loadWorkout]);
 
+  const showLeaderboard =
+    workout !== null &&
+    isCatalogWorkoutLeaderboardVisible(workout.workoutType, workout.leaderboardMetric);
+
   useEffect(() => {
-    if (!id || !workout?.leaderboardMetric) {
+    if (!id || !showLeaderboard) {
       return;
     }
 
     void loadLeaderboard(id, leaderboardPeriod);
-  }, [id, leaderboardPeriod, loadLeaderboard, workout?.leaderboardMetric]);
+  }, [id, leaderboardPeriod, loadLeaderboard, showLeaderboard]);
 
   function handleStartWorkout() {
     if (
@@ -129,13 +136,20 @@ export default function CatalogWorkoutScreen() {
     router.push(getCustomWorkoutSessionPath(workout.workoutType));
   }
 
+  const officialBackHref =
+    workout && isOfficialWorkoutCategoryType(workout.workoutType)
+      ? (`/(tabs)/workouts/official/${workout.workoutType}` as const)
+      : ('/(tabs)/workouts/official' as const);
+
   const bestScoreLabel =
     workout?.leaderboardMetric === 'fastest_time' && workout.myBestElapsedSeconds !== null
       ? formatWorkoutForTimeScore(workout.myBestElapsedSeconds)
       : workout?.leaderboardMetric === 'most_rounds' &&
           workout.myBestRounds !== null &&
           workout.myBestReps !== null
-        ? formatWorkoutAmrapScore(workout.myBestRounds, workout.myBestReps)
+        ? workout.workoutType === 'emom'
+          ? formatWorkoutEmomScore(workout.myBestRounds, workout.myBestReps)
+          : formatWorkoutAmrapScore(workout.myBestRounds, workout.myBestReps)
         : null;
 
   return (
@@ -149,7 +163,7 @@ export default function CatalogWorkoutScreen() {
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Go back"
-              onPress={() => leaveScreen(router, '/(tabs)/workouts/official')}
+              onPress={() => leaveScreen(router, officialBackHref)}
               style={styles.headerBack}>
               <AppIcon name="chevronBack" size={22} color={theme.text} />
             </Pressable>
@@ -213,11 +227,12 @@ export default function CatalogWorkoutScreen() {
 
             <WorkoutHistoryPanel sessions={history} />
 
-            {workout.leaderboardMetric ? (
+            {showLeaderboard ? (
               <WorkoutLeaderboardPanel
                 entries={leaderboard}
                 period={leaderboardPeriod}
                 metric={workout.leaderboardMetric}
+                workoutType={workout.workoutType}
                 onPeriodChange={setLeaderboardPeriod}
                 isLoading={isLeaderboardLoading}
                 error={leaderboardError}

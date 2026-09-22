@@ -1,5 +1,5 @@
-import { router, useFocusEffect, type Href } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { router, useFocusEffect, useLocalSearchParams, type Href } from 'expo-router';
+import { useCallback, useMemo } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -16,46 +16,35 @@ import { AppIcon } from '@/components/ui/AppIcon';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { CatalogWorkoutCard } from '@/components/workouts/CatalogWorkoutCard';
 import { WorkoutBrowseToolbar } from '@/components/workouts/WorkoutBrowseToolbar';
-import { WorkoutTypeSectionHeader } from '@/components/workouts/WorkoutTypeSectionHeader';
+import { getCustomWorkoutTypeDefinition } from '@/constants/customWorkouts';
 import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
+import {
+  getOfficialWorkoutCategoryIcon,
+  isOfficialWorkoutCategoryType,
+} from '@/features/workouts/officialWorkoutCategories';
+import { useOfficialWorkoutCatalog } from '@/features/workouts/useOfficialWorkoutCatalog';
 import { useWorkoutBrowseList } from '@/features/workouts/useWorkoutBrowseList';
-import type { WorkoutBrowseRow } from '@/features/workouts/workoutBrowseList';
 import { useTheme } from '@/hooks/use-theme';
-import { formatUserError } from '@/lib/errors';
 import { leaveScreen } from '@/lib/navigation';
-import { getWorkoutCatalog } from '@/services/workoutCatalogService';
 import type { CatalogWorkoutSummary } from '@/types/catalogWorkouts';
 
-export default function OfficialWorkoutsScreen() {
+export default function OfficialWorkoutsByTypeScreen() {
   const theme = useTheme();
-  const [workouts, setWorkouts] = useState<CatalogWorkoutSummary[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { type } = useLocalSearchParams<{ type: string }>();
+  const workoutType = typeof type === 'string' && isOfficialWorkoutCategoryType(type) ? type : null;
+  const typeDefinition = workoutType ? getCustomWorkoutTypeDefinition(workoutType) : null;
+
+  const { workouts, isLoading, isRefreshing, error, refresh } = useOfficialWorkoutCatalog();
+
+  const categoryWorkouts = useMemo(
+    () => (workoutType ? workouts.filter((workout) => workout.workoutType === workoutType) : []),
+    [workoutType, workouts],
+  );
 
   const browse = useWorkoutBrowseList({
-    items: workouts,
+    items: categoryWorkouts,
     getKey: (workout) => workout.catalogWorkoutId,
   });
-
-  const refresh = useCallback(async (options?: { silent?: boolean }) => {
-    if (options?.silent) {
-      setIsRefreshing(true);
-    } else {
-      setIsLoading(true);
-    }
-
-    setError(null);
-
-    try {
-      setWorkouts(await getWorkoutCatalog());
-    } catch (err) {
-      setError(formatUserError(err, 'Failed to load official workouts'));
-    } finally {
-      setIsLoading(false);
-      setIsRefreshing(false);
-    }
-  }, []);
 
   useFocusEffect(
     useCallback(() => {
@@ -63,15 +52,29 @@ export default function OfficialWorkoutsScreen() {
     }, [refresh]),
   );
 
-  function renderRow({ item }: { item: WorkoutBrowseRow<CatalogWorkoutSummary> }) {
-    if (item.kind === 'section') {
-      return <WorkoutTypeSectionHeader label={item.label} />;
-    }
+  if (!workoutType || !typeDefinition) {
+    return (
+      <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]} edges={['left', 'right', 'bottom']}>
+        <View style={styles.invalidContent}>
+          <Text style={[styles.invalidTitle, { color: theme.text }]}>Unknown workout format</Text>
+          <PrimaryButton
+            label="Back to Arena workouts"
+            onPress={() => router.replace('/(tabs)/workouts/official' as Href)}
+          />
+        </View>
+      </SafeAreaView>
+    );
+  }
 
+  const accentColor =
+    workoutType === 'amrap' ? theme.streak : workoutType === 'for_time' ? theme.primary : theme.text;
+  const categoryIcon = getOfficialWorkoutCategoryIcon(workoutType);
+
+  function renderRow({ item }: { item: CatalogWorkoutSummary }) {
     return (
       <CatalogWorkoutCard
-        workout={item.item}
-        onPress={() => router.push(`/workouts/catalog/${item.item.catalogWorkoutId}` as Href)}
+        workout={item}
+        onPress={() => router.push(`/workouts/catalog/${item.catalogWorkoutId}` as Href)}
       />
     );
   }
@@ -81,31 +84,32 @@ export default function OfficialWorkoutsScreen() {
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Go back"
-        onPress={() => leaveScreen(router, '/(tabs)/workouts')}
+        onPress={() => leaveScreen(router, '/(tabs)/workouts/official')}
         style={styles.backRow}>
         <AppIcon name="chevronBack" size={20} color={theme.textSecondary} />
-        <Text style={[styles.backLabel, { color: theme.textSecondary }]}>Workouts</Text>
+        <Text style={[styles.backLabel, { color: theme.textSecondary }]}>Arena workouts</Text>
       </Pressable>
 
       <TabScreenHeader
-        title="Arena workouts"
-        subtitle="Arena benchmarks with leaderboards for everyone"
+        title={typeDefinition.label}
+        subtitle={typeDefinition.description}
         rightSlot={
-          <View style={[styles.headerBadge, { backgroundColor: `${theme.streak}18` }]}>
-            <AppIcon name="medal" size={22} color={theme.streak} weight="bold" />
+          <View style={[styles.headerBadge, { backgroundColor: `${accentColor}18` }]}>
+            <AppIcon name={categoryIcon} size={22} color={accentColor} weight="bold" />
           </View>
         }
       />
 
-      {workouts.length > 0 ? (
+      {categoryWorkouts.length > 0 ? (
         <WorkoutBrowseToolbar
           searchQuery={browse.searchQuery}
           onSearchQueryChange={browse.setSearchQuery}
-          typeFilter={browse.typeFilter}
-          onTypeFilterChange={browse.setTypeFilter}
-          availableTypes={browse.availableTypes}
+          typeFilter="all"
+          onTypeFilterChange={() => {}}
+          availableTypes={[]}
           totalCount={browse.filteredItems.length}
           visibleCount={browse.visibleItems.length}
+          showTypeFilter={false}
         />
       ) : null}
 
@@ -122,22 +126,22 @@ export default function OfficialWorkoutsScreen() {
         </View>
       ) : null}
 
-      {!isLoading && workouts.length === 0 ? (
+      {!isLoading && categoryWorkouts.length === 0 ? (
         <View style={[styles.emptyCard, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
-          <AppIcon name="medal" size={28} color={theme.streak} weight="semibold" />
-          <Text style={[styles.emptyTitle, { color: theme.text }]}>No official workouts yet</Text>
+          <AppIcon name={categoryIcon} size={28} color={accentColor} weight="semibold" />
+          <Text style={[styles.emptyTitle, { color: theme.text }]}>No {typeDefinition.label} workouts yet</Text>
           <Text style={[styles.emptyBody, { color: theme.textSecondary }]}>
-            Check back soon for new Arena benchmarks.
+            Check back soon for new Arena benchmarks in this format.
           </Text>
         </View>
       ) : null}
 
-      {!isLoading && workouts.length > 0 && browse.filteredItems.length === 0 ? (
+      {!isLoading && categoryWorkouts.length > 0 && browse.filteredItems.length === 0 ? (
         <View style={[styles.emptyCard, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
           <AppIcon name="target" size={28} color={theme.textSecondary} weight="semibold" />
           <Text style={[styles.emptyTitle, { color: theme.text }]}>No matches</Text>
           <Text style={[styles.emptyBody, { color: theme.textSecondary }]}>
-            Try another search term or switch the workout type filter.
+            Try another search term.
           </Text>
         </View>
       ) : null}
@@ -147,8 +151,8 @@ export default function OfficialWorkoutsScreen() {
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]} edges={['left', 'right', 'bottom']}>
       <FlatList
-        data={!isLoading && workouts.length > 0 ? browse.listRows : []}
-        keyExtractor={(item) => (item.kind === 'section' ? `section-${item.workoutType}` : item.key)}
+        data={!isLoading && categoryWorkouts.length > 0 ? browse.visibleItems : []}
+        keyExtractor={(item) => item.catalogWorkoutId}
         renderItem={renderRow}
         ItemSeparatorComponent={() => <View style={styles.listSeparator} />}
         ListHeaderComponent={listHeader}
@@ -191,6 +195,20 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     width: '100%',
     paddingBottom: Spacing.six,
+  },
+  invalidContent: {
+    flex: 1,
+    padding: Spacing.four,
+    justifyContent: 'center',
+    gap: Spacing.three,
+    maxWidth: MaxContentWidth,
+    alignSelf: 'center',
+    width: '100%',
+  },
+  invalidTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    textAlign: 'center',
   },
   headerContent: {
     gap: Spacing.three,

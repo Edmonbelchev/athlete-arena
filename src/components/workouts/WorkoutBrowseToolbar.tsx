@@ -16,6 +16,7 @@ interface WorkoutBrowseToolbarProps {
   visibleCount: number;
   searchPlaceholder?: string;
   variant?: 'card' | 'plain';
+  showTypeFilter?: boolean;
 }
 
 export function WorkoutBrowseToolbar({
@@ -28,6 +29,7 @@ export function WorkoutBrowseToolbar({
   visibleCount,
   searchPlaceholder = 'Search by title',
   variant = 'card',
+  showTypeFilter = true,
 }: WorkoutBrowseToolbarProps) {
   const theme = useTheme();
   const typeOptions: WorkoutTypeFilter[] = ['all', ...availableTypes];
@@ -83,7 +85,7 @@ export function WorkoutBrowseToolbar({
   if (variant === 'plain') {
     return (
       <View style={styles.plainContainer}>
-        {typeFilters}
+        {showTypeFilter ? typeFilters : null}
         {searchInput}
         {showCount ? (
           <Text style={[styles.resultsLabel, { color: theme.textSecondary }]}>
@@ -97,7 +99,7 @@ export function WorkoutBrowseToolbar({
   return (
     <View style={[styles.card, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
       <Text style={[styles.label, { color: theme.textSecondary }]}>Browse</Text>
-      {typeFilters}
+      {showTypeFilter ? typeFilters : null}
       {searchInput}
       {showCount ? (
         <Text style={[styles.resultsLabel, { color: theme.textSecondary }]}>

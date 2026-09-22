@@ -64,9 +64,27 @@ export interface WorkoutLeaderboardEntry {
   isCurrentUser: boolean;
 }
 
-export function getWorkoutLeaderboardScoreLabel(metric: WorkoutLeaderboardMetric | null): string {
+export function isCatalogWorkoutLeaderboardVisible(
+  workoutType: CustomWorkoutType,
+  leaderboardMetric: WorkoutLeaderboardMetric | null,
+): boolean {
+  if (workoutType === 'emom') {
+    return false;
+  }
+
+  return leaderboardMetric !== null;
+}
+
+export function getWorkoutLeaderboardScoreLabel(
+  metric: WorkoutLeaderboardMetric | null,
+  workoutType?: CustomWorkoutType | null,
+): string {
   if (metric === 'fastest_time') {
     return 'Finish time';
+  }
+
+  if (workoutType === 'emom') {
+    return 'Min · reps';
   }
 
   return 'Rounds · reps';

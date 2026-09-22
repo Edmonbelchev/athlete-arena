@@ -73,8 +73,8 @@ export default function WorkoutsHubScreen() {
               title="Arena workouts"
               description={
                 officialCount > 0
-                  ? `${officialCount} Arena workout${officialCount === 1 ? '' : 's'} with leaderboards`
-                  : 'Arena workouts with leaderboards for everyone'
+                  ? `${officialCount} Arena benchmark${officialCount === 1 ? '' : 's'} · AMRAP, For Time, EMOM`
+                  : 'Arena benchmarks by workout format'
               }
               icon="medal"
               accentColor={theme.streak}
@@ -87,9 +87,9 @@ export default function WorkoutsHubScreen() {
               description={
                 isPremium
                   ? libraryCount > 0
-                    ? `${libraryCount} saved workout${libraryCount === 1 ? '' : 's'} · create and share`
-                    : 'Build, save, and share custom workouts'
-                  : 'Create and share custom workouts'
+                    ? `${libraryCount} saved · AMRAP, For Time, EMOM`
+                    : 'Build, save, and share by workout format'
+                  : 'Custom workouts by format · Premium to create'
               }
               icon="dumbbell"
               accentColor={theme.primary}
