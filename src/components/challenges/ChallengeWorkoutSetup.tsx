@@ -1,5 +1,5 @@
 import * as ScreenOrientation from 'expo-screen-orientation';
-import { useEffect } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Platform } from 'react-native';
 
@@ -16,6 +16,7 @@ interface ChallengeWorkoutSetupProps {
   exerciseType: ExerciseType;
   targetReps: number;
   subtitle?: string;
+  preview?: ReactNode;
   onStart: () => void;
   onCancel: () => void;
 }
@@ -36,6 +37,7 @@ export function ChallengeWorkoutSetup({
   exerciseType,
   targetReps,
   subtitle,
+  preview,
   onStart,
   onCancel,
 }: ChallengeWorkoutSetupProps) {
@@ -59,6 +61,8 @@ export function ChallengeWorkoutSetup({
         {subtitle ? (
           <Text style={StyleSheet.flatten([styles.subtitle, { color: theme.textSecondary }])}>{subtitle}</Text>
         ) : null}
+
+        {preview ? <View style={styles.preview}>{preview}</View> : null}
 
         <WorkoutGuideAnimation exerciseType={exerciseType} variant="setup" />
 

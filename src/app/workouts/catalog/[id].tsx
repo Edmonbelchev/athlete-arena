@@ -12,6 +12,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { WorkoutCircuitPreview } from '@/components/workouts/WorkoutCircuitPreview';
+import { WorkoutXpPreviewCard } from '@/components/workouts/WorkoutXpPreviewCard';
+import { resolveForTimeSteps } from '@/features/workouts/forTimeStructure';
 import { WorkoutHistoryPanel } from '@/components/workouts/WorkoutHistoryPanel';
 import { WorkoutLeaderboardPanel } from '@/components/workouts/WorkoutLeaderboardPanel';
 import { AppIcon } from '@/components/ui/AppIcon';
@@ -212,6 +214,22 @@ export default function CatalogWorkoutScreen() {
               exercises={workout.exercises}
               structureConfig={workout.structureConfig}
             />
+
+            {workout.workoutType === 'amrap' ||
+            workout.workoutType === 'for_time' ||
+            workout.workoutType === 'emom' ? (
+              <WorkoutXpPreviewCard
+                workoutType={workout.workoutType}
+                exercises={
+                  workout.workoutType === 'for_time'
+                    ? resolveForTimeSteps(workout.exercises, workout.structureConfig)
+                    : workout.exercises
+                }
+                timeLimitSeconds={
+                  workout.workoutType === 'for_time' ? 0 : workout.timeLimitSeconds
+                }
+              />
+            ) : null}
 
             {workout.workoutType === 'amrap' ||
             workout.workoutType === 'for_time' ||

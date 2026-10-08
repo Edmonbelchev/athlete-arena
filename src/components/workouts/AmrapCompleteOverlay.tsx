@@ -5,15 +5,16 @@ import { formatExerciseLabel } from '@/constants/challenges';
 import { formatWorkoutTimeLimit, getCustomWorkoutTypeLabel } from '@/constants/customWorkouts';
 import { Radius, Spacing } from '@/constants/theme';
 import type { AmrapWorkoutResult } from '@/types/customWorkouts';
-import type { DailyWorkoutBonus } from '@/types/titles';
+import { WorkoutSessionRewardCard } from '@/components/workouts/WorkoutSessionRewardCard';
+import type { WorkoutSessionReward } from '@/types/titles';
 import { useTheme } from '@/hooks/use-theme';
 
 interface AmrapCompleteOverlayProps {
   result: AmrapWorkoutResult;
-  dailyBonus?: DailyWorkoutBonus | null;
+  sessionReward?: WorkoutSessionReward | null;
 }
 
-export function AmrapCompleteOverlay({ result, dailyBonus = null }: AmrapCompleteOverlayProps) {
+export function AmrapCompleteOverlay({ result, sessionReward = null }: AmrapCompleteOverlayProps) {
   const theme = useTheme();
   const typeLabel = getCustomWorkoutTypeLabel(result.workoutType);
 
@@ -38,14 +39,7 @@ export function AmrapCompleteOverlay({ result, dailyBonus = null }: AmrapComplet
         </View>
       </View>
 
-      {dailyBonus ? (
-        <View style={[styles.bonusCard, { backgroundColor: theme.backgroundElement, borderColor: theme.primary }]}>
-          <Text style={[styles.bonusTitle, { color: theme.text }]}>Daily workout bonus</Text>
-          <Text style={[styles.bonusCopy, { color: theme.textSecondary }]}>
-            +{dailyBonus.xp} XP · +{dailyBonus.coins.toLocaleString()} coins
-          </Text>
-        </View>
-      ) : null}
+      {sessionReward ? <WorkoutSessionRewardCard reward={sessionReward} /> : null}
 
       <View style={[styles.breakdownCard, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
         <Text style={[styles.breakdownTitle, { color: theme.text }]}>Exercise breakdown</Text>

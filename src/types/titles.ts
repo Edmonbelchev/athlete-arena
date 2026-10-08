@@ -19,12 +19,15 @@ export interface TitleRecord {
   equipped: boolean;
 }
 
-export interface DailyWorkoutBonus {
+/** @deprecated Use WorkoutSessionReward */
+export type DailyWorkoutBonus = WorkoutSessionReward;
+
+export interface WorkoutSessionReward {
   xp: number;
   coins: number;
 }
 
 export interface SaveWorkoutSessionResult {
   sessionId: string;
-  dailyBonus: DailyWorkoutBonus | null;
+  reward: WorkoutSessionReward | null;
 }

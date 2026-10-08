@@ -26,7 +26,9 @@ import { consumePendingCustomWorkoutLaunch } from '@/features/workouts/customWor
 import {
   getForTimeStepContext,
   getForTimeStepCount,
+  resolveForTimeSteps,
 } from '@/features/workouts/forTimeStructure';
+import { WorkoutXpPreviewCard } from '@/components/workouts/WorkoutXpPreviewCard';
 import { useFinalizeWorkoutSave } from '@/features/workouts/useFinalizeWorkoutSave';
 import { useAmrapWorkout } from '@/features/workouts/useAmrapWorkout';
 import { useEmomWorkout } from '@/features/workouts/useEmomWorkout';
@@ -50,7 +52,7 @@ import type {
   EmomWorkoutResult,
   ForTimeWorkoutResult,
 } from '@/types/customWorkouts';
-import type { DailyWorkoutBonus } from '@/types/titles';
+import type { WorkoutSessionReward } from '@/types/titles';
 import { useTheme } from '@/hooks/use-theme';
 import { useUserSettings } from '@/features/settings/UserSettingsProvider';
 
@@ -83,7 +85,7 @@ function AmrapWorkoutSession({ config }: { config: CustomWorkoutLaunchConfig }) 
     sessionKey,
   );
   const [savedResult, setSavedResult] = useState<AmrapWorkoutResult | null>(null);
-  const [dailyWorkoutBonus, setDailyWorkoutBonus] = useState<DailyWorkoutBonus | null>(null);
+  const [sessionReward, setSessionReward] = useState<WorkoutSessionReward | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const savedResultRef = useRef<AmrapWorkoutResult | null>(null);
@@ -107,7 +109,7 @@ function AmrapWorkoutSession({ config }: { config: CustomWorkoutLaunchConfig }) 
 
     try {
       const saveResult = await saveCustomWorkoutSession(result);
-      setDailyWorkoutBonus(saveResult.dailyBonus);
+      setSessionReward(saveResult.reward);
       if (config.friendChallengeParticipantId) {
         await syncFriendWorkoutChallengeCompletion(config.friendChallengeParticipantId, {
           startedAt: result.startedAt,
@@ -204,7 +206,7 @@ function AmrapWorkoutSession({ config }: { config: CustomWorkoutLaunchConfig }) 
         pullUpBarLineY={null}
         completed
         onContinue={handleLeave}
-        completeOverlay={<AmrapCompleteOverlay result={savedResult} dailyBonus={dailyWorkoutBonus} />}
+        completeOverlay={<AmrapCompleteOverlay result={savedResult} sessionReward={sessionReward} />}
         footer={
           saveError ? (
             <Text style={[styles.error, { color: theme.danger }]}>{saveError}</Text>
@@ -268,6 +270,13 @@ function AmrapWorkoutSession({ config }: { config: CustomWorkoutLaunchConfig }) 
         exerciseType={amrap.currentExercise.exerciseType}
         targetReps={amrap.currentExercise.targetReps}
         subtitle={setupSubtitle}
+        preview={
+          <WorkoutXpPreviewCard
+            workoutType="amrap"
+            exercises={config.exercises}
+            timeLimitSeconds={config.timeLimitSeconds}
+          />
+        }
         onStart={markWorkoutStarted}
         onCancel={handleLeave}
       />
@@ -286,7 +295,7 @@ function EmomWorkoutSession({ config }: { config: CustomWorkoutLaunchConfig }) {
     sessionKey,
   );
   const [savedResult, setSavedResult] = useState<EmomWorkoutResult | null>(null);
-  const [dailyWorkoutBonus, setDailyWorkoutBonus] = useState<DailyWorkoutBonus | null>(null);
+  const [sessionReward, setSessionReward] = useState<WorkoutSessionReward | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const savedResultRef = useRef<EmomWorkoutResult | null>(null);
@@ -311,7 +320,7 @@ function EmomWorkoutSession({ config }: { config: CustomWorkoutLaunchConfig }) {
 
     try {
       const saveResult = await saveEmomWorkoutSession(result);
-      setDailyWorkoutBonus(saveResult.dailyBonus);
+      setSessionReward(saveResult.reward);
       if (config.friendChallengeParticipantId) {
         await syncFriendWorkoutChallengeCompletion(config.friendChallengeParticipantId, {
           startedAt: result.startedAt,
@@ -400,7 +409,7 @@ function EmomWorkoutSession({ config }: { config: CustomWorkoutLaunchConfig }) {
         onLandmarksDetected={() => {}}
         completed
         onContinue={handleLeave}
-        completeOverlay={<EmomCompleteOverlay result={savedResult} dailyBonus={dailyWorkoutBonus} />}
+        completeOverlay={<EmomCompleteOverlay result={savedResult} sessionReward={sessionReward} />}
         footer={
           saveError ? (
             <Text style={[styles.error, { color: theme.danger }]}>{saveError}</Text>
@@ -466,6 +475,13 @@ function EmomWorkoutSession({ config }: { config: CustomWorkoutLaunchConfig }) {
         exerciseType={emom.currentExercise.exerciseType}
         targetReps={emom.currentExercise.targetReps}
         subtitle={setupSubtitle}
+        preview={
+          <WorkoutXpPreviewCard
+            workoutType="emom"
+            exercises={config.exercises}
+            timeLimitSeconds={config.timeLimitSeconds}
+          />
+        }
         onStart={markWorkoutStarted}
         onCancel={handleLeave}
       />
@@ -484,7 +500,7 @@ function ForTimeWorkoutSession({ config }: { config: CustomWorkoutLaunchConfig }
     sessionKey,
   );
   const [savedResult, setSavedResult] = useState<ForTimeWorkoutResult | null>(null);
-  const [dailyWorkoutBonus, setDailyWorkoutBonus] = useState<DailyWorkoutBonus | null>(null);
+  const [sessionReward, setSessionReward] = useState<WorkoutSessionReward | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const savedResultRef = useRef<ForTimeWorkoutResult | null>(null);
@@ -508,7 +524,7 @@ function ForTimeWorkoutSession({ config }: { config: CustomWorkoutLaunchConfig }
 
     try {
       const saveResult = await saveForTimeWorkoutSession(result);
-      setDailyWorkoutBonus(saveResult.dailyBonus);
+      setSessionReward(saveResult.reward);
       if (config.friendChallengeParticipantId) {
         await syncFriendWorkoutChallengeCompletion(config.friendChallengeParticipantId, {
           startedAt: result.startedAt,
@@ -590,6 +606,11 @@ function ForTimeWorkoutSession({ config }: { config: CustomWorkoutLaunchConfig }
     return `${typeLabel} · ${stepCount} steps · finish the circuit to stop the clock`;
   }, [config]);
 
+  const forTimePreviewExercises = useMemo(
+    () => resolveForTimeSteps(config.exercises, config.structureConfig),
+    [config.exercises, config.structureConfig],
+  );
+
   if (showWorkout && forTime.completed && savedResult) {
     return (
       <ChallengeWorkoutMode
@@ -603,7 +624,7 @@ function ForTimeWorkoutSession({ config }: { config: CustomWorkoutLaunchConfig }
         pullUpBarLineY={null}
         completed
         onContinue={handleLeave}
-        completeOverlay={<ForTimeCompleteOverlay result={savedResult} dailyBonus={dailyWorkoutBonus} />}
+        completeOverlay={<ForTimeCompleteOverlay result={savedResult} sessionReward={sessionReward} />}
         footer={
           saveError ? (
             <Text style={[styles.error, { color: theme.danger }]}>{saveError}</Text>
@@ -663,6 +684,13 @@ function ForTimeWorkoutSession({ config }: { config: CustomWorkoutLaunchConfig }
         exerciseType={forTime.currentExercise.exerciseType}
         targetReps={forTime.currentExercise.targetReps}
         subtitle={setupSubtitle}
+        preview={
+          <WorkoutXpPreviewCard
+            workoutType="for_time"
+            exercises={forTimePreviewExercises}
+            timeLimitSeconds={0}
+          />
+        }
         onStart={markWorkoutStarted}
         onCancel={handleLeave}
       />

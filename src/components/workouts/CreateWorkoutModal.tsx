@@ -13,6 +13,7 @@ import {
 import { ExercisePickerModal } from '@/components/workouts/ExercisePickerModal';
 import { FriendPickerModal } from '@/components/workouts/FriendPickerModal';
 import { WorkoutCircuitPreview } from '@/components/workouts/WorkoutCircuitPreview';
+import { WorkoutXpPreviewCard } from '@/components/workouts/WorkoutXpPreviewCard';
 import { AuthTextInput } from '@/components/ui/AuthTextInput';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { EXERCISE_LABELS, type ExerciseType } from '@/constants/challenges';
@@ -41,6 +42,7 @@ import {
   isLadderForTimeStructure,
   isRoundsForTimeStructure,
   parseRepScheme,
+  resolveForTimeSteps,
 } from '@/features/workouts/forTimeStructure';
 import { cloneCustomWorkoutExercises } from '@/features/workouts/useAmrapWorkout';
 import { useFriends } from '@/features/friends/useFriends';
@@ -733,6 +735,14 @@ export function CreateWorkoutModal({
                 workoutType={workoutType}
                 exercises={exercises}
                 structureConfig={buildStructureConfig()}
+              />
+
+              <WorkoutXpPreviewCard
+                workoutType={workoutType}
+                exercises={
+                  isForTime ? resolveForTimeSteps(exercises, buildStructureConfig()) : exercises
+                }
+                timeLimitSeconds={isForTime ? 0 : timeLimitSeconds}
               />
 
               {error ? <Text style={[styles.error, { color: theme.danger }]}>{error}</Text> : null}

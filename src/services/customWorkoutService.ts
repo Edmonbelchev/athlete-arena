@@ -199,6 +199,7 @@ function mapSaveWorkoutSessionResult(data: unknown): SaveWorkoutSessionResult {
 
   const payload = data as {
     session_id?: string;
+    session_xp?: number;
     daily_bonus?: { xp?: number; coins?: number } | null;
   };
 
@@ -206,18 +207,33 @@ function mapSaveWorkoutSessionResult(data: unknown): SaveWorkoutSessionResult {
     throw new Error('Invalid workout save response');
   }
 
-  const bonus = payload.daily_bonus;
-  const dailyBonus =
-    bonus && typeof bonus.xp === 'number' && typeof bonus.coins === 'number'
-      ? { xp: bonus.xp, coins: bonus.coins }
+  const sessionXp = typeof payload.session_xp === 'number' ? payload.session_xp : 0;
+  const dailyCoins =
+    payload.daily_bonus && typeof payload.daily_bonus.coins === 'number'
+      ? payload.daily_bonus.coins
+      : 0;
+
+  const reward =
+    sessionXp > 0 || dailyCoins > 0
+      ? {
+          xp: sessionXp,
+          coins: dailyCoins,
+        }
       : null;
 
   clearMovementStatsCache();
 
   return {
     sessionId: payload.session_id,
-    dailyBonus,
+    reward,
   };
+}
+
+function elapsedSecondsFromResult(startedAt: string, completedAt: string): number {
+  return Math.max(
+    0,
+    Math.floor((new Date(completedAt).getTime() - new Date(startedAt).getTime()) / 1000),
+  );
 }
 
 export async function saveCustomWorkoutSession(result: AmrapWorkoutResult): Promise<SaveWorkoutSessionResult> {
@@ -236,7 +252,8 @@ export async function saveCustomWorkoutSession(result: AmrapWorkoutResult): Prom
       total_reps: entry.totalReps,
     })),
     p_started_at: result.startedAt,
-    p_elapsed_seconds: null,
+    p_elapsed_seconds: elapsedSecondsFromResult(result.startedAt, result.completedAt),
+    p_workout_type: 'amrap',
   });
 
   if (error) {
@@ -262,7 +279,8 @@ export async function saveEmomWorkoutSession(result: EmomWorkoutResult): Promise
       total_reps: entry.totalReps,
     })),
     p_started_at: result.startedAt,
-    p_elapsed_seconds: null,
+    p_elapsed_seconds: elapsedSecondsFromResult(result.startedAt, result.completedAt),
+    p_workout_type: 'emom',
   });
 
   if (error) {
@@ -289,6 +307,7 @@ export async function saveForTimeWorkoutSession(result: ForTimeWorkoutResult): P
     })),
     p_started_at: result.startedAt,
     p_elapsed_seconds: result.elapsedSeconds,
+    p_workout_type: 'for_time',
   });
 
   if (error) {
