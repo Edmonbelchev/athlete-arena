@@ -236,7 +236,7 @@ src/
   services/         Supabase RPC wrappers, RevenueCat service
   constants/        Theme, pose thresholds, workout config
 supabase/
-  migrations/       Incremental SQL (001–064+)
+  migrations/       Incremental SQL (001-064+)
   seed_*.sql        Optional dev seed scripts
 assets/models/      MediaPipe .task model (native builds)
 ```

@@ -7,7 +7,7 @@ const REP_DING = require('@/assets/sounds/rep-ding.wav');
 
 const COUNTDOWN_VOLUME = 0.22;
 
-/** Plays a ding on each second with 5–1 seconds left in the current round. */
+/** Plays a ding on each second with 5-1 seconds left in the current round. */
 export function useEmomCountdownFeedback(
   secondsRemainingInInterval: number,
   {

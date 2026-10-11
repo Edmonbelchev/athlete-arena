@@ -1,10 +1,10 @@
-import { normalizeUsername, isValidUsername } from '@/features/auth/validation';
 import { isUsernameAvailable } from '@/features/auth/authService';
+import { isValidUsername, normalizeUsername } from '@/features/auth/validation';
 import { movementStatsToProfileStats } from '@/features/stats/movementStatsUtils';
 import { assertSupabaseConfigured, supabase } from '@/lib/supabase';
 import { getMovementStats } from '@/services/statsService';
-import type { ProfileStats, UpdateProfileInput } from '@/types/profile';
 import type { Profile } from '@/types';
+import type { ProfileStats, UpdateProfileInput } from '@/types/profile';
 
 export async function getProfile(userId: string): Promise<Profile | null> {
   assertSupabaseConfigured();
@@ -41,7 +41,7 @@ export async function updateProfile(
   if (input.username !== undefined) {
     const normalizedUsername = normalizeUsername(input.username);
     if (!isValidUsername(normalizedUsername)) {
-      throw new Error('Username must be 3–30 characters: lowercase letters, numbers, underscore');
+      throw new Error('Username must be 3-30 characters: lowercase letters, numbers, underscore');
     }
 
     const available = await isUsernameAvailable(normalizedUsername, userId);

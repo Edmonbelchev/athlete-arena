@@ -1,36 +1,36 @@
 import { Link } from 'expo-router';
 import { useState } from 'react';
 import {
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
+    KeyboardAvoidingView,
+    Platform,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    Text,
+    View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { AuthTextInput } from '@/components/ui/AuthTextInput';
 import { ResendConfirmationEmail } from '@/components/auth/ResendConfirmationEmail';
-import { BrandLogo } from '@/components/ui/BrandLogo';
 import { LegalAgreementNotice } from '@/components/legal/LegalLinks';
+import { AuthTextInput } from '@/components/ui/AuthTextInput';
+import { BrandLogo } from '@/components/ui/BrandLogo';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { SUPPORT_EMAIL } from '@/constants/app';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { useAuth } from '@/features/auth';
 import { getAuthErrorMessage } from '@/features/auth/authErrors';
 import {
-  EmailAlreadyRegisteredError,
-  signUpWithEmail,
-  UsernameTakenError,
+    EmailAlreadyRegisteredError,
+    signUpWithEmail,
+    UsernameTakenError,
 } from '@/features/auth/authService';
 import {
-  isValidEmail,
-  isValidPassword,
-  isValidUsername,
-  normalizeUsername,
+    isValidEmail,
+    isValidPassword,
+    isValidUsername,
+    normalizeUsername,
 } from '@/features/auth/validation';
-import { useAuth } from '@/features/auth';
 import { useTheme } from '@/hooks/use-theme';
 
 export default function RegisterScreen() {
@@ -63,7 +63,7 @@ export default function RegisterScreen() {
     if (!normalizedUsername) {
       nextErrors.username = 'Username is required';
     } else if (!isValidUsername(normalizedUsername)) {
-      nextErrors.username = 'Use 3–30 characters: lowercase letters, numbers, underscore';
+      nextErrors.username = 'Use 3-30 characters: lowercase letters, numbers, underscore';
     }
 
     if (!email.trim()) {

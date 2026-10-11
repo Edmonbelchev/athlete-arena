@@ -59,7 +59,7 @@ Run after `004_friends.sql` to add optional time limits:
 -- Paste contents of supabase/migrations/005_friend_challenge_timer.sql
 ```
 
-- Optional `time_limit_seconds` (60–5400) when creating a challenge
+- Optional `time_limit_seconds` (60-5400) when creating a challenge
 - Timer starts when the invited friend **accepts**
 - Both players must finish before `deadline_at` or the challenge expires
 

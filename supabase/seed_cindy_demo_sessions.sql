@@ -1,5 +1,5 @@
 -- Demo Cindy AMRAP sessions for UI testing (history + leaderboard).
--- Run in Supabase SQL Editor after migrations 062–063 are applied.
+-- Run in Supabase SQL Editor after migrations 062-063 are applied.
 --
 -- Primary user: edmon.cekov@gmail.com
 -- Also seeds a few other accounts on the leaderboard if they exist.

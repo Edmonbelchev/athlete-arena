@@ -27,7 +27,7 @@ export function WorkoutXpPreviewCard({
   const rangeLabel =
     preview.minXp === preview.maxXp
       ? `${preview.maxXp} XP`
-      : `${preview.minXp}–${preview.maxXp} XP`;
+      : `${preview.minXp}-${preview.maxXp} XP`;
 
   return (
     <View style={[styles.card, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>

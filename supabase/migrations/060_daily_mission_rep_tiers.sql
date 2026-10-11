@@ -1,6 +1,6 @@
 -- Daily quest rep targets:
--- push_ups / squats: 20–50 reps (tiers 20, 30, 40, 50)
--- pull_ups / burpees: 10–30 reps (tiers 10, 15, 20, 30)
+-- push_ups / squats: 20-50 reps (tiers 20, 30, 40, 50)
+-- pull_ups / burpees: 10-30 reps (tiers 10, 15, 20, 30)
 
 create or replace function public.pick_daily_mission_tier(
   p_exercise public.exercise_type,

@@ -1,7 +1,7 @@
 import type { ExerciseType } from '@/constants/challenges';
 import type { ExercisePhase } from '@/features/challenges/poseDetection.types';
 
-/** Maps pose phase to 0–1 progress through the current rep (red → green). */
+/** Maps pose phase to 0-1 progress through the current rep (red → green). */
 export function getRepCycleProgress(
   exerciseType: ExerciseType,
   phase: ExercisePhase,
