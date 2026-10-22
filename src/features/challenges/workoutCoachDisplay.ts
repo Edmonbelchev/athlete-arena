@@ -10,6 +10,7 @@ import { PushUpRepEngine } from './pose/pushUpRepEngine';
 import { SquatRepEngine } from './pose/squatRepEngine';
 import { JumpingSquatRepEngine } from './pose/jumpingSquatRepEngine';
 import { JumpingJackRepEngine } from './pose/jumpingJackRepEngine';
+import { LungeRepEngine } from './pose/lungeRepEngine';
 
 function isLandmarkVisible(
   landmark: PoseLandmark | undefined,
@@ -65,6 +66,8 @@ function getSetupSeverity(
       return (engine as JumpingSquatRepEngine).armed ? 'ready' : 'setup';
     case 'jumping_jacks':
       return (engine as JumpingJackRepEngine).armed ? 'ready' : 'setup';
+    case 'lunges':
+      return (engine as LungeRepEngine).armed ? 'ready' : 'setup';
     default:
       return trackingStatus === 'ready' ? 'ready' : 'setup';
   }

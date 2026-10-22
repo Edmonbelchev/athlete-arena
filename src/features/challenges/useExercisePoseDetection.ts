@@ -15,6 +15,7 @@ import { PushUpRepEngine } from './pose/pushUpRepEngine';
 import { SquatRepEngine } from './pose/squatRepEngine';
 import { JumpingSquatRepEngine } from './pose/jumpingSquatRepEngine';
 import { JumpingJackRepEngine } from './pose/jumpingJackRepEngine';
+import { LungeRepEngine } from './pose/lungeRepEngine';
 import { PoseQualityGate, type PoseQualityResult, type PoseTrackingStatus } from './pose/poseQuality';
 import { getCoachSeverity } from './workoutCoachDisplay';
 import {
@@ -48,6 +49,8 @@ function getEngineArmed(engine: RepEngine, exerciseType: ExerciseType): boolean 
       return (engine as JumpingSquatRepEngine).armed;
     case 'jumping_jacks':
       return (engine as JumpingJackRepEngine).armed;
+    case 'lunges':
+      return (engine as LungeRepEngine).armed;
     default:
       return false;
   }
@@ -77,6 +80,8 @@ function resolveExerciseTrackingStatus(
       return resolveBurpeeTrackingStatus(quality);
     case 'jumping_jacks':
       return resolveJumpingJackTrackingStatus(quality, (engine as JumpingJackRepEngine).armed);
+    case 'lunges':
+      return resolveSquatTrackingStatus(quality, (engine as LungeRepEngine).armed);
     default:
       return quality.status;
   }
@@ -143,9 +148,11 @@ export function useExercisePoseDetection({
         const jumpingJackArmedEmpty =
           exerciseType === 'jumping_jacks' &&
           (engineRef.current as JumpingJackRepEngine).armed;
+        const lungeArmedEmpty =
+          exerciseType === 'lunges' && (engineRef.current as LungeRepEngine).armed;
 
-        // A partial jumping-jack cycle must not survive leaving the camera.
-        if (exerciseType === 'jumping_jacks') {
+        // A partial jumping-jack or lunge cycle must not survive leaving the camera.
+        if (exerciseType === 'jumping_jacks' || exerciseType === 'lunges') {
           engineRef.current.update([]);
           setPhase(engineRef.current.phase);
         }
@@ -157,6 +164,7 @@ export function useExercisePoseDetection({
             exerciseType === 'jumping_squats' ? jumpingSquatArmedEmpty : undefined,
           jumpingJackArmed:
             exerciseType === 'jumping_jacks' ? jumpingJackArmedEmpty : undefined,
+          lungeArmed: exerciseType === 'lunges' ? lungeArmedEmpty : undefined,
           isLandscape: false,
         });
 
@@ -165,7 +173,8 @@ export function useExercisePoseDetection({
           !pullUpArmedEmpty &&
           !pushUpArmedEmpty &&
           !jumpingSquatArmedEmpty &&
-          !jumpingJackArmedEmpty
+          !jumpingJackArmedEmpty &&
+          !lungeArmedEmpty
         ) {
           engineRef.current.reset();
           setPhase(getInitialExercisePhase(exerciseType));
@@ -205,12 +214,15 @@ export function useExercisePoseDetection({
       const jumpingJackArmed =
         exerciseType === 'jumping_jacks' &&
         (engineRef.current as JumpingJackRepEngine).armed;
+      const lungeArmed =
+        exerciseType === 'lunges' && (engineRef.current as LungeRepEngine).armed;
 
       const quality = qualityGateRef.current.evaluate(landmarks, {
         pullUpArmed: exerciseType === 'pull_ups' ? pullUpArmed : undefined,
         pushUpArmed: exerciseType === 'push_ups' ? pushUpArmed : undefined,
         jumpingSquatArmed: exerciseType === 'jumping_squats' ? jumpingSquatArmed : undefined,
         jumpingJackArmed: exerciseType === 'jumping_jacks' ? jumpingJackArmed : undefined,
+        lungeArmed: exerciseType === 'lunges' ? lungeArmed : undefined,
         isLandscape,
       });
 
@@ -219,7 +231,8 @@ export function useExercisePoseDetection({
         !pullUpArmed &&
         !(pushUpEngine?.hasStartedSet ?? false) &&
         !jumpingSquatArmed &&
-        !jumpingJackArmed
+        !jumpingJackArmed &&
+        !lungeArmed
       ) {
         engineRef.current.reset();
         setPhase(getInitialExercisePhase(exerciseType));
@@ -279,10 +292,15 @@ export function useExercisePoseDetection({
       // Engine only returns true when full-body stable; do not also require quality.canCountReps.
       const jumpingJackCounting =
         exerciseType === 'jumping_jacks' && (engine as JumpingJackRepEngine).armed;
+      const lungeCounting = exerciseType === 'lunges' && (engine as LungeRepEngine).armed;
 
       if (
         repCompleted &&
-        (quality.canCountReps || pushUpCounting || jumpingSquatCounting || jumpingJackCounting)
+        (quality.canCountReps ||
+          pushUpCounting ||
+          jumpingSquatCounting ||
+          jumpingJackCounting ||
+          lungeCounting)
       ) {
         onRepDetectedRef.current();
       }

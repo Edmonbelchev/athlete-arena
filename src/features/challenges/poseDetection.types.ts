@@ -15,6 +15,9 @@ export type JumpingJackPhase = 'CLOSED' | 'OPENING' | 'OPEN' | 'CLOSING';
 /** Jump squat pose phases - squat depth then explosive jump. */
 export type JumpingSquatPhase = SquatPhase | 'JUMP';
 
+/** Lunge pose phases - same stand → depth → stand cycle as squats. */
+export type LungePhase = SquatPhase;
+
 export type ExercisePhase = PushUpPhase | SquatPhase | BurpeePhase | JumpingJackPhase | JumpingSquatPhase;
 
 export interface PoseFrame {

@@ -21,7 +21,7 @@ export function getRepCycleProgress(
     }
   }
 
-  if (exerciseType === 'squats') {
+  if (exerciseType === 'squats' || exerciseType === 'lunges') {
     switch (phase) {
       case 'STANDING':
         return 0.05;

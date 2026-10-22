@@ -4,6 +4,7 @@ import type { ExercisePhase } from '@/features/challenges/poseDetection.types';
 import { PullUpRepEngine } from './pullUpRepEngine';
 import { JumpingJackRepEngine } from './jumpingJackRepEngine';
 import { JumpingSquatRepEngine } from './jumpingSquatRepEngine';
+import { LungeRepEngine } from './lungeRepEngine';
 import { HalfBurpeeRepEngine } from './halfBurpeeRepEngine';
 import { BurpeeRepEngine } from './burpeeRepEngine';
 import { PushUpRepEngine } from './pushUpRepEngine';
@@ -23,6 +24,10 @@ export function createRepEngine(exerciseType: ExerciseType): RepEngine {
 
   if (exerciseType === 'jumping_squats') {
     return new JumpingSquatRepEngine();
+  }
+
+  if (exerciseType === 'lunges') {
+    return new LungeRepEngine();
   }
 
   if (exerciseType === 'pull_ups') {

@@ -37,6 +37,10 @@ export const DAILY_MISSION_QUEST: Partial<Record<ExerciseType, DailyMissionQuest
     questTitle: 'Jump Squat Jump',
     objectiveVerb: 'Complete',
   },
+  lunges: {
+    questTitle: 'Lunge League',
+    objectiveVerb: 'Complete',
+  },
 };
 
 export function getDailyMissionQuestMeta(exerciseType: ExerciseType): DailyMissionQuestMeta {

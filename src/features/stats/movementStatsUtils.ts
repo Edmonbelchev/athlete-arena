@@ -12,5 +12,6 @@ export function movementStatsToProfileStats(movement: MovementStats): ProfileSta
     totalHalfBurpees: movement.totalHalfBurpees,
     totalJumpingJacks: movement.totalJumpingJacks,
     totalJumpingSquats: movement.totalJumpingSquats,
+    totalLunges: movement.totalLunges,
   };
 }

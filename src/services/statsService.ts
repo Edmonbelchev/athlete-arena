@@ -11,6 +11,7 @@ type MovementStatsRow = {
   total_half_burpees: number;
   total_jumping_jacks: number;
   total_jumping_squats: number;
+  total_lunges: number;
   daily_missions_completed: number;
   friend_races_completed: number;
 };
@@ -29,6 +30,7 @@ function mapMovementStats(row: MovementStatsRow | null | undefined): MovementSta
     totalHalfBurpees: Number(row.total_half_burpees),
     totalJumpingJacks: Number(row.total_jumping_jacks),
     totalJumpingSquats: Number(row.total_jumping_squats),
+    totalLunges: Number(row.total_lunges),
     dailyMissionsCompleted: Number(row.daily_missions_completed),
     friendRacesCompleted: Number(row.friend_races_completed),
   };

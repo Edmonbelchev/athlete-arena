@@ -9,6 +9,7 @@ export const FRIEND_CHALLENGE_REP_PRESETS: Record<ExerciseType, readonly number[
   half_burpees: [3, 5, 8, 10, 12, 15],
   jumping_jacks: [10, 15, 20, 25, 30, 40],
   jumping_squats: [10, 15, 20, 25, 30, 40, 50],
+  lunges: [10, 16, 20, 24, 30, 40, 50],
 } as const;
 
 export const FRIEND_CHALLENGE_REP_MIN = 1;

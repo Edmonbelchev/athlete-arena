@@ -59,6 +59,12 @@ export const FRIEND_CHALLENGE_REWARD_RULES: Record<
     maxXp: FRIEND_CHALLENGE_MAX_XP,
     maxCoins: FRIEND_CHALLENGE_MAX_COINS,
   },
+  lunges: {
+    xpPerRep: 1,
+    coinEveryReps: 10,
+    maxXp: FRIEND_CHALLENGE_MAX_XP,
+    maxCoins: FRIEND_CHALLENGE_MAX_COINS,
+  },
   dips: {
     xpPerRep: 3,
     coinEveryReps: 3,
