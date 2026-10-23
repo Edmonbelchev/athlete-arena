@@ -12,6 +12,7 @@ import {
   hasJumpingJackTrackingLandmarks,
   isJumpingJackFullBodyStable,
 } from './jumpingJackPosture';
+import { hasLungeArmedLegLandmarks } from './lungePosture';
 import { hasPullUpActiveTrackingLandmarks, hasPullUpTrackingLandmarks } from './pullUpPosture';
 import { hasPushUpTrackingLandmarks } from './pushUpPosture';
 import { hasBothSquatLegChains } from './squatPosture';
@@ -34,6 +35,8 @@ export interface PoseQualityOptions {
   jumpingSquatArmed?: boolean;
   /** Jumping-jack engine is armed - tolerate brief limb visibility dips without resetting the set. */
   jumpingJackArmed?: boolean;
+  /** Lunge engine is armed - looser leg visibility (the back leg flickers near the floor). */
+  lungeArmed?: boolean;
   /** Wider-than-tall preview - use stricter visibility and warmup gates. */
   isLandscape?: boolean;
 }
@@ -371,7 +374,18 @@ function checkRequiredLandmarks(
     return { ok: true, message: null };
   }
 
-  if (exerciseType === 'squats' || exerciseType === 'jumping_squats') {
+  if (exerciseType === 'lunges' && options?.lungeArmed) {
+    if (!hasLungeArmedLegLandmarks(landmarks)) {
+      return {
+        ok: false,
+        message: 'Keep both legs in frame from hips to ankles',
+      };
+    }
+
+    return { ok: true, message: null };
+  }
+
+  if (exerciseType === 'squats' || exerciseType === 'jumping_squats' || exerciseType === 'lunges') {
     if (!hasBothSquatLegChains(landmarks)) {
       return {
         ok: false,
@@ -451,7 +465,9 @@ export class PoseQualityGate {
               ? POSE_QUALITY.partialFramesBeforeResetJumpingSquatArmed
               : this.exerciseType === 'jumping_jacks' && options?.jumpingJackArmed === true
                 ? POSE_QUALITY.partialFramesBeforeResetJumpingJackArmed
-                : POSE_QUALITY.partialFramesBeforeReset;
+                : this.exerciseType === 'lunges' && options?.lungeArmed === true
+                  ? POSE_QUALITY.partialFramesBeforeResetLungeArmed
+                  : POSE_QUALITY.partialFramesBeforeReset;
 
       return {
         status: 'partial',

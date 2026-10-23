@@ -212,6 +212,14 @@ export function getRepPhaseHint(exerciseType: ExerciseType, phase: ExercisePhase
         return 'Jump - both feet must leave the ground';
       }
       return 'Stand tall with both legs in frame';
+    case 'lunges':
+      if (phase === 'DESCENDING' || phase === 'BOTTOM') {
+        return 'Lower your back knee toward the floor';
+      }
+      if (phase === 'ASCENDING') {
+        return 'Push through your front foot to rise';
+      }
+      return 'Stand tall with feet side by side';
     case 'burpees':
       if (phase === 'DROP') {
         return 'Drop down to the floor';

@@ -29,6 +29,8 @@ export const POSE_QUALITY = {
   partialFramesBeforeResetJumpingSquatArmed: isNativeMobile ? 60 : 45,
   /** Partial-tracking frames before resetting an armed jumping-jack set. */
   partialFramesBeforeResetJumpingJackArmed: isNativeMobile ? 55 : 40,
+  /** Partial-tracking frames before resetting an armed lunge set. */
+  partialFramesBeforeResetLungeArmed: isNativeMobile ? 60 : 45,
   /** Skeleton overlay visibility - slightly higher to reduce flicker. */
   skeletonMinVisibility: isNativeMobile ? 0.4 : 0.5,
 } as const;
@@ -282,6 +284,51 @@ export const JUMPING_SQUAT_POSTURE = {
   minAnkleRiseWithHip: isNativeMobile ? 0.0004 : 0.0003,
 } as const;
 
+/**
+ * Lunge rep validation - hips drop into a split stance, then rise back to the top.
+ * Hip drops are fractions of the standing hip→ankle span on screen.
+ */
+export const LUNGE_POSTURE = {
+  /** Knee angle (degrees) for a straight leg - a straight leg reads straight from any camera angle. */
+  straightKneeAngle: isNativeMobile ? 145 : 150,
+  /** Frames standing tall with feet side by side before rep counting begins. */
+  readyFramesRequired: isNativeMobile ? 3 : 4,
+  /** Ankle height gap while arming, relative to standing leg length (feet side by side). */
+  maxReadyFootSplitRatio: isNativeMobile ? 0.12 : 0.1,
+  /** Knee split while arming - see minBottomKneeSpread. */
+  maxReadyKneeSpread: isNativeMobile ? 0.15 : 0.13,
+  /** Reject half-body / hallucinated legs while arming (hip→ankle span in normalized view). */
+  minLegSpan: isNativeMobile ? 0.1 : 0.11,
+  /** Shortest hip→ankle span used for the knee split - the back leg foreshortens at depth. */
+  minActiveLegSpan: isNativeMobile ? 0.03 : 0.035,
+  /** Hip drop from the top of the rep that starts a descent. */
+  minDescentHipDrop: 0.08,
+  /** Hip drop from the top of the rep required at lunge depth. */
+  minBottomHipDrop: isNativeMobile ? 0.15 : 0.16,
+  /**
+   * Knee split at depth: each knee's height between its hip (0) and ankle (1), left vs right.
+   * The back knee sinks toward its ankle while the front knee rises toward the hip; squats and
+   * straight-legged steps keep both legs alike.
+   */
+  minBottomKneeSpread: isNativeMobile ? 0.35 : 0.38,
+  /** Knee split per unit of hip drop at depth - staggered squats sink deep with similar knees. */
+  minKneeSpreadToHipDrop: 1.4,
+  /** Consecutive frames at lunge depth before the bottom counts toward a rep. */
+  bottomHoldFrames: isNativeMobile ? 2 : 3,
+  /** Hips back within this drop of the top = standing again. */
+  maxTopHipDrop: 0.05,
+  /** Stationary lunge top: legs straighten again (knee split at or below this)... */
+  maxTopKneeSpread: isNativeMobile ? 0.22 : 0.2,
+  /** ...after the hips rise back at least this share of the rep depth. */
+  minTopRiseShare: 0.5,
+  /** Frames standing tall during an unfinished descent before the top re-baselines. */
+  restandFramesToRebase: isNativeMobile ? 6 : 8,
+  /** EMA weight for refreshing the standing baseline between reps. */
+  baselineAlpha: 0.2,
+  /** Frames without both legs in view before the set disarms. */
+  lostTrackingFramesToDisarm: isNativeMobile ? 20 : 15,
+} as const;
+
 /** Minimal smoothing lag so quick jack peaks are not washed out. */
 export const POSE_LANDMARK_SMOOTH_ALPHA_JUMPING_JACK = isNativeMobile ? 0.92 : 1;
 
@@ -350,6 +397,15 @@ export const POSE_GUIDANCE: Record<ExerciseType, { title: string; tips: readonly
       'Prop your phone on the floor in portrait and step back until both legs are visible',
       'Same as squats: squat to depth, then stand back up',
       'Each rep must include a small jump during the way up - both feet leave the floor',
+    ],
+  },
+  lunges: {
+    title: 'Lunge setup',
+    tips: [
+      'Prop your phone in portrait, face it, and step back until both legs are in frame',
+      'Stand tall with feet side by side to start counting',
+      'Step forward or back and lower until your back knee nears the floor',
+      'Rise back up to finish - each leg counts as one rep',
     ],
   },
 };

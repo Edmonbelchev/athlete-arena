@@ -7,6 +7,7 @@ export const WORKOUT_XP_PER_REP: Record<ExerciseType, number> = {
   push_ups: 1,
   half_burpees: 1,
   jumping_squats: 1,
+  lunges: 1,
   burpees: 2,
   pull_ups: 2,
 };

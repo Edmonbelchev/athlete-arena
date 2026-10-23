@@ -74,6 +74,11 @@ export const ONBOARDING_EXERCISE_BENEFITS: OnboardingBenefit[] = [
     muscles: 'Quadriceps, glutes, hamstrings, and calves',
     note: 'A squat followed by an explosive jump - builds lower-body power.',
   },
+  {
+    exercise: 'Lunges',
+    muscles: 'Quadriceps, glutes, hamstrings, and hip stabilizers',
+    note: 'Works one leg at a time - builds balance and evens out left-right strength.',
+  },
 ];
 
 export const ONBOARDING_GENERAL_NOTE =

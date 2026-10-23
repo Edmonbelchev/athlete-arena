@@ -8,6 +8,7 @@ export interface ProfileStats {
   totalHalfBurpees: number;
   totalJumpingJacks: number;
   totalJumpingSquats: number;
+  totalLunges: number;
 }
 
 export interface UpdateProfileInput {
