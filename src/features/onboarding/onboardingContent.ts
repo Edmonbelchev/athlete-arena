@@ -21,9 +21,9 @@ export const ONBOARDING_WELCOME = {
 export const ONBOARDING_HOW_IT_WORKS: OnboardingFeature[] = [
   {
     icon: 'target',
-    title: 'Daily shared challenge',
+    title: 'Daily missions',
     description:
-      'Everyone gets the same exercise and rep target each day. Complete it to earn XP and coins.',
+      'Three missions every day with rep targets to hit. Complete them to earn XP and coins - and reroll one per day if it does not suit you.',
   },
   {
     icon: 'camera',
@@ -32,16 +32,22 @@ export const ONBOARDING_HOW_IT_WORKS: OnboardingFeature[] = [
       'Your front camera tracks movement with pose detection. Position yourself in frame and the app counts valid reps.',
   },
   {
-    icon: 'swords',
-    title: 'Friend speed races',
+    icon: 'dumbbell',
+    title: 'Workouts',
     description:
-      'Challenge friends to finish a set fastest. Accept races, run your attempt, and compare results.',
+      'Run official AMRAP, EMOM and For Time workouts with the camera counting your reps, and climb each workout leaderboard.',
+  },
+  {
+    icon: 'swords',
+    title: 'Friend challenges',
+    description:
+      'Challenge friends to rep races and timed workouts. Accept a challenge, run your attempt, and compare results.',
   },
   {
     icon: 'medal',
     title: 'XP, levels & achievements',
     description:
-      'Build streaks, level up from XP, unlock achievements, and spend coins on emotes in the shop.',
+      'Build streaks, level up from XP, unlock achievements and titles, and spend coins in the shop.',
   },
 ];
 
@@ -68,6 +74,16 @@ export const ONBOARDING_EXERCISE_BENEFITS: OnboardingBenefit[] = [
     exercise: 'Burpees',
     muscles: 'Full body - legs, chest, shoulders, and core',
     note: 'A high-intensity compound move combining squat, plank, and jump.',
+  },
+  {
+    exercise: 'Half Burpees',
+    muscles: 'Legs, shoulders, and core',
+    note: 'A burpee without the push-up - drop to a plank, stand, and jump. A gentler way to build conditioning.',
+  },
+  {
+    exercise: 'Jumping Jacks',
+    muscles: 'Calves, glutes, shoulders, and heart',
+    note: 'A simple full-body warm-up that gets your heart rate up fast.',
   },
   {
     exercise: 'Jumping Squats',

@@ -209,6 +209,7 @@ export default function FriendProfileScreen() {
             achievements={achievements}
             isLoading={isAchievementsLoading}
             error={achievementsError}
+            onViewAll={() => router.push(`/friends/achievements/${userId}`)}
           />
         </ScrollView>
       </SafeAreaView>

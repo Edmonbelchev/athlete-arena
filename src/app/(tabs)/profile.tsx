@@ -212,6 +212,7 @@ export default function ProfileScreen() {
         <ProfileHero
           displayName={displayName}
           username={username}
+          bio={profile?.bio}
           equippedTitleName={equippedTitleName}
           level={profile?.level ?? xpProgress.level}
           coinBalance={profile?.coin_balance ?? 0}

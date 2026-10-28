@@ -129,6 +129,7 @@ export async function getFriendProfile(userId: string): Promise<FriendPublicProf
         user_id: string;
         username: string;
         display_name: string | null;
+        bio: string | null;
         level: number;
         total_xp: number;
         current_streak: number;
@@ -152,6 +153,7 @@ export async function getFriendProfile(userId: string): Promise<FriendPublicProf
     userId: row.user_id,
     username: row.username,
     displayName: row.display_name,
+    bio: row.bio ?? null,
     level: row.level,
     totalXp: row.total_xp,
     currentStreak: row.current_streak,

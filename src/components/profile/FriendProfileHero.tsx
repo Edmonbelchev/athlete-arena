@@ -51,6 +51,10 @@ export function FriendProfileHero({
         </Text>
       </View>
 
+      {profile.bio ? (
+        <Text style={StyleSheet.flatten([styles.bio, { color: theme.text }])}>{profile.bio}</Text>
+      ) : null}
+
       <View style={StyleSheet.flatten([styles.levelPill, { backgroundColor: theme.backgroundSelected }])}>
         <Text style={StyleSheet.flatten([styles.levelLabel, { color: theme.textSecondary }])}>Level</Text>
         <Text style={StyleSheet.flatten([styles.levelValue, { color: theme.primary }])}>{profile.level}</Text>
@@ -92,6 +96,12 @@ const styles = StyleSheet.create({
   username: {
     fontSize: 15,
     fontWeight: '600',
+  },
+  bio: {
+    fontSize: 15,
+    lineHeight: 21,
+    textAlign: 'center',
+    maxWidth: 320,
   },
   levelPill: {
     flexDirection: 'row',

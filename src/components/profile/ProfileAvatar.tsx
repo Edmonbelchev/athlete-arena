@@ -1,8 +1,8 @@
 import { Image } from 'expo-image';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 import { AppIcon } from '@/components/ui/AppIcon';
-import { Radius, Spacing } from '@/constants/theme';
+import { Radius } from '@/constants/theme';
 import { getAvatarInitials } from '@/features/profile/avatarInitials';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -133,83 +133,6 @@ export function ProfileAvatar({
   );
 }
 
-interface ProfileAvatarSelectorProps {
-  avatars: Array<{
-    id: string;
-    title: string;
-    imageUrl: string | null;
-    icon?: ShopAvatarDisplay['icon'];
-    backgroundColor?: string;
-    owned: boolean;
-    equipped: boolean;
-  }>;
-  displayName: string;
-  isUpdating?: boolean;
-  onSelect: (itemId: string) => void;
-  onOpenShop?: () => void;
-}
-
-export function ProfileAvatarSelector({
-  avatars,
-  displayName,
-  isUpdating = false,
-  onSelect,
-  onOpenShop,
-}: ProfileAvatarSelectorProps) {
-  const theme = useTheme();
-  const ownedAvatars = avatars.filter((avatar) => avatar.owned);
-
-  return (
-    <View style={styles.selectorContainer}>
-      <Text style={StyleSheet.flatten([styles.selectorTitle, { color: theme.textSecondary }])}>
-        Choose your avatar
-      </Text>
-
-      <View style={styles.selectorGrid}>
-        {ownedAvatars.map((avatar) => (
-          <Pressable
-            key={avatar.id}
-            accessibilityRole="button"
-            accessibilityLabel={`Select ${avatar.title} avatar`}
-            disabled={isUpdating}
-            onPress={() => onSelect(avatar.id)}
-            style={StyleSheet.flatten([
-              styles.selectorItem,
-              {
-                borderColor: avatar.equipped ? theme.primary : theme.border,
-                backgroundColor: theme.backgroundElement,
-              },
-            ])}>
-            <ProfileAvatar
-              name={displayName}
-              size={72}
-              shopAvatar={{
-                imageUrl: avatar.imageUrl,
-                icon: avatar.icon,
-                backgroundColor: avatar.backgroundColor,
-              }}
-            />
-            <Text style={StyleSheet.flatten([styles.selectorLabel, { color: theme.text }])}>{avatar.title}</Text>
-            {avatar.equipped ? (
-              <Text style={StyleSheet.flatten([styles.equippedTag, { color: theme.primary }])}>Equipped</Text>
-            ) : null}
-          </Pressable>
-        ))}
-      </View>
-
-      {isUpdating ? <ActivityIndicator color={theme.primary} /> : null}
-
-      {onOpenShop ? (
-        <Pressable onPress={onOpenShop}>
-          <Text style={StyleSheet.flatten([styles.shopLink, { color: theme.primary }])}>
-            Browse more avatars in the Shop
-          </Text>
-        </Pressable>
-      ) : null}
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   image: {
     borderWidth: 0,
@@ -239,45 +162,5 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  selectorContainer: {
-    alignItems: 'center',
-    gap: Spacing.three,
-  },
-  selectorTitle: {
-    fontSize: 13,
-    fontWeight: '700',
-    letterSpacing: 0.4,
-    textTransform: 'uppercase',
-  },
-  selectorGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-    gap: Spacing.two,
-    alignSelf: 'stretch',
-  },
-  selectorItem: {
-    width: 108,
-    borderRadius: Radius.lg,
-    borderWidth: 2,
-    padding: Spacing.two,
-    alignItems: 'center',
-    gap: Spacing.one,
-  },
-  selectorLabel: {
-    fontSize: 12,
-    fontWeight: '700',
-    textAlign: 'center',
-  },
-  equippedTag: {
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 0.6,
-    textTransform: 'uppercase',
-  },
-  shopLink: {
-    fontSize: 14,
-    fontWeight: '700',
   },
 });

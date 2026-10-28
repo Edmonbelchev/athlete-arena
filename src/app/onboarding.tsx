@@ -52,6 +52,8 @@ export default function OnboardingScreen() {
     try {
       await completeOnboarding();
       router.replace('/(tabs)');
+      // New accounts finish by creating their avatar (skippable; a default one already exists).
+      router.push('/avatar/edit?source=onboarding');
     } catch (error) {
       setFinishError(error instanceof Error ? error.message : 'Failed to save onboarding progress.');
     } finally {
@@ -135,7 +137,7 @@ export default function OnboardingScreen() {
             <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
               <Text style={StyleSheet.flatten([styles.title, { color: theme.text }])}>How it works</Text>
               <Text style={StyleSheet.flatten([styles.body, { color: theme.textSecondary }])}>
-                Four things to know before your first challenge.
+                Five things to know before your first challenge.
               </Text>
               <View style={styles.featureList}>
                 {ONBOARDING_HOW_IT_WORKS.map((feature) => (

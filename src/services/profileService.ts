@@ -4,7 +4,7 @@ import { movementStatsToProfileStats } from '@/features/stats/movementStatsUtils
 import { assertSupabaseConfigured, supabase } from '@/lib/supabase';
 import { getMovementStats } from '@/services/statsService';
 import type { Profile } from '@/types';
-import type { ProfileStats, UpdateProfileInput } from '@/types/profile';
+import { PROFILE_BIO_MAX_LENGTH, type ProfileStats, type UpdateProfileInput } from '@/types/profile';
 
 export async function getProfile(userId: string): Promise<Profile | null> {
   assertSupabaseConfigured();
@@ -55,6 +55,14 @@ export async function updateProfile(
   if (input.display_name !== undefined) {
     const trimmed = input.display_name?.trim() ?? '';
     payload.display_name = trimmed.length > 0 ? trimmed : null;
+  }
+
+  if (input.bio !== undefined) {
+    const trimmed = input.bio?.trim() ?? '';
+    if (trimmed.length > PROFILE_BIO_MAX_LENGTH) {
+      throw new Error(`Description must be ${PROFILE_BIO_MAX_LENGTH} characters or fewer`);
+    }
+    payload.bio = trimmed.length > 0 ? trimmed : null;
   }
 
   if (input.avatar_url !== undefined) {

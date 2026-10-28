@@ -64,6 +64,7 @@ export interface Database {
           id: string;
           username: string;
           display_name: string | null;
+          bio: string | null;
           avatar_url: string | null;
           total_xp: number;
           level: number;
@@ -81,6 +82,7 @@ export interface Database {
           id: string;
           username: string;
           display_name?: string | null;
+          bio?: string | null;
           avatar_url?: string | null;
           total_xp?: number;
           level?: number;
@@ -96,6 +98,7 @@ export interface Database {
           id?: string;
           username?: string;
           display_name?: string | null;
+          bio?: string | null;
           avatar_url?: string | null;
           total_xp?: number;
           level?: number;
@@ -104,6 +107,33 @@ export interface Database {
           coin_balance?: number;
           coin_multiplier_expires_at?: string | null;
           preferences?: Json;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      user_avatars: {
+        Row: {
+          user_id: string;
+          appearance: Json;
+          accessories: Json;
+          version: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          user_id: string;
+          appearance: Json;
+          accessories?: Json;
+          version?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          user_id?: string;
+          appearance?: Json;
+          accessories?: Json;
+          version?: number;
           created_at?: string;
           updated_at?: string;
         };
@@ -697,6 +727,23 @@ export interface Database {
           owned: boolean;
           equipped: boolean;
         }[];
+      };
+      get_my_wardrobe: {
+        Args: Record<string, never>;
+        Returns: {
+          id: string;
+          title: string;
+          description: string;
+          image_url: string | null;
+          price_coins: number;
+          sort_order: number;
+          metadata: Json;
+          owned: boolean;
+        }[];
+      };
+      save_my_avatar: {
+        Args: { p_appearance: Json; p_accessories: Json };
+        Returns: number;
       };
       get_my_shop_summary: {
         Args: Record<string, never>;

@@ -20,6 +20,7 @@ import { ShopProvider } from '@/features/shop/ShopProvider';
 import { UserSettingsProvider } from '@/features/settings/UserSettingsProvider';
 import { useThemePreference } from '@/features/theme/ThemePreferenceProvider';
 import { ChallengeNotificationBanner } from '@/components/notifications/ChallengeNotificationBanner';
+import { AvatarHeadshotSync } from '@/components/avatar/AvatarHeadshotSync';
 import { OnboardingGate } from '@/components/onboarding/OnboardingGate';
 import { ModalCloseButton } from '@/components/ui/ModalCloseButton';
 
@@ -72,6 +73,7 @@ function ThemedRootNavigator() {
         <RootNavigator />
         <PushNotificationBootstrap />
         <RevenueCatBootstrap />
+        <AvatarHeadshotSync />
       </OnboardingGate>
       <ChallengeNotificationBanner />
     </ThemeProvider>
@@ -120,6 +122,14 @@ function RootNavigator() {
               presentation: 'modal',
               headerShown: true,
               title: 'Friend Profile',
+            }}
+          />
+          <Stack.Screen
+            name="friends/achievements/[userId]"
+            options={{
+              presentation: 'modal',
+              headerShown: true,
+              title: 'Achievements',
             }}
           />
           <Stack.Screen
@@ -174,6 +184,14 @@ function RootNavigator() {
               presentation: 'modal',
               headerShown: true,
               title: 'Edit Profile',
+            }}
+          />
+          <Stack.Screen
+            name="avatar/edit"
+            options={{
+              presentation: 'modal',
+              headerShown: true,
+              title: 'Avatar',
             }}
           />
           <Stack.Screen

@@ -33,6 +33,7 @@ export interface FriendPublicProfile {
   userId: string;
   username: string;
   displayName: string | null;
+  bio: string | null;
   level: number;
   totalXp: number;
   currentStreak: number;

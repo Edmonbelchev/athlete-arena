@@ -11,26 +11,26 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { ProfileAvatarSelector } from '@/components/profile/ProfileAvatar';
+import { ProfileAvatar } from '@/components/profile/ProfileAvatar';
 import { AuthTextInput } from '@/components/ui/AuthTextInput';
 import { AppIcon } from '@/components/ui/AppIcon';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { getProfileErrorMessage } from '@/features/profile/profileErrors';
 import { useProfile } from '@/features/profile/useProfile';
-import { useShop } from '@/features/shop/ShopProvider';
 import { leaveScreen } from '@/lib/navigation';
 import { updateProfile } from '@/services/profileService';
+import { PROFILE_BIO_MAX_LENGTH } from '@/types/profile';
 import { useTheme } from '@/hooks/use-theme';
 
 export default function EditProfileScreen() {
   const theme = useTheme();
   const router = useRouter();
   const { profile, isLoading, refresh } = useProfile();
-  const { getItemsByType, equipItem, isUpdating, refresh: refreshShop } = useShop();
 
   const [username, setUsername] = useState('');
   const [displayName, setDisplayName] = useState('');
+  const [bio, setBio] = useState('');
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -38,6 +38,7 @@ export default function EditProfileScreen() {
     if (profile) {
       setUsername(profile.username);
       setDisplayName(profile.display_name ?? '');
+      setBio(profile.bio ?? '');
     }
   }, [profile]);
 
@@ -53,6 +54,7 @@ export default function EditProfileScreen() {
       await updateProfile(profile.id, {
         username,
         display_name: displayName,
+        bio,
       });
       await refresh();
       leaveScreen(router);
@@ -60,17 +62,6 @@ export default function EditProfileScreen() {
       setFormError(getProfileErrorMessage(err));
     } finally {
       setIsSubmitting(false);
-    }
-  }
-
-  async function handleSelectAvatar(itemId: string) {
-    setFormError(null);
-
-    try {
-      await equipItem(itemId);
-      await Promise.all([refresh(), refreshShop()]);
-    } catch (err) {
-      setFormError(getProfileErrorMessage(err));
     }
   }
 
@@ -85,15 +76,6 @@ export default function EditProfileScreen() {
   }
 
   const fallbackName = displayName.trim() || username || 'Athlete';
-  const avatarItems = getItemsByType('avatar').map((item) => ({
-    id: item.id,
-    title: item.title,
-    imageUrl: item.imageUrl,
-    icon: item.metadata.icon,
-    backgroundColor: item.metadata.backgroundColor,
-    owned: item.owned,
-    equipped: item.equipped,
-  }));
 
   return (
     <>
@@ -122,12 +104,14 @@ export default function EditProfileScreen() {
           <ScrollView
             contentContainerStyle={styles.content}
             keyboardShouldPersistTaps="handled">
-            <ProfileAvatarSelector
-              avatars={avatarItems}
-              displayName={fallbackName}
-              isUpdating={isUpdating}
-              onSelect={(itemId) => void handleSelectAvatar(itemId)}
-            />
+            <View style={styles.avatarBlock}>
+              <ProfileAvatar uri={profile?.avatar_url} name={fallbackName} size={96} />
+              <PrimaryButton
+                label="Customize Avatar"
+                variant="secondary"
+                onPress={() => router.push('/avatar/edit')}
+              />
+            </View>
 
             <Text style={StyleSheet.flatten([styles.subtitle, { color: theme.textSecondary }])}>
               Update how you appear in the app. Usernames must be unique.
@@ -147,6 +131,23 @@ export default function EditProfileScreen() {
               onChangeText={setDisplayName}
               autoComplete="name"
             />
+
+            <View style={styles.bioField}>
+              <AuthTextInput
+                label="About Me (optional)"
+                value={bio}
+                onChangeText={setBio}
+                placeholder="Training for my first marathon, love leg day..."
+                autoCapitalize="sentences"
+                autoCorrect
+                multiline
+                maxLength={PROFILE_BIO_MAX_LENGTH}
+                style={styles.bioInput}
+              />
+              <Text style={StyleSheet.flatten([styles.bioCounter, { color: theme.textSecondary }])}>
+                {bio.length}/{PROFILE_BIO_MAX_LENGTH}
+              </Text>
+            </View>
 
             {formError ? (
               <Text style={StyleSheet.flatten([styles.formError, { color: theme.danger }])}>
@@ -189,6 +190,23 @@ const styles = StyleSheet.create({
     maxWidth: MaxContentWidth,
     alignSelf: 'center',
     width: '100%',
+  },
+  bioField: {
+    gap: Spacing.one,
+  },
+  bioInput: {
+    minHeight: 88,
+    textAlignVertical: 'top',
+    paddingTop: Spacing.three,
+  },
+  bioCounter: {
+    fontSize: 12,
+    fontWeight: '600',
+    textAlign: 'right',
+  },
+  avatarBlock: {
+    alignItems: 'center',
+    gap: Spacing.three,
   },
   subtitle: {
     fontSize: 15,

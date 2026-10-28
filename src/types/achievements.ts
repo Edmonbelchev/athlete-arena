@@ -49,7 +49,8 @@ export interface FriendAchievementSummary {
   unlockedAt: string;
 }
 
-export const ACHIEVEMENT_PREVIEW_LIMIT = 3;
+/** Achievements shown on a profile before "View all". */
+export const ACHIEVEMENT_PREVIEW_LIMIT = 4;
 
 export interface AchievementPreview {
   recentUnlocked: AchievementRecord[];

@@ -8,6 +8,8 @@ export interface Profile {
   id: string;
   username: string;
   display_name: string | null;
+  /** Optional "about me" text, up to PROFILE_BIO_MAX_LENGTH characters. */
+  bio?: string | null;
   avatar_url: string | null;
   total_xp: number;
   level: number;

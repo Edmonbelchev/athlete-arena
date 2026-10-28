@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { CameraPreview } from '@/components/CameraPreview';
@@ -8,8 +9,14 @@ import { useExercisePoseDetection } from '@/features/challenges/useExercisePoseD
 import { useRepCounter } from '@/features/challenges/useRepCounter';
 import { ONBOARDING_CAMERA } from '@/features/onboarding/onboardingContent';
 import { getTrackingBorderColor } from '@/features/challenges/workoutGuidance';
+import { useDrainNativeCameraOnLeave } from '@/hooks/use-drain-native-camera-on-leave';
+import { useRepFeedback } from '@/hooks/use-rep-feedback';
 import { useTheme } from '@/hooks/use-theme';
 import { supportsNativePoseDetection } from '@/lib/runtime';
+import { waitForModalDismiss } from '@/lib/navigation';
+
+/** Time for MediaPipe to drain after the camera stops, before the preview unmounts. */
+const CAMERA_DRAIN_MS = 300;
 
 interface OnboardingCameraTryProps {
   onContinue: () => void;
@@ -19,27 +26,39 @@ export function OnboardingCameraTry({ onContinue }: OnboardingCameraTryProps) {
   const theme = useTheme();
   const targetReps = ONBOARDING_CAMERA.targetReps;
   const exerciseType = ONBOARDING_CAMERA.exerciseType;
+  const [leaving, setLeaving] = useState(false);
+  const cameraActive = useDrainNativeCameraOnLeave(!leaving);
 
+  // Pose detection registers reps through simulateRep(); the counter's own callback
+  // must not call it again or a single rep would count up to the target at once.
   const repCounter = useRepCounter({
     targetReps,
     enabled: true,
-    onRepDetected: () => {
-      repCounter.simulateRep();
-    },
+    onRepDetected: () => {},
   });
 
-  const { processLandmarks, phase, trackingStatus, pullUpBarLineY } =
-    useExercisePoseDetection({
+  useRepFeedback(repCounter.currentReps);
+
+  const { processLandmarks, phase, trackingStatus, pullUpBarLineY } = useExercisePoseDetection({
     exerciseType,
-    enabled: true,
+    enabled: cameraActive && !repCounter.isComplete,
     onRepDetected: () => {
       repCounter.simulateRep();
     },
   });
 
   const autoRepCounting = Platform.OS === 'web' || supportsNativePoseDetection();
-  const showSimulateButton = !autoRepCounting;
   const trackingBorderColor = getTrackingBorderColor(trackingStatus, theme);
+
+  async function handleContinue() {
+    if (leaving) {
+      return;
+    }
+
+    setLeaving(true);
+    await waitForModalDismiss(CAMERA_DRAIN_MS);
+    onContinue();
+  }
 
   return (
     <ScrollView
@@ -62,7 +81,7 @@ export function OnboardingCameraTry({ onContinue }: OnboardingCameraTryProps) {
           },
         ])}>
         <CameraPreview
-          active
+          active={cameraActive}
           onCameraReady={() => repCounter.start()}
           onLandmarksDetected={processLandmarks}
           pullUpBarLineY={pullUpBarLineY}
@@ -84,9 +103,16 @@ export function OnboardingCameraTry({ onContinue }: OnboardingCameraTryProps) {
           {repCounter.currentReps} / {targetReps}
         </Text>
       </View>
+
+      {!autoRepCounting && !repCounter.isComplete ? (
+        // Builds without native pose detection (e.g. Expo Go) cannot count reps from the camera.
+        <PrimaryButton label="+ Simulate Rep" variant="secondary" onPress={repCounter.simulateRep} />
+      ) : null}
+
       <PrimaryButton
         label={repCounter.isComplete ? 'Nice work - Continue' : 'Continue without finishing'}
-        onPress={onContinue}
+        loading={leaving}
+        onPress={() => void handleContinue()}
       />
     </ScrollView>
   );

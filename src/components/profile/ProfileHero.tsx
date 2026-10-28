@@ -11,6 +11,7 @@ import { useTheme } from '@/hooks/use-theme';
 interface ProfileHeroProps {
   displayName: string;
   username: string;
+  bio?: string | null;
   equippedTitleName?: string | null;
   level: number;
   coinBalance: number;
@@ -24,6 +25,7 @@ interface ProfileHeroProps {
 export function ProfileHero({
   displayName,
   username,
+  bio = null,
   equippedTitleName = null,
   level,
   coinBalance,
@@ -55,6 +57,8 @@ export function ProfileHero({
         <UserTitleBadge title={equippedTitleName} />
         <Text style={StyleSheet.flatten([styles.username, { color: theme.textSecondary }])}>@{username}</Text>
       </View>
+
+      {bio ? <Text style={StyleSheet.flatten([styles.bio, { color: theme.text }])}>{bio}</Text> : null}
 
       <View style={styles.metaRow}>
         <View style={StyleSheet.flatten([styles.levelPill, { backgroundColor: theme.backgroundSelected }])}>
@@ -90,6 +94,12 @@ const styles = StyleSheet.create({
   username: {
     fontSize: 15,
     fontWeight: '600',
+  },
+  bio: {
+    fontSize: 15,
+    lineHeight: 21,
+    textAlign: 'center',
+    maxWidth: 320,
   },
   metaRow: {
     flexDirection: 'row',
