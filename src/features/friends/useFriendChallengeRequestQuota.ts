@@ -8,6 +8,7 @@ const DEFAULT_QUOTA: FriendChallengeRequestQuota = {
   monthlyLimit: 10,
   isPremium: false,
   canCreate: true,
+  bonusSlots: 0,
 };
 
 export function useFriendChallengeRequestQuota() {

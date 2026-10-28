@@ -1,6 +1,6 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, PixelRatio, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
@@ -36,12 +36,13 @@ import {
   type AvatarChoice,
 } from '@/features/avatar/avatarOptions';
 import { toAccessoryStyles } from '@/features/avatar/avatarWardrobe';
+import { saveAvatarWithHeadshot } from '@/features/avatar/saveAvatarWithHeadshot';
 import { useProfile } from '@/features/profile/useProfile';
+import { useShop } from '@/features/shop/ShopProvider';
 import { useTheme } from '@/hooks/use-theme';
 import { formatUserError } from '@/lib/errors';
 import { leaveScreen } from '@/lib/navigation';
-import { getMyAvatar, getMyWardrobe, saveMyAvatar, uploadAvatarHeadshot } from '@/services/avatarService';
-import { updateProfile } from '@/services/profileService';
+import { getMyAvatar, getMyWardrobe } from '@/services/avatarService';
 import type { AccessorySlot, AvatarAccessories, AvatarAppearance, WearableItem } from '@/types/avatar';
 
 type EditorTab = 'face' | 'eyes' | 'mouth' | 'hair' | 'beard' | 'outfit';
@@ -55,15 +56,14 @@ const TABS: { id: EditorTab; label: string; maleOnly?: boolean }[] = [
   { id: 'outfit', label: 'Outfit' },
 ];
 
-/** Exported profile picture size in physical pixels. */
-const HEADSHOT_EXPORT_PX = 384;
 const PREVIEW_SIZE = 148;
 
 export default function AvatarEditorScreen() {
   const theme = useTheme();
   const router = useRouter();
   const { profile, refresh: refreshProfile } = useProfile();
-  const { source } = useLocalSearchParams<{ source?: string }>();
+  // `equip` comes from the shop's "Wear" button: open the outfit tab already wearing the item.
+  const { source, equip } = useLocalSearchParams<{ source?: string; equip?: string }>();
   const isOnboarding = source === 'onboarding';
   const portraitRef = useRef<View>(null);
 
@@ -75,6 +75,17 @@ export default function AvatarEditorScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Frames are shop items equipped separately from the avatar; applied on Save.
+  const { items: shopItems, summary: shopSummary, equipItem, removeFrame } = useShop();
+  const equippedFrameId = shopSummary.equipped.frame ?? null;
+  const [frameId, setFrameId] = useState<string | null>(equippedFrameId);
+  const ownedFrames = shopItems.filter((item) => item.itemType === 'frame' && item.owned);
+  const selectedFrame = ownedFrames.find((item) => item.id === frameId) ?? null;
+
+  // The shop summary may finish loading after this screen opens.
+  useEffect(() => {
+    setFrameId(equippedFrameId);
+  }, [equippedFrameId]);
 
   const userId = profile?.id;
 
@@ -93,9 +104,16 @@ export default function AvatarEditorScreen() {
         }
 
         const initialAppearance = saved?.appearance ?? DEFAULT_APPEARANCE.male;
+        const equipItem = items.find((item) => item.id === equip);
+        const initialAccessories = equipItem
+          ? { ...saved?.accessories, [equipItem.slot]: equipItem.id }
+          : (saved?.accessories ?? {});
         setWardrobe(items);
         setAppearance(initialAppearance);
-        setAccessories(normalizeAccessories(saved?.accessories ?? {}, items, initialAppearance.bodyType));
+        setAccessories(normalizeAccessories(initialAccessories, items, initialAppearance.bodyType));
+        if (equipItem) {
+          setTab('outfit');
+        }
         setIsNew(!saved);
       } catch (err) {
         if (!cancelled) {
@@ -113,7 +131,7 @@ export default function AvatarEditorScreen() {
     return () => {
       cancelled = true;
     };
-  }, [userId]);
+  }, [equip, userId]);
 
   const accessoryStyles = useMemo(() => toAccessoryStyles(accessories, wardrobe), [accessories, wardrobe]);
 
@@ -178,19 +196,10 @@ export default function AvatarEditorScreen() {
     setIsSaving(true);
 
     try {
-      const version = await saveMyAvatar(appearance, accessories);
-      // Loaded on demand: the native module throws on import in dev builds made before it was added.
-      const { captureRef } = await import('react-native-view-shot');
-      const exportSize = HEADSHOT_EXPORT_PX / PixelRatio.get();
-      const pngBase64 = await captureRef(portraitRef, {
-        format: 'png',
-        quality: 1,
-        result: 'base64',
-        width: exportSize,
-        height: exportSize,
-      });
-      const avatarUrl = await uploadAvatarHeadshot(userId, pngBase64, version);
-      await updateProfile(userId, { avatar_url: avatarUrl });
+      await saveAvatarWithHeadshot({ userId, appearance, accessories, portraitRef });
+      if (frameId !== equippedFrameId) {
+        await (frameId ? equipItem(frameId) : removeFrame());
+      }
       await refreshProfile();
       leaveScreen(router, '/(tabs)');
     } catch (err) {
@@ -256,7 +265,11 @@ export default function AvatarEditorScreen() {
                   </View>
                 ) : null}
                 <View style={styles.portraitWrap}>
-                  <View style={StyleSheet.flatten([styles.portrait, { borderColor: theme.card }])}>
+                  <View
+                    style={StyleSheet.flatten([
+                      styles.portrait,
+                      { borderColor: selectedFrame?.metadata.borderColor ?? theme.card },
+                    ])}>
                     {/* The square inside the round frame is what gets saved as the profile picture. */}
                     <View ref={portraitRef} collapsable={false}>
                       <AvatarPortrait
@@ -391,7 +404,7 @@ export default function AvatarEditorScreen() {
                                   appearance={appearance}
                                   accessories={toAccessoryStyles(preview, wardrobe)}
                                   size={size}
-                                  crop={slot === 'earrings' ? 'face' : 'portrait'}
+                                  crop={slot === 'earrings' || slot === 'glasses' ? 'face' : 'portrait'}
                                 />
                               );
                             }}
@@ -399,6 +412,41 @@ export default function AvatarEditorScreen() {
                         </EditorSection>
                       );
                     })}
+                    {ownedFrames.length > 0 ? (
+                      <EditorSection title="Frame">
+                        <OptionTiles
+                          options={[
+                            { id: undefined, label: 'None' },
+                            ...ownedFrames.map((item) => ({ id: item.id, label: item.title.replace(' Frame', '') })),
+                          ]}
+                          value={frameId ?? undefined}
+                          onChange={(id) => setFrameId(id ?? null)}
+                          renderPreview={(id, size) => {
+                            const frame = ownedFrames.find((item) => item.id === id);
+                            return (
+                              <View
+                                style={StyleSheet.flatten([
+                                  styles.framePreview,
+                                  {
+                                    width: size - 8,
+                                    height: size - 8,
+                                    borderRadius: (size - 8) / 2,
+                                    borderColor: frame?.metadata.borderColor ?? 'transparent',
+                                    borderWidth: frame ? (frame.metadata.borderWidth ?? 3) + 1 : 0,
+                                  },
+                                ])}>
+                                <AvatarPortrait
+                                  appearance={appearance}
+                                  accessories={accessoryStyles}
+                                  size={size - 14}
+                                  showBackground
+                                />
+                              </View>
+                            );
+                          }}
+                        />
+                      </EditorSection>
+                    ) : null}
                     <EditorSection title="Background">
                       <ColorSwatches
                         colors={BACKGROUND_COLORS}
@@ -471,6 +519,11 @@ const styles = StyleSheet.create({
   portraitWrap: {
     width: PREVIEW_SIZE + 8,
     height: PREVIEW_SIZE + 8,
+  },
+  framePreview: {
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   portrait: {
     width: PREVIEW_SIZE + 8,

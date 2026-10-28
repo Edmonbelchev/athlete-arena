@@ -277,18 +277,18 @@ export default function HomeScreen() {
               accentColor={theme.success}
               onPress={() => router.push('/(tabs)/workouts')}
             />
+            <HomeLinkBlock
+              title="Shop"
+              description="Outfits, frames, emotes and challenge slots"
+              icon="gift"
+              accentColor={theme.primary}
+              onPress={() => router.push('/(tabs)/shop')}
+            />
           </View>
         </HomeSection>
 
         <HomeSection title="More Ways to Play" subtitle="New features landing soon">
           <View style={styles.comingSoonList}>
-            <ComingSoonBlock
-              key="shop"
-              title="Shop"
-              description="Spend coins on emotes, avatars, and profile frames."
-              icon="gift"
-              accentColor={theme.primary}
-            />
             <ComingSoonBlock
               key="weekly-quiz"
               title="Weekly Quiz"

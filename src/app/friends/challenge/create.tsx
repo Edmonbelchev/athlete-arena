@@ -379,6 +379,7 @@ export default function CreateFriendChallengeScreen() {
             quota={quota}
             showUpgradeButton={atRequestLimit}
             onUpgrade={() => void handleUpgradeForUnlimited()}
+            onBuySlots={() => router.push('/(tabs)/shop?section=slots')}
           />
 
           <Text style={StyleSheet.flatten([styles.label, { color: theme.textSecondary }])}>FRIEND</Text>

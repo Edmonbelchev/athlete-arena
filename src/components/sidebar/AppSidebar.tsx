@@ -52,6 +52,7 @@ const NAV_SECTIONS: NavSection[] = [
       { label: 'Challenges', icon: 'swords', href: '/(tabs)/challenges' },
       { label: 'Workouts', icon: 'dumbbell', href: '/(tabs)/workouts' },
       { label: 'Leaderboard', icon: 'crown', href: '/(tabs)/leaderboard' },
+      { label: 'Shop', icon: 'gift', href: '/(tabs)/shop' },
     ],
   },
   {
@@ -196,6 +197,7 @@ export function AppSidebar() {
                   }
                 });
               }}
+              onBuySlots={() => navigate('/(tabs)/shop?section=slots')}
             />
 
             <View style={styles.navSections}>

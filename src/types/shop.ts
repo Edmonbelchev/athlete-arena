@@ -1,7 +1,9 @@
 import type { AppIconName } from '@/constants/icons';
+import type { WearableItem, WearableTier } from '@/types/avatar';
 
-export type ShopItemType = 'avatar' | 'frame' | 'emote';
-export type ShopSlot = ShopItemType;
+export type ShopItemType = 'avatar' | 'frame' | 'emote' | 'wearable' | 'challenge_slots';
+/** Slots equipped through equip_shop_item (avatar cosmetics use the avatar editor instead). */
+export type ShopSlot = 'avatar' | 'frame' | 'emote';
 export type ShopCategoryFilter = 'all' | ShopItemType;
 export type ShopOwnershipFilter = 'all' | 'owned' | 'unowned';
 
@@ -11,6 +13,8 @@ export interface ShopItemMetadata {
   borderColor?: string;
   borderWidth?: number;
   emoji?: string;
+  /** Price tier for emotes and frames (wearables carry it on `wearable`). */
+  tier?: WearableTier;
 }
 
 export interface ShopItemRecord {
@@ -24,6 +28,10 @@ export interface ShopItemRecord {
   metadata: ShopItemMetadata;
   owned: boolean;
   equipped: boolean;
+  /** Set for avatar cosmetics (item type 'wearable'). */
+  wearable: WearableItem | null;
+  /** Set for challenge slot packs: slots granted and coins saved versus buying singles. */
+  slotPack: { slots: number; savings: number } | null;
 }
 
 export interface ShopSummary {

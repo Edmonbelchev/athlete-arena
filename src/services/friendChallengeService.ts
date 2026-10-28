@@ -69,6 +69,7 @@ export async function getMyFriendChallengeRequestQuota(): Promise<FriendChalleng
         monthly_limit: number | null;
         is_premium: boolean;
         can_create: boolean;
+        bonus_slots?: number;
       }
     | undefined;
 
@@ -77,6 +78,7 @@ export async function getMyFriendChallengeRequestQuota(): Promise<FriendChalleng
     monthlyLimit: row?.is_premium ? null : (row?.monthly_limit ?? FRIEND_CHALLENGE_MONTHLY_REQUEST_LIMIT),
     isPremium: row?.is_premium ?? false,
     canCreate: row?.can_create ?? true,
+    bonusSlots: row?.bonus_slots ?? 0,
   };
 }
 

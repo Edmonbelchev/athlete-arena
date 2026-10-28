@@ -57,6 +57,17 @@ export async function purchaseShopItem(itemId: string): Promise<'purchased' | 'a
   return (data as 'purchased' | 'already_owned') ?? 'already_owned';
 }
 
+/** Takes off the equipped item in a slot (only frames can be removed). */
+export async function unequipShopSlot(slot: 'frame'): Promise<void> {
+  assertSupabaseConfigured();
+
+  const { error } = await supabase.rpc('unequip_shop_slot', { p_slot: slot });
+
+  if (error) {
+    throw error;
+  }
+}
+
 export async function equipShopItem(itemId: string): Promise<'equipped'> {
   assertSupabaseConfigured();
 

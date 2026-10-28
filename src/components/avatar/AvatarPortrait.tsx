@@ -13,15 +13,20 @@ import {
 import {
   AvatarEarrings,
   AvatarFace,
+  AvatarGlasses,
   AvatarHeadShapePart,
   AvatarHeadwear,
   AvatarNeck,
   AvatarTop,
 } from '@/components/avatar/AvatarHeadParts';
+
+/** How far hat crowns sit above the scalp (see hairOutlinePath). */
+const HEADWEAR_VOLUME = 1.16;
 import {
   FACE_VIEWBOX,
   PORTRAIT_VIEWBOX,
   hairOutlinePath,
+  hairOutlineTop,
   headFitTransform,
   shoulderTransform,
 } from '@/components/avatar/avatarGeometry';
@@ -46,7 +51,7 @@ interface AvatarPortraitProps {
 
 /**
  * Layered SVG head-and-shoulders avatar. Layer order (back to front):
- * hair back → neck → top → head → beard → face → hair cap → hair volume → earrings → headwear.
+ * hair back → neck → top → head → beard → face → hair cap → hair volume → earrings → glasses → headwear.
  * Hair caps and beards are clipped to the head outline so they fit every head shape.
  */
 export function AvatarPortrait({
@@ -61,6 +66,8 @@ export function AvatarPortrait({
   const hairClipId = `${idPrefix}hair`;
   const beardClipId = `${idPrefix}beard`;
   const jawClipId = `${idPrefix}jaw`;
+  const topClipId = `${idPrefix}top`;
+  const headwearClipId = `${idPrefix}headwear`;
 
   const skin = resolveColor(SKIN_COLORS, appearance.skinColor);
   const hairColor = resolveColor(HAIR_COLORS, appearance.hairColor);
@@ -68,6 +75,7 @@ export function AvatarPortrait({
   const { x, y, size: box } = crop === 'face' ? FACE_VIEWBOX : PORTRAIT_VIEWBOX;
   const shape = appearance.headShape;
   const fit = headFitTransform(shape);
+  const background = resolveColor(BACKGROUND_COLORS, appearance.background);
 
   return (
     <Svg width={size} height={size} viewBox={`${x} ${y} ${box} ${box}`}>
@@ -83,16 +91,19 @@ export function AvatarPortrait({
         <ClipPath id={jawClipId}>
           <Rect {...JAW_CLIP_RECT} />
         </ClipPath>
+        <ClipPath id={headwearClipId}>
+          <Path d={hairOutlinePath(shape, HEADWEAR_VOLUME)} />
+        </ClipPath>
       </Defs>
       {showBackground ? (
-        <Rect x={x} y={y} width={box} height={box} fill={resolveColor(BACKGROUND_COLORS, appearance.background)} />
+        <Rect x={x} y={y} width={box} height={box} fill={background} />
       ) : null}
       <G transform={fit}>
         <AvatarHairBack hair={appearance.hair} bodyType={appearance.bodyType} color={hairColor} />
       </G>
       <G transform={shoulderTransform(appearance.bodyType)}>
         <AvatarNeck skin={skin} />
-        <AvatarTop accessories={accessories} />
+        <AvatarTop accessories={accessories} background={background} clipId={topClipId} />
       </G>
       <AvatarHeadShapePart shape={shape} skin={skin} />
       <AvatarFacialHair
@@ -115,9 +126,15 @@ export function AvatarPortrait({
         <AvatarHairFront hair={appearance.hair} bodyType={appearance.bodyType} color={hairColor} />
       </G>
       <AvatarEarrings accessories={accessories} headShape={shape} />
-      <G transform={fit}>
-        <AvatarHeadwear accessories={accessories} />
-      </G>
+      <AvatarGlasses accessories={accessories} />
+      <AvatarHeadwear
+        accessories={accessories}
+        background={background}
+        clipId={headwearClipId}
+        crownOutline={hairOutlinePath(shape, HEADWEAR_VOLUME)}
+        crownTop={hairOutlineTop(shape, HEADWEAR_VOLUME)}
+        fitTransform={fit}
+      />
     </Svg>
   );
 }

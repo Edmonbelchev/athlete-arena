@@ -1,5 +1,6 @@
 import type { AppIconName } from '@/constants/icons';
 import { APP_ICONS } from '@/constants/icons';
+import { mapWearableItem } from '@/features/avatar/avatarWardrobe';
 import type {
   ShopAvatarDisplay,
   ShopFrameDisplay,
@@ -31,8 +32,18 @@ interface ShopSummaryRpc {
   coin_multiplier_expires_at?: string | null;
 }
 
+const SHOP_ITEM_TYPES: ShopItemType[] = ['avatar', 'frame', 'emote', 'wearable', 'challenge_slots'];
+
 function isShopItemType(value: string): value is ShopItemType {
-  return value === 'avatar' || value === 'frame' || value === 'emote';
+  return (SHOP_ITEM_TYPES as string[]).includes(value);
+}
+
+function parseSlotPack(value: unknown): { slots: number; savings: number } | null {
+  const record = value && typeof value === 'object' ? (value as Record<string, unknown>) : {};
+  if (typeof record.slots !== 'number' || record.slots <= 0) {
+    return null;
+  }
+  return { slots: record.slots, savings: typeof record.savings === 'number' ? record.savings : 0 };
 }
 
 function isAppIconName(value: string): value is AppIconName {
@@ -67,6 +78,10 @@ export function parseShopItemMetadata(value: unknown): ShopItemMetadata {
     metadata.emoji = record.emoji;
   }
 
+  if (record.tier === 'basic' || record.tier === 'rare' || record.tier === 'legendary') {
+    metadata.tier = record.tier;
+  }
+
   return metadata;
 }
 
@@ -86,6 +101,8 @@ export function mapShopItem(row: ShopCatalogRpcRow): ShopItemRecord | null {
     metadata: parseShopItemMetadata(row.metadata),
     owned: row.owned,
     equipped: row.equipped,
+    wearable: row.item_type === 'wearable' ? mapWearableItem(row) : null,
+    slotPack: row.item_type === 'challenge_slots' ? parseSlotPack(row.metadata) : null,
   };
 }
 

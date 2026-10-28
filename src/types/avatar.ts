@@ -76,7 +76,7 @@ export interface AvatarAppearance {
   background: string;
 }
 
-export type AccessorySlot = 'top' | 'headwear' | 'earrings';
+export type AccessorySlot = 'top' | 'headwear' | 'glasses' | 'earrings';
 export type WearableBodyType = AvatarBodyType | 'unisex';
 
 export type WearableStyle =
@@ -84,7 +84,15 @@ export type WearableStyle =
   | 'hoodie'
   | 'headband'
   | 'cap'
+  | 'cap_back'
+  | 'bucket'
+  | 'visor'
   | 'beanie'
+  | 'crown'
+  | 'round_glasses'
+  | 'square_glasses'
+  | 'sunglasses'
+  | 'aviators'
   | 'studs'
   | 'hoops'
   | 'drops';
@@ -93,6 +101,12 @@ export interface WearableColors {
   primary: string;
   secondary: string;
 }
+
+/** Optional chest detail on tops (used by higher shop tiers). */
+export type WearablePattern = 'stripe' | 'star' | 'camo';
+
+/** Shop price tier: basic (cheap), rare (middle), legendary (expensive). */
+export type WearableTier = 'basic' | 'rare' | 'legendary';
 
 export interface WearableItem {
   id: string;
@@ -104,6 +118,8 @@ export interface WearableItem {
   bodyType: WearableBodyType;
   style: WearableStyle;
   colors: WearableColors;
+  pattern?: WearablePattern;
+  tier?: WearableTier;
   starter: boolean;
   owned: boolean;
 }
@@ -113,7 +129,7 @@ export type AvatarAccessories = Partial<Record<AccessorySlot, string>>;
 
 /** Equipped wearables resolved for rendering (no ownership info needed). */
 export type AvatarAccessoryStyles = Partial<
-  Record<AccessorySlot, { style: WearableStyle; colors: WearableColors }>
+  Record<AccessorySlot, { style: WearableStyle; colors: WearableColors; pattern?: WearablePattern }>
 >;
 
 export interface UserAvatar {

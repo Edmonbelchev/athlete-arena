@@ -4,7 +4,9 @@ import type {
   AvatarAccessoryStyles,
   WearableBodyType,
   WearableItem,
+  WearablePattern,
   WearableStyle,
+  WearableTier,
 } from '@/types/avatar';
 
 export interface WardrobeRpcRow {
@@ -17,8 +19,27 @@ export interface WardrobeRpcRow {
   owned: boolean;
 }
 
-const SLOTS: AccessorySlot[] = ['top', 'headwear', 'earrings'];
-const STYLES: WearableStyle[] = ['tee', 'hoodie', 'headband', 'cap', 'beanie', 'studs', 'hoops', 'drops'];
+const SLOTS: AccessorySlot[] = ['top', 'headwear', 'glasses', 'earrings'];
+const STYLES: WearableStyle[] = [
+  'tee',
+  'hoodie',
+  'headband',
+  'cap',
+  'cap_back',
+  'bucket',
+  'visor',
+  'beanie',
+  'crown',
+  'round_glasses',
+  'square_glasses',
+  'sunglasses',
+  'aviators',
+  'studs',
+  'hoops',
+  'drops',
+];
+const PATTERNS: WearablePattern[] = ['stripe', 'star', 'camo'];
+const TIERS: WearableTier[] = ['basic', 'rare', 'legendary'];
 const HEX_COLOR = /^#[0-9a-fA-F]{6}$/;
 
 function isOneOf<T extends string>(values: readonly T[], value: unknown): value is T {
@@ -56,6 +77,8 @@ export function mapWearableItem(row: WardrobeRpcRow): WearableItem | null {
     bodyType: bodyType as WearableBodyType,
     style: metadata.style,
     colors: { primary, secondary },
+    pattern: isOneOf(PATTERNS, metadata.pattern) ? metadata.pattern : undefined,
+    tier: isOneOf(TIERS, metadata.tier) ? metadata.tier : undefined,
     starter: metadata.starter === true,
     owned: row.owned,
   };
@@ -86,7 +109,7 @@ export function toAccessoryStyles(
   for (const slot of SLOTS) {
     const item = wardrobe.find((entry) => entry.id === accessories[slot]);
     if (item) {
-      styles[slot] = { style: item.style, colors: item.colors };
+      styles[slot] = { style: item.style, colors: item.colors, pattern: item.pattern };
     }
   }
 

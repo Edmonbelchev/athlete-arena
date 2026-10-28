@@ -8,6 +8,8 @@ import { useTheme } from '@/hooks/use-theme';
 interface FriendChallengeRequestQuotaBarProps {
   quota: FriendChallengeRequestQuota;
   onUpgrade?: () => void;
+  /** Opens the shop's challenge slots; shown to free users near or at the limit. */
+  onBuySlots?: () => void;
   showUpgradeButton?: boolean;
 }
 
@@ -22,11 +24,14 @@ export function getFriendChallengeRequestRemaining(quota: FriendChallengeRequest
 export function FriendChallengeRequestQuotaBar({
   quota,
   onUpgrade,
+  onBuySlots,
   showUpgradeButton = false,
 }: FriendChallengeRequestQuotaBarProps) {
   const theme = useTheme();
   const remaining = getFriendChallengeRequestRemaining(quota);
   const atLimit = !quota.canCreate;
+  const usingBonusSlots = !quota.isPremium && remaining === 0 && quota.bonusSlots > 0;
+  const bonusLabel = `${quota.bonusSlots} bonus slot${quota.bonusSlots === 1 ? '' : 's'}`;
   const progress =
     quota.monthlyLimit && quota.monthlyLimit > 0
       ? Math.min(quota.usedCount / quota.monthlyLimit, 1)
@@ -77,10 +82,20 @@ export function FriendChallengeRequestQuotaBar({
           ? 'Send as many friend challenges as you want.'
           : remaining === null
             ? ''
-            : atLimit
-              ? 'Limit reached for this month.'
-              : `${remaining} remaining this month`}
+            : usingBonusSlots
+              ? `Monthly limit used - ${bonusLabel} left.`
+              : atLimit
+                ? 'Limit reached for this month.'
+                : `${remaining} remaining this month${quota.bonusSlots > 0 ? ` + ${bonusLabel}` : ''}`}
       </Text>
+
+      {!quota.isPremium && onBuySlots && (atLimit || usingBonusSlots) ? (
+        <Pressable accessibilityRole="button" onPress={onBuySlots}>
+          <Text style={StyleSheet.flatten([styles.upgradeLink, { color: theme.primary }])}>
+            Buy challenge slots in the Shop
+          </Text>
+        </Pressable>
+      ) : null}
 
       {showUpgradeButton && atLimit && onUpgrade ? (
         <PrimaryButton label="Upgrade for unlimited" onPress={onUpgrade} />

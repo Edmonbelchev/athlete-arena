@@ -113,6 +113,14 @@ export function headPath(
  * the sides grow much less so hair hugs the head at the temples instead of
  * sticking out past it.
  */
+/** Top of the head (y) for each shape. */
+const HEAD_TOP: Record<AvatarHeadShape, number> = { oval: 36, round: 40, square: 38, long: 35 };
+
+/** Top edge (y) of hairOutlinePath, e.g. to sit a pompom on a hat crown. */
+export function hairOutlineTop(shape: AvatarHeadShape, volume: number): number {
+  return 104 - (104 - HEAD_TOP[shape]) * volume;
+}
+
 export function hairOutlinePath(shape: AvatarHeadShape, volume: number): string {
   const sy = volume;
   const sx = 1 + (volume - 1) * 0.3;

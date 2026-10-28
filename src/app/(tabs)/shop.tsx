@@ -1,28 +1,28 @@
+import { useLocalSearchParams } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { ComingSoonBlock } from '@/components/home/ComingSoonBlock';
+import { ShopScreenContent, type ShopSection } from '@/components/shop/ShopScreenContent';
 import { TabScreenHeader } from '@/components/sidebar/TabScreenHeader';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
+const SECTIONS: ShopSection[] = ['outfits', 'slots', 'emotes'];
+
 export default function ShopTabScreen() {
   const theme = useTheme();
+  const { section } = useLocalSearchParams<{ section?: string }>();
+  const initialSection = SECTIONS.find((entry) => entry === section) ?? 'outfits';
 
   return (
     <SafeAreaView
       edges={['left', 'right', 'bottom']}
       style={StyleSheet.flatten([styles.safeArea, { backgroundColor: theme.background }])}>
       <View style={styles.header}>
-        <TabScreenHeader title="Shop" subtitle="Cosmetics and emotes" />
+        <TabScreenHeader title="Shop" subtitle="Outfits, challenge slots and emotes" />
       </View>
-      <View style={styles.content}>
-        <ComingSoonBlock
-          title="Shop"
-          description="Spend coins on emotes, avatars, and profile frames. The shop is being polished and will open soon."
-          icon="gift"
-        />
-      </View>
+      {/* Keyed so links like ?section=slots open the right section even if the tab is already mounted. */}
+      <ShopScreenContent key={initialSection} initialSection={initialSection} />
     </SafeAreaView>
   );
 }
@@ -32,14 +32,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    paddingHorizontal: Spacing.four,
-    paddingTop: Spacing.four,
-    maxWidth: MaxContentWidth,
-    alignSelf: 'center',
-    width: '100%',
-  },
-  content: {
-    flex: 1,
     paddingHorizontal: Spacing.four,
     paddingTop: Spacing.four,
     maxWidth: MaxContentWidth,

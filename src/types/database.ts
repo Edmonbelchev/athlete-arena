@@ -753,6 +753,10 @@ export interface Database {
         Args: { p_item_id: string };
         Returns: 'purchased' | 'already_owned';
       };
+      unequip_shop_slot: {
+        Args: { p_slot: string };
+        Returns: string;
+      };
       equip_shop_item: {
         Args: { p_item_id: string };
         Returns: 'equipped';

@@ -15,6 +15,8 @@ export interface FriendChallengeRequestQuota {
   monthlyLimit: number | null;
   isPremium: boolean;
   canCreate: boolean;
+  /** Purchased challenge slots, used once the monthly limit is reached. */
+  bonusSlots: number;
 }
 
 export interface FriendSummary {

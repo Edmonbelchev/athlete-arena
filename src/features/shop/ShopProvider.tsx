@@ -21,6 +21,7 @@ import {
   getMyShopSummary,
   getShopCatalog,
   purchaseShopItem,
+  unequipShopSlot,
 } from '@/services/shopService';
 import type {
   ShopAvatarDisplay,
@@ -47,6 +48,7 @@ interface ShopContextValue {
   patchSummary: (patch: ShopSummaryPatch) => void;
   purchaseItem: (itemId: string) => Promise<void>;
   equipItem: (itemId: string) => Promise<void>;
+  removeFrame: () => Promise<void>;
   getItemsByType: (itemType: ShopItemType) => ShopItemRecord[];
 }
 
@@ -145,6 +147,21 @@ export function ShopProvider({ children }: { children: ReactNode }) {
     [refresh],
   );
 
+  const removeFrame = useCallback(async () => {
+    setIsUpdating(true);
+    setError(null);
+
+    try {
+      await unequipShopSlot('frame');
+      await refresh();
+    } catch (err) {
+      setError(formatUserError(err, 'Failed to remove frame'));
+      throw err;
+    } finally {
+      setIsUpdating(false);
+    }
+  }, [refresh]);
+
   const equippedAvatarItem = getEquippedItem(items, summary.equipped, 'avatar');
   const equippedFrameItem = getEquippedItem(items, summary.equipped, 'frame');
   const equippedEmoteItem = getEquippedItem(items, summary.equipped, 'emote');
@@ -163,6 +180,7 @@ export function ShopProvider({ children }: { children: ReactNode }) {
       patchSummary,
       purchaseItem,
       equipItem,
+      removeFrame,
       getItemsByType: (itemType: ShopItemType) => items.filter((item) => item.itemType === itemType),
     }),
     [
@@ -178,6 +196,7 @@ export function ShopProvider({ children }: { children: ReactNode }) {
       patchSummary,
       purchaseItem,
       equipItem,
+      removeFrame,
     ],
   );
 

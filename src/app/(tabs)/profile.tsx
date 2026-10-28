@@ -27,6 +27,7 @@ import { useAuth } from '@/features/auth';
 import { usePremium } from '@/features/subscription/usePremium';
 import { useProfile } from '@/features/profile/useProfile';
 import { useProfileStats } from '@/features/profile/useProfileStats';
+import { useShop } from '@/features/shop/ShopProvider';
 import { xpProgressInCurrentLevel } from '@/features/xp/levelUtils';
 import { formatUserError } from '@/lib/errors';
 import { deleteMyAccount } from '@/services/accountService';
@@ -38,6 +39,7 @@ export default function ProfileScreen() {
   const { session, signOut } = useAuth();
   const { isPremium } = usePremium();
   const { profile, isLoading: isProfileLoading, error: profileError } = useProfile();
+  const { equippedFrame } = useShop();
   const {
     stats,
     isLoading: isStatsLoading,
@@ -217,6 +219,7 @@ export default function ProfileScreen() {
           level={profile?.level ?? xpProgress.level}
           coinBalance={profile?.coin_balance ?? 0}
           avatarUrl={profile?.avatar_url}
+          frame={equippedFrame}
           showPremiumCrown={isPremium}
           onEdit={() => router.push('/profile/edit')}
         />

@@ -155,8 +155,9 @@ export const BACKGROUND_COLORS: AvatarColorChoice[] = [
 
 export const ACCESSORY_SLOTS: { slot: AccessorySlot; label: string; required: boolean }[] = [
   { slot: 'top', label: 'Top', required: true },
-  { slot: 'earrings', label: 'Earrings', required: false },
   { slot: 'headwear', label: 'Headwear', required: false },
+  { slot: 'glasses', label: 'Glasses', required: false },
+  { slot: 'earrings', label: 'Earrings', required: false },
 ];
 
 export const DEFAULT_APPEARANCE: Record<AvatarBodyType, AvatarAppearance> = {
