@@ -44,14 +44,15 @@ export const FRIEND_RACE_TIMER_START_HINT = 'Timer starts on your first rep';
 
 export {
   calculateFriendChallengeCoins,
-  calculateFriendChallengeConsolationXp,
   calculateFriendChallengeXp,
+  FRIEND_CHALLENGE_EXPIRY_DAYS,
   formatFriendChallengeRewardPreview,
   formatFriendChallengeWorkoutRewardPreview,
   FRIEND_CHALLENGE_MAX_COINS,
   FRIEND_CHALLENGE_MAX_XP,
   FRIEND_CHALLENGE_PARTICIPATION_XP,
   FRIEND_CHALLENGE_WINNER_TOTAL_XP,
+  getFriendChallengeReward,
   FRIEND_CHALLENGE_WINNER_TOTAL_COINS,
   FRIEND_CHALLENGE_PARTICIPATION_COINS,
 } from '@/constants/friendChallengeRewards';

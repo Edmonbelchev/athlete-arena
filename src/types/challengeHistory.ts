@@ -30,6 +30,8 @@ export interface ChallengeHistoryEntry {
   opponentRaceSeconds: number | null;
   winnerUserId: string | null;
   xpEarned: number | null;
+  /** Coins this challenge paid; null when the source does not report it. */
+  coinsEarned?: number | null;
   friendChallengeKind: ChallengeHistoryFriendKind | null;
   workoutTitle: string | null;
   workoutType: CustomWorkoutType | null;
@@ -53,7 +55,7 @@ export function getHistoryResultLabel(entry: ChallengeHistoryEntry, myUserId?: s
   }
 
   if (entry.status === 'expired') {
-    return 'Time cap reached';
+    return 'Expired';
   }
 
   if (entry.status === 'declined') {
@@ -62,7 +64,7 @@ export function getHistoryResultLabel(entry: ChallengeHistoryEntry, myUserId?: s
 
   if (entry.status === 'completed') {
     const earned = entry.xpEarned ?? entry.xpReward;
-    const coins = getFriendChallengeEarnedRewards(entry.xpEarned, null, {
+    const coins = getFriendChallengeEarnedRewards(entry.xpEarned, entry.coinsEarned ?? null, {
       exerciseType: isFriendChallengeExerciseType(entry.exerciseType)
         ? entry.exerciseType
         : undefined,

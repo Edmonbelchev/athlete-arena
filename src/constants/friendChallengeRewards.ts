@@ -1,99 +1,91 @@
 import { formatExerciseLabel, type ExerciseType } from '@/constants/challenges';
+import type { FriendChallengeKind } from '@/types/friends';
 
-/** Rep-scaled exercise speed race caps — keep in sync with calculate_friend_challenge_* in Postgres. */
-export const FRIEND_CHALLENGE_MAX_XP = 200;
-export const FRIEND_CHALLENGE_MAX_COINS = 50;
+/*
+ * Friend challenge rewards — keep in sync with 120_friend_challenge_reward_rework.sql.
+ *
+ * Each challenge pays a finish reward, plus either a win bonus or (when the friend
+ * declines or lets it expire) a smaller no-show bonus. Every part scales with reps:
+ * exercise challenges reach the full amount at a per-exercise target, workouts at
+ * WORKOUT_FULL_REWARD_REPS total reps done.
+ */
 
-export interface FriendChallengeRewardRule {
-  xpPerRep: number;
-  coinEveryReps: number;
-  maxXp: number;
-  maxCoins: number;
+export type FriendChallengeRewardPart = 'finish' | 'win' | 'noShow';
+
+export interface FriendChallengeRewardAmount {
+  xp: number;
+  coins: number;
 }
+
+/** Full exercise-challenge amounts; workouts pay double. */
+export const FRIEND_CHALLENGE_REWARDS: Record<FriendChallengeRewardPart, FriendChallengeRewardAmount> = {
+  finish: { xp: 50, coins: 30 },
+  win: { xp: 35, coins: 20 },
+  noShow: { xp: 20, coins: 10 },
+};
+
+const WORKOUT_REWARD_MULTIPLIER = 2;
+
+/** Days after a challenge is sent before anyone who has not finished is marked expired. */
+export const FRIEND_CHALLENGE_EXPIRY_DAYS = 7;
 
 type FriendChallengeRewardExerciseType = ExerciseType | 'dips';
 
-export const FRIEND_CHALLENGE_REWARD_RULES: Record<
-  FriendChallengeRewardExerciseType,
-  FriendChallengeRewardRule
-> = {
-  push_ups: {
-    xpPerRep: 2,
-    coinEveryReps: 5,
-    maxXp: FRIEND_CHALLENGE_MAX_XP,
-    maxCoins: FRIEND_CHALLENGE_MAX_COINS,
-  },
-  squats: {
-    xpPerRep: 1,
-    coinEveryReps: 10,
-    maxXp: FRIEND_CHALLENGE_MAX_XP,
-    maxCoins: FRIEND_CHALLENGE_MAX_COINS,
-  },
-  pull_ups: {
-    xpPerRep: 3,
-    coinEveryReps: 3,
-    maxXp: FRIEND_CHALLENGE_MAX_XP,
-    maxCoins: FRIEND_CHALLENGE_MAX_COINS,
-  },
-  burpees: {
-    xpPerRep: 2,
-    coinEveryReps: 4,
-    maxXp: FRIEND_CHALLENGE_MAX_XP,
-    maxCoins: FRIEND_CHALLENGE_MAX_COINS,
-  },
-  half_burpees: {
-    xpPerRep: 2,
-    coinEveryReps: 4,
-    maxXp: FRIEND_CHALLENGE_MAX_XP,
-    maxCoins: FRIEND_CHALLENGE_MAX_COINS,
-  },
-  jumping_jacks: {
-    xpPerRep: 0.5,
-    coinEveryReps: 10,
-    maxXp: FRIEND_CHALLENGE_MAX_XP,
-    maxCoins: FRIEND_CHALLENGE_MAX_COINS,
-  },
-  jumping_squats: {
-    xpPerRep: 1,
-    coinEveryReps: 10,
-    maxXp: FRIEND_CHALLENGE_MAX_XP,
-    maxCoins: FRIEND_CHALLENGE_MAX_COINS,
-  },
-  lunges: {
-    xpPerRep: 1,
-    coinEveryReps: 10,
-    maxXp: FRIEND_CHALLENGE_MAX_XP,
-    maxCoins: FRIEND_CHALLENGE_MAX_COINS,
-  },
-  dips: {
-    xpPerRep: 3,
-    coinEveryReps: 3,
-    maxXp: FRIEND_CHALLENGE_MAX_XP,
-    maxCoins: FRIEND_CHALLENGE_MAX_COINS,
-  },
+/** Target reps at which an exercise challenge pays its full reward. */
+export const FRIEND_CHALLENGE_FULL_REWARD_REPS: Record<FriendChallengeRewardExerciseType, number> = {
+  push_ups: 30,
+  squats: 50,
+  pull_ups: 15,
+  burpees: 20,
+  half_burpees: 25,
+  jumping_jacks: 60,
+  jumping_squats: 40,
+  lunges: 50,
+  dips: 50,
 };
 
-export function getFriendChallengeRewardRule(
-  exerciseType: string | null | undefined,
-): FriendChallengeRewardRule | null {
-  if (!exerciseType) {
-    return null;
-  }
-
-  return FRIEND_CHALLENGE_REWARD_RULES[exerciseType as FriendChallengeRewardExerciseType] ?? null;
-}
+/** Total reps done at which a workout challenge pays its full reward. */
+export const WORKOUT_FULL_REWARD_REPS = 100;
 
 export function isFriendChallengeExerciseType(
   exerciseType: string | null | undefined,
 ): exerciseType is FriendChallengeRewardExerciseType {
-  return getFriendChallengeRewardRule(exerciseType) !== null;
+  return !!exerciseType && exerciseType in FRIEND_CHALLENGE_FULL_REWARD_REPS;
 }
 
-/** Flat workout challenge rewards — keep in sync with 078_friend_workout_challenges.sql */
-export const FRIEND_CHALLENGE_PARTICIPATION_XP = 150;
-export const FRIEND_CHALLENGE_PARTICIPATION_COINS = 100;
-export const FRIEND_CHALLENGE_WINNER_BONUS_XP = 100;
-export const FRIEND_CHALLENGE_WINNER_BONUS_COINS = 50;
+/**
+ * One reward part, scaled by reps (rounded down).
+ * `reps` is the target reps for exercise challenges and the reps done for workouts.
+ */
+export function getFriendChallengeReward(
+  kind: FriendChallengeKind,
+  part: FriendChallengeRewardPart,
+  reps: number,
+  exerciseType?: ExerciseType | null,
+): FriendChallengeRewardAmount {
+  const fullReps =
+    kind === 'workout'
+      ? WORKOUT_FULL_REWARD_REPS
+      : isFriendChallengeExerciseType(exerciseType)
+        ? FRIEND_CHALLENGE_FULL_REWARD_REPS[exerciseType]
+        : 50;
+  const multiplier = kind === 'workout' ? WORKOUT_REWARD_MULTIPLIER : 1;
+  const scale = Math.min(Math.max(reps, 0), fullReps) / fullReps;
+  const base = FRIEND_CHALLENGE_REWARDS[part];
+
+  return {
+    xp: Math.floor(base.xp * multiplier * scale),
+    coins: Math.floor(base.coins * multiplier * scale),
+  };
+}
+
+/** Full workout challenge amounts (at WORKOUT_FULL_REWARD_REPS reps or more). */
+export const FRIEND_CHALLENGE_PARTICIPATION_XP = FRIEND_CHALLENGE_REWARDS.finish.xp * WORKOUT_REWARD_MULTIPLIER;
+export const FRIEND_CHALLENGE_PARTICIPATION_COINS = FRIEND_CHALLENGE_REWARDS.finish.coins * WORKOUT_REWARD_MULTIPLIER;
+export const FRIEND_CHALLENGE_WINNER_BONUS_XP = FRIEND_CHALLENGE_REWARDS.win.xp * WORKOUT_REWARD_MULTIPLIER;
+export const FRIEND_CHALLENGE_WINNER_BONUS_COINS = FRIEND_CHALLENGE_REWARDS.win.coins * WORKOUT_REWARD_MULTIPLIER;
+export const FRIEND_CHALLENGE_NO_SHOW_BONUS_XP = FRIEND_CHALLENGE_REWARDS.noShow.xp * WORKOUT_REWARD_MULTIPLIER;
+export const FRIEND_CHALLENGE_NO_SHOW_BONUS_COINS = FRIEND_CHALLENGE_REWARDS.noShow.coins * WORKOUT_REWARD_MULTIPLIER;
 
 export const FRIEND_CHALLENGE_WINNER_TOTAL_XP =
   FRIEND_CHALLENGE_PARTICIPATION_XP + FRIEND_CHALLENGE_WINNER_BONUS_XP;
@@ -101,52 +93,63 @@ export const FRIEND_CHALLENGE_WINNER_TOTAL_XP =
 export const FRIEND_CHALLENGE_WINNER_TOTAL_COINS =
   FRIEND_CHALLENGE_PARTICIPATION_COINS + FRIEND_CHALLENGE_WINNER_BONUS_COINS;
 
+/** Most an exercise challenge can pay (finish + win at the full-reward reps). */
+export const FRIEND_CHALLENGE_MAX_XP = FRIEND_CHALLENGE_REWARDS.finish.xp + FRIEND_CHALLENGE_REWARDS.win.xp;
+export const FRIEND_CHALLENGE_MAX_COINS = FRIEND_CHALLENGE_REWARDS.finish.coins + FRIEND_CHALLENGE_REWARDS.win.coins;
+
+/** Winner total XP (finish + win) for an exercise challenge. */
 export function calculateFriendChallengeXp(exerciseType: ExerciseType, reps: number): number {
-  const rule = getFriendChallengeRewardRule(exerciseType);
-  if (!rule) {
-    return 0;
-  }
-
-  return Math.min(Math.floor(Math.max(reps, 0) * rule.xpPerRep), rule.maxXp);
+  return (
+    getFriendChallengeReward('exercise', 'finish', reps, exerciseType).xp +
+    getFriendChallengeReward('exercise', 'win', reps, exerciseType).xp
+  );
 }
 
+/** Winner total coins (finish + win) for an exercise challenge. */
 export function calculateFriendChallengeCoins(exerciseType: ExerciseType, reps: number): number {
-  const rule = getFriendChallengeRewardRule(exerciseType);
-  if (!rule) {
-    return 0;
-  }
-
-  return Math.min(Math.floor(Math.max(reps, 0) / rule.coinEveryReps), rule.maxCoins);
-}
-
-export function calculateFriendChallengeConsolationXp(
-  exerciseType: ExerciseType,
-  reps: number,
-): number {
-  return Math.max(1, Math.floor(calculateFriendChallengeXp(exerciseType, reps) * 0.25));
+  return (
+    getFriendChallengeReward('exercise', 'finish', reps, exerciseType).coins +
+    getFriendChallengeReward('exercise', 'win', reps, exerciseType).coins
+  );
 }
 
 export function formatFriendChallengeRewardRule(exerciseType: ExerciseType): string {
-  const rule = getFriendChallengeRewardRule(exerciseType);
-  if (!rule) {
-    return formatExerciseLabel(exerciseType);
-  }
-  const label = formatExerciseLabel(exerciseType);
+  const fullReps = isFriendChallengeExerciseType(exerciseType)
+    ? FRIEND_CHALLENGE_FULL_REWARD_REPS[exerciseType]
+    : 50;
 
-  return `${label}: ${rule.xpPerRep} XP/rep (max ${rule.maxXp} XP) · 1 coin/${rule.coinEveryReps} reps (max ${rule.maxCoins} coins)`;
+  return `Full reward at ${fullReps} ${formatExerciseLabel(exerciseType).toLowerCase()} · fewer reps pay less`;
 }
 
 export function formatFriendChallengeRewardPreview(exerciseType: ExerciseType, reps: number): string {
-  const xp = calculateFriendChallengeXp(exerciseType, reps);
-  const coins = calculateFriendChallengeCoins(exerciseType, reps);
-  const consolationXp = calculateFriendChallengeConsolationXp(exerciseType, reps);
+  const finish = getFriendChallengeReward('exercise', 'finish', reps, exerciseType);
 
-  return `Winner up to +${xp} XP & +${coins} coins · Runner-up +${consolationXp} XP`;
+  return `Winner +${calculateFriendChallengeXp(exerciseType, reps)} XP & +${calculateFriendChallengeCoins(exerciseType, reps)} coins · Finish +${finish.xp} XP & +${finish.coins} coins`;
 }
 
 export function formatFriendChallengeWorkoutRewardPreview(): string {
-  return `Finish: +${FRIEND_CHALLENGE_PARTICIPATION_XP} XP & +${FRIEND_CHALLENGE_PARTICIPATION_COINS} coins · Winner bonus: +${FRIEND_CHALLENGE_WINNER_BONUS_XP} XP & +${FRIEND_CHALLENGE_WINNER_BONUS_COINS} coins`;
+  return `Finish: up to +${FRIEND_CHALLENGE_PARTICIPATION_XP} XP & +${FRIEND_CHALLENGE_PARTICIPATION_COINS} coins · Winner bonus: up to +${FRIEND_CHALLENGE_WINNER_BONUS_XP} XP & +${FRIEND_CHALLENGE_WINNER_BONUS_COINS} coins`;
 }
+
+/*
+ * Challenges finished before coins were stored per participant only kept XP,
+ * so their coins are inferred from the reward rules in force at the time.
+ */
+const LEGACY_EXERCISE_RULES: Record<FriendChallengeRewardExerciseType, { xpPerRep: number; coinEveryReps: number }> = {
+  push_ups: { xpPerRep: 2, coinEveryReps: 5 },
+  squats: { xpPerRep: 1, coinEveryReps: 10 },
+  pull_ups: { xpPerRep: 3, coinEveryReps: 3 },
+  burpees: { xpPerRep: 2, coinEveryReps: 4 },
+  half_burpees: { xpPerRep: 2, coinEveryReps: 4 },
+  jumping_jacks: { xpPerRep: 0.5, coinEveryReps: 10 },
+  jumping_squats: { xpPerRep: 1, coinEveryReps: 10 },
+  lunges: { xpPerRep: 1, coinEveryReps: 10 },
+  dips: { xpPerRep: 3, coinEveryReps: 3 },
+};
+const LEGACY_MAX_XP = 200;
+const LEGACY_MAX_COINS = 50;
+const LEGACY_WORKOUT_PARTICIPATION = { xp: 150, coins: 100 };
+const LEGACY_WORKOUT_WINNER_TOTAL = { xp: 250, coins: 150 };
 
 export function getFriendChallengeEarnedRewards(
   xpEarned: number | null,
@@ -168,34 +171,36 @@ export function getFriendChallengeEarnedRewards(
     options.targetReps !== undefined &&
     isFriendChallengeExerciseType(options.exerciseType)
   ) {
-    const winnerXp = calculateFriendChallengeXp(options.exerciseType, options.targetReps);
+    const rule = LEGACY_EXERCISE_RULES[options.exerciseType];
+    const reps = Math.max(options.targetReps, 0);
+    const winnerXp = Math.min(Math.floor(reps * rule.xpPerRep), LEGACY_MAX_XP);
 
     return {
       xp: xpEarned ?? 0,
       coins:
         xpEarned !== null && xpEarned >= winnerXp
-          ? calculateFriendChallengeCoins(options.exerciseType, options.targetReps)
+          ? Math.min(Math.floor(reps / rule.coinEveryReps), LEGACY_MAX_COINS)
           : 0,
     };
   }
 
   return {
     xp: xpEarned ?? 0,
-    coins: coinsEarned ?? inferWorkoutFriendChallengeCoinsFromXp(xpEarned),
+    coins: inferLegacyWorkoutCoinsFromXp(xpEarned),
   };
 }
 
-function inferWorkoutFriendChallengeCoinsFromXp(xpEarned: number | null): number {
+function inferLegacyWorkoutCoinsFromXp(xpEarned: number | null): number {
   if (xpEarned === null || xpEarned <= 0) {
     return 0;
   }
 
-  if (xpEarned >= FRIEND_CHALLENGE_WINNER_TOTAL_XP) {
-    return FRIEND_CHALLENGE_WINNER_TOTAL_COINS;
+  if (xpEarned >= LEGACY_WORKOUT_WINNER_TOTAL.xp) {
+    return LEGACY_WORKOUT_WINNER_TOTAL.coins;
   }
 
-  if (xpEarned >= FRIEND_CHALLENGE_PARTICIPATION_XP) {
-    return FRIEND_CHALLENGE_PARTICIPATION_COINS;
+  if (xpEarned >= LEGACY_WORKOUT_PARTICIPATION.xp) {
+    return LEGACY_WORKOUT_PARTICIPATION.coins;
   }
 
   return 0;

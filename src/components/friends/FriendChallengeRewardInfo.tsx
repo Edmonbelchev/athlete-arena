@@ -4,17 +4,17 @@ import type { ExerciseType } from '@/constants/challenges';
 import { formatCoinAmount } from '@/constants/coins';
 import {
   calculateFriendChallengeCoins,
-  calculateFriendChallengeConsolationXp,
   calculateFriendChallengeXp,
   formatFriendChallengeRewardRule,
-  FRIEND_CHALLENGE_MAX_COINS,
-  FRIEND_CHALLENGE_MAX_XP,
+  FRIEND_CHALLENGE_EXPIRY_DAYS,
+  FRIEND_CHALLENGE_NO_SHOW_BONUS_COINS,
+  FRIEND_CHALLENGE_NO_SHOW_BONUS_XP,
   FRIEND_CHALLENGE_PARTICIPATION_COINS,
   FRIEND_CHALLENGE_PARTICIPATION_XP,
   FRIEND_CHALLENGE_WINNER_BONUS_COINS,
   FRIEND_CHALLENGE_WINNER_BONUS_XP,
-  FRIEND_CHALLENGE_WINNER_TOTAL_COINS,
-  FRIEND_CHALLENGE_WINNER_TOTAL_XP,
+  getFriendChallengeReward,
+  WORKOUT_FULL_REWARD_REPS,
 } from '@/constants/friendChallengeRewards';
 import { Radius, Spacing } from '@/constants/theme';
 import type { FriendChallengeKind } from '@/types/friends';
@@ -42,24 +42,27 @@ export function FriendChallengeRewardInfo({
         ])}>
         <Text style={StyleSheet.flatten([styles.title, { color: theme.text }])}>Challenge rewards</Text>
         <Text style={StyleSheet.flatten([styles.line, { color: theme.textSecondary }])}>
-          Finish the challenge: +{FRIEND_CHALLENGE_PARTICIPATION_XP} XP &{' '}
+          Finish the challenge: up to +{FRIEND_CHALLENGE_PARTICIPATION_XP} XP &{' '}
           {formatCoinAmount(FRIEND_CHALLENGE_PARTICIPATION_COINS)}
         </Text>
         <Text style={StyleSheet.flatten([styles.line, { color: theme.textSecondary }])}>
-          Win the head-to-head: extra +{FRIEND_CHALLENGE_WINNER_BONUS_XP} XP &{' '}
+          Win the head-to-head: extra up to +{FRIEND_CHALLENGE_WINNER_BONUS_XP} XP &{' '}
           {formatCoinAmount(FRIEND_CHALLENGE_WINNER_BONUS_COINS)}
         </Text>
+        <Text style={StyleSheet.flatten([styles.line, { color: theme.textSecondary }])}>
+          Friend doesn&apos;t finish in {FRIEND_CHALLENGE_EXPIRY_DAYS} days: extra up to +{FRIEND_CHALLENGE_NO_SHOW_BONUS_XP} XP &{' '}
+          {formatCoinAmount(FRIEND_CHALLENGE_NO_SHOW_BONUS_COINS)}
+        </Text>
         <Text style={StyleSheet.flatten([styles.preview, { color: theme.xp }])}>
-          Winner total: +{FRIEND_CHALLENGE_WINNER_TOTAL_XP} XP &{' '}
-          {formatCoinAmount(FRIEND_CHALLENGE_WINNER_TOTAL_COINS)}
+          Full rewards at {WORKOUT_FULL_REWARD_REPS}+ reps done · fewer reps pay less
         </Text>
       </View>
     );
   }
 
-  const xpReward = calculateFriendChallengeXp(exerciseType, targetReps);
-  const coinReward = calculateFriendChallengeCoins(exerciseType, targetReps);
-  const consolationXp = calculateFriendChallengeConsolationXp(exerciseType, targetReps);
+  const finish = getFriendChallengeReward('exercise', 'finish', targetReps, exerciseType);
+  const win = getFriendChallengeReward('exercise', 'win', targetReps, exerciseType);
+  const noShow = getFriendChallengeReward('exercise', 'noShow', targetReps, exerciseType);
 
   return (
     <View
@@ -72,11 +75,16 @@ export function FriendChallengeRewardInfo({
         {formatFriendChallengeRewardRule(exerciseType)}
       </Text>
       <Text style={StyleSheet.flatten([styles.line, { color: theme.textSecondary }])}>
-        Max per race: {FRIEND_CHALLENGE_MAX_XP} XP & {FRIEND_CHALLENGE_MAX_COINS} coins
+        Finish: +{finish.xp} XP & {formatCoinAmount(finish.coins)} · Win: extra +{win.xp} XP &{' '}
+        {formatCoinAmount(win.coins)}
+      </Text>
+      <Text style={StyleSheet.flatten([styles.line, { color: theme.textSecondary }])}>
+        Friend doesn&apos;t finish in {FRIEND_CHALLENGE_EXPIRY_DAYS} days: extra +{noShow.xp} XP &{' '}
+        {formatCoinAmount(noShow.coins)}
       </Text>
       <Text style={StyleSheet.flatten([styles.preview, { color: theme.xp }])}>
-        At {targetReps} reps: Winner +{xpReward} XP & {formatCoinAmount(coinReward)} · Runner-up +{consolationXp}{' '}
-        XP
+        At {targetReps} reps: Winner +{calculateFriendChallengeXp(exerciseType, targetReps)} XP &{' '}
+        {formatCoinAmount(calculateFriendChallengeCoins(exerciseType, targetReps))}
       </Text>
     </View>
   );

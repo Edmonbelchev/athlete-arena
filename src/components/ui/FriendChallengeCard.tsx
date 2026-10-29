@@ -5,11 +5,12 @@ import { formatExerciseLabel } from '@/constants/challenges';
 import { formatCoinAmount } from '@/constants/coins';
 import {
   calculateFriendChallengeCoins,
-  calculateFriendChallengeConsolationXp,
+  calculateFriendChallengeXp,
   FRIEND_CHALLENGE_PARTICIPATION_COINS,
   FRIEND_CHALLENGE_PARTICIPATION_XP,
   FRIEND_CHALLENGE_WINNER_TOTAL_COINS,
   FRIEND_CHALLENGE_WINNER_TOTAL_XP,
+  getFriendChallengeReward,
 } from '@/constants/friendChallengeRewards';
 import { getCustomWorkoutTypeLabel } from '@/constants/customWorkouts';
 import { formatRaceTime, formatRaceTimeLimit } from '@/constants/friendChallenges';
@@ -59,8 +60,9 @@ export function FriendChallengeCard({
   const myRaceSeconds = getMyRaceSeconds(challenge);
   const opponentRaceSeconds = getOpponentRaceSeconds(challenge);
   const exerciseType = challenge.exerciseType ?? 'push_ups';
+  const winnerXp = calculateFriendChallengeXp(exerciseType, challenge.targetReps);
   const winnerCoins = calculateFriendChallengeCoins(exerciseType, challenge.targetReps);
-  const runnerUpXp = calculateFriendChallengeConsolationXp(exerciseType, challenge.targetReps);
+  const finishReward = getFriendChallengeReward('exercise', 'finish', challenge.targetReps, exerciseType);
 
   const { elapsedSeconds, secondsRemaining, isExpired } = useFriendChallengeRaceTimer({
     startedAt: challenge.startedAt,
@@ -184,8 +186,8 @@ export function FriendChallengeCard({
           {renderStatusLine()}
           <Text style={[styles.reward, { color: theme.xp }]}>
             {isWorkout
-              ? `Finish +${FRIEND_CHALLENGE_PARTICIPATION_XP} XP & ${formatCoinAmount(FRIEND_CHALLENGE_PARTICIPATION_COINS)} · Winner +${FRIEND_CHALLENGE_WINNER_TOTAL_XP} XP & ${formatCoinAmount(FRIEND_CHALLENGE_WINNER_TOTAL_COINS)}`
-              : `Winner +${challenge.xpReward} XP & ${formatCoinAmount(winnerCoins)} · Runner-up +${runnerUpXp} XP`}
+              ? `Finish up to +${FRIEND_CHALLENGE_PARTICIPATION_XP} XP & ${formatCoinAmount(FRIEND_CHALLENGE_PARTICIPATION_COINS)} · Winner up to +${FRIEND_CHALLENGE_WINNER_TOTAL_XP} XP & ${formatCoinAmount(FRIEND_CHALLENGE_WINNER_TOTAL_COINS)}`
+              : `Finish +${finishReward.xp} XP & ${formatCoinAmount(finishReward.coins)} · Winner +${winnerXp} XP & ${formatCoinAmount(winnerCoins)}`}
           </Text>
           <PrimaryButton
             label={

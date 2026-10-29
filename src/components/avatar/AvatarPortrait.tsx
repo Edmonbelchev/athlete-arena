@@ -7,7 +7,8 @@ import {
   AvatarHairCap,
   AvatarHairFront,
   JAW_CLIP_RECT,
-  beardClipPaths,
+  beardClipPath,
+  beardDrapePath,
   hairClipScale,
 } from '@/components/avatar/AvatarHair';
 import {
@@ -65,6 +66,7 @@ export function AvatarPortrait({
   const idPrefix = `avatar${useId().replace(/[^a-zA-Z0-9]/g, '')}`;
   const hairClipId = `${idPrefix}hair`;
   const beardClipId = `${idPrefix}beard`;
+  const beardDrapeClipId = `${idPrefix}beardDrape`;
   const jawClipId = `${idPrefix}jaw`;
   const topClipId = `${idPrefix}top`;
   const headwearClipId = `${idPrefix}headwear`;
@@ -76,6 +78,7 @@ export function AvatarPortrait({
   const shape = appearance.headShape;
   const fit = headFitTransform(shape);
   const background = resolveColor(BACKGROUND_COLORS, appearance.background);
+  const drapePath = beardDrapePath(appearance.facialHair);
 
   return (
     <Svg width={size} height={size} viewBox={`${x} ${y} ${box} ${box}`}>
@@ -84,10 +87,13 @@ export function AvatarPortrait({
           <Path d={hairOutlinePath(shape, hairClipScale(appearance.hair, appearance.bodyType))} />
         </ClipPath>
         <ClipPath id={beardClipId}>
-          {beardClipPaths(appearance.facialHair, shape).map((d) => (
-            <Path key={d} d={d} />
-          ))}
+          <Path d={beardClipPath(appearance.facialHair, shape)} />
         </ClipPath>
+        {drapePath ? (
+          <ClipPath id={beardDrapeClipId}>
+            <Path d={drapePath} />
+          </ClipPath>
+        ) : null}
         <ClipPath id={jawClipId}>
           <Rect {...JAW_CLIP_RECT} />
         </ClipPath>
@@ -111,6 +117,7 @@ export function AvatarPortrait({
         headShape={shape}
         color={hairColor}
         clipId={beardClipId}
+        drapeClipId={beardDrapeClipId}
         jawClipId={jawClipId}
       />
       <AvatarFace appearance={appearance} skin={skin} eyeColor={eyeColor} hairColor={hairColor} />

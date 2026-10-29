@@ -441,10 +441,16 @@ const BEARD_STYLES: Record<AvatarFacialHair, BeardStyle> = {
   },
 };
 
-export function beardClipPaths(facialHair: AvatarFacialHair, headShape: AvatarHeadShape): string[] {
-  const style = BEARD_STYLES[facialHair];
-  const outline = beardOutlinePath(headShape, style.outset);
-  return style.drape ? [outline, style.drape] : [outline];
+export function beardClipPath(facialHair: AvatarFacialHair, headShape: AvatarHeadShape): string {
+  return beardOutlinePath(headShape, BEARD_STYLES[facialHair].outset);
+}
+
+/**
+ * Beard area below the chin, clipped separately: iOS merges a clip path's children
+ * into one even-odd path, so overlapping children would cut holes in the beard.
+ */
+export function beardDrapePath(facialHair: AvatarFacialHair): string | null {
+  return BEARD_STYLES[facialHair].drape ?? null;
 }
 
 export function AvatarFacialHair({
@@ -452,12 +458,14 @@ export function AvatarFacialHair({
   headShape,
   color,
   clipId,
+  drapeClipId,
   jawClipId,
 }: {
   facialHair: AvatarFacialHair;
   headShape: AvatarHeadShape;
   color: string;
   clipId: string;
+  drapeClipId: string;
   jawClipId: string;
 }) {
   const style = BEARD_STYLES[facialHair];
@@ -472,6 +480,15 @@ export function AvatarFacialHair({
           fillRule="evenodd"
           opacity={style.opacity}
           clipPath={`url(#${clipId})`}
+        />
+      ) : null}
+      {style.region && style.drape ? (
+        <Path
+          d={style.region}
+          fill={color}
+          fillRule="evenodd"
+          opacity={style.opacity}
+          clipPath={`url(#${drapeClipId})`}
         />
       ) : null}
       {style.jawBand ? (

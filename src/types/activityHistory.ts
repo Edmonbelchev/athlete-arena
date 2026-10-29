@@ -143,6 +143,7 @@ export function mapActivityHistoryRow(row: {
     opponentRaceSeconds: row.opponent_race_seconds,
     winnerUserId: row.winner_user_id,
     xpEarned: row.xp_earned,
+    coinsEarned: row.coins_earned ?? null,
     friendChallengeKind:
       row.category === 'friend_workout'
         ? 'workout'
