@@ -193,6 +193,7 @@ export default function ChallengeScreen() {
             <PrimaryButton
               label="+ Simulate Rep"
               variant="secondary"
+              size="compact"
               disabled={repCounter.isComplete || isSyncing}
               loading={isSyncing}
               onPress={repCounter.simulateRep}

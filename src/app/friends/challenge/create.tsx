@@ -12,7 +12,7 @@ import { EmotePicker } from '@/components/shop/EmotePicker';
 import { AuthTextInput } from '@/components/ui/AuthTextInput';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { WorkoutCircuitPreview } from '@/components/workouts/WorkoutCircuitPreview';
-import { EXERCISE_LABELS, type ExerciseType } from '@/constants/challenges';
+import { EXERCISE_LABELS, formatExerciseCount, isHoldExercise, type ExerciseType } from '@/constants/challenges';
 
 import {
     FRIEND_CHALLENGE_REP_MAX,
@@ -244,11 +244,16 @@ export default function CreateFriendChallengeScreen() {
   }
 
   const repPresets = FRIEND_CHALLENGE_REP_PRESETS[exerciseType];
+  const isHold = isHoldExercise(exerciseType);
 
   function handleExerciseChange(next: ExerciseType) {
     setExerciseType(next);
     setTargetReps(getDefaultRepsForExercise(next));
     setCustomReps('');
+    // Holds have no attempt cap: the longest hold wins.
+    if (isHoldExercise(next)) {
+      setTimeLimitSeconds(null);
+    }
   }
 
   function handleCustomRepsChange(value: string) {
@@ -462,7 +467,9 @@ export default function CreateFriendChallengeScreen() {
             onSelectExercise={handleExerciseChange}
           />
 
-          <Text style={StyleSheet.flatten([styles.label, { color: theme.textSecondary }])}>TARGET REPS</Text>
+          <Text style={StyleSheet.flatten([styles.label, { color: theme.textSecondary }])}>
+            {isHold ? 'MINIMUM HOLD' : 'TARGET REPS'}
+          </Text>
           <View style={styles.repRow}>
             {repPresets.map((reps) => {
               const selected = targetReps === reps && customReps === '';
@@ -485,7 +492,7 @@ export default function CreateFriendChallengeScreen() {
                       styles.repChipText,
                       { color: selected ? '#FFFFFF' : theme.text },
                     ])}>
-                    {reps}
+                    {formatExerciseCount(exerciseType, reps)}
                   </Text>
                 </Pressable>
               );
@@ -493,13 +500,24 @@ export default function CreateFriendChallengeScreen() {
           </View>
 
           <AuthTextInput
-            label={`Custom reps (${FRIEND_CHALLENGE_REP_MIN}-${FRIEND_CHALLENGE_REP_MAX})`}
+            label={
+              isHold
+                ? `Custom seconds (${FRIEND_CHALLENGE_REP_MIN}-${FRIEND_CHALLENGE_REP_MAX})`
+                : `Custom reps (${FRIEND_CHALLENGE_REP_MIN}-${FRIEND_CHALLENGE_REP_MAX})`
+            }
             value={customReps}
             onChangeText={handleCustomRepsChange}
             keyboardType="number-pad"
             placeholder="Or enter a custom amount"
           />
 
+          {isHold ? (
+            <Text style={StyleSheet.flatten([styles.help, { color: theme.textSecondary }])}>
+              Longest hold wins - hold at least the minimum to finish. The timer only runs while your form is
+              good.
+            </Text>
+          ) : (
+            <>
           <Text style={StyleSheet.flatten([styles.label, { color: theme.textSecondary }])}>
             TIME CAP (OPTIONAL)
           </Text>
@@ -531,6 +549,8 @@ export default function CreateFriendChallengeScreen() {
               );
             })}
           </View>
+            </>
+          )}
             </>
           )}
 
@@ -566,10 +586,12 @@ export default function CreateFriendChallengeScreen() {
             ) : (
               <>
                 <Text style={StyleSheet.flatten([styles.summaryTitle, { color: theme.text }])}>
-                  {targetReps} {EXERCISE_LABELS[exerciseType]}
+                  {formatExerciseCount(exerciseType, targetReps)} {EXERCISE_LABELS[exerciseType]}
                 </Text>
                 <Text style={StyleSheet.flatten([styles.summaryMeta, { color: theme.textSecondary }])}>
-                  {formatRaceTimeLimit(timeLimitSeconds)} · fastest finisher wins
+                  {isHold
+                    ? 'Minimum hold · longest hold wins'
+                    : `${formatRaceTimeLimit(timeLimitSeconds)} · fastest finisher wins`}
                 </Text>
               </>
             )}

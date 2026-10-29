@@ -1,5 +1,6 @@
 import { POSE_REP_MIN_VISIBILITY, SQUAT_POSTURE, SQUAT_THRESHOLDS } from '@/constants/poseDetection';
 
+import { getSideViewFootSplit, getTorsoAngleFromVertical } from './bodyView';
 import { getKneeAngle, PoseLandmarkIndex, type PoseLandmark } from './landmarks';
 
 function isVisible(landmark: PoseLandmark | undefined): landmark is PoseLandmark {
@@ -67,9 +68,25 @@ export function areKneesAtSimilarDepth(landmarks: PoseLandmark[]): boolean {
   return kneeYDelta !== null && kneeYDelta <= SQUAT_POSTURE.maxKneeYDelta;
 }
 
-/** Rejects one-legged poses, marches, and other non-squat leg motion. */
+/** Torso still roughly upright - a burpee or push-up drop tips it toward horizontal. */
+export function isSquatTorsoUpright(landmarks: PoseLandmark[], maxLean: number = SQUAT_POSTURE.maxTorsoLean): boolean {
+  const lean = getTorsoAngleFromVertical(landmarks);
+  return lean === null || lean <= maxLean;
+}
+
+/** Side view: feet stay under the body; a long front-to-back split is a lunge. */
+export function isSquatFootStance(landmarks: PoseLandmark[]): boolean {
+  const split = getSideViewFootSplit(landmarks);
+  return split === null || split <= SQUAT_POSTURE.maxSideViewFootSplit;
+}
+
+/** Rejects one-legged poses, marches, lunges, floor drops, and other non-squat motion. */
 export function isValidSquatStance(landmarks: PoseLandmark[]): boolean {
   if (!hasBothSquatLegChains(landmarks)) {
+    return false;
+  }
+
+  if (!isSquatTorsoUpright(landmarks) || !isSquatFootStance(landmarks)) {
     return false;
   }
 
@@ -107,12 +124,20 @@ export function getSquatStanceHint(landmarks: PoseLandmark[]): string | null {
     return 'Keep both knees at a similar depth';
   }
 
+  if (!isSquatFootStance(landmarks)) {
+    return 'Keep your feet side by side - lunges will not count';
+  }
+
+  if (!isSquatTorsoUpright(landmarks)) {
+    return 'Keep your chest up - floor moves will not count';
+  }
+
   return null;
 }
 
 /** Upright start position - both knees extended before the set arms. */
 export function isSquatStandingReady(landmarks: PoseLandmark[]): boolean {
-  if (!isValidSquatStance(landmarks)) {
+  if (!isValidSquatStance(landmarks) || !isSquatTorsoUpright(landmarks, SQUAT_POSTURE.maxReadyTorsoLean)) {
     return false;
   }
 

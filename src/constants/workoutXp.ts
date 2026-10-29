@@ -8,11 +8,17 @@ export const WORKOUT_XP_PER_REP: Record<ExerciseType, number> = {
   half_burpees: 1,
   jumping_squats: 1,
   lunges: 1,
+  sit_ups: 1,
+  /** Holds earn per PLANK_SECONDS_PER_XP seconds instead (see workoutXp.ts). */
+  plank: 1,
   burpees: 2,
   pull_ups: 2,
 };
 
 export const FOR_TIME_SECONDS_PER_REP = 3;
+
+/** Plank seconds per workout XP - long holds are easy to sustain, so seconds earn less than reps. */
+export const PLANK_SECONDS_PER_XP = 5;
 export const FOR_TIME_MIN_PAR_SECONDS = 120;
 export const FOR_TIME_MIN_ELAPSED_SECONDS = 30;
 export const FOR_TIME_SPEED_MULTIPLIER_MIN = 0.5;

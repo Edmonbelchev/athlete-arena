@@ -26,6 +26,8 @@ const EMPTY_STATS: ProfileStats = {
   totalJumpingJacks: 0,
   totalJumpingSquats: 0,
   totalLunges: 0,
+  totalSitUps: 0,
+  totalPlankSeconds: 0,
 };
 
 export function useProfileStats(): UseProfileStatsResult {

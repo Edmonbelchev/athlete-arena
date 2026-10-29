@@ -153,6 +153,8 @@ function VisionCameraPreviewActive({
       posePreviewLayoutRef.current = {
         isLandscape: viewSettleGateRef.current.isLandscape(),
         settled,
+        viewWidth: viewDimensionsRef.current.width,
+        viewHeight: viewDimensionsRef.current.height,
       };
     },
     [posePreviewLayoutRef],

@@ -1,9 +1,12 @@
 import { StyleSheet, Text, View } from 'react-native';
 
-import { formatExerciseLabel } from '@/constants/challenges';
+import { formatExerciseCount, formatExerciseLabel } from '@/constants/challenges';
 import { formatRaceTime } from '@/constants/friendChallenges';
 import { Radius, Spacing } from '@/constants/theme';
+
+import { workoutHudCompactStyles as compact } from './workoutHudCompactStyles';
 import { useTheme } from '@/hooks/use-theme';
+import { useWorkoutLayout } from '@/hooks/use-workout-layout';
 import type { CustomWorkoutExercise } from '@/types/customWorkouts';
 
 interface AmrapWorkoutHudProps {
@@ -26,27 +29,33 @@ export function AmrapWorkoutHud({
   timerStarted = true,
 }: AmrapWorkoutHudProps) {
   const theme = useTheme();
+  // Landscape: smaller, corner-hugging HUD so the camera stays visible.
+  const { isLandscape } = useWorkoutLayout();
 
   return (
-    <View style={styles.wrap} pointerEvents="none">
-      <View style={styles.topRow}>
-        <View style={styles.chip}>
-          <Text style={styles.chipLabel}>ROUND</Text>
-          <Text style={styles.chipValue}>{completedRounds + 1}</Text>
+    <View style={[styles.wrap, isLandscape && compact.wrap]} pointerEvents="none">
+      <View style={[styles.topRow, isLandscape && compact.topRow]}>
+        <View style={[styles.chip, isLandscape && compact.chip]}>
+          <Text style={[styles.chipLabel, isLandscape && compact.chipLabel]}>ROUND</Text>
+          <Text style={[styles.chipValue, isLandscape && compact.chipValue]}>{completedRounds + 1}</Text>
         </View>
-        <View style={styles.chip}>
-          <Text style={styles.chipLabel}>TIME LEFT</Text>
-          <Text style={[styles.chipValue, { color: theme.streak }]}>
+        <View style={[styles.chip, isLandscape && compact.chip]}>
+          <Text style={[styles.chipLabel, isLandscape && compact.chipLabel]}>TIME LEFT</Text>
+          <Text style={[styles.chipValue, isLandscape && compact.timerValue, { color: theme.streak }]}>
             {formatRaceTime(timerStarted ? (secondsRemaining ?? 0) : timeLimitSeconds)}
           </Text>
         </View>
       </View>
 
-      <View style={styles.mainHud}>
-        <Text style={styles.exerciseLabel}>{formatExerciseLabel(currentExercise.exerciseType, true)}</Text>
-        <Text style={styles.repCount}>
-          {currentExerciseReps}
-          <Text style={styles.repTarget}> / {currentExercise.targetReps}</Text>
+      <View style={[styles.mainHud, isLandscape && compact.mainHud]}>
+        <Text style={[styles.exerciseLabel, isLandscape && compact.exerciseLabel]}>
+          {formatExerciseLabel(currentExercise.exerciseType, true)}
+        </Text>
+        <Text style={[styles.repCount, isLandscape && compact.repCount]}>
+          {formatExerciseCount(currentExercise.exerciseType, currentExerciseReps)}
+          <Text style={[styles.repTarget, isLandscape && compact.repTarget]}>
+            {' '}/ {formatExerciseCount(currentExercise.exerciseType, currentExercise.targetReps)}
+          </Text>
         </Text>
         {timerStarted ? (
           <Text style={styles.meta}>

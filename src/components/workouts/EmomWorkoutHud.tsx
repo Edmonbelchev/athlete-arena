@@ -1,9 +1,12 @@
 import { StyleSheet, Text, View } from 'react-native';
 
-import { formatExerciseLabel } from '@/constants/challenges';
+import { formatExerciseCount, formatExerciseLabel } from '@/constants/challenges';
 import { formatRaceTime } from '@/constants/friendChallenges';
 import { Radius, Spacing } from '@/constants/theme';
+
+import { workoutHudCompactStyles as compact } from './workoutHudCompactStyles';
 import { useTheme } from '@/hooks/use-theme';
+import { useWorkoutLayout } from '@/hooks/use-workout-layout';
 import type { CustomWorkoutExercise } from '@/types/customWorkouts';
 
 interface EmomWorkoutHudProps {
@@ -30,24 +33,27 @@ export function EmomWorkoutHud({
   timerStarted = true,
 }: EmomWorkoutHudProps) {
   const theme = useTheme();
+  // Landscape: smaller, corner-hugging HUD so the camera stays visible.
+  const { isLandscape } = useWorkoutLayout();
+
   return (
-    <View style={styles.wrap} pointerEvents="none">
-      <View style={styles.topRow}>
-        <View style={styles.chip}>
-          <Text style={styles.chipLabel}>MINUTE</Text>
-          <Text style={styles.chipValue}>
+    <View style={[styles.wrap, isLandscape && compact.wrap]} pointerEvents="none">
+      <View style={[styles.topRow, isLandscape && compact.topRow]}>
+        <View style={[styles.chip, isLandscape && compact.chip]}>
+          <Text style={[styles.chipLabel, isLandscape && compact.chipLabel]}>MINUTE</Text>
+          <Text style={[styles.chipValue, isLandscape && compact.chipValue]}>
             {currentIntervalIndex + 1}/{intervalCount}
           </Text>
         </View>
-        <View style={styles.chip}>
-          <Text style={styles.chipLabel}>THIS MINUTE</Text>
-          <Text style={[styles.chipValue, { color: theme.streak }]}>
+        <View style={[styles.chip, isLandscape && compact.chip]}>
+          <Text style={[styles.chipLabel, isLandscape && compact.chipLabel]}>THIS MINUTE</Text>
+          <Text style={[styles.chipValue, isLandscape && compact.timerValue, { color: theme.streak }]}>
             {formatRaceTime(secondsRemainingInInterval)}
           </Text>
         </View>
       </View>
 
-      <View style={styles.mainHud}>
+      <View style={[styles.mainHud, isLandscape && compact.mainHud]}>
         {isResting ? (
           <>
             <Text style={styles.restLabel}>REST TIME</Text>
@@ -55,12 +61,18 @@ export function EmomWorkoutHud({
           </>
         ) : (
           <>
-            <Text style={styles.exerciseLabel}>{formatExerciseLabel(currentExercise.exerciseType, true)}</Text>
-            <Text style={styles.repCount}>
-              {currentExerciseReps}
-              <Text style={styles.repTarget}> / {currentExercise.targetReps}</Text>
+            <Text style={[styles.exerciseLabel, isLandscape && compact.exerciseLabel]}>
+              {formatExerciseLabel(currentExercise.exerciseType, true)}
             </Text>
-            <Text style={styles.workCopy}>Finish the circuit before this minute ends</Text>
+            <Text style={[styles.repCount, isLandscape && compact.repCount]}>
+              {formatExerciseCount(currentExercise.exerciseType, currentExerciseReps)}
+              <Text style={[styles.repTarget, isLandscape && compact.repTarget]}>
+                {' '}/ {formatExerciseCount(currentExercise.exerciseType, currentExercise.targetReps)}
+              </Text>
+            </Text>
+            {!isLandscape ? (
+              <Text style={styles.workCopy}>Finish the circuit before this minute ends</Text>
+            ) : null}
           </>
         )}
         {timerStarted ? (

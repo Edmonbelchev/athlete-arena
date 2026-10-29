@@ -2,10 +2,11 @@ import {
   LUNGE_POSTURE,
   POSE_REP_MIN_VISIBILITY,
   POSE_REP_MIN_VISIBILITY_ARMED,
+  SQUAT_POSTURE,
 } from '@/constants/poseDetection';
 
 import { getKneeAngle, PoseLandmarkIndex, type PoseLandmark } from './landmarks';
-import { hasBothSquatLegChains } from './squatPosture';
+import { hasBothSquatLegChains, isSquatTorsoUpright } from './squatPosture';
 
 type LegSide = 'left' | 'right';
 
@@ -163,7 +164,7 @@ export function isLungeStandingReady(landmarks: PoseLandmark[]): boolean {
     return false;
   }
 
-  if (!areLungeLegsStraight(landmarks)) {
+  if (!areLungeLegsStraight(landmarks) || !isSquatTorsoUpright(landmarks, SQUAT_POSTURE.maxReadyTorsoLean)) {
     return false;
   }
 

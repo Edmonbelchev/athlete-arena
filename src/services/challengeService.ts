@@ -1,4 +1,4 @@
-import { EXERCISE_TYPES, type ExerciseType } from '@/constants/challenges';
+import { DAILY_QUEST_EXERCISE_TYPES, EXERCISE_TYPES, type ExerciseType } from '@/constants/challenges';
 import { DAILY_MISSION_XP_REWARD } from '@/constants/dailyMissionRewards';
 import { assertSupabaseConfigured, supabase } from '@/lib/supabase';
 import { clearMovementStatsCache } from '@/services/statsService';
@@ -341,7 +341,7 @@ export async function syncDailyMissionProgress(
 
 export function getRerollEligibleExercises(missions: DailyChallengeHome[]): ExerciseType[] {
   const assigned = new Set(missions.map((mission) => mission.exerciseType));
-  return EXERCISE_TYPES.filter((exerciseType) => !assigned.has(exerciseType));
+  return DAILY_QUEST_EXERCISE_TYPES.filter((exerciseType) => !assigned.has(exerciseType));
 }
 
 export function canUseDailyQuestReroll(

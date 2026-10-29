@@ -5,7 +5,7 @@ import { Platform } from 'react-native';
 
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { WorkoutGuideAnimation } from '@/components/challenges/WorkoutGuideAnimation';
-import type { ExerciseType } from '@/constants/challenges';
+import { formatExerciseAmount, type ExerciseType } from '@/constants/challenges';
 import { POSE_GUIDANCE } from '@/constants/poseDetection';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { getWorkoutSetupTitle } from '@/features/challenges/workoutGuidance';
@@ -57,7 +57,9 @@ export function ChallengeWorkoutSetup({
           WORKOUT SETUP
         </Text>
         <Text style={StyleSheet.flatten([styles.title, { color: theme.text }])}>{exerciseLabel}</Text>
-        <Text style={StyleSheet.flatten([styles.target, { color: theme.text }])}>{targetReps} reps</Text>
+        <Text style={StyleSheet.flatten([styles.target, { color: theme.text }])}>
+          {formatExerciseAmount(exerciseType, targetReps)}
+        </Text>
         {subtitle ? (
           <Text style={StyleSheet.flatten([styles.subtitle, { color: theme.textSecondary }])}>{subtitle}</Text>
         ) : null}

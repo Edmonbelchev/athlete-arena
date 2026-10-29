@@ -1,7 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import { AppIcon } from '@/components/ui/AppIcon';
-import { formatExerciseLabel } from '@/constants/challenges';
+import { formatExerciseCount, formatExerciseLabel } from '@/constants/challenges';
 import { formatWorkoutTimeLimit, getCustomWorkoutTypeLabel } from '@/constants/customWorkouts';
 import { Radius, Spacing } from '@/constants/theme';
 import type { EmomWorkoutResult } from '@/types/customWorkouts';
@@ -49,7 +49,8 @@ export function EmomCompleteOverlay({ result, sessionReward = null }: EmomComple
               {formatExerciseLabel(entry.exerciseType)}
             </Text>
             <Text style={[styles.breakdownMeta, { color: theme.textSecondary }]}>
-              {entry.targetReps} per minute · {entry.totalReps} total
+              {formatExerciseCount(entry.exerciseType, entry.targetReps)} per minute ·{' '}
+              {formatExerciseCount(entry.exerciseType, entry.totalReps)} total
             </Text>
           </View>
         ))}

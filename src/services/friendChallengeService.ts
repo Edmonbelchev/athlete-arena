@@ -307,6 +307,32 @@ export async function completeFriendChallenge(
   clearMovementStatsCache();
 }
 
+/**
+ * Hold challenges (plank): saves seconds held so far, and with `finish` ends the attempt.
+ * Finishing needs at least the challenge's minimum hold; the longest hold wins.
+ */
+export async function recordFriendHoldProgress(
+  participantId: string,
+  heldSeconds: number,
+  finish: boolean,
+): Promise<void> {
+  assertSupabaseConfigured();
+
+  const { error } = await supabase.rpc('record_friend_hold_progress', {
+    p_participant_id: participantId,
+    p_held_seconds: heldSeconds,
+    p_finish: finish,
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  if (finish) {
+    clearMovementStatsCache();
+  }
+}
+
 export async function createFriendWorkoutChallenge(
   friendId: string,
   templateId: string,

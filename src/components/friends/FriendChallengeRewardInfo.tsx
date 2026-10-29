@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 
-import type { ExerciseType } from '@/constants/challenges';
+import { formatExerciseAmount, type ExerciseType } from '@/constants/challenges';
 import { formatCoinAmount } from '@/constants/coins';
 import {
   calculateFriendChallengeCoins,
@@ -83,7 +83,7 @@ export function FriendChallengeRewardInfo({
         {formatCoinAmount(noShow.coins)}
       </Text>
       <Text style={StyleSheet.flatten([styles.preview, { color: theme.xp }])}>
-        At {targetReps} reps: Winner +{calculateFriendChallengeXp(exerciseType, targetReps)} XP &{' '}
+        At {formatExerciseAmount(exerciseType, targetReps)}: Winner +{calculateFriendChallengeXp(exerciseType, targetReps)} XP &{' '}
         {formatCoinAmount(calculateFriendChallengeCoins(exerciseType, targetReps))}
       </Text>
     </View>

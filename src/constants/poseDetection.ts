@@ -184,6 +184,63 @@ export const SQUAT_POSTURE = {
   readyFramesRequired: isNativeMobile ? 3 : 4,
   /** Consecutive frames at squat depth before bottom counts toward a rep. */
   bottomHoldFrames: isNativeMobile ? 2 : 3,
+  /** Torso lean from vertical (degrees) that ends a squat set - burpee and push-up drops tip past it. */
+  maxTorsoLean: 65,
+  /** Torso lean allowed while standing ready to start. */
+  maxReadyTorsoLean: 30,
+  /** Side view: front-to-back foot split / leg length above this is a lunge stance, not a squat. */
+  maxSideViewFootSplit: 0.45,
+} as const;
+
+/**
+ * Sit-ups, side-on and lying on the back. Angles are in true body proportions (bodyView.ts);
+ * lengths are fractions of torso length so they hold at any distance or orientation.
+ */
+export const SIT_UP_POSTURE = {
+  /** Torso rise from the floor (degrees) still counted as lying back. */
+  maxLyingRise: 25,
+  /** Torso rise that leaves the floor - starts a rep attempt. */
+  minRisingRise: 32,
+  /** Torso rise that counts as sitting up (crunches stop short of this). */
+  minTopRise: 60,
+  /** Knee angle range for bent knees with feet on the floor. */
+  minKneeAngle: 35,
+  maxKneeAngle: 135,
+  /** Legs straightening past this (leg raises, V-ups, standing) ends the set. */
+  maxActiveKneeAngle: 150,
+  /** Knees sit at least this far above the hips (torso lengths) when lying back. */
+  minKneeAboveHip: 0.12,
+  /** Feet may not rise above the hips by more than this (torso lengths) - no leg raises. */
+  maxAnkleAboveHip: 0.25,
+  /** Hips may not lift off their lying baseline by more than this (torso lengths). */
+  maxHipLift: 0.35,
+  readyFramesRequired: isNativeMobile ? 5 : 6,
+  topHoldFrames: 2,
+  /** Consecutive frames breaking the rules above before the set ends. */
+  invalidFramesToRelease: 4,
+  lostTrackingFramesToRelease: 25,
+} as const;
+
+/** Plank hold, side-on. Lengths are fractions of torso length. */
+export const PLANK_POSTURE = {
+  /** Shoulder→ankle line from horizontal (degrees). */
+  maxBodyTilt: 32,
+  /** Shoulder-hip-ankle angle - lower means sagging or piking hips. */
+  minBodyLineAngle: 155,
+  /** Knees stay straight (knee-down planks do not count). */
+  minKneeAngle: 150,
+  /** Shoulders above the hands / forearms on the floor. */
+  minShoulderLift: 0.35,
+  /** Hips off the floor (above the ankles). */
+  minHipLift: 0.12,
+  /** Good form this long before the timer starts (ms). */
+  settleMs: 800,
+  /** Good form this long to resume after a pause (ms). */
+  resumeMs: 400,
+  /** Bad-form time tolerated before the timer pauses (ms); not counted toward the hold. */
+  graceMs: 700,
+  /** Longest frame gap counted toward the hold (ms) - dropped frames do not add time. */
+  maxFrameGapMs: 250,
 } as const;
 
 export const BURPEE_THRESHOLDS = {
@@ -345,7 +402,7 @@ export const POSE_GUIDANCE: Record<ExerciseType, { title: string; tips: readonly
   push_ups: {
     title: 'Push-up setup',
     tips: [
-      'Face the camera in portrait with your phone propped low',
+      'Prop your phone sideways and low - face it or set up side-on',
       'Keep shoulders, hips, elbows, and wrists in frame',
       'Rep counting starts once you hold a plank with hands on the floor',
     ],
@@ -353,15 +410,15 @@ export const POSE_GUIDANCE: Record<ExerciseType, { title: string; tips: readonly
   squats: {
     title: 'Squat setup',
     tips: [
-      'Prop your phone in portrait and step back until both legs are visible',
+      'Prop your phone sideways and step back until both legs are visible',
       'Squat with both feet on the floor - one-legged moves will not count',
-      'Face the camera and stand tall before you start',
+      'Face the camera or stand side-on, and stand tall before you start',
     ],
   },
   pull_ups: {
     title: 'Pull-up setup',
     tips: [
-      'Prop your phone in portrait where you can see the bar and your upper body',
+      'Prop your phone sideways where you can see the bar and your upper body',
       'Reach up and hang from the bar with arms fully extended',
       'Rep counting starts only in a dead hang; pull until your chin clears the bar',
     ],
@@ -369,7 +426,7 @@ export const POSE_GUIDANCE: Record<ExerciseType, { title: string; tips: readonly
   burpees: {
     title: 'Burpee setup',
     tips: [
-      'Prop your phone in portrait and keep your full body in frame',
+      'Prop your phone sideways and keep your full body in frame - facing it or side-on',
       'Drop straight down - no strict squat or push-up required',
       'Chest or body must touch the floor; a plank alone will not count',
       'Stand back up and jump to finish each rep',
@@ -378,7 +435,7 @@ export const POSE_GUIDANCE: Record<ExerciseType, { title: string; tips: readonly
   half_burpees: {
     title: 'Half burpee setup',
     tips: [
-      'Prop your phone in portrait and keep your full body in frame',
+      'Prop your phone sideways and keep your full body in frame - facing it or side-on',
       'Drop to a plank with arms extended - no push-up required',
       'Stand back up and jump to finish each rep',
     ],
@@ -386,7 +443,7 @@ export const POSE_GUIDANCE: Record<ExerciseType, { title: string; tips: readonly
   jumping_jacks: {
     title: 'Jumping jack setup',
     tips: [
-      'Prop your phone in portrait and step back until your full body is visible',
+      'Prop your phone sideways and step back until your full body is visible',
       'Start with feet together and arms at your sides',
       'Jump feet out while raising both arms overhead, then return to closed to count a rep',
     ],
@@ -394,7 +451,7 @@ export const POSE_GUIDANCE: Record<ExerciseType, { title: string; tips: readonly
   jumping_squats: {
     title: 'Jump squat setup',
     tips: [
-      'Prop your phone on the floor in portrait and step back until both legs are visible',
+      'Prop your phone sideways on the floor and step back until both legs are visible',
       'Same as squats: squat to depth, then stand back up',
       'Each rep must include a small jump during the way up - both feet leave the floor',
     ],
@@ -402,10 +459,27 @@ export const POSE_GUIDANCE: Record<ExerciseType, { title: string; tips: readonly
   lunges: {
     title: 'Lunge setup',
     tips: [
-      'Prop your phone in portrait, face it, and step back until both legs are in frame',
+      'Prop your phone sideways, face it or stand side-on, and step back until both legs are in frame',
       'Stand tall with feet side by side to start counting',
       'Step forward or back and lower until your back knee nears the floor',
       'Rise back up to finish - each leg counts as one rep',
+    ],
+  },
+  sit_ups: {
+    title: 'Sit-up setup',
+    tips: [
+      'Prop your phone sideways on the floor and lie side-on to it, head to toe in frame',
+      'Lie back with knees bent and feet flat to start counting',
+      'Sit up until your chest is well off the floor, then lie back down - crunches will not count',
+      'Keep your hips and feet down - leg raises and standing up end the set',
+    ],
+  },
+  plank: {
+    title: 'Plank setup',
+    tips: [
+      'Prop your phone sideways on the floor and set up side-on to it, head to heels in frame',
+      'Hold a forearm or straight-arm plank with your body in a straight line',
+      'The timer runs only while your form is good - sagging, piking, or dropping your knees pauses it',
     ],
   },
 };

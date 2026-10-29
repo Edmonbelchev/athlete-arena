@@ -13,5 +13,7 @@ export function movementStatsToProfileStats(movement: MovementStats): ProfileSta
     totalJumpingJacks: movement.totalJumpingJacks,
     totalJumpingSquats: movement.totalJumpingSquats,
     totalLunges: movement.totalLunges,
+    totalSitUps: movement.totalSitUps,
+    totalPlankSeconds: movement.totalPlankSeconds,
   };
 }

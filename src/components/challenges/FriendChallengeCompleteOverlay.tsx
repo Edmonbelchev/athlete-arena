@@ -12,6 +12,7 @@ import Animated, {
 
 import { EmoteDisplay } from '@/components/shop/EmoteDisplay';
 import { XpCoinRewardLabel } from '@/components/rewards/XpCoinRewardLabel';
+import { formatHoldSeconds } from '@/constants/challenges';
 import { formatRaceTime } from '@/constants/friendChallenges';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -30,6 +31,8 @@ interface FriendChallengeCompleteOverlayProps {
   coins: number;
   emote: string | null | undefined;
   opponentForfeited?: boolean;
+  /** Hold challenge (plank): the "times" are seconds held and the longest hold wins. */
+  isHold?: boolean;
 }
 
 function ConfettiPiece({
@@ -134,7 +137,12 @@ function getOverlayCopy(
   opponentName: string,
   opponentTimeSeconds: number | null,
   opponentForfeited: boolean,
+  isHold: boolean,
 ): { eyebrow: string; title: string; subtitle: string | null } {
+  if (isHold) {
+    return getHoldOverlayCopy(variant, raceTimeSeconds, opponentName, opponentTimeSeconds, opponentForfeited);
+  }
+
   const myTimeLabel = raceTimeSeconds !== null ? formatRaceTime(raceTimeSeconds) : '--:--';
   const opponentTimeLabel =
     opponentTimeSeconds !== null ? formatRaceTime(opponentTimeSeconds) : '--:--';
@@ -169,6 +177,36 @@ function getOverlayCopy(
   }
 }
 
+function getHoldOverlayCopy(
+  variant: FriendChallengeCompleteVariant,
+  heldSeconds: number | null,
+  opponentName: string,
+  opponentHeldSeconds: number | null,
+  opponentForfeited: boolean,
+): { eyebrow: string; title: string; subtitle: string | null } {
+  const mine = heldSeconds !== null ? formatHoldSeconds(heldSeconds) : '--';
+  const theirs = opponentHeldSeconds !== null ? formatHoldSeconds(opponentHeldSeconds) : '--';
+
+  switch (variant) {
+    case 'finished':
+      return { eyebrow: 'HOLD FINISHED', title: mine, subtitle: `Waiting for ${opponentName} to hold…` };
+    case 'winner':
+      return {
+        eyebrow: opponentForfeited ? 'OPPONENT FORFEITED' : 'YOU HELD LONGEST',
+        title: mine,
+        subtitle: opponentForfeited ? `${opponentName} forfeited` : `You ${mine} · ${opponentName} ${theirs}`,
+      };
+    case 'lost':
+      return {
+        eyebrow: 'HOLD COMPLETE',
+        title: mine,
+        subtitle: `${opponentName} held longer · You ${mine} · ${opponentName} ${theirs}`,
+      };
+    case 'tie':
+      return { eyebrow: 'TIE', title: mine, subtitle: `You both held ${mine}` };
+  }
+}
+
 export function FriendChallengeCompleteOverlay({
   variant,
   raceTimeSeconds,
@@ -178,6 +216,7 @@ export function FriendChallengeCompleteOverlay({
   coins,
   emote,
   opponentForfeited = false,
+  isHold = false,
 }: FriendChallengeCompleteOverlayProps) {
   const theme = useTheme();
   const copy = getOverlayCopy(
@@ -186,6 +225,7 @@ export function FriendChallengeCompleteOverlay({
     opponentName,
     opponentTimeSeconds,
     opponentForfeited,
+    isHold,
   );
   const confettiCount = variant === 'winner' ? 20 : 12;
   const accentColor =

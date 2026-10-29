@@ -1,5 +1,5 @@
 import type { ExerciseType } from '@/constants/challenges';
-import { formatExerciseLabel } from '@/constants/challenges';
+import { formatExerciseCount, formatExerciseLabel, formatHoldSeconds, isHoldExercise } from '@/constants/challenges';
 import { formatRaceTime } from '@/constants/friendChallenges';
 import { formatCoinAmount } from '@/constants/coins';
 import {
@@ -112,7 +112,7 @@ export function getHistoryTitle(entry: ChallengeHistoryEntry): string {
   }
 
   if (entry.exerciseType) {
-    return `${entry.targetReps} ${formatExerciseLabel(entry.exerciseType, true)}`;
+    return `${formatExerciseCount(entry.exerciseType, entry.targetReps)} ${formatExerciseLabel(entry.exerciseType, true)}`;
   }
 
   return 'Friend challenge';
@@ -135,6 +135,10 @@ export function getHistoryScoreLine(entry: ChallengeHistoryEntry): string {
       return `You ${myRounds} rounds · ${opponent} ${opponentRounds} rounds`;
     }
 
+    if (isHoldExercise(entry.exerciseType)) {
+      return `You held ${formatHoldSeconds(entry.completedReps)} · ${opponent} ${formatHoldSeconds(opponentReps)}`;
+    }
+
     if (entry.raceSeconds !== null) {
       const opponentTime =
         entry.opponentRaceSeconds !== null ? formatRaceTime(entry.opponentRaceSeconds) : '--:--';
@@ -152,7 +156,9 @@ export function getHistoryScoreLine(entry: ChallengeHistoryEntry): string {
     return `${entry.completedRounds ?? 0} rounds completed`;
   }
 
-  return `${entry.completedReps} / ${entry.targetReps} reps`;
+  return isHoldExercise(entry.exerciseType)
+    ? `${formatHoldSeconds(entry.completedReps)} / ${formatHoldSeconds(entry.targetReps)}`
+    : `${entry.completedReps} / ${entry.targetReps} reps`;
 }
 
 export function getHistoryStatusColorKey(

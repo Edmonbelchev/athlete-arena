@@ -68,6 +68,25 @@ export function getRepCycleProgress(
     }
   }
 
+  if (exerciseType === 'sit_ups') {
+    switch (phase) {
+      case 'LYING':
+        return 0.05;
+      case 'RISING':
+        return 0.4;
+      case 'TOP':
+        return 0.7;
+      case 'LOWERING':
+        return 0.9;
+      default:
+        return 0;
+    }
+  }
+
+  if (exerciseType === 'plank') {
+    return phase === 'HOLDING' ? 1 : 0;
+  }
+
   if (exerciseType === 'burpees' || exerciseType === 'half_burpees') {
     switch (phase) {
       case 'STANDING':
@@ -107,5 +126,5 @@ export function repCycleProgressColor(progress: number): string {
 }
 
 export function isRepCycleActive(phase: ExercisePhase): boolean {
-  return phase !== 'UP' && phase !== 'STANDING' && phase !== 'CLOSED';
+  return phase !== 'UP' && phase !== 'STANDING' && phase !== 'CLOSED' && phase !== 'LYING' && phase !== 'SETUP';
 }

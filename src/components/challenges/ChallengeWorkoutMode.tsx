@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import type { MutableRefObject } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CameraPreview } from '@/components/CameraPreview';
 import type { PosePreviewLayoutState } from '@/components/CameraPreview.types';
@@ -10,7 +10,7 @@ import { WorkoutGuideAnimation } from '@/components/challenges/WorkoutGuideAnima
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { DevSimulateRepButton } from '@/dev/DevSimulateRepButton';
 import type { ExerciseType } from '@/constants/challenges';
-import { Spacing } from '@/constants/theme';
+import { Radius, Spacing } from '@/constants/theme';
 import type { ExercisePhase } from '@/features/challenges/poseDetection.types';
 import {
   getCoachBorderColor,
@@ -22,6 +22,7 @@ import { WorkoutExerciseTransitionOverlay } from '@/components/workouts/WorkoutE
 import { useExerciseTransitionAnnouncement } from '@/hooks/use-exercise-transition-announcement';
 import { useKeepAwakeWhileActive } from '@/hooks/use-keep-awake-while-active';
 import { useWorkoutGuideAnimationVisible } from '@/hooks/use-workout-guide-animation-visible';
+import { useWorkoutLayout } from '@/hooks/use-workout-layout';
 import { useWorkoutOrientation } from '@/hooks/use-workout-orientation';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -96,6 +97,9 @@ export function ChallengeWorkoutMode({
     completed,
   });
 
+  const { isLandscape } = useWorkoutLayout();
+  const insets = useSafeAreaInsets();
+
   useWorkoutOrientation(!showCompletionOnly);
   useKeepAwakeWhileActive(!showCompletionOnly);
 
@@ -116,55 +120,99 @@ export function ChallengeWorkoutMode({
     );
   }
 
-  return (
-    <SafeAreaView style={StyleSheet.flatten([styles.safeArea, { backgroundColor: '#000000' }])} edges={['top', 'bottom']}>
-      <View style={styles.portraitColumn}>
+  const cameraShellStyle = StyleSheet.flatten([
+    styles.cameraShell,
+    { borderColor: trackingBorderColor, borderWidth: TRACKING_BORDER_WIDTH },
+  ]);
+
+  const camera = (
+    <CameraPreview
+      active={cameraActive}
+      fullscreen
+      hideStatusOverlay
+      posePreviewLayoutRef={posePreviewLayoutRef}
+      pullUpBarLineY={pullUpBarLineY}
+      exerciseType={exerciseType}
+      repPhase={repPhase}
+      repTrackingReady={trackingReady}
+      onCameraReady={onCameraReady}
+      onLandmarksDetected={onLandmarksDetected}
+    />
+  );
+
+  const overlays = (
+    <>
+      {showGuideAnimation ? (
         <View
-          style={StyleSheet.flatten([
-            styles.cameraShell,
-            { borderColor: trackingBorderColor, borderWidth: TRACKING_BORDER_WIDTH },
-          ])}>
-          <CameraPreview
-            active={cameraActive}
-            fullscreen
-            hideStatusOverlay
-            posePreviewLayoutRef={posePreviewLayoutRef}
-            pullUpBarLineY={pullUpBarLineY}
-            exerciseType={exerciseType}
-            repPhase={repPhase}
-            repTrackingReady={trackingReady}
-            onCameraReady={onCameraReady}
-            onLandmarksDetected={onLandmarksDetected}
-          />
-          {showGuideAnimation ? (
-            <View style={styles.guideOverlay} pointerEvents="none">
-              <WorkoutGuideAnimation exerciseType={exerciseType} variant="overlay" />
+          style={StyleSheet.flatten([styles.guideOverlay, isLandscape ? styles.guideOverlayLandscape : null])}
+          pointerEvents="none">
+          <WorkoutGuideAnimation exerciseType={exerciseType} variant="overlay" />
+        </View>
+      ) : null}
+      {hudOverlay ?? (
+        <ChallengeRepHud
+          currentReps={currentReps}
+          targetReps={targetReps}
+          exerciseType={exerciseType}
+          completed={completed}
+          raceTimer={raceTimer}
+        />
+      )}
+      {centerOverlay}
+      <WorkoutExerciseTransitionOverlay label={exerciseTransitionLabel} />
+    </>
+  );
+
+  const hasControls = Boolean(footer || onDevSimulateRep);
+  const controls = hasControls ? (
+    <>
+      {onDevSimulateRep ? (
+        <DevSimulateRepButton
+          onPress={onDevSimulateRep}
+          disabled={devSimulateDisabled}
+          loading={devSimulateLoading}
+          size={isLandscape ? 'compact' : 'default'}
+        />
+      ) : null}
+      {footer}
+    </>
+  ) : null;
+
+  if (isLandscape) {
+    // Full-bleed camera; overlays and controls float inside the safe area (clear of the notch).
+    return (
+      <View style={StyleSheet.flatten([styles.safeArea, { backgroundColor: '#000000' }])}>
+        <View style={cameraShellStyle}>
+          {camera}
+          <View
+            pointerEvents="box-none"
+            style={StyleSheet.flatten([
+              StyleSheet.absoluteFill,
+              { paddingLeft: insets.left, paddingRight: insets.right, paddingBottom: insets.bottom },
+            ])}>
+            <View pointerEvents="box-none" style={styles.overlayArea}>
+              {overlays}
+              {controls ? <View style={styles.floatingControls}>{controls}</View> : null}
             </View>
-          ) : null}
-          {hudOverlay ?? (
-            <ChallengeRepHud
-              currentReps={currentReps}
-              targetReps={targetReps}
-              completed={completed}
-              raceTimer={raceTimer}
-            />
-          )}
-          {centerOverlay}
-          <WorkoutExerciseTransitionOverlay label={exerciseTransitionLabel} />
+          </View>
+        </View>
+      </View>
+    );
+  }
+
+  return (
+    <SafeAreaView
+      style={StyleSheet.flatten([styles.safeArea, { backgroundColor: '#000000' }])}
+      edges={['top', 'bottom']}>
+      <View style={styles.cameraColumn}>
+        <View style={cameraShellStyle}>
+          {camera}
+          {overlays}
         </View>
       </View>
 
-      {footer || onDevSimulateRep ? (
-        <View style={StyleSheet.flatten([styles.footer, { backgroundColor: theme.background }])}>
-          {onDevSimulateRep ? (
-            <DevSimulateRepButton
-              onPress={onDevSimulateRep}
-              disabled={devSimulateDisabled}
-              loading={devSimulateLoading}
-            />
-          ) : null}
-          {footer}
-        </View>
+      {controls ? (
+        <View style={StyleSheet.flatten([styles.footer, { backgroundColor: theme.background }])}>{controls}</View>
       ) : null}
     </SafeAreaView>
   );
@@ -176,7 +224,7 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
   },
-  portraitColumn: {
+  cameraColumn: {
     flex: 1,
   },
   cameraShell: {
@@ -188,6 +236,28 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: Spacing.three,
     bottom: Spacing.five,
+  },
+  /** Bottom-left in landscape - the floating controls own the bottom-right corner. */
+  guideOverlayLandscape: {
+    right: undefined,
+    left: Spacing.three,
+    bottom: Spacing.three,
+  },
+  overlayArea: {
+    flex: 1,
+    position: 'relative',
+  },
+  /** Landscape controls float over the camera so it keeps the full screen width. */
+  floatingControls: {
+    position: 'absolute',
+    right: Spacing.three,
+    bottom: Spacing.three,
+    width: 160,
+    padding: Spacing.one,
+    gap: Spacing.one,
+    borderRadius: Radius.md,
+    backgroundColor: 'rgba(0, 0, 0, 0.55)',
+    zIndex: 5,
   },
   footer: {
     paddingHorizontal: Spacing.three,

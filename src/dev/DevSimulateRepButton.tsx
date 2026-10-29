@@ -4,6 +4,7 @@ interface DevSimulateRepButtonProps {
   onPress: () => void;
   disabled?: boolean;
   loading?: boolean;
+  size?: 'default' | 'compact';
 }
 
 /**
@@ -11,7 +12,7 @@ interface DevSimulateRepButtonProps {
  * Safe to delete: remove the entire `src/dev/` folder and its usages in
  * `ChallengeWorkoutMode` (stripped from production builds via `__DEV__`).
  */
-export function DevSimulateRepButton({ onPress, disabled, loading }: DevSimulateRepButtonProps) {
+export function DevSimulateRepButton({ onPress, disabled, loading, size }: DevSimulateRepButtonProps) {
   if (!__DEV__) {
     return null;
   }
@@ -23,6 +24,7 @@ export function DevSimulateRepButton({ onPress, disabled, loading }: DevSimulate
       onPress={onPress}
       disabled={disabled}
       loading={loading}
+      size={size}
     />
   );
 }

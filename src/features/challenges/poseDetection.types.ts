@@ -18,7 +18,20 @@ export type JumpingSquatPhase = SquatPhase | 'JUMP';
 /** Lunge pose phases - same stand → depth → stand cycle as squats. */
 export type LungePhase = SquatPhase;
 
-export type ExercisePhase = PushUpPhase | SquatPhase | BurpeePhase | JumpingJackPhase | JumpingSquatPhase;
+/** Sit-up phases - lying back → torso up → back down. */
+export type SitUpPhase = 'LYING' | 'RISING' | 'TOP' | 'LOWERING';
+
+/** Plank hold phases - getting into position → timer running → form broken (timer paused). */
+export type PlankPhase = 'SETUP' | 'HOLDING' | 'PAUSED';
+
+export type ExercisePhase =
+  | PushUpPhase
+  | SquatPhase
+  | BurpeePhase
+  | JumpingJackPhase
+  | JumpingSquatPhase
+  | SitUpPhase
+  | PlankPhase;
 
 export interface PoseFrame {
   timestamp: number;

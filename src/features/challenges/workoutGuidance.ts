@@ -253,6 +253,22 @@ export function getRepPhaseHint(exerciseType: ExerciseType, phase: ExercisePhase
         return 'Bring feet together and arms down';
       }
       return 'Start with feet together and arms at your sides';
+    case 'sit_ups':
+      if (phase === 'RISING') {
+        return 'Sit all the way up - chest toward your knees';
+      }
+      if (phase === 'TOP' || phase === 'LOWERING') {
+        return 'Lie back down to finish the rep';
+      }
+      return 'Lie back with knees bent and feet flat';
+    case 'plank':
+      if (phase === 'HOLDING') {
+        return 'Hold it - body straight from head to heels';
+      }
+      if (phase === 'PAUSED') {
+        return 'Timer paused - get back into a straight plank';
+      }
+      return 'Get into a plank, side-on to the camera';
     default:
       return null;
   }

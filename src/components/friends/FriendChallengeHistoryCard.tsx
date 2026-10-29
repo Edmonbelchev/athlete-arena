@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { formatExerciseLabel } from '@/constants/challenges';
+import { isHoldExercise } from '@/constants/challenges';
 import { getCustomWorkoutTypeLabel } from '@/constants/customWorkouts';
 import { formatRaceTime } from '@/constants/friendChallenges';
 import { Radius, Spacing } from '@/constants/theme';
@@ -11,6 +11,7 @@ import {
   didIWinFriendChallenge,
   formatFriendWorkoutScore,
   getFriendChallengeKindLabel,
+  formatFriendChallengeProgress,
   getFriendChallengeTitle,
   getMyRaceSeconds,
   getOpponentDisplayName,
@@ -52,16 +53,18 @@ export function FriendChallengeHistoryCard({ challenge }: FriendChallengeHistory
 
   const timeLabel = isWorkout
     ? formatFriendWorkoutScore(challenge)
-    : myRaceSeconds !== null
+    : isHoldExercise(challenge.exerciseType)
+      ? formatFriendChallengeProgress(challenge, opponentName)
+      : myRaceSeconds !== null
       ? `You ${formatRaceTime(myRaceSeconds)}${
           opponentRaceSeconds !== null ? ` · ${opponentName} ${formatRaceTime(opponentRaceSeconds)}` : ''
         }`
-      : `You ${challenge.completedReps}/${challenge.targetReps} · ${opponentName} ${challenge.opponentCompletedReps}/${challenge.targetReps}`;
+      : formatFriendChallengeProgress(challenge, opponentName);
 
   const metaLabel =
     isWorkout && challenge.workoutType
       ? getCustomWorkoutTypeLabel(challenge.workoutType)
-      : `${challenge.targetReps} ${formatExerciseLabel(challenge.exerciseType ?? 'push_ups', true)}`;
+      : getFriendChallengeTitle(challenge);
 
   return (
     <Pressable

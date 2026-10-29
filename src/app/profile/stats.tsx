@@ -15,6 +15,7 @@ import { HomeSection } from '@/components/home/HomeSection';
 import { AppIcon } from '@/components/ui/AppIcon';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { StatCard } from '@/components/ui/StatCard';
+import { formatHoldSeconds } from '@/constants/challenges';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useUserStats } from '@/features/stats/useUserStats';
 import { useTheme } from '@/hooks/use-theme';
@@ -59,7 +60,9 @@ export default function StatsScreen() {
     movementStats.totalHalfBurpees > 0 ||
     movementStats.totalJumpingJacks > 0 ||
     movementStats.totalJumpingSquats > 0 ||
-    movementStats.totalLunges > 0;
+    movementStats.totalLunges > 0 ||
+    movementStats.totalSitUps > 0 ||
+    movementStats.totalPlankSeconds > 0;
 
   const hasActivityStats =
     movementStats.dailyMissionsCompleted > 0 || movementStats.friendRacesCompleted > 0;
@@ -118,6 +121,12 @@ export default function StatsScreen() {
               <StatCard label="Jumping Jacks" value={formatCount(movementStats.totalJumpingJacks)} accentColor={theme.primary} />
               <StatCard label="Jumping Squats" value={formatCount(movementStats.totalJumpingSquats)} accentColor={theme.primary} />
               <StatCard label="Lunges" value={formatCount(movementStats.totalLunges)} accentColor={theme.primary} />
+              <StatCard label="Sit-ups" value={formatCount(movementStats.totalSitUps)} accentColor={theme.primary} />
+              <StatCard
+                label="Plank Time"
+                value={formatHoldSeconds(movementStats.totalPlankSeconds)}
+                accentColor={theme.primary}
+              />
               {movementStats.totalDips > 0 ? (
                 <StatCard label="Dips" value={formatCount(movementStats.totalDips)} accentColor={theme.primary} />
               ) : null}

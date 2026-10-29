@@ -8,14 +8,23 @@ import type { ExercisePhase } from '@/features/challenges/poseDetection.types';
 import { type WorkoutCoachSeverity } from '@/features/challenges/workoutGuidance';
 import { useStableState } from '@/hooks/use-stable-state';
 
+import { fillHiddenLegFromSideView } from './pose/bodyView';
 import { createRepEngine } from './pose/createRepEngine';
 import type { PoseLandmark } from './pose/landmarks';
+import {
+  isLandscapeView,
+  PortraitFrameMapper,
+  portraitFrameYToView,
+  type ViewSize,
+} from './pose/portraitFrame';
 import { PullUpRepEngine } from './pose/pullUpRepEngine';
 import { PushUpRepEngine } from './pose/pushUpRepEngine';
 import { SquatRepEngine } from './pose/squatRepEngine';
 import { JumpingSquatRepEngine } from './pose/jumpingSquatRepEngine';
 import { JumpingJackRepEngine } from './pose/jumpingJackRepEngine';
 import { LungeRepEngine } from './pose/lungeRepEngine';
+import { PlankHoldEngine } from './pose/plankHoldEngine';
+import { SitUpRepEngine } from './pose/sitUpRepEngine';
 import { PoseQualityGate, type PoseQualityResult, type PoseTrackingStatus } from './pose/poseQuality';
 import { getCoachSeverity } from './workoutCoachDisplay';
 import {
@@ -37,6 +46,12 @@ interface UseExercisePoseDetectionOptions {
 
 type RepEngine = ReturnType<typeof createRepEngine>;
 
+/** Engines that handle lost tracking themselves (sit-up sets, plank pauses) - never reset on partial frames. */
+const SELF_MANAGED_EXERCISES: ReadonlySet<ExerciseType> = new Set(['sit_ups', 'plank']);
+
+/** Exercises where both legs move together, so a hidden far leg can mirror the visible one. */
+const LEG_FILL_EXERCISES: ReadonlySet<ExerciseType> = new Set(['squats', 'jumping_squats']);
+
 function getEngineArmed(engine: RepEngine, exerciseType: ExerciseType): boolean {
   switch (exerciseType) {
     case 'pull_ups':
@@ -51,6 +66,10 @@ function getEngineArmed(engine: RepEngine, exerciseType: ExerciseType): boolean 
       return (engine as JumpingJackRepEngine).armed;
     case 'lunges':
       return (engine as LungeRepEngine).armed;
+    case 'sit_ups':
+      return (engine as SitUpRepEngine).armed;
+    case 'plank':
+      return (engine as PlankHoldEngine).armed;
     default:
       return false;
   }
@@ -82,6 +101,11 @@ function resolveExerciseTrackingStatus(
       return resolveJumpingJackTrackingStatus(quality, (engine as JumpingJackRepEngine).armed);
     case 'lunges':
       return resolveSquatTrackingStatus(quality, (engine as LungeRepEngine).armed);
+    case 'sit_ups':
+      return resolveJumpingJackTrackingStatus(quality, (engine as SitUpRepEngine).armed);
+    case 'plank':
+      // Green only while the hold timer is running.
+      return resolveJumpingJackTrackingStatus(quality, (engine as PlankHoldEngine).isHolding);
     default:
       return quality.status;
   }
@@ -97,6 +121,9 @@ export function useExercisePoseDetection({
   const initialPhase = getInitialExercisePhase(exerciseType);
   const engineRef = useRef(createRepEngine(exerciseType));
   const qualityGateRef = useRef(new PoseQualityGate(exerciseType));
+  const portraitFrameRef = useRef(new PortraitFrameMapper());
+  /** Landscape preview size while landmarks are being mapped into the portrait frame. */
+  const landscapeViewRef = useRef<ViewSize | null>(null);
   const [phase, setPhase] = useStableState<ExercisePhase>(initialPhase);
   const [trackingStatus, setTrackingStatus] = useStableState<PoseTrackingStatus>('partial');
   const [coachSeverity, setCoachSeverity] = useStableState<WorkoutCoachSeverity>('tracking');
@@ -112,6 +139,7 @@ export function useExercisePoseDetection({
     const nextInitialPhase = getInitialExercisePhase(exerciseType);
     engineRef.current = createRepEngine(exerciseType);
     qualityGateRef.current = new PoseQualityGate(exerciseType);
+    portraitFrameRef.current.reset();
     setPhase(nextInitialPhase);
     setTrackingStatus('partial');
     setCoachSeverity('tracking');
@@ -122,6 +150,7 @@ export function useExercisePoseDetection({
     if (!enabled) {
       engineRef.current.reset();
       qualityGateRef.current.reset();
+      portraitFrameRef.current.reset();
       setPhase(getInitialExercisePhase(exerciseType));
       setTrackingStatus('partial');
       setCoachSeverity('tracking');
@@ -130,10 +159,27 @@ export function useExercisePoseDetection({
   }, [enabled, exerciseType, exerciseSessionKey, setCoachSeverity, setPhase, setPullUpBarLineY, setTrackingStatus]);
 
   const processLandmarks = useCallback(
-    (landmarks: PoseLandmark[]) => {
+    (previewLandmarks: PoseLandmark[]) => {
       if (!enabled) {
         return;
       }
+
+      // Engines are tuned in portrait; landscape previews are mapped into the equivalent portrait frame.
+      const layout = previewLayoutRef.current?.current;
+      const view = layout ? { width: layout.viewWidth ?? 0, height: layout.viewHeight ?? 0 } : null;
+      landscapeViewRef.current = isLandscapeView(view) ? view : null;
+      const frameLandmarks = landscapeViewRef.current
+        ? portraitFrameRef.current.map(previewLandmarks, landscapeViewRef.current)
+        : previewLandmarks;
+      // Side-on squats: the far leg hides behind the near one, which moves the same way.
+      const landmarks = LEG_FILL_EXERCISES.has(exerciseType)
+        ? fillHiddenLegFromSideView(frameLandmarks)
+        : frameLandmarks;
+      // Pull-up bar line back in preview coordinates for the overlay.
+      const toPreviewBarLineY = (barLineY: number | null): number | null =>
+        barLineY !== null && landscapeViewRef.current
+          ? portraitFrameYToView(barLineY, landscapeViewRef.current)
+          : barLineY;
 
       if (landmarks.length === 0) {
         const pullUpArmedEmpty =
@@ -151,8 +197,8 @@ export function useExercisePoseDetection({
         const lungeArmedEmpty =
           exerciseType === 'lunges' && (engineRef.current as LungeRepEngine).armed;
 
-        // A partial jumping-jack or lunge cycle must not survive leaving the camera.
-        if (exerciseType === 'jumping_jacks' || exerciseType === 'lunges') {
+        // A partial jumping-jack or lunge cycle must not survive leaving the camera; a plank pauses.
+        if (exerciseType === 'jumping_jacks' || exerciseType === 'lunges' || exerciseType === 'plank') {
           engineRef.current.update([]);
           setPhase(engineRef.current.phase);
         }
@@ -174,7 +220,8 @@ export function useExercisePoseDetection({
           !pushUpArmedEmpty &&
           !jumpingSquatArmedEmpty &&
           !jumpingJackArmedEmpty &&
-          !lungeArmedEmpty
+          !lungeArmedEmpty &&
+          !SELF_MANAGED_EXERCISES.has(exerciseType)
         ) {
           engineRef.current.reset();
           setPhase(getInitialExercisePhase(exerciseType));
@@ -199,6 +246,7 @@ export function useExercisePoseDetection({
       }
 
       const previewLayout = previewLayoutRef.current?.current;
+      // Landmarks are already in the portrait frame, so portrait quality thresholds apply.
       const isLandscape = false;
 
       const pullUpArmed =
@@ -232,7 +280,8 @@ export function useExercisePoseDetection({
         !(pushUpEngine?.hasStartedSet ?? false) &&
         !jumpingSquatArmed &&
         !jumpingJackArmed &&
-        !lungeArmed
+        !lungeArmed &&
+        !SELF_MANAGED_EXERCISES.has(exerciseType)
       ) {
         engineRef.current.reset();
         setPhase(getInitialExercisePhase(exerciseType));
@@ -248,7 +297,9 @@ export function useExercisePoseDetection({
         armedBeforeUpdate ||
         (exerciseType === 'push_ups' && landmarks.length > 0) ||
         (exerciseType === 'jumping_jacks' && (engine as JumpingJackRepEngine).armed) ||
-        (exerciseType === 'jumping_squats' && (engine as JumpingSquatRepEngine).armed);
+        (exerciseType === 'jumping_squats' && (engine as JumpingSquatRepEngine).armed) ||
+        // Holds must see every frame so bad form pauses the timer.
+        exerciseType === 'plank';
 
       const resolvedTrackingStatus = resolveExerciseTrackingStatus(
         exerciseType,
@@ -265,7 +316,7 @@ export function useExercisePoseDetection({
         );
 
         if (exerciseType === 'pull_ups') {
-          setPullUpBarLineY((engine as PullUpRepEngine).barLineY);
+          setPullUpBarLineY(toPreviewBarLineY((engine as PullUpRepEngine).barLineY));
         }
 
         return;
@@ -282,7 +333,7 @@ export function useExercisePoseDetection({
       );
 
       if (exerciseType === 'pull_ups') {
-        setPullUpBarLineY((engine as PullUpRepEngine).barLineY);
+        setPullUpBarLineY(toPreviewBarLineY((engine as PullUpRepEngine).barLineY));
       }
 
       const pushUpCounting =
@@ -293,6 +344,8 @@ export function useExercisePoseDetection({
       const jumpingJackCounting =
         exerciseType === 'jumping_jacks' && (engine as JumpingJackRepEngine).armed;
       const lungeCounting = exerciseType === 'lunges' && (engine as LungeRepEngine).armed;
+      const sitUpCounting = exerciseType === 'sit_ups' && (engine as SitUpRepEngine).armed;
+      const plankCounting = exerciseType === 'plank' && (engine as PlankHoldEngine).isHolding;
 
       if (
         repCompleted &&
@@ -300,7 +353,9 @@ export function useExercisePoseDetection({
           pushUpCounting ||
           jumpingSquatCounting ||
           jumpingJackCounting ||
-          lungeCounting)
+          lungeCounting ||
+          sitUpCounting ||
+          plankCounting)
       ) {
         onRepDetectedRef.current();
       }

@@ -9,6 +9,9 @@ export type CameraFacing = 'front' | 'back';
 export interface PosePreviewLayoutState {
   isLandscape: boolean;
   settled: boolean;
+  /** Camera preview size in points; landmarks are normalized to it. */
+  viewWidth?: number;
+  viewHeight?: number;
 }
 
 export interface CameraPreviewProps {

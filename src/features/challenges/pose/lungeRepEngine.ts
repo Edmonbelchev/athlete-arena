@@ -2,6 +2,7 @@ import { LUNGE_POSTURE } from '@/constants/poseDetection';
 import type { LungePhase } from '@/features/challenges/poseDetection.types';
 
 import type { PoseLandmark } from './landmarks';
+import { isSquatTorsoUpright } from './squatPosture';
 import {
   getLungeHipY,
   getLungeKneeSpread,
@@ -59,6 +60,12 @@ export class LungeRepEngine {
     }
 
     this.lostFrames = 0;
+
+    // Dropping to the floor (burpees, push-ups) tips the torso; that is not a lunge.
+    if (!isSquatTorsoUpright(landmarks)) {
+      this.releaseSet();
+      return false;
+    }
 
     const drop = (hipY - this.topHipY) / this.legSpan;
 
