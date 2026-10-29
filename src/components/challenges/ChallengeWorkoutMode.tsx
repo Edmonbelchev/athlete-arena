@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import type { MutableRefObject } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { CameraPreview } from '@/components/CameraPreview';
@@ -105,7 +105,12 @@ export function ChallengeWorkoutMode({
         style={StyleSheet.flatten([styles.safeArea, { backgroundColor: theme.background }])}
         edges={['top', 'bottom']}>
         <View style={styles.completionRoot}>
-          <View style={styles.completionContent}>{completeOverlay}</View>
+          <ScrollView
+            style={styles.completionContent}
+            contentContainerStyle={styles.completionScroll}
+            showsVerticalScrollIndicator={false}>
+            {completeOverlay}
+          </ScrollView>
           {onContinue ? (
             <View style={styles.completionFooter}>
               <PrimaryButton label="Continue" onPress={onContinue} />
@@ -200,6 +205,10 @@ const styles = StyleSheet.create({
   },
   completionContent: {
     flex: 1,
+  },
+  /** Grows to fill short summaries; scrolls when rewards and breakdowns overflow small screens. */
+  completionScroll: {
+    flexGrow: 1,
   },
   completionFooter: {
     paddingHorizontal: Spacing.three,

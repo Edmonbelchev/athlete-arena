@@ -8,6 +8,10 @@ import {
   type ActivityHistoryFilter,
 } from '@/types/activityHistory';
 
+function getEntryKey(entry: ActivityHistoryEntry): string {
+  return `${entry.category}-${entry.entryId}`;
+}
+
 export function useActivityHistory(initialFilter: ActivityHistoryFilter = 'all') {
   const [filter, setFilter] = useState<ActivityHistoryFilter>(initialFilter);
   const [entries, setEntries] = useState<ActivityHistoryEntry[]>([]);
@@ -23,7 +27,15 @@ export function useActivityHistory(initialFilter: ActivityHistoryFilter = 'all')
 
       setHasMore(page.length === ACTIVITY_HISTORY_PAGE_SIZE);
       setOffset(nextOffset + page.length);
-      setEntries((current) => (append ? [...current, ...page] : page));
+      setEntries((current) => {
+        if (!append) {
+          return page;
+        }
+
+        // Pages can overlap when rows change between requests - keep the first copy of each entry.
+        const seen = new Set(current.map(getEntryKey));
+        return [...current, ...page.filter((entry) => !seen.has(getEntryKey(entry)))];
+      });
     },
     [],
   );

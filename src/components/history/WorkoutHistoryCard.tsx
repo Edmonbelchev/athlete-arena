@@ -25,23 +25,12 @@ function formatHistoryDate(isoDate: string): string {
 
 export function WorkoutHistoryCard({ entry }: WorkoutHistoryCardProps) {
   const theme = useTheme();
-  const showDailyBonus =
-    entry.xpEarned !== null &&
-    entry.xpEarned > 0 &&
-    entry.coinsEarned !== null &&
-    entry.coinsEarned > 0;
-  const scoreLabel = formatWorkoutSessionScore({
-    sessionId: entry.entryId,
-    title: entry.workoutTitle,
-    workoutType: entry.workoutType,
-    timeLimitSeconds: entry.timeLimitSeconds,
-    completedRounds: entry.completedRounds,
-    totalReps: entry.totalReps,
-    elapsedSeconds: entry.elapsedSeconds,
-    exerciseBreakdown: [],
-    startedAt: entry.resultAt,
-    completedAt: entry.resultAt,
-  });
+  const xpEarned = entry.xpEarned ?? 0;
+  const coinsEarned = entry.coinsEarned ?? 0;
+  const isTimedFinish = entry.workoutType === 'for_time' && entry.elapsedSeconds !== null;
+  const scoreLabel = isTimedFinish
+    ? `Finished in ${formatRaceTime(entry.elapsedSeconds)} · ${entry.totalReps} reps`
+    : formatWorkoutSessionScore(entry);
 
   return (
     <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}>
@@ -53,25 +42,30 @@ export function WorkoutHistoryCard({ entry }: WorkoutHistoryCardProps) {
       <Text style={[styles.title, { color: theme.text }]}>{entry.workoutTitle}</Text>
       <Text style={[styles.meta, { color: theme.textSecondary }]}>
         {getCustomWorkoutTypeLabel(entry.workoutType)}
-        {entry.workoutType === 'for_time' && entry.elapsedSeconds !== null
-          ? ` · ${formatRaceTime(entry.elapsedSeconds)}`
-          : ''}
       </Text>
       <Text style={[styles.score, { color: theme.text }]}>{scoreLabel}</Text>
 
-      {showDailyBonus ? (
+      {xpEarned > 0 || coinsEarned > 0 ? (
         <View style={styles.rewardRow}>
-          <View style={[styles.rewardChip, { backgroundColor: `${theme.xp}14` }]}>
-            <AppIcon name="star" size={12} color={theme.xp} weight="semibold" />
-            <Text style={[styles.rewardText, { color: theme.xp }]}>+{entry.xpEarned} XP</Text>
-          </View>
-          <View style={[styles.rewardChip, { backgroundColor: `${theme.accent}14` }]}>
-            <CoinIcon size={12} />
-            <Text style={[styles.rewardText, { color: theme.accent }]}>
-              +{entry.coinsEarned?.toLocaleString()}
+          {xpEarned > 0 ? (
+            <View style={[styles.rewardChip, { backgroundColor: `${theme.xp}14` }]}>
+              <AppIcon name="star" size={12} color={theme.xp} weight="semibold" />
+              <Text style={[styles.rewardText, { color: theme.xp }]}>+{xpEarned} XP</Text>
+            </View>
+          ) : null}
+          {coinsEarned > 0 ? (
+            <View style={[styles.rewardChip, { backgroundColor: `${theme.accent}14` }]}>
+              <CoinIcon size={12} />
+              <Text style={[styles.rewardText, { color: theme.accent }]}>
+                +{coinsEarned.toLocaleString()}
+              </Text>
+            </View>
+          ) : null}
+          {coinsEarned > 0 ? (
+            <Text style={[styles.rewardHint, { color: theme.textSecondary }]}>
+              Includes first workout of the day bonus
             </Text>
-          </View>
-          <Text style={[styles.rewardHint, { color: theme.textSecondary }]}>First workout today</Text>
+          ) : null}
         </View>
       ) : null}
     </View>

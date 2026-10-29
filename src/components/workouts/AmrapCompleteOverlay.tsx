@@ -5,16 +5,19 @@ import { formatExerciseLabel } from '@/constants/challenges';
 import { formatWorkoutTimeLimit, getCustomWorkoutTypeLabel } from '@/constants/customWorkouts';
 import { Radius, Spacing } from '@/constants/theme';
 import type { AmrapWorkoutResult } from '@/types/customWorkouts';
-import { WorkoutSessionRewardCard } from '@/components/workouts/WorkoutSessionRewardCard';
+import { WorkoutRewardsSummary } from '@/components/workouts/WorkoutRewardsSummary';
+import type { DailyChallengeHome } from '@/types';
 import type { WorkoutSessionReward } from '@/types/titles';
 import { useTheme } from '@/hooks/use-theme';
 
 interface AmrapCompleteOverlayProps {
   result: AmrapWorkoutResult;
   sessionReward?: WorkoutSessionReward | null;
+  /** Daily quests this workout completed. */
+  completedQuests?: DailyChallengeHome[];
 }
 
-export function AmrapCompleteOverlay({ result, sessionReward = null }: AmrapCompleteOverlayProps) {
+export function AmrapCompleteOverlay({ result, sessionReward = null, completedQuests = [] }: AmrapCompleteOverlayProps) {
   const theme = useTheme();
   const typeLabel = getCustomWorkoutTypeLabel(result.workoutType);
 
@@ -39,7 +42,7 @@ export function AmrapCompleteOverlay({ result, sessionReward = null }: AmrapComp
         </View>
       </View>
 
-      {sessionReward ? <WorkoutSessionRewardCard reward={sessionReward} /> : null}
+      <WorkoutRewardsSummary sessionReward={sessionReward} completedQuests={completedQuests} />
 
       <View style={[styles.breakdownCard, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
         <Text style={[styles.breakdownTitle, { color: theme.text }]}>Exercise breakdown</Text>

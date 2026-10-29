@@ -6,16 +6,19 @@ import { formatRaceTime } from '@/constants/friendChallenges';
 import { getCustomWorkoutTypeLabel } from '@/constants/customWorkouts';
 import { Radius, Spacing } from '@/constants/theme';
 import type { ForTimeWorkoutResult } from '@/types/customWorkouts';
-import { WorkoutSessionRewardCard } from '@/components/workouts/WorkoutSessionRewardCard';
+import { WorkoutRewardsSummary } from '@/components/workouts/WorkoutRewardsSummary';
+import type { DailyChallengeHome } from '@/types';
 import type { WorkoutSessionReward } from '@/types/titles';
 import { useTheme } from '@/hooks/use-theme';
 
 interface ForTimeCompleteOverlayProps {
   result: ForTimeWorkoutResult;
   sessionReward?: WorkoutSessionReward | null;
+  /** Daily quests this workout completed. */
+  completedQuests?: DailyChallengeHome[];
 }
 
-export function ForTimeCompleteOverlay({ result, sessionReward = null }: ForTimeCompleteOverlayProps) {
+export function ForTimeCompleteOverlay({ result, sessionReward = null, completedQuests = [] }: ForTimeCompleteOverlayProps) {
   const theme = useTheme();
   const typeLabel = getCustomWorkoutTypeLabel(result.workoutType);
 
@@ -34,7 +37,7 @@ export function ForTimeCompleteOverlay({ result, sessionReward = null }: ForTime
         <Text style={[styles.timeLabel, { color: theme.textSecondary }]}>Finish time</Text>
       </View>
 
-      {sessionReward ? <WorkoutSessionRewardCard reward={sessionReward} /> : null}
+      <WorkoutRewardsSummary sessionReward={sessionReward} completedQuests={completedQuests} />
 
       <View style={[styles.breakdownCard, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
         <Text style={[styles.breakdownTitle, { color: theme.text }]}>Exercise breakdown</Text>

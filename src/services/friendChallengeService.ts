@@ -395,6 +395,8 @@ export async function completeFriendWorkoutChallenge(input: {
   completedRounds: number;
   totalReps: number;
   elapsedSeconds?: number | null;
+  /** Saved workout session behind this result - history shows them as one entry. */
+  sessionId?: string | null;
 }): Promise<void> {
   assertSupabaseConfigured();
 
@@ -404,6 +406,7 @@ export async function completeFriendWorkoutChallenge(input: {
     p_completed_rounds: input.completedRounds,
     p_total_reps: input.totalReps,
     p_elapsed_seconds: input.elapsedSeconds ?? null,
+    p_session_id: input.sessionId ?? null,
   });
 
   if (error) {

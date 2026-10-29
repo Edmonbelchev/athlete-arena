@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { ActivityIndicator, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -19,7 +19,7 @@ import { getFriendChallengeCoinReward } from '@/constants/coins';
 import {
     FRIEND_RACE_TIMER_START_HINT,
 } from '@/constants/friendChallenges';
-import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { useAuth } from '@/features/auth';
 import { useExercisePoseDetection } from '@/features/challenges/useExercisePoseDetection';
 import { useMissionComplete } from '@/features/challenges/MissionCompleteProvider';
@@ -45,7 +45,6 @@ import {
 } from '@/services/friendChallengeService';
 import {
     didIWinFriendChallenge,
-    formatFriendWorkoutScore,
     getCreatorDisplayName,
     getFriendChallengeTitle,
     getOpponentDisplayName,
@@ -53,7 +52,175 @@ import {
     hasFriendChallengeStarted,
     isFriendChallengeResolved,
     isFriendChallengeWaitingOnOpponent,
+    type FriendChallenge,
 } from '@/types/friends';
+import type { HeadToHeadPlayer } from '@/components/challenges/HeadToHead';
+import { formatRaceTime, formatRaceTimeLimit } from '@/constants/friendChallenges';
+import type { AppIconName } from '@/constants/icons';
+import { ProfileAvatar } from '@/components/profile/ProfileAvatar';
+import { AppIcon } from '@/components/ui/AppIcon';
+
+type ThemeColors = ReturnType<typeof useTheme>;
+
+/** Kind pill, title and the two racers - shared by every state of this screen. */
+function ChallengeHeader({
+  kindLabel,
+  title,
+  opponentName,
+  theme,
+}: {
+  kindLabel: string;
+  title: string;
+  opponentName: string;
+  theme: ThemeColors;
+}) {
+  return (
+    <View style={styles.resultHeader}>
+      <View style={StyleSheet.flatten([styles.kindPill, { backgroundColor: theme.backgroundElement, borderColor: theme.border }])}>
+        <Text style={StyleSheet.flatten([styles.kindPillText, { color: theme.textSecondary }])}>{kindLabel}</Text>
+      </View>
+      <Text style={StyleSheet.flatten([styles.workoutTitle, { color: theme.text }])}>{title}</Text>
+      <View style={styles.racersRow}>
+        <View style={styles.racer}>
+          <ProfileAvatar name="You" size={28} />
+          <Text style={StyleSheet.flatten([styles.racerName, { color: theme.text }])}>You</Text>
+        </View>
+        <Text style={StyleSheet.flatten([styles.racersVs, { color: theme.textSecondary }])}>VS</Text>
+        <View style={styles.racer}>
+          <ProfileAvatar name={opponentName} size={28} />
+          <Text style={StyleSheet.flatten([styles.racerName, { color: theme.text }])} numberOfLines={1}>
+            {opponentName}
+          </Text>
+        </View>
+      </View>
+    </View>
+  );
+}
+
+function InfoChips({ items, theme }: { items: string[]; theme: ThemeColors }) {
+  return (
+    <View style={styles.chipRow}>
+      {items.map((item) => (
+        <View
+          key={item}
+          style={StyleSheet.flatten([styles.infoChip, { backgroundColor: theme.backgroundElement, borderColor: theme.border }])}>
+          <Text style={StyleSheet.flatten([styles.infoChipText, { color: theme.text }])}>{item}</Text>
+        </View>
+      ))}
+    </View>
+  );
+}
+
+/** Icon + message card for invite / waiting / expired / declined states, with optional actions. */
+function StatusCard({
+  icon,
+  color,
+  title,
+  message,
+  theme,
+  children,
+}: {
+  icon: AppIconName;
+  color: string;
+  title: string;
+  message?: string | null;
+  theme: ThemeColors;
+  children?: ReactNode;
+}) {
+  return (
+    <View style={StyleSheet.flatten([styles.statusCard, { backgroundColor: theme.backgroundElement, borderColor: theme.border }])}>
+      <View style={StyleSheet.flatten([styles.statusIcon, { backgroundColor: `${color}1F` }])}>
+        <AppIcon name={icon} size={26} color={color} weight="bold" />
+      </View>
+      <Text style={StyleSheet.flatten([styles.statusTitle, { color: theme.text }])}>{title}</Text>
+      {message ? (
+        <Text style={StyleSheet.flatten([styles.statusMessage, { color: theme.textSecondary }])}>{message}</Text>
+      ) : null}
+      {children ? <View style={styles.statusActions}>{children}</View> : null}
+    </View>
+  );
+}
+
+function getChallengeInfoChips(challenge: FriendChallenge): string[] {
+  if (challenge.challengeKind === 'workout') {
+    const chips = [challenge.workoutType ? getCustomWorkoutTypeLabel(challenge.workoutType) : 'Workout'];
+    chips.push(challenge.workoutType === 'for_time' ? 'Fastest time wins' : 'Highest score wins');
+    return chips;
+  }
+
+  return [
+    formatExerciseLabel(challenge.exerciseType ?? 'push_ups'),
+    `${challenge.targetReps} reps`,
+    formatRaceTimeLimit(challenge.timeLimitSeconds),
+  ];
+}
+
+/** Big result for the finish screen plus each side's score card. */
+function getFriendResultScores(
+  challenge: FriendChallenge,
+  variant: FriendChallengeCompleteVariant,
+  opponentName: string,
+  myTime: number | null,
+  opponentTime: number | null,
+): { headline: string | null; me: HeadToHeadPlayer; opponent: HeadToHeadPlayer } {
+  const side = (mine: boolean): HeadToHeadPlayer => {
+    const status = mine ? challenge.status : challenge.opponentStatus;
+    const finished = status === 'completed';
+    const time = mine ? myTime : opponentTime;
+    const base = {
+      name: mine ? 'You' : opponentName,
+      status,
+      isWinner: mine ? variant === 'winner' : variant === 'lost',
+    };
+
+    if (challenge.challengeKind === 'workout') {
+      const reps = mine
+        ? (challenge.workoutTotalReps ?? challenge.completedReps)
+        : (challenge.opponentWorkoutTotalReps ?? challenge.opponentCompletedReps);
+      const repsDetail = finished ? `${reps} reps` : null;
+
+      if (challenge.workoutType === 'for_time') {
+        return { ...base, score: finished ? formatRaceTime(time) : '—', caption: 'finish time', detail: repsDetail };
+      }
+
+      const rounds = mine ? challenge.completedRounds : challenge.opponentCompletedRounds;
+      return {
+        ...base,
+        score: finished ? String(rounds ?? 0) : '—',
+        caption: challenge.workoutType === 'emom' ? 'minutes' : 'rounds',
+        detail: repsDetail,
+      };
+    }
+
+    const reps = mine ? challenge.completedReps : challenge.opponentCompletedReps;
+    return {
+      ...base,
+      score: finished && time !== null ? formatRaceTime(time) : '—',
+      caption: 'race time',
+      detail: `${reps} / ${challenge.targetReps} reps`,
+    };
+  };
+
+  const me = side(true);
+  const isRoundsWorkout = challenge.challengeKind === 'workout' && challenge.workoutType !== 'for_time';
+
+  return {
+    headline: isRoundsWorkout ? `${me.score} ${me.caption}` : null,
+    me,
+    opponent: side(false),
+  };
+}
+
+function getFriendResultOverlayProps(
+  challenge: FriendChallenge,
+  variant: FriendChallengeCompleteVariant,
+  opponentName: string,
+  myTime: number | null,
+  opponentTime: number | null,
+): { headline: string | null; headToHead: { me: HeadToHeadPlayer; opponent: HeadToHeadPlayer } } {
+  const { headline, me, opponent } = getFriendResultScores(challenge, variant, opponentName, myTime, opponentTime);
+  return { headline, headToHead: { me, opponent } };
+}
 
 function getFriendChallengeOverlayVariant(
   waitingOnOpponent: boolean,
@@ -354,15 +521,12 @@ export default function FriendChallengeScreen() {
         style={StyleSheet.flatten([styles.safeArea, { backgroundColor: theme.background }])}
         edges={['bottom']}>
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-          <Text style={StyleSheet.flatten([styles.exercise, { color: theme.textSecondary }])}>
-            Workout challenge vs {opponentName}
-          </Text>
-          <Text style={StyleSheet.flatten([styles.workoutTitle, { color: theme.text }])}>
-            {getFriendChallengeTitle(challenge)}
-          </Text>
-          <Text style={StyleSheet.flatten([styles.pending, { color: theme.textSecondary }])}>
-            {formatFriendWorkoutScore(challenge)}
-          </Text>
+          <ChallengeHeader
+            kindLabel={`${challenge.workoutType ? getCustomWorkoutTypeLabel(challenge.workoutType) : 'Workout'} challenge`}
+            title={getFriendChallengeTitle(challenge)}
+            opponentName={opponentName}
+            theme={theme}
+          />
           <FriendChallengeCompleteOverlay
             key={overlayKey}
             variant={overlayVariant}
@@ -373,6 +537,7 @@ export default function FriendChallengeScreen() {
             coins={earnedCoins}
             emote={equippedEmote}
             opponentForfeited={opponentForfeited}
+            {...getFriendResultOverlayProps(challenge, overlayVariant, opponentName, myTime, opponentTime)}
           />
           <PrimaryButton label="Back" variant="secondary" onPress={handleLeave} />
         </ScrollView>
@@ -409,6 +574,7 @@ export default function FriendChallengeScreen() {
                 coins={earnedCoins}
                 emote={equippedEmote}
                 opponentForfeited={opponentForfeited}
+                {...getFriendResultOverlayProps(challenge, overlayVariant, opponentName, myTime, opponentTime)}
               />
             ) : null
           }
@@ -426,17 +592,13 @@ export default function FriendChallengeScreen() {
         style={StyleSheet.flatten([styles.safeArea, { backgroundColor: theme.background }])}
         edges={['bottom']}>
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-          <Text style={StyleSheet.flatten([styles.exercise, { color: theme.textSecondary }])}>
-            Workout challenge vs {opponentName}
-          </Text>
-          <Text style={StyleSheet.flatten([styles.workoutTitle, { color: theme.text }])}>
-            {getFriendChallengeTitle(challenge)}
-          </Text>
-          {challenge.workoutType ? (
-            <Text style={StyleSheet.flatten([styles.pending, { color: theme.textSecondary }])}>
-              {getCustomWorkoutTypeLabel(challenge.workoutType)} · finish the workout to submit your score
-            </Text>
-          ) : null}
+          <ChallengeHeader
+            kindLabel="Workout challenge"
+            title={getFriendChallengeTitle(challenge)}
+            opponentName={opponentName}
+            theme={theme}
+          />
+          <InfoChips items={getChallengeInfoChips(challenge)} theme={theme} />
           {challenge.creatorEmoteEmoji && !challenge.isCreator ? (
             <View style={styles.creatorEmoteRow}>
               <Text style={StyleSheet.flatten([styles.creatorEmoteLabel, { color: theme.textSecondary }])}>
@@ -450,6 +612,9 @@ export default function FriendChallengeScreen() {
             exercises={challenge.workoutExercises}
             structureConfig={parseStructureConfig(challenge.structureConfig)}
           />
+          <Text style={StyleSheet.flatten([styles.hint, { color: theme.textSecondary }])}>
+            Finish the workout to submit your score - you get one attempt.
+          </Text>
           {syncError ? (
             <Text style={StyleSheet.flatten([styles.error, { color: theme.danger }])}>{syncError}</Text>
           ) : null}
@@ -486,16 +651,13 @@ export default function FriendChallengeScreen() {
           contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled">
-          <Text style={StyleSheet.flatten([styles.exercise, { color: theme.textSecondary }])}>
-            {isWorkoutChallenge
-              ? `Workout challenge vs ${opponentName}`
-              : `Speed race vs ${opponentName} · ${formatExerciseLabel(exerciseType, true)}`}
-          </Text>
-          {isWorkoutChallenge ? (
-            <Text style={StyleSheet.flatten([styles.workoutTitle, { color: theme.text }])}>
-              {getFriendChallengeTitle(challenge)}
-            </Text>
-          ) : null}
+          <ChallengeHeader
+            kindLabel={isWorkoutChallenge ? 'Workout challenge' : 'Speed race'}
+            title={getFriendChallengeTitle(challenge)}
+            opponentName={opponentName}
+            theme={theme}
+          />
+          <InfoChips items={getChallengeInfoChips(challenge)} theme={theme} />
           {challenge.creatorEmoteEmoji && !challenge.isCreator ? (
             <View style={styles.creatorEmoteRow}>
               <Text style={StyleSheet.flatten([styles.creatorEmoteLabel, { color: theme.textSecondary }])}>
@@ -507,17 +669,26 @@ export default function FriendChallengeScreen() {
 
           {isPending ? (
             challenge.isCreator ? (
-              <Text style={StyleSheet.flatten([styles.pending, { color: theme.textSecondary }])}>
-                Waiting for {opponentName} to accept your challenge.
-              </Text>
+              <StatusCard
+                icon="history"
+                color={theme.primary}
+                title="Invite sent"
+                message={`Waiting for ${opponentName} to accept your challenge.`}
+                theme={theme}
+              />
             ) : (
-              <View style={styles.pendingActions}>
-                <Text style={StyleSheet.flatten([styles.pending, { color: theme.textSecondary }])}>
-                  {getCreatorDisplayName(challenge)} challenged you to{' '}
-                  {isWorkoutChallenge ? 'a workout' : 'a speed race'}.
-                </Text>
+              <StatusCard
+                icon="swords"
+                color={theme.streak}
+                title={`${getCreatorDisplayName(challenge)} challenged you`}
+                message={
+                  isWorkoutChallenge
+                    ? 'Accept to unlock the workout and post your score.'
+                    : 'Accept, then race to the target reps as fast as you can.'
+                }
+                theme={theme}>
                 <PrimaryButton
-                  label="Accept"
+                  label="Accept challenge"
                   onPress={() => {
                     void handleAcceptChallenge();
                   }}
@@ -531,22 +702,32 @@ export default function FriendChallengeScreen() {
                   }}
                   disabled={isPendingAction}
                 />
-              </View>
+              </StatusCard>
             )
           ) : isExpired ? (
-            <Text style={StyleSheet.flatten([styles.pending, { color: theme.danger }])}>
-              You hit the time cap before finishing. Head back and try again.
-            </Text>
+            <StatusCard
+              icon="history"
+              color={theme.danger}
+              title="Time's up"
+              message="You hit the time cap before finishing this challenge."
+              theme={theme}
+            />
           ) : isDeclined ? (
-            <Text style={StyleSheet.flatten([styles.pending, { color: theme.textSecondary }])}>
-              {challenge.isCreator
-                ? `${opponentName} declined this challenge.`
-                : 'You declined this challenge.'}
-            </Text>
+            <StatusCard
+              icon="close"
+              color={theme.danger}
+              title="Challenge declined"
+              message={challenge.isCreator ? `${opponentName} declined this challenge.` : 'You declined this challenge.'}
+              theme={theme}
+            />
           ) : opponentDeclined ? (
-            <Text style={StyleSheet.flatten([styles.pending, { color: theme.textSecondary }])}>
-              {opponentName} declined this challenge.
-            </Text>
+            <StatusCard
+              icon="close"
+              color={theme.danger}
+              title="Challenge declined"
+              message={`${opponentName} declined this challenge.`}
+              theme={theme}
+            />
           ) : null}
 
           {syncError ? (
@@ -597,6 +778,98 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '900',
     textAlign: 'center',
+  },
+  resultHeader: {
+    alignItems: 'center',
+    gap: Spacing.two,
+  },
+  racersRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.three,
+    marginTop: Spacing.one,
+  },
+  racer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.one,
+    maxWidth: 150,
+  },
+  racerName: {
+    fontSize: 14,
+    fontWeight: '800',
+    flexShrink: 1,
+  },
+  racersVs: {
+    fontSize: 12,
+    fontWeight: '900',
+    letterSpacing: 1,
+  },
+  chipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: Spacing.two,
+  },
+  infoChip: {
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: 6,
+  },
+  infoChipText: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  statusCard: {
+    borderWidth: 1,
+    borderRadius: Radius.lg,
+    padding: Spacing.four,
+    alignItems: 'center',
+    gap: Spacing.two,
+  },
+  statusIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  statusTitle: {
+    fontSize: 18,
+    fontWeight: '900',
+    textAlign: 'center',
+  },
+  statusMessage: {
+    fontSize: 14,
+    lineHeight: 20,
+    textAlign: 'center',
+  },
+  statusActions: {
+    alignSelf: 'stretch',
+    gap: Spacing.two,
+    marginTop: Spacing.two,
+  },
+  hint: {
+    fontSize: 13,
+    lineHeight: 18,
+    textAlign: 'center',
+  },
+  kindPill: {
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: 4,
+  },
+  kindPillText: {
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+  },
+  versusLine: {
+    fontSize: 14,
+    fontWeight: '700',
   },
   pending: {
     fontSize: 14,

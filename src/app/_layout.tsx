@@ -171,6 +171,14 @@ function RootNavigator() {
             }}
           />
           <Stack.Screen
+            name="profile/history-entry"
+            options={{
+              presentation: 'modal',
+              headerShown: true,
+              title: 'Details',
+            }}
+          />
+          <Stack.Screen
             name="profile/quest-log"
             options={{
               presentation: 'modal',

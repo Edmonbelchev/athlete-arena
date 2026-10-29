@@ -860,6 +860,7 @@ export interface Database {
           p_completed_rounds: number;
           p_total_reps: number;
           p_elapsed_seconds?: number | null;
+          p_session_id?: string | null;
         };
         Returns: Database['public']['Tables']['friend_challenge_participants']['Row'];
       };
@@ -1052,6 +1053,12 @@ export interface Database {
           started_at: string;
           completed_at: string;
         }[];
+      };
+      get_workout_session_detail: {
+        Args: {
+          p_session_id: string;
+        };
+        Returns: Json;
       };
       get_catalog_workout_leaderboard: {
         Args: {

@@ -11,7 +11,8 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { EmoteDisplay } from '@/components/shop/EmoteDisplay';
-import { XpCoinRewardLabel } from '@/components/rewards/XpCoinRewardLabel';
+import { HeadToHead, type HeadToHeadPlayer } from '@/components/challenges/HeadToHead';
+import { RewardTiles } from '@/components/rewards/RewardTiles';
 import { formatRaceTime } from '@/constants/friendChallenges';
 import { Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -30,6 +31,10 @@ interface FriendChallengeCompleteOverlayProps {
   coins: number;
   emote: string | null | undefined;
   opponentForfeited?: boolean;
+  /** Replaces the race time as the big result, e.g. "13 rounds" for AMRAP workouts. */
+  headline?: string | null;
+  /** Side-by-side scores; when given they replace the one-line score summary. */
+  headToHead?: { me: HeadToHeadPlayer; opponent: HeadToHeadPlayer } | null;
 }
 
 function ConfettiPiece({
@@ -178,6 +183,8 @@ export function FriendChallengeCompleteOverlay({
   coins,
   emote,
   opponentForfeited = false,
+  headline = null,
+  headToHead = null,
 }: FriendChallengeCompleteOverlayProps) {
   const theme = useTheme();
   const copy = getOverlayCopy(
@@ -193,6 +200,8 @@ export function FriendChallengeCompleteOverlay({
   const iconBackground =
     variant === 'winner' ? theme.streak : variant === 'lost' ? theme.primary : theme.success;
   const showEmote = variant === 'winner' || variant === 'finished' || variant === 'tie';
+  /** The equipped emote takes the icon's spot so the screen shows one celebration, not two. */
+  const showEmoteBadge = showEmote && Boolean(emote);
   const showRewards = coins > 0 || xp > 0;
 
   return (
@@ -206,41 +215,52 @@ export function FriendChallengeCompleteOverlay({
       </View>
 
       <View style={styles.content}>
-        <View style={styles.iconStack}>
-          <PulsingRing accentColor={accentColor} />
-          <View
-            style={StyleSheet.flatten([
-              styles.iconCircle,
-              { backgroundColor: iconBackground, borderColor: theme.background },
-            ])}>
-            <Text style={[styles.iconGlyph, variant === 'winner' && styles.iconGlyphTrophy]}>
-              {variant === 'winner' ? '🏆' : '✓'}
-            </Text>
+        {showEmoteBadge ? (
+          <View style={styles.emoteWrap}>
+            <EmoteDisplay emoji={emote} />
           </View>
-        </View>
+        ) : (
+          <View style={styles.iconStack}>
+            <PulsingRing accentColor={accentColor} />
+            <View
+              style={StyleSheet.flatten([
+                styles.iconCircle,
+                { backgroundColor: iconBackground, borderColor: theme.background },
+              ])}>
+              <Text style={[styles.iconGlyph, variant === 'winner' && styles.iconGlyphTrophy]}>
+                {variant === 'winner' ? '🏆' : '✓'}
+              </Text>
+            </View>
+          </View>
+        )}
 
         <Text style={StyleSheet.flatten([styles.eyebrow, { color: theme.textSecondary }])}>
           {copy.eyebrow}
         </Text>
 
         <Text style={StyleSheet.flatten([styles.title, { color: theme.text }])}>
-          {copy.title}
+          {headline ?? copy.title}
         </Text>
 
-        {showEmote ? (
-          <View style={styles.emoteWrap}>
-            <EmoteDisplay emoji={emote} />
+        {headToHead ? (
+          <View style={styles.headToHead}>
+            <HeadToHead me={headToHead.me} opponent={headToHead.opponent} />
           </View>
         ) : null}
 
-        {showRewards ? (
-          <XpCoinRewardLabel xp={xp} coins={coins} suffix=" earned" style={StyleSheet.flatten([styles.reward, { color: theme.xp }])} />
-        ) : null}
-
-        {copy.subtitle ? (
+        {copy.subtitle && (!headToHead || variant === 'finished' || opponentForfeited) ? (
           <Text style={StyleSheet.flatten([styles.subtitle, { color: theme.textSecondary }])}>
             {copy.subtitle}
           </Text>
+        ) : null}
+
+        {showRewards ? (
+          <View style={styles.rewards}>
+            <Text style={StyleSheet.flatten([styles.rewardsLabel, { color: theme.textSecondary }])}>
+              REWARDS EARNED
+            </Text>
+            <RewardTiles xp={xp} coins={coins} />
+          </View>
         ) : null}
       </View>
     </View>
@@ -267,6 +287,7 @@ const styles = StyleSheet.create({
     top: '12%',
   },
   content: {
+    alignSelf: 'stretch',
     alignItems: 'center',
     gap: Spacing.two,
     paddingHorizontal: Spacing.three,
@@ -318,10 +339,20 @@ const styles = StyleSheet.create({
     minHeight: 44,
     justifyContent: 'center',
   },
-  reward: {
-    fontSize: 18,
-    fontWeight: '900',
-    textAlign: 'center',
+  headToHead: {
+    alignSelf: 'stretch',
+    marginTop: Spacing.two,
+  },
+  rewards: {
+    alignSelf: 'stretch',
+    alignItems: 'center',
+    gap: Spacing.two,
+    marginTop: Spacing.two,
+  },
+  rewardsLabel: {
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 1.2,
   },
   subtitle: {
     fontSize: 13,

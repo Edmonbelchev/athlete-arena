@@ -37,6 +37,31 @@ export interface ChallengeHistoryEntry {
   workoutType: CustomWorkoutType | null;
   completedRounds: number | null;
   opponentCompletedRounds: number | null;
+  /** Friend workouts: the saved run behind this result and what that run itself paid. */
+  workoutSessionId?: string | null;
+  workoutSessionXp?: number | null;
+  workoutSessionCoins?: number | null;
+}
+
+/** Everything a history entry paid - for friend workouts, the challenge plus the workout run. */
+export function getHistoryEarnedRewards(entry: ChallengeHistoryEntry): { xp: number; coins: number } {
+  if (entry.status !== 'completed') {
+    return { xp: 0, coins: 0 };
+  }
+
+  if (entry.kind === 'daily') {
+    return { xp: entry.xpReward, coins: DAILY_MISSION_COIN_REWARD };
+  }
+
+  const challenge = getFriendChallengeEarnedRewards(entry.xpEarned, entry.coinsEarned ?? null, {
+    exerciseType: isFriendChallengeExerciseType(entry.exerciseType) ? entry.exerciseType : undefined,
+    targetReps: entry.targetReps,
+  });
+
+  return {
+    xp: (entry.xpEarned ?? entry.xpReward) + (entry.workoutSessionXp ?? 0),
+    coins: challenge.coins + (entry.workoutSessionCoins ?? 0),
+  };
 }
 
 export function getHistoryOpponentName(entry: ChallengeHistoryEntry): string | null {
@@ -63,13 +88,7 @@ export function getHistoryResultLabel(entry: ChallengeHistoryEntry, myUserId?: s
   }
 
   if (entry.status === 'completed') {
-    const earned = entry.xpEarned ?? entry.xpReward;
-    const coins = getFriendChallengeEarnedRewards(entry.xpEarned, entry.coinsEarned ?? null, {
-      exerciseType: isFriendChallengeExerciseType(entry.exerciseType)
-        ? entry.exerciseType
-        : undefined,
-      targetReps: entry.targetReps,
-    }).coins;
+    const { xp: earned, coins } = getHistoryEarnedRewards(entry);
 
     if (entry.winnerUserId && myUserId) {
       const coinSuffix = coins > 0 ? ` · ${formatCoinAmount(coins)}` : '';

@@ -103,6 +103,62 @@ export async function getWorkoutCatalogDetail(catalogWorkoutId: string): Promise
   };
 }
 
+export interface WorkoutSessionDetail extends WorkoutSessionHistoryEntry {
+  xpEarned: number | null;
+  coinsEarned: number | null;
+}
+
+/** One of the caller's saved workout sessions, with the rewards it paid. */
+export async function getWorkoutSessionDetail(sessionId: string): Promise<WorkoutSessionDetail> {
+  assertSupabaseConfigured();
+
+  const { data, error } = await supabase.rpc('get_workout_session_detail', {
+    p_session_id: sessionId,
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  const row = data as {
+    session_id: string;
+    title: string;
+    workout_type: string | null;
+    time_limit_seconds: number;
+    completed_rounds: number;
+    total_reps: number;
+    elapsed_seconds: number | null;
+    exercise_breakdown: unknown;
+    started_at: string;
+    completed_at: string;
+    xp_earned: number | null;
+    coins_earned: number | null;
+  } | null;
+
+  if (!row) {
+    throw new Error('Workout session not found');
+  }
+
+  return {
+    sessionId: row.session_id,
+    title: row.title,
+    workoutType: row.workout_type ? normalizeCustomWorkoutType(row.workout_type) : null,
+    timeLimitSeconds: row.time_limit_seconds,
+    completedRounds: row.completed_rounds,
+    totalReps: row.total_reps,
+    elapsedSeconds: row.elapsed_seconds ?? null,
+    exerciseBreakdown: mapExerciseBreakdown(row.exercise_breakdown).map((entry) => ({
+      exerciseType: entry.exercise_type,
+      targetReps: entry.target_reps,
+      totalReps: entry.total_reps,
+    })),
+    startedAt: row.started_at,
+    completedAt: row.completed_at,
+    xpEarned: typeof row.xp_earned === 'number' && row.xp_earned > 0 ? row.xp_earned : null,
+    coinsEarned: typeof row.coins_earned === 'number' && row.coins_earned > 0 ? row.coins_earned : null,
+  };
+}
+
 export async function getMyWorkoutSessions(options: {
   catalogWorkoutId?: string;
   templateId?: string;

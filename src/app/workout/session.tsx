@@ -52,6 +52,7 @@ import type {
   EmomWorkoutResult,
   ForTimeWorkoutResult,
 } from '@/types/customWorkouts';
+import type { DailyChallengeHome } from '@/types';
 import type { WorkoutSessionReward } from '@/types/titles';
 import { useTheme } from '@/hooks/use-theme';
 import { useUserSettings } from '@/features/settings/UserSettingsProvider';
@@ -63,6 +64,7 @@ async function syncFriendWorkoutChallengeCompletion(
     completedRounds: number;
     totalReps: number;
     elapsedSeconds?: number | null;
+    sessionId: string;
   },
 ): Promise<void> {
   await completeFriendWorkoutChallenge({
@@ -71,6 +73,7 @@ async function syncFriendWorkoutChallengeCompletion(
     completedRounds: input.completedRounds,
     totalReps: input.totalReps,
     elapsedSeconds: input.elapsedSeconds ?? null,
+    sessionId: input.sessionId,
   });
 }
 
@@ -86,6 +89,7 @@ function AmrapWorkoutSession({ config }: { config: CustomWorkoutLaunchConfig }) 
   );
   const [savedResult, setSavedResult] = useState<AmrapWorkoutResult | null>(null);
   const [sessionReward, setSessionReward] = useState<WorkoutSessionReward | null>(null);
+  const [completedQuests, setCompletedQuests] = useState<DailyChallengeHome[]>([]);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const savedResultRef = useRef<AmrapWorkoutResult | null>(null);
@@ -112,12 +116,14 @@ function AmrapWorkoutSession({ config }: { config: CustomWorkoutLaunchConfig }) 
       setSessionReward(saveResult.reward);
       if (config.friendChallengeParticipantId) {
         await syncFriendWorkoutChallengeCompletion(config.friendChallengeParticipantId, {
+          sessionId: saveResult.sessionId,
           startedAt: result.startedAt,
           completedRounds: result.completedRounds,
           totalReps: result.totalReps,
         });
       }
-      await finalizeWorkoutSave(saveResult);
+      const finalized = await finalizeWorkoutSave(saveResult, result.startedAt);
+      setCompletedQuests(finalized.completedQuests);
     } catch (err) {
       setSaveError(formatUserError(err, 'Failed to save workout result'));
     } finally {
@@ -206,7 +212,7 @@ function AmrapWorkoutSession({ config }: { config: CustomWorkoutLaunchConfig }) 
         pullUpBarLineY={null}
         completed
         onContinue={handleLeave}
-        completeOverlay={<AmrapCompleteOverlay result={savedResult} sessionReward={sessionReward} />}
+        completeOverlay={<AmrapCompleteOverlay result={savedResult} sessionReward={sessionReward} completedQuests={completedQuests} />}
         footer={
           saveError ? (
             <Text style={[styles.error, { color: theme.danger }]}>{saveError}</Text>
@@ -296,6 +302,7 @@ function EmomWorkoutSession({ config }: { config: CustomWorkoutLaunchConfig }) {
   );
   const [savedResult, setSavedResult] = useState<EmomWorkoutResult | null>(null);
   const [sessionReward, setSessionReward] = useState<WorkoutSessionReward | null>(null);
+  const [completedQuests, setCompletedQuests] = useState<DailyChallengeHome[]>([]);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const savedResultRef = useRef<EmomWorkoutResult | null>(null);
@@ -323,12 +330,14 @@ function EmomWorkoutSession({ config }: { config: CustomWorkoutLaunchConfig }) {
       setSessionReward(saveResult.reward);
       if (config.friendChallengeParticipantId) {
         await syncFriendWorkoutChallengeCompletion(config.friendChallengeParticipantId, {
+          sessionId: saveResult.sessionId,
           startedAt: result.startedAt,
           completedRounds: result.completedIntervals,
           totalReps: result.totalReps,
         });
       }
-      await finalizeWorkoutSave(saveResult);
+      const finalized = await finalizeWorkoutSave(saveResult, result.startedAt);
+      setCompletedQuests(finalized.completedQuests);
     } catch (err) {
       setSaveError(formatUserError(err, 'Failed to save workout result'));
     } finally {
@@ -409,7 +418,7 @@ function EmomWorkoutSession({ config }: { config: CustomWorkoutLaunchConfig }) {
         onLandmarksDetected={() => {}}
         completed
         onContinue={handleLeave}
-        completeOverlay={<EmomCompleteOverlay result={savedResult} sessionReward={sessionReward} />}
+        completeOverlay={<EmomCompleteOverlay result={savedResult} sessionReward={sessionReward} completedQuests={completedQuests} />}
         footer={
           saveError ? (
             <Text style={[styles.error, { color: theme.danger }]}>{saveError}</Text>
@@ -501,6 +510,7 @@ function ForTimeWorkoutSession({ config }: { config: CustomWorkoutLaunchConfig }
   );
   const [savedResult, setSavedResult] = useState<ForTimeWorkoutResult | null>(null);
   const [sessionReward, setSessionReward] = useState<WorkoutSessionReward | null>(null);
+  const [completedQuests, setCompletedQuests] = useState<DailyChallengeHome[]>([]);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const savedResultRef = useRef<ForTimeWorkoutResult | null>(null);
@@ -527,13 +537,15 @@ function ForTimeWorkoutSession({ config }: { config: CustomWorkoutLaunchConfig }
       setSessionReward(saveResult.reward);
       if (config.friendChallengeParticipantId) {
         await syncFriendWorkoutChallengeCompletion(config.friendChallengeParticipantId, {
+          sessionId: saveResult.sessionId,
           startedAt: result.startedAt,
           completedRounds: 0,
           totalReps: result.totalReps,
           elapsedSeconds: result.elapsedSeconds,
         });
       }
-      await finalizeWorkoutSave(saveResult);
+      const finalized = await finalizeWorkoutSave(saveResult, result.startedAt);
+      setCompletedQuests(finalized.completedQuests);
     } catch (err) {
       setSaveError(formatUserError(err, 'Failed to save workout result'));
     } finally {
@@ -624,7 +636,7 @@ function ForTimeWorkoutSession({ config }: { config: CustomWorkoutLaunchConfig }
         pullUpBarLineY={null}
         completed
         onContinue={handleLeave}
-        completeOverlay={<ForTimeCompleteOverlay result={savedResult} sessionReward={sessionReward} />}
+        completeOverlay={<ForTimeCompleteOverlay result={savedResult} sessionReward={sessionReward} completedQuests={completedQuests} />}
         footer={
           saveError ? (
             <Text style={[styles.error, { color: theme.danger }]}>{saveError}</Text>

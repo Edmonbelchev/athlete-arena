@@ -14,11 +14,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { HomeSection } from '@/components/home/HomeSection';
 import { AppIcon } from '@/components/ui/AppIcon';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
-import { StatCard } from '@/components/ui/StatCard';
-import { MaxContentWidth, Spacing } from '@/constants/theme';
+import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { useUserStats } from '@/features/stats/useUserStats';
 import { useTheme } from '@/hooks/use-theme';
 import { leaveScreen } from '@/lib/navigation';
+
+/** Gold / silver / bronze-ish accents for the top three exercises. */
+const RANK_COLORS = ['xp', 'primary', 'streak'] as const;
 
 function formatCount(value: number): string {
   return value.toLocaleString();
@@ -61,6 +63,22 @@ export default function StatsScreen() {
     movementStats.totalJumpingSquats > 0 ||
     movementStats.totalLunges > 0;
 
+  const exercises = [
+    { label: 'Push-ups', value: movementStats.totalPushUps },
+    { label: 'Squats', value: movementStats.totalSquats },
+    { label: 'Pull-ups', value: movementStats.totalPullUps },
+    { label: 'Burpees', value: movementStats.totalBurpees },
+    { label: 'Half Burpees', value: movementStats.totalHalfBurpees },
+    { label: 'Jumping Jacks', value: movementStats.totalJumpingJacks },
+    { label: 'Jumping Squats', value: movementStats.totalJumpingSquats },
+    { label: 'Lunges', value: movementStats.totalLunges },
+    { label: 'Dips', value: movementStats.totalDips, hideWhenEmpty: true },
+  ];
+  const doneExercises = exercises.filter((exercise) => exercise.value > 0).sort((a, b) => b.value - a.value);
+  const untriedExercises = exercises.filter((exercise) => exercise.value === 0 && !exercise.hideWhenEmpty);
+  const totalReps = doneExercises.reduce((sum, exercise) => sum + exercise.value, 0);
+  const favourite = doneExercises[0] ?? null;
+
   const hasActivityStats =
     movementStats.dailyMissionsCompleted > 0 || movementStats.friendRacesCompleted > 0;
 
@@ -90,15 +108,45 @@ export default function StatsScreen() {
               tintColor={theme.primary}
             />
           }>
-          <View
-            style={[
-              styles.summaryCard,
-              { backgroundColor: theme.backgroundElement, borderColor: theme.border },
-            ]}>
-            <Text style={[styles.summaryTitle, { color: theme.text }]}>Lifetime movement</Text>
-            <Text style={[styles.summaryCopy, { color: theme.textSecondary }]}>
-              Totals from daily missions, friend races, and custom workouts.
+          <View style={[styles.hero, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
+            <View style={[styles.heroIcon, { backgroundColor: `${theme.primary}1F` }]}>
+              <AppIcon name="bolt" size={26} color={theme.primary} weight="bold" />
+            </View>
+            <Text style={[styles.heroValue, { color: theme.text }]}>{formatCount(totalReps)}</Text>
+            <Text style={[styles.heroLabel, { color: theme.textSecondary }]}>LIFETIME REPS</Text>
+            <Text style={[styles.heroCopy, { color: theme.textSecondary }]}>
+              From daily missions, friend races, and workouts
             </Text>
+            {favourite ? (
+              <View style={[styles.favouritePill, { backgroundColor: `${theme.xp}1A` }]}>
+                <AppIcon name="crown" size={14} color={theme.xp} weight="semibold" />
+                <Text style={[styles.favouriteText, { color: theme.xp }]}>Favourite: {favourite.label}</Text>
+              </View>
+            ) : null}
+          </View>
+
+          <View style={styles.tileRow}>
+            <View style={[styles.tile, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
+              <AppIcon name="target" size={18} color={theme.streak} weight="semibold" />
+              <Text style={[styles.tileValue, { color: theme.text }]}>
+                {formatCount(movementStats.dailyMissionsCompleted)}
+              </Text>
+              <Text style={[styles.tileLabel, { color: theme.textSecondary }]} numberOfLines={1}>Missions</Text>
+            </View>
+            <View style={[styles.tile, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
+              <AppIcon name="swords" size={18} color={theme.accent} weight="semibold" />
+              <Text style={[styles.tileValue, { color: theme.text }]}>
+                {formatCount(movementStats.friendRacesCompleted)}
+              </Text>
+              <Text style={[styles.tileLabel, { color: theme.textSecondary }]} numberOfLines={1}>Races</Text>
+            </View>
+            <View style={[styles.tile, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
+              <AppIcon name="dumbbell" size={18} color={theme.xp} weight="semibold" />
+              <Text style={[styles.tileValue, { color: theme.text }]}>
+                {doneExercises.length}
+              </Text>
+              <Text style={[styles.tileLabel, { color: theme.textSecondary }]} numberOfLines={1}>Exercises</Text>
+            </View>
           </View>
 
           {error ? (
@@ -108,33 +156,51 @@ export default function StatsScreen() {
             </View>
           ) : null}
 
-          <HomeSection title="Rep totals" subtitle="All tracked rep exercises">
-            <View style={styles.statsGrid}>
-              <StatCard label="Push-ups" value={formatCount(movementStats.totalPushUps)} accentColor={theme.primary} />
-              <StatCard label="Squats" value={formatCount(movementStats.totalSquats)} accentColor={theme.primary} />
-              <StatCard label="Pull-ups" value={formatCount(movementStats.totalPullUps)} accentColor={theme.primary} />
-              <StatCard label="Burpees" value={formatCount(movementStats.totalBurpees)} accentColor={theme.primary} />
-              <StatCard label="Half Burpees" value={formatCount(movementStats.totalHalfBurpees)} accentColor={theme.primary} />
-              <StatCard label="Jumping Jacks" value={formatCount(movementStats.totalJumpingJacks)} accentColor={theme.primary} />
-              <StatCard label="Jumping Squats" value={formatCount(movementStats.totalJumpingSquats)} accentColor={theme.primary} />
-              <StatCard label="Lunges" value={formatCount(movementStats.totalLunges)} accentColor={theme.primary} />
-              {movementStats.totalDips > 0 ? (
-                <StatCard label="Dips" value={formatCount(movementStats.totalDips)} accentColor={theme.primary} />
-              ) : null}
-            </View>
-          </HomeSection>
+          <HomeSection title="By exercise" subtitle="Your most-trained moves first">
+            {doneExercises.length > 0 ? (
+              <View style={[styles.listCard, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
+                {doneExercises.map((exercise, index) => {
+                  const rankColor = RANK_COLORS[index] ? theme[RANK_COLORS[index]] : theme.textSecondary;
+                  const share = totalReps > 0 ? Math.round((exercise.value / totalReps) * 100) : 0;
 
-          <HomeSection title="Activity summary" subtitle="Completed challenges">
-            <View style={styles.statsGrid}>
-              <StatCard
-                label="Daily missions"
-                value={formatCount(movementStats.dailyMissionsCompleted)}
-              />
-              <StatCard
-                label="Friend races"
-                value={formatCount(movementStats.friendRacesCompleted)}
-              />
-            </View>
+                  return (
+                    <View
+                      key={exercise.label}
+                      style={[styles.exerciseRow, index > 0 && { borderTopColor: theme.border, borderTopWidth: StyleSheet.hairlineWidth }]}>
+                      <View style={[styles.rank, { backgroundColor: `${rankColor}1F` }]}>
+                        <Text style={[styles.rankText, { color: rankColor }]}>{index + 1}</Text>
+                      </View>
+                      <View style={styles.exerciseCopy}>
+                        <Text style={[styles.exerciseName, { color: theme.text }]}>{exercise.label}</Text>
+                        <Text style={[styles.exerciseShare, { color: theme.textSecondary }]}>
+                          {share > 0 ? `${share}% of your reps` : 'Less than 1% of your reps'}
+                        </Text>
+                      </View>
+                      <Text style={[styles.exerciseValue, { color: theme.text }]}>{formatCount(exercise.value)}</Text>
+                    </View>
+                  );
+                })}
+              </View>
+            ) : (
+              <Text style={[styles.emptyCopy, { color: theme.textSecondary }]}>
+                No reps yet - finish a mission, race, or workout to start your totals.
+              </Text>
+            )}
+
+            {untriedExercises.length > 0 ? (
+              <View style={styles.untried}>
+                <Text style={[styles.untriedLabel, { color: theme.textSecondary }]}>NOT TRIED YET</Text>
+                <View style={styles.chipRow}>
+                  {untriedExercises.map((exercise) => (
+                    <View
+                      key={exercise.label}
+                      style={[styles.chip, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
+                      <Text style={[styles.chipText, { color: theme.textSecondary }]}>{exercise.label}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            ) : null}
           </HomeSection>
         </ScrollView>
       </SafeAreaView>
@@ -153,7 +219,7 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: Spacing.four,
-    gap: Spacing.five,
+    gap: Spacing.four,
     maxWidth: MaxContentWidth,
     alignSelf: 'center',
     width: '100%',
@@ -163,25 +229,139 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.two,
     paddingVertical: Spacing.one,
   },
-  summaryCard: {
+  hero: {
+    alignItems: 'center',
     padding: Spacing.four,
-    borderRadius: 12,
+    borderRadius: Radius.xl,
     borderWidth: 1,
+    gap: 2,
+  },
+  heroIcon: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: Spacing.two,
+  },
+  heroValue: {
+    fontSize: 44,
+    fontWeight: '900',
+  },
+  heroLabel: {
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 1.4,
+  },
+  heroCopy: {
+    fontSize: 13,
+    fontWeight: '600',
+    marginTop: Spacing.one,
+    textAlign: 'center',
+  },
+  tileRow: {
+    flexDirection: 'row',
     gap: Spacing.two,
   },
-  summaryTitle: {
-    fontSize: 20,
+  tile: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: Spacing.three,
+    paddingHorizontal: Spacing.two,
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    gap: 4,
+  },
+  tileValue: {
+    fontSize: 18,
+    fontWeight: '900',
+  },
+  tileLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
+    textAlign: 'center',
+  },
+  favouritePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: Spacing.three,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: 6,
+    borderRadius: 999,
+  },
+  favouriteText: {
+    fontSize: 13,
     fontWeight: '800',
   },
-  summaryCopy: {
+  listCard: {
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    paddingHorizontal: Spacing.three,
+  },
+  exerciseRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.three,
+    paddingVertical: Spacing.three,
+  },
+  rank: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  rankText: {
     fontSize: 14,
-    lineHeight: 20,
+    fontWeight: '900',
+  },
+  exerciseCopy: {
+    flex: 1,
+    gap: 2,
+  },
+  exerciseName: {
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  exerciseShare: {
+    fontSize: 12,
     fontWeight: '600',
   },
-  statsGrid: {
+  exerciseValue: {
+    fontSize: 20,
+    fontWeight: '900',
+  },
+  emptyCopy: {
+    fontSize: 14,
+    lineHeight: 20,
+    textAlign: 'center',
+  },
+  untried: {
+    gap: Spacing.two,
+    marginTop: Spacing.three,
+  },
+  untriedLabel: {
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 1.2,
+  },
+  chipRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: Spacing.three,
+    gap: Spacing.two,
+  },
+  chip: {
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: 6,
+  },
+  chipText: {
+    fontSize: 13,
+    fontWeight: '700',
   },
   errorBlock: {
     gap: Spacing.two,
