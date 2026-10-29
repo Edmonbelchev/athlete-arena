@@ -158,6 +158,7 @@ export const ACCESSORY_SLOTS: { slot: AccessorySlot; label: string; required: bo
   { slot: 'headwear', label: 'Headwear', required: false },
   { slot: 'glasses', label: 'Glasses', required: false },
   { slot: 'earrings', label: 'Earrings', required: false },
+  { slot: 'background', label: 'Background', required: false },
 ];
 
 export const DEFAULT_APPEARANCE: Record<AvatarBodyType, AvatarAppearance> = {

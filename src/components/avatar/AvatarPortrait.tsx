@@ -11,6 +11,7 @@ import {
   beardDrapePath,
   hairClipScale,
 } from '@/components/avatar/AvatarHair';
+import { AvatarBackgroundScene, isSceneStyle } from '@/components/avatar/AvatarBackgroundScene';
 import {
   AvatarEarrings,
   AvatarFace,
@@ -77,7 +78,10 @@ export function AvatarPortrait({
   const { x, y, size: box } = crop === 'face' ? FACE_VIEWBOX : PORTRAIT_VIEWBOX;
   const shape = appearance.headShape;
   const fit = headFitTransform(shape);
-  const background = resolveColor(BACKGROUND_COLORS, appearance.background);
+  const scene = accessories.background;
+  const sceneStyle = scene && isSceneStyle(scene.style) ? scene.style : null;
+  // Items outlined against the backdrop use the scene's horizon color when one is equipped.
+  const background = scene && sceneStyle ? scene.colors.secondary : resolveColor(BACKGROUND_COLORS, appearance.background);
   const drapePath = beardDrapePath(appearance.facialHair);
 
   return (
@@ -101,7 +105,16 @@ export function AvatarPortrait({
           <Path d={hairOutlinePath(shape, HEADWEAR_VOLUME)} />
         </ClipPath>
       </Defs>
-      {showBackground ? (
+      {showBackground && scene && sceneStyle ? (
+        <AvatarBackgroundScene
+          scene={sceneStyle}
+          colors={scene.colors}
+          x={PORTRAIT_VIEWBOX.x}
+          y={PORTRAIT_VIEWBOX.y}
+          size={PORTRAIT_VIEWBOX.size}
+          idPrefix={idPrefix}
+        />
+      ) : showBackground ? (
         <Rect x={x} y={y} width={box} height={box} fill={background} />
       ) : null}
       <G transform={fit}>

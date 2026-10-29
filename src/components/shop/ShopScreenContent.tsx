@@ -45,6 +45,7 @@ const CATEGORY_LABELS: Record<ShopCategory, string> = {
   headwear: 'Hats',
   glasses: 'Glasses',
   earrings: 'Earrings',
+  background: 'Backgrounds',
   frames: 'Frames',
   emotes: 'Emotes',
   slots: 'Challenge Slots',
@@ -147,7 +148,7 @@ export function ShopScreenContent({ initialSection = 'outfits' }: ShopScreenCont
     [bodyType, items],
   );
   const categories = useMemo<ShopCategory[]>(() => {
-    const slots: AccessorySlot[] = ['top', 'headwear', 'glasses', 'earrings'];
+    const slots: AccessorySlot[] = ['top', 'headwear', 'glasses', 'earrings', 'background'];
     const withItems = slots.filter((slot) => wearables.some((item) => item.wearable?.slot === slot));
     return [...withItems, 'frames', 'emotes', 'slots'];
   }, [wearables]);

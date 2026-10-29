@@ -405,6 +405,7 @@ export default function AvatarEditorScreen() {
                                   accessories={toAccessoryStyles(preview, wardrobe)}
                                   size={size}
                                   crop={slot === 'earrings' || slot === 'glasses' ? 'face' : 'portrait'}
+                                  showBackground={slot === 'background'}
                                 />
                               );
                             }}

@@ -223,7 +223,7 @@ export default function HomeScreen() {
 
         <HomeSection
           title="Daily Quests"
-          subtitle="Three quests today — swap one per day or let reps count from any workout"
+          subtitle="Reps from any workout count · one free swap a day, then 50 coins each"
           actionLabel="Quest log"
           onAction={() => router.push('/profile/quest-log')}>
           {missions.length > 0 ? (
@@ -232,6 +232,7 @@ export default function HomeScreen() {
               startingMissionIndex={startingMissionIndex}
               rerollingMissionIndex={rerollingMissionIndex}
               rerollUsedOn={profile?.daily_quest_reroll_used_on}
+              coinBalance={profile?.coin_balance ?? 0}
               onStartMission={(mission, index) => void handleStartDailyMission(mission, index)}
               onRerollMission={(mission, index, exerciseType) =>
                 void handleRerollDailyMission(mission, index, exerciseType)

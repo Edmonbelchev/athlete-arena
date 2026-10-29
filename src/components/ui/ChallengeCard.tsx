@@ -1,4 +1,14 @@
+import * as Haptics from 'expo-haptics';
+import { useEffect, useRef } from 'react';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated';
 
 import { AppIcon } from '@/components/ui/AppIcon';
 import { CoinIcon } from '@/components/ui/CoinIcon';
@@ -28,9 +38,14 @@ interface ChallengeCardProps {
   missionLabel?: string;
   isRerolled?: boolean;
   canReroll?: boolean;
+  /** Coins the next swap costs; 0 while the free swap of the day is unused. */
+  rerollCoinCost?: number;
+  canAffordReroll?: boolean;
   rerollLoading?: boolean;
   onStart?: () => void;
   onReroll?: () => void;
+  /** Coins paid for the swap that just replaced this quest; shows a "-50" coin burst. */
+  swapCharge?: number;
 }
 
 type MissionStatusKey = 'tracking' | 'active' | 'ready' | 'cleared';
@@ -69,11 +84,15 @@ export function ChallengeCard({
   missionLabel,
   isRerolled = false,
   canReroll = false,
+  rerollCoinCost = 0,
+  canAffordReroll = true,
   rerollLoading = false,
   onStart,
   onReroll,
+  swapCharge = 0,
 }: ChallengeCardProps) {
   const theme = useTheme();
+  const swap = useQuestSwapAnimation(exerciseType, swapCharge);
   const quest = getDailyMissionQuestMeta(exerciseType);
   const accentColor = theme[getQuestAccentColor(missionIndex)];
   const missionStatus = resolveMissionStatus(status, completedReps, targetReps);
@@ -90,8 +109,9 @@ export function ChallengeCard({
   const borderWidth = isReady ? 2 : 1;
 
   return (
-    <View
+    <Animated.View
       style={[
+        swap.cardStyle,
         styles.card,
         {
           backgroundColor: isCompleted ? theme.card : `${accentColor}0C`,
@@ -102,6 +122,10 @@ export function ChallengeCard({
           shadowOpacity: isReady ? 0.22 : Platform.OS === 'ios' ? 0.08 : 0,
         },
       ]}>
+      <Animated.View
+        pointerEvents="none"
+        style={[styles.swapFlash, { backgroundColor: accentColor }, swap.flashStyle]}
+      />
       <View style={[styles.accentRail, { backgroundColor: accentColor }]} />
       <View style={[styles.accentGlow, { backgroundColor: `${accentColor}16` }]} />
 
@@ -194,31 +218,133 @@ export function ChallengeCard({
             {!isCompleted && canReroll && onReroll ? (
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="Swap this quest for another exercise"
-                disabled={rerollLoading || loading}
+                accessibilityLabel={
+                  rerollCoinCost > 0
+                    ? `Swap this quest for ${rerollCoinCost} coins`
+                    : 'Swap this quest for another exercise'
+                }
+                disabled={rerollLoading || loading || !canAffordReroll}
                 onPress={onReroll}
                 style={({ pressed }) => [
                   styles.swapPill,
                   {
                     backgroundColor: theme.backgroundSelected,
                     borderColor: theme.border,
-                    opacity: pressed || rerollLoading || loading ? 0.65 : 1,
+                    opacity: pressed || rerollLoading || loading || !canAffordReroll ? 0.65 : 1,
                   },
                 ]}>
                 <AppIcon name="swap" size={14} color={theme.textSecondary} weight="semibold" />
                 <Text style={[styles.rerollLink, { color: theme.textSecondary }]}>
-                  {rerollLoading ? 'Swapping…' : 'Swap quest'}
+                  {rerollLoading ? 'Swapping…' : rerollCoinCost > 0 && !canAffordReroll ? 'Need' : 'Swap quest'}
                 </Text>
+                {!rerollLoading && rerollCoinCost > 0 ? (
+                  <View style={[styles.rerollBadge, { backgroundColor: `${theme.accent}1F` }]}>
+                    <CoinIcon size={12} />
+                    <Text style={[styles.rerollBadgeText, { color: theme.accent }]}>{rerollCoinCost}</Text>
+                  </View>
+                ) : null}
+                {!rerollLoading && rerollCoinCost > 0 && !canAffordReroll ? (
+                  <Text style={[styles.rerollLink, { color: theme.textSecondary }]}>to swap again</Text>
+                ) : null}
               </Pressable>
             ) : null}
           </View>
         </View>
       </View>
-    </View>
+      {swap.charge > 0 ? (
+        <Animated.View pointerEvents="none" style={[styles.chargeBurst, swap.burstStyle]}>
+          <View style={[styles.chargeChip, { backgroundColor: theme.card, borderColor: `${theme.accent}66` }]}>
+            <CoinIcon size={16} />
+            <Text style={[styles.chargeText, { color: theme.accent }]}>-{swap.charge}</Text>
+          </View>
+        </Animated.View>
+      ) : null}
+    </Animated.View>
   );
 }
 
+/**
+ * Plays when the quest on this card is swapped for another exercise: the card flips over to
+ * the new quest with a flash of its accent color, and a paid swap floats the coins spent.
+ */
+function useQuestSwapAnimation(exerciseType: ExerciseType, swapCharge: number) {
+  const previousExercise = useRef(exerciseType);
+  const chargeRef = useRef(0);
+  const flip = useSharedValue(1);
+  const flash = useSharedValue(0);
+  const burstY = useSharedValue(0);
+  const burstOpacity = useSharedValue(0);
+
+  if (previousExercise.current !== exerciseType) {
+    // Read during render so the burst label is ready on the same frame the new quest appears.
+    chargeRef.current = swapCharge;
+  }
+
+  useEffect(() => {
+    if (previousExercise.current === exerciseType) {
+      return;
+    }
+    previousExercise.current = exerciseType;
+
+    flip.value = withSequence(
+      withTiming(0.04, { duration: 160, easing: Easing.in(Easing.quad) }),
+      withTiming(1, { duration: 220, easing: Easing.out(Easing.quad) }),
+    );
+    flash.value = withSequence(withDelay(140, withTiming(0.28, { duration: 120 })), withTiming(0, { duration: 420 }));
+
+    if (chargeRef.current > 0) {
+      burstY.value = 0;
+      burstOpacity.value = 0;
+      burstY.value = withDelay(200, withTiming(-70, { duration: 1100, easing: Easing.out(Easing.cubic) }));
+      burstOpacity.value = withSequence(
+        withDelay(200, withTiming(1, { duration: 160 })),
+        withDelay(650, withTiming(0, { duration: 300 })),
+      );
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } else {
+      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+  }, [burstOpacity, burstY, exerciseType, flash, flip]);
+
+  const cardStyle = useAnimatedStyle(() => ({
+    transform: [{ scaleX: flip.value }],
+  }));
+  const flashStyle = useAnimatedStyle(() => ({ opacity: flash.value }));
+  const burstStyle = useAnimatedStyle(() => ({
+    opacity: burstOpacity.value,
+    transform: [{ translateY: burstY.value }, { scale: 0.9 + burstOpacity.value * 0.2 }],
+  }));
+
+  return { cardStyle, flashStyle, burstStyle, charge: chargeRef.current };
+}
+
 const styles = StyleSheet.create({
+  swapFlash: {
+    ...StyleSheet.absoluteFill,
+    borderRadius: Radius.xl,
+    zIndex: 2,
+  },
+  chargeBurst: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: Spacing.six,
+    alignItems: 'center',
+    zIndex: 3,
+  },
+  chargeChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.one,
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.one,
+  },
+  chargeText: {
+    fontSize: 18,
+    fontWeight: '900',
+  },
   card: {
     flex: 1,
     minHeight: 310,
@@ -394,5 +520,17 @@ const styles = StyleSheet.create({
   rerollLink: {
     fontSize: 13,
     fontWeight: '700',
+  },
+  rerollBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    borderRadius: 999,
+    paddingHorizontal: Spacing.two,
+    paddingVertical: 2,
+  },
+  rerollBadgeText: {
+    fontSize: 11,
+    fontWeight: '800',
   },
 });

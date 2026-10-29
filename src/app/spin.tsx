@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -9,12 +9,22 @@ import { AppIcon } from '@/components/ui/AppIcon';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import {
   COIN_MULTIPLIER_VALUE,
-  formatTimeRemaining
+  formatTimeRemaining,
 } from '@/constants/spinWheel';
 import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { useDailySpin } from '@/features/spin/useDailySpin';
 import { useTheme } from '@/hooks/use-theme';
 import type { SpinResult } from '@/types/spin';
+
+/** Re-renders every minute so the countdowns stay current. */
+function useMinuteTick(): void {
+  const [, setTick] = useState(0);
+
+  useEffect(() => {
+    const id = setInterval(() => setTick((value) => value + 1), 60_000);
+    return () => clearInterval(id);
+  }, []);
+}
 
 export default function SpinScreen() {
   const theme = useTheme();
@@ -29,6 +39,7 @@ export default function SpinScreen() {
   const multiplierActive = (status?.coinMultiplier ?? 1) > 1;
   const multiplierRemaining = formatTimeRemaining(status?.coinMultiplierExpiresAt ?? null);
   const nextSpinRemaining = formatTimeRemaining(status?.nextSpinAt ?? null);
+  useMinuteTick();
 
   const handleSpinEnd = useCallback(() => {
     setIsAnimating(false);
@@ -63,19 +74,24 @@ export default function SpinScreen() {
       edges={['bottom']}
       style={StyleSheet.flatten([styles.safeArea, { backgroundColor: theme.background }])}>
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={StyleSheet.flatten([styles.subtitle, { color: theme.textSecondary }])}>
-          One free spin every day. Land the {COIN_MULTIPLIER_VALUE}x segment to double every coin
-          you earn for the rest of the day.
-        </Text>
-
-        {status ? (
-          <View style={styles.balanceRow}>
-            <Text style={StyleSheet.flatten([styles.balanceLabel, { color: theme.textSecondary }])}>
-              Your coins
-            </Text>
-            <CoinBadge amount={status.coinBalance} large />
-          </View>
-        ) : null}
+        <View style={styles.topRow}>
+          {status?.canSpin ? (
+            <View style={StyleSheet.flatten([styles.statusPill, { backgroundColor: `${theme.success}1F` }])}>
+              <View style={StyleSheet.flatten([styles.statusDot, { backgroundColor: theme.success }])} />
+              <Text style={StyleSheet.flatten([styles.statusText, { color: theme.success }])}>Free spin ready</Text>
+            </View>
+          ) : status ? (
+            <View style={StyleSheet.flatten([styles.statusPill, { backgroundColor: theme.backgroundSelected }])}>
+              <AppIcon name="history" size={13} color={theme.textSecondary} />
+              <Text style={StyleSheet.flatten([styles.statusText, { color: theme.textSecondary }])}>
+                {nextSpinRemaining ? `Next spin in ${nextSpinRemaining}` : 'Back tomorrow'}
+              </Text>
+            </View>
+          ) : (
+            <View />
+          )}
+          {status ? <CoinBadge amount={status.coinBalance} large /> : null}
+        </View>
 
         {multiplierActive ? (
           <View
@@ -101,7 +117,10 @@ export default function SpinScreen() {
         {isLoading && !status ? (
           <ActivityIndicator size="large" style={styles.loader} />
         ) : (
-          <SpinWheel segments={segments} target={target} onSpinEnd={handleSpinEnd} />
+          <View style={styles.wheelStage}>
+            <View style={StyleSheet.flatten([styles.wheelGlow, { backgroundColor: `${theme.streak}1A` }])} />
+            <SpinWheel segments={segments} target={target} onSpinEnd={handleSpinEnd} />
+          </View>
         )}
 
         {error ? (
@@ -109,17 +128,15 @@ export default function SpinScreen() {
         ) : null}
 
         <PrimaryButton
-          label={status?.canSpin ? 'Spin the wheel' : 'Come back tomorrow'}
+          label={status?.canSpin ? 'Spin the wheel' : nextSpinRemaining ? `Next spin in ${nextSpinRemaining}` : 'Come back tomorrow'}
           loading={isSpinning || isAnimating}
           disabled={!canSpin}
           onPress={() => void handleSpin()}
         />
 
-        {!status?.canSpin && nextSpinRemaining ? (
-          <Text style={StyleSheet.flatten([styles.nextSpin, { color: theme.textSecondary }])}>
-            Next spin in {nextSpinRemaining}
-          </Text>
-        ) : null}
+        <Text style={StyleSheet.flatten([styles.subtitle, { color: theme.textSecondary }])}>
+          One free spin every day. Land {COIN_MULTIPLIER_VALUE}x to double every coin you earn for the rest of the day.
+        </Text>
       </ScrollView>
 
       <SpinRewardModal result={revealedResult} onClose={() => setRevealedResult(null)} />
@@ -139,18 +156,44 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   subtitle: {
-    fontSize: 15,
-    lineHeight: 22,
+    fontSize: 13,
+    lineHeight: 19,
     fontWeight: '600',
+    textAlign: 'center',
   },
-  balanceRow: {
+  topRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     gap: Spacing.two,
   },
-  balanceLabel: {
-    fontSize: 14,
-    fontWeight: '700',
+  statusPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderRadius: 999,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: 6,
+  },
+  statusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  statusText: {
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  wheelStage: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: Spacing.three,
+  },
+  wheelGlow: {
+    position: 'absolute',
+    width: 320,
+    height: 320,
+    borderRadius: 160,
   },
   banner: {
     flexDirection: 'row',
@@ -180,49 +223,5 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     textAlign: 'center',
-  },
-  nextSpin: {
-    fontSize: 14,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  legend: {
-    gap: Spacing.two,
-  },
-  legendTitle: {
-    fontSize: 18,
-    fontWeight: '800',
-    marginBottom: Spacing.one,
-  },
-  legendRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.three,
-    padding: Spacing.three,
-    borderRadius: Radius.lg,
-    borderWidth: 1,
-  },
-  legendDot: {
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-  },
-  legendCopy: {
-    flex: 1,
-    gap: Spacing.half,
-  },
-  legendReward: {
-    fontSize: 15,
-    fontWeight: '800',
-  },
-  legendRarity: {
-    fontSize: 12,
-    fontWeight: '800',
-    letterSpacing: 0.6,
-    textTransform: 'uppercase',
-  },
-  legendOdds: {
-    fontSize: 14,
-    fontWeight: '700',
   },
 });

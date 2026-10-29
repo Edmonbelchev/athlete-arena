@@ -12,11 +12,13 @@ import {
 import { ChallengeCard } from '@/components/ui/ChallengeCard';
 import { ExercisePickerModal } from '@/components/workouts/ExercisePickerModal';
 import { getQuestAccentColor } from '@/constants/dailyMissionQuest';
+import { DAILY_QUEST_REROLL_COST } from '@/constants/dailyMissionRewards';
 import { type ExerciseType } from '@/constants/challenges';
 import { Radius, Spacing } from '@/constants/theme';
 import {
-  canRerollMission,
+  canUseDailyQuestReroll,
   getRerollEligibleExercises,
+  isMissionSwappable,
   resolveMissionIndex,
 } from '@/services/challengeService';
 import type { DailyChallengeHome } from '@/types';
@@ -27,6 +29,8 @@ interface DailyMissionsCarouselProps {
   startingMissionIndex: number | null;
   rerollingMissionIndex: number | null;
   rerollUsedOn?: string | null;
+  /** Pays for swaps after the free one of the day. */
+  coinBalance?: number;
   onStartMission: (mission: DailyChallengeHome, listIndex: number) => void;
   onRerollMission: (mission: DailyChallengeHome, listIndex: number, exerciseType: ExerciseType) => void;
 }
@@ -36,6 +40,7 @@ export function DailyMissionsCarousel({
   startingMissionIndex,
   rerollingMissionIndex,
   rerollUsedOn,
+  coinBalance = 0,
   onStartMission,
   onRerollMission,
 }: DailyMissionsCarouselProps) {
@@ -48,6 +53,14 @@ export function DailyMissionsCarousel({
     mission: DailyChallengeHome;
     listIndex: number;
   } | null>(null);
+
+  /** The paid swap in flight, so the card can show the coins spent when its new quest arrives. */
+  const [pendingCharge, setPendingCharge] = useState<{ missionIndex: number; coins: number } | null>(null);
+
+  useEffect(() => {
+    // Children read the charge while rendering the swapped quest; clear it once that has happened.
+    setPendingCharge(null);
+  }, [missions]);
 
   const rerollEligibleExercises = useMemo(
     () => getRerollEligibleExercises(missions),
@@ -129,7 +142,8 @@ export function DailyMissionsCarousel({
                 index,
               );
               const slideKey = mission.templateId ?? `mission-${mission.exerciseType}-${missionIndex}`;
-              const canReroll = canRerollMission(mission, rerollUsedOn);
+              const canReroll = isMissionSwappable(mission);
+              const freeSwap = canUseDailyQuestReroll(rerollUsedOn);
 
               return (
                 <View
@@ -146,8 +160,11 @@ export function DailyMissionsCarousel({
                     rerollLoading={rerollingMissionIndex === missionIndex}
                     isRerolled={mission.isRerolled}
                     canReroll={canReroll && rerollEligibleExercises.length > 0}
+                    rerollCoinCost={freeSwap ? 0 : DAILY_QUEST_REROLL_COST}
+                    canAffordReroll={freeSwap || coinBalance >= DAILY_QUEST_REROLL_COST}
                     onStart={() => onStartMission(mission, index)}
                     onReroll={() => setRerollTarget({ mission, listIndex: index })}
+                    swapCharge={pendingCharge?.missionIndex === missionIndex ? pendingCharge.coins : 0}
                   />
                 </View>
               );
@@ -215,6 +232,16 @@ export function DailyMissionsCarousel({
             return;
           }
 
+          if (!canUseDailyQuestReroll(rerollUsedOn)) {
+            setPendingCharge({
+              missionIndex: resolveMissionIndex(
+                rerollTarget.mission.exerciseType,
+                rerollTarget.mission.missionIndex,
+                rerollTarget.listIndex,
+              ),
+              coins: DAILY_QUEST_REROLL_COST,
+            });
+          }
           onRerollMission(rerollTarget.mission, rerollTarget.listIndex, exerciseType);
           setRerollTarget(null);
         }}

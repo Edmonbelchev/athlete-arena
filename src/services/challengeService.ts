@@ -351,6 +351,11 @@ export function canUseDailyQuestReroll(
   return rerollUsedOn !== today;
 }
 
+/** No progress and not cleared - a quest that could be swapped, free or with a re-roll. */
+export function isMissionSwappable(mission: DailyChallengeHome): boolean {
+  return mission.status !== 'completed' && mission.completedReps === 0;
+}
+
 export function canRerollMission(
   mission: DailyChallengeHome,
   rerollUsedOn: string | null | undefined,

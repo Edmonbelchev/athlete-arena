@@ -1,3 +1,4 @@
+import { SCENE_STYLES } from '@/components/avatar/AvatarBackgroundScene';
 import type {
   AccessorySlot,
   AvatarAccessories,
@@ -19,7 +20,7 @@ export interface WardrobeRpcRow {
   owned: boolean;
 }
 
-const SLOTS: AccessorySlot[] = ['top', 'headwear', 'glasses', 'earrings'];
+const SLOTS: AccessorySlot[] = ['top', 'headwear', 'glasses', 'earrings', 'background'];
 const STYLES: WearableStyle[] = [
   'tee',
   'hoodie',
@@ -37,6 +38,7 @@ const STYLES: WearableStyle[] = [
   'studs',
   'hoops',
   'drops',
+  ...SCENE_STYLES,
 ];
 const PATTERNS: WearablePattern[] = ['stripe', 'star', 'camo'];
 const TIERS: WearableTier[] = ['basic', 'rare', 'legendary'];

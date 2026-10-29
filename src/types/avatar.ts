@@ -76,7 +76,7 @@ export interface AvatarAppearance {
   background: string;
 }
 
-export type AccessorySlot = 'top' | 'headwear' | 'glasses' | 'earrings';
+export type AccessorySlot = 'top' | 'headwear' | 'glasses' | 'earrings' | 'background';
 export type WearableBodyType = AvatarBodyType | 'unisex';
 
 export type WearableStyle =
@@ -95,7 +95,20 @@ export type WearableStyle =
   | 'aviators'
   | 'studs'
   | 'hoops'
-  | 'drops';
+  | 'drops'
+  | 'scene_mountains'
+  | 'scene_snowy_mountains'
+  | 'scene_beach'
+  | 'scene_sunset'
+  | 'scene_forest'
+  | 'scene_city'
+  | 'scene_space'
+  | 'scene_aurora'
+  | 'scene_gym'
+  | 'scene_stadium'
+  | 'scene_boxing_ring'
+  | 'scene_rainy_city'
+  | 'scene_volcano';
 
 export interface WearableColors {
   primary: string;

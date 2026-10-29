@@ -17,6 +17,9 @@ import type { SpinSegment } from '@/types/spin';
 const SPIN_DURATION_MS = 4200;
 const FULL_TURNS = 5;
 const HUB_SIZE_RATIO = 0.32;
+/** Width of the light-studded frame around the wheel. */
+const RIM_WIDTH = 14;
+const RIM_BULBS = 16;
 
 export interface SpinTarget {
   index: number;
@@ -59,7 +62,7 @@ export function SpinWheel({ segments, size = 280, target, onSpinEnd }: SpinWheel
   const rotation = useSharedValue(0);
 
   const center = size / 2;
-  const radius = center - 6;
+  const radius = center - RIM_WIDTH;
   const hubSize = radius * HUB_SIZE_RATIO;
   const step = segments.length > 0 ? 360 / segments.length : 360;
 
@@ -93,6 +96,23 @@ export function SpinWheel({ segments, size = 280, target, onSpinEnd }: SpinWheel
 
   return (
     <View style={[styles.container, { width: size, height: size }]}>
+      {/* Static frame with marquee bulbs; the wheel turns inside it. */}
+      <Svg width={size} height={size} style={StyleSheet.absoluteFill}>
+        <Circle cx={center} cy={center} r={center - 1} fill="#1E293B" />
+        <Circle cx={center} cy={center} r={center - 1} stroke={theme.streak} strokeWidth={2} fill="none" />
+        {Array.from({ length: RIM_BULBS }, (_, index) => {
+          const point = polarToCartesian(center, center, center - RIM_WIDTH / 2, (index * 360) / RIM_BULBS);
+          return (
+            <Circle
+              key={index}
+              cx={point.x}
+              cy={point.y}
+              r={3}
+              fill={index % 2 === 0 ? '#FDE68A' : '#FFFFFF'}
+            />
+          );
+        })}
+      </Svg>
       <Animated.View style={[animatedStyle, { width: size, height: size }]}>
         <Svg width={size} height={size}>
           <Circle cx={center} cy={center} r={radius} fill={theme.backgroundSelected} />
@@ -144,13 +164,18 @@ export function SpinWheel({ segments, size = 280, target, onSpinEnd }: SpinWheel
         <CoinIcon size={hubSize * 0.52} />
       </View>
 
-      <View
-        pointerEvents="none"
-        style={[
-          styles.pointer,
-          { borderTopColor: theme.text },
-        ]}
-      />
+      <View pointerEvents="none" style={styles.pointer}>
+        <Svg width={32} height={48} viewBox="0 0 32 48">
+          <Path
+            d="M16 46.5 L2.5 15 A13.5 13.5 0 1 1 29.5 15 Z"
+            fill={theme.streak}
+            stroke="#FFFFFF"
+            strokeWidth={2.5}
+            strokeLinejoin="round"
+          />
+          <Circle cx={16} cy={15} r={4.5} fill="#FFFFFF" />
+        </Svg>
+      </View>
     </View>
   );
 }
@@ -169,13 +194,7 @@ const styles = StyleSheet.create({
   },
   pointer: {
     position: 'absolute',
-    top: -2,
-    width: 0,
-    height: 0,
-    borderLeftWidth: 12,
-    borderRightWidth: 12,
-    borderTopWidth: 20,
-    borderLeftColor: 'transparent',
-    borderRightColor: 'transparent',
+    // Keeps the tip on the wheel's rim, with the head above the frame.
+    top: -23,
   },
 });
