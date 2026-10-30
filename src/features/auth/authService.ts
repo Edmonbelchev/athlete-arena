@@ -1,5 +1,6 @@
 import { AUTH_EMAIL_REDIRECT_URL, AUTH_PASSWORD_RESET_REDIRECT_URL } from '@/constants/app';
 import { assertSupabaseConfigured, supabase } from '@/lib/supabase';
+import type { AvatarBodyType } from '@/types/avatar';
 
 import {
   isValidEmail,
@@ -12,6 +13,7 @@ interface SignUpParams {
   email: string;
   password: string;
   username: string;
+  gender: AvatarBodyType;
 }
 
 export class UsernameTakenError extends Error {
@@ -85,7 +87,7 @@ export async function signInWithEmail(email: string, password: string) {
   return data;
 }
 
-export async function signUpWithEmail({ email, password, username }: SignUpParams) {
+export async function signUpWithEmail({ email, password, username, gender }: SignUpParams) {
   assertSupabaseConfigured();
 
   const normalizedUsername = normalizeUsername(username);
@@ -106,6 +108,8 @@ export async function signUpWithEmail({ email, password, username }: SignUpParam
       data: {
         username: normalizedUsername,
         display_name: normalizedUsername,
+        // Picks the default avatar (create_default_avatar).
+        gender,
       },
       emailRedirectTo: AUTH_EMAIL_REDIRECT_URL,
     },

@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { GenderPicker } from '@/components/auth/GenderPicker';
 import { ResendConfirmationEmail } from '@/components/auth/ResendConfirmationEmail';
 import { LegalAgreementNotice } from '@/components/legal/LegalLinks';
 import { AuthTextInput } from '@/components/ui/AuthTextInput';
@@ -32,6 +33,7 @@ import {
     normalizeUsername,
 } from '@/features/auth/validation';
 import { useTheme } from '@/hooks/use-theme';
+import type { AvatarBodyType } from '@/types/avatar';
 
 export default function RegisterScreen() {
   const theme = useTheme();
@@ -41,11 +43,13 @@ export default function RegisterScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [gender, setGender] = useState<AvatarBodyType | null>(null);
   const [fieldErrors, setFieldErrors] = useState<{
     username?: string;
     email?: string;
     password?: string;
     confirmPassword?: string;
+    gender?: string;
   }>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -57,6 +61,7 @@ export default function RegisterScreen() {
       email?: string;
       password?: string;
       confirmPassword?: string;
+      gender?: string;
     } = {};
     const normalizedUsername = normalizeUsername(username);
 
@@ -84,6 +89,10 @@ export default function RegisterScreen() {
       nextErrors.confirmPassword = 'Passwords do not match';
     }
 
+    if (!gender) {
+      nextErrors.gender = 'Pick one to set up your starting avatar';
+    }
+
     setFieldErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
   }
@@ -92,7 +101,7 @@ export default function RegisterScreen() {
     setFormError(null);
     setSuccessMessage(null);
 
-    if (!validateForm()) {
+    if (!validateForm() || !gender) {
       return;
     }
 
@@ -103,6 +112,7 @@ export default function RegisterScreen() {
         email,
         password,
         username,
+        gender,
       });
 
       if (session) {
@@ -187,6 +197,15 @@ export default function RegisterScreen() {
               textContentType="newPassword"
               autoComplete="new-password"
               error={fieldErrors.confirmPassword}
+            />
+
+            <GenderPicker
+              value={gender}
+              onChange={(next) => {
+                setGender(next);
+                setFieldErrors((current) => ({ ...current, gender: undefined }));
+              }}
+              error={fieldErrors.gender}
             />
 
             {formError ? (

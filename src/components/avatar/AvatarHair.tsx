@@ -98,6 +98,17 @@ const HAIR_STYLES: Record<AvatarHair | HairVariant, HairStyle> = {
       />
     ),
   },
+  short_spiky: {
+    outset: 1.07,
+    cap: 'M20 0 H180 V70 H132 Q130 56 122 52 L117 55 L112 50 L106 54 L100 49 L94 54 L88 50 L83 55 L78 52 Q70 56 68 70 H20 Z',
+    front: (color) => (
+      <Path
+        d="M72 50 Q70 43 75 39 L79 43 Q81 34 88 32 L90 38 Q95 29 103 29 L102 35 Q110 29 117 33 L114 38 Q124 38 127 46 L123 48 Q114 40 100 40 Q84 40 72 50 Z"
+        fill={color}
+      />
+    ),
+    capDetail: (color) => <Shine color={color} d="M90 38 Q100 35 112 38" />,
+  },
   undercut: {
     outset: 1.01,
     cap: SHAVED_CAP,

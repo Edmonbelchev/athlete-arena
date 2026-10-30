@@ -35,6 +35,7 @@ export type AvatarHair =
   | 'short'
   | 'side_part'
   | 'spiky'
+  | 'short_spiky'
   | 'undercut'
   | 'mohawk'
   | 'man_bun'

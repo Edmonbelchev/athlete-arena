@@ -260,7 +260,7 @@ export default function AvatarEditorScreen() {
                       Welcome to the Arena!
                     </Text>
                     <Text style={StyleSheet.flatten([styles.welcomeText, { color: theme.textSecondary }])}>
-                      Pick male or female, then make the avatar your own.
+                      We picked a starting look for you. Make it your own, or skip and change it any time.
                     </Text>
                   </View>
                 ) : null}
