@@ -255,7 +255,7 @@ function AmrapWorkoutSession({ config }: { config: CustomWorkoutLaunchConfig }) 
         }
         footer={
           showSimulateButton ? (
-            <PrimaryButton label="+ Simulate Rep" variant="secondary" onPress={amrap.registerRep} />
+            <PrimaryButton label="+ Simulate Rep" variant="secondary" size="compact" onPress={amrap.registerRep} />
           ) : undefined
         }
         onDevSimulateRep={amrap.registerRep}
@@ -460,7 +460,7 @@ function EmomWorkoutSession({ config }: { config: CustomWorkoutLaunchConfig }) {
         }
         footer={
           showSimulateButton ? (
-            <PrimaryButton label="+ Simulate Rep" variant="secondary" onPress={emom.registerRep} />
+            <PrimaryButton label="+ Simulate Rep" variant="secondary" size="compact" onPress={emom.registerRep} />
           ) : undefined
         }
         onDevSimulateRep={emom.registerRep}
@@ -669,7 +669,7 @@ function ForTimeWorkoutSession({ config }: { config: CustomWorkoutLaunchConfig }
         }
         footer={
           showSimulateButton ? (
-            <PrimaryButton label="+ Simulate Rep" variant="secondary" onPress={forTime.registerRep} />
+            <PrimaryButton label="+ Simulate Rep" variant="secondary" size="compact" onPress={forTime.registerRep} />
           ) : undefined
         }
         onDevSimulateRep={forTime.registerRep}

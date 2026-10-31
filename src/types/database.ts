@@ -6,7 +6,7 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[];
 
-export type ExerciseType = 'push_ups' | 'squats' | 'pull_ups' | 'dips' | 'burpees' | 'half_burpees' | 'jumping_jacks' | 'jumping_squats' | 'lunges';
+export type ExerciseType = 'push_ups' | 'squats' | 'pull_ups' | 'dips' | 'burpees' | 'half_burpees' | 'jumping_jacks' | 'jumping_squats' | 'lunges' | 'sit_ups' | 'plank';
 export type ChallengeStatus = 'pending' | 'in_progress' | 'completed' | 'declined' | 'expired';
 export type FriendshipStatus = 'pending' | 'accepted' | 'declined';
 export type SpinRarity = 'common' | 'rare' | 'epic' | 'legendary';
@@ -835,6 +835,10 @@ export interface Database {
         Args: { p_participant_id: string; p_completed_reps: number };
         Returns: Database['public']['Tables']['friend_challenge_participants']['Row'];
       };
+      record_friend_hold_progress: {
+        Args: { p_participant_id: string; p_held_seconds: number; p_finish: boolean };
+        Returns: Database['public']['Tables']['friend_challenge_participants']['Row'];
+      };
       create_friend_workout_challenge: {
         Args: {
           p_friend_id: string;
@@ -1154,6 +1158,8 @@ export interface Database {
           total_jumping_jacks: number;
           total_jumping_squats: number;
           total_lunges: number;
+          total_sit_ups: number;
+          total_plank_seconds: number;
           daily_missions_completed: number;
           friend_races_completed: number;
         }[];

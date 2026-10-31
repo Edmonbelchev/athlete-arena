@@ -13,7 +13,7 @@ import {
 import { WorkoutCircuitPreview } from '@/components/workouts/WorkoutCircuitPreview';
 import { EmoteDisplay } from '@/components/shop/EmoteDisplay';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
-import { formatExerciseLabel } from '@/constants/challenges';
+import { formatExerciseLabel, isHoldExercise } from '@/constants/challenges';
 import { getCustomWorkoutSessionPath, getCustomWorkoutTypeLabel } from '@/constants/customWorkouts';
 import { getFriendChallengeCoinReward } from '@/constants/coins';
 import {
@@ -41,6 +41,7 @@ import { supportsNativePoseDetection } from '@/lib/runtime';
 import {
     acceptFriendChallenge,
     completeFriendChallenge,
+    recordFriendHoldProgress,
     declineFriendChallenge,
 } from '@/services/friendChallengeService';
 import {
@@ -79,6 +80,13 @@ function getFriendChallengeOverlayVariant(
 
   return 'tie';
 }
+
+/** Hold challenges sync progress every few seconds instead of every second. */
+const HOLD_SYNC_EVERY_SECONDS = 5;
+/** After the minimum is reached, a hold ends once form has been broken this long. */
+const HOLD_FINISH_AFTER_BREAK_MS = 3000;
+/** Upper bound for counting hold seconds locally (the server caps target values the same way). */
+const HOLD_MAX_SECONDS = 3600;
 
 export default function FriendChallengeScreen() {
   const theme = useTheme();
@@ -133,6 +141,8 @@ export default function FriendChallengeScreen() {
     : null;
   const isWorkoutChallenge = challenge ? isFriendWorkoutChallenge(challenge) : false;
   const exerciseType = challenge?.exerciseType ?? 'push_ups';
+  /** Plank: count seconds held; the longest hold wins instead of the fastest finish. */
+  const isHoldChallenge = !isWorkoutChallenge && isHoldExercise(exerciseType);
   const showExerciseWorkout =
     Boolean(challenge) &&
     !isWorkoutChallenge &&
@@ -237,6 +247,23 @@ export default function FriendChallengeScreen() {
         return;
       }
 
+      if (isHoldExercise(activeChallenge.exerciseType)) {
+        // Holds keep going past the minimum; save progress periodically and finish separately.
+        if (repCount % HOLD_SYNC_EVERY_SECONDS !== 0) {
+          return;
+        }
+
+        isSyncingRef.current = true;
+        try {
+          await recordFriendHoldProgress(participantId, repCount, false);
+        } catch (err) {
+          setSyncError(formatUserError(err, 'Failed to save your hold'));
+        } finally {
+          isSyncingRef.current = false;
+        }
+        return;
+      }
+
       isSyncingRef.current = true;
       setIsSyncing(true);
       setSyncError(null);
@@ -257,7 +284,7 @@ export default function FriendChallengeScreen() {
   );
 
   const repCounter = useRepCounter({
-    targetReps,
+    targetReps: isHoldChallenge ? HOLD_MAX_SECONDS : targetReps,
     initialReps: challenge?.completedReps ?? 0,
     enabled: canAttempt,
     onRepDetected: (repCount) => {
@@ -279,6 +306,43 @@ export default function FriendChallengeScreen() {
       repCounter.simulateRep();
     },
   });
+
+  const heldSeconds = repCounter.currentReps;
+  const canFinishHold = isHoldChallenge && canAttempt && heldSeconds >= targetReps;
+
+  const finishHold = useCallback(async () => {
+    if (!participantId || isSyncingRef.current) {
+      return;
+    }
+
+    isSyncingRef.current = true;
+    setIsSyncing(true);
+    setSyncError(null);
+
+    try {
+      await recordFriendHoldProgress(participantId, heldSeconds, true);
+      await refresh({ silent: true });
+      void refreshProfile();
+    } catch (err) {
+      setSyncError(formatUserError(err, 'Failed to finish your hold'));
+    } finally {
+      isSyncingRef.current = false;
+      setIsSyncing(false);
+    }
+  }, [heldSeconds, participantId, refresh, refreshProfile]);
+
+  // Past the minimum, breaking form for a few seconds ends the hold attempt.
+  useEffect(() => {
+    if (!canFinishHold || posePhase !== 'PAUSED') {
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      void finishHold();
+    }, HOLD_FINISH_AFTER_BREAK_MS);
+
+    return () => clearTimeout(timer);
+  }, [canFinishHold, finishHold, posePhase]);
 
   const autoRepCounting = Platform.OS === 'web' || supportsNativePoseDetection();
   const showSimulateButton = !__DEV__ && canAttempt && !autoRepCounting;
@@ -315,7 +379,7 @@ export default function FriendChallengeScreen() {
   const earnedCoins = getFriendChallengeCoinReward(challenge.coinsEarned);
   const overlayKey = `${overlayVariant ?? 'none'}-${challenge.resolvedAt ?? challenge.completedAt ?? 'pending'}`;
   const raceTimer =
-    isPending || !canAttempt
+    isPending || !canAttempt || isHoldChallenge
       ? null
       : !raceStarted
         ? { kind: 'hint' as const, message: FRIEND_RACE_TIMER_START_HINT }
@@ -328,12 +392,16 @@ export default function FriendChallengeScreen() {
               timeLimitSeconds: challenge.timeLimitSeconds,
             };
   const workoutFooter =
-    showSimulateButton || syncError ? (
+    showSimulateButton || syncError || canFinishHold ? (
       <>
+        {canFinishHold ? (
+          <PrimaryButton label="Finish hold" size="compact" loading={isSyncing} onPress={() => void finishHold()} />
+        ) : null}
         {showSimulateButton ? (
           <PrimaryButton
             label="+ Simulate Rep"
             variant="secondary"
+            size="compact"
             disabled={repCounter.isComplete || isSyncing}
             loading={isSyncing}
             onPress={repCounter.simulateRep}
@@ -402,9 +470,10 @@ export default function FriendChallengeScreen() {
               <FriendChallengeCompleteOverlay
                 key={overlayKey}
                 variant={overlayVariant}
-                raceTimeSeconds={myTime}
+                raceTimeSeconds={isHoldChallenge ? challenge.completedReps : myTime}
                 opponentName={opponentName}
-                opponentTimeSeconds={opponentTime}
+                opponentTimeSeconds={isHoldChallenge ? challenge.opponentCompletedReps : opponentTime}
+                isHold={isHoldChallenge}
                 xp={earnedXp}
                 coins={earnedCoins}
                 emote={equippedEmote}

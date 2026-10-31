@@ -8,6 +8,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
+import { formatHoldSeconds, isHoldExercise, type ExerciseType } from '@/constants/challenges';
 import { formatRaceTime, formatRaceTimeLimit } from '@/constants/friendChallenges';
 import { Radius, Spacing } from '@/constants/theme';
 import { useUserSettings } from '@/features/settings/UserSettingsProvider';
@@ -25,8 +26,10 @@ export type ChallengeRepHudRaceTimer =
   | { kind: 'expired' };
 
 interface ChallengeRepHudProps {
+  /** Reps, or seconds held for hold exercises. */
   currentReps: number;
   targetReps: number;
+  exerciseType?: ExerciseType;
   completed?: boolean;
   raceTimer?: ChallengeRepHudRaceTimer | null;
 }
@@ -34,25 +37,29 @@ interface ChallengeRepHudProps {
 export function ChallengeRepHud({
   currentReps,
   targetReps,
+  exerciseType,
   completed = false,
   raceTimer = null,
 }: ChallengeRepHudProps) {
+  const isHold = isHoldExercise(exerciseType);
+  // Holds tick every second; give feedback every 10 seconds instead.
+  const feedbackCount = isHold ? Math.floor(currentReps / 10) : currentReps;
   const theme = useTheme();
   const { preferences } = useUserSettings();
-  const prevRepsRef = useRef(currentReps);
+  const prevRepsRef = useRef(feedbackCount);
   const countScale = useSharedValue(1);
   const ringScale = useSharedValue(1);
   const ringOpacity = useSharedValue(0);
   const flashOpacity = useSharedValue(0);
 
-  useRepFeedback(currentReps, {
+  useRepFeedback(feedbackCount, {
     enabled: !completed,
     soundEnabled: preferences.repSoundEnabled,
   });
 
   useEffect(() => {
-    if (completed || currentReps <= prevRepsRef.current) {
-      prevRepsRef.current = currentReps;
+    if (completed || feedbackCount <= prevRepsRef.current) {
+      prevRepsRef.current = feedbackCount;
       return;
     }
 
@@ -71,8 +78,8 @@ export function ChallengeRepHud({
       withTiming(0, { duration: 220, easing: Easing.out(Easing.quad) }),
     );
 
-    prevRepsRef.current = currentReps;
-  }, [completed, countScale, currentReps, flashOpacity, ringOpacity, ringScale]);
+    prevRepsRef.current = feedbackCount;
+  }, [completed, countScale, feedbackCount, flashOpacity, ringOpacity, ringScale]);
 
   const hudStyle = useAnimatedStyle(() => ({
     transform: [{ scale: countScale.value }],
@@ -104,14 +111,16 @@ export function ChallengeRepHud({
             { borderColor: 'rgba(255,255,255,0.55)' },
           ])}
         />
-        <Text style={StyleSheet.flatten([styles.label, { color: 'rgba(255,255,255,0.82)' }])}>REPS</Text>
+        <Text style={StyleSheet.flatten([styles.label, { color: 'rgba(255,255,255,0.82)' }])}>
+          {isHold ? 'HOLD' : 'REPS'}
+        </Text>
         <Text
           style={StyleSheet.flatten([
             styles.count,
             { color: completed ? theme.success : '#FFFFFF' },
           ])}>
-          {currentReps}
-          <Text style={styles.target}> / {targetReps}</Text>
+          {isHold ? formatHoldSeconds(currentReps) : currentReps}
+          <Text style={styles.target}> / {isHold ? formatHoldSeconds(targetReps) : targetReps}</Text>
         </Text>
         {raceTimer?.kind === 'hint' ? (
           <Text style={styles.timerHint}>{raceTimer.message}</Text>

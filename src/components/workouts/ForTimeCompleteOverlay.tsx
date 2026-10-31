@@ -1,7 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import { AppIcon } from '@/components/ui/AppIcon';
-import { formatExerciseLabel } from '@/constants/challenges';
+import { formatExerciseAmount, formatExerciseCount, formatExerciseLabel } from '@/constants/challenges';
 import { formatRaceTime } from '@/constants/friendChallenges';
 import { getCustomWorkoutTypeLabel } from '@/constants/customWorkouts';
 import { Radius, Spacing } from '@/constants/theme';
@@ -41,10 +41,11 @@ export function ForTimeCompleteOverlay({ result, sessionReward = null }: ForTime
         {result.exerciseBreakdown.map((entry) => (
           <View key={entry.exerciseType} style={styles.breakdownRow}>
             <Text style={[styles.breakdownExercise, { color: theme.text }]}>
-              {entry.targetReps} {formatExerciseLabel(entry.exerciseType)}
+              {formatExerciseCount(entry.exerciseType, entry.targetReps)} {formatExerciseLabel(entry.exerciseType)}
             </Text>
             <Text style={[styles.breakdownMeta, { color: theme.textSecondary }]}>
-              {entry.totalReps}/{entry.targetReps} reps
+              {formatExerciseCount(entry.exerciseType, entry.totalReps)}/
+              {formatExerciseAmount(entry.exerciseType, entry.targetReps)}
             </Text>
           </View>
         ))}

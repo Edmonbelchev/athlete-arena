@@ -1,4 +1,4 @@
-import { formatExerciseLabel, type ExerciseType } from '@/constants/challenges';
+import { formatExerciseLabel, formatHoldSeconds, isHoldExercise, type ExerciseType } from '@/constants/challenges';
 import type { FriendChallengeKind } from '@/types/friends';
 
 /*
@@ -41,6 +41,9 @@ export const FRIEND_CHALLENGE_FULL_REWARD_REPS: Record<FriendChallengeRewardExer
   jumping_jacks: 60,
   jumping_squats: 40,
   lunges: 50,
+  sit_ups: 30,
+  /** Seconds held. */
+  plank: 60,
   dips: 50,
 };
 
@@ -118,6 +121,10 @@ export function formatFriendChallengeRewardRule(exerciseType: ExerciseType): str
     ? FRIEND_CHALLENGE_FULL_REWARD_REPS[exerciseType]
     : 50;
 
+  if (isHoldExercise(exerciseType)) {
+    return `Full reward at a ${formatHoldSeconds(fullReps)} hold · shorter minimums pay less`;
+  }
+
   return `Full reward at ${fullReps} ${formatExerciseLabel(exerciseType).toLowerCase()} · fewer reps pay less`;
 }
 
@@ -135,7 +142,7 @@ export function formatFriendChallengeWorkoutRewardPreview(): string {
  * Challenges finished before coins were stored per participant only kept XP,
  * so their coins are inferred from the reward rules in force at the time.
  */
-const LEGACY_EXERCISE_RULES: Record<FriendChallengeRewardExerciseType, { xpPerRep: number; coinEveryReps: number }> = {
+const LEGACY_EXERCISE_RULES: Partial<Record<FriendChallengeRewardExerciseType, { xpPerRep: number; coinEveryReps: number }>> = {
   push_ups: { xpPerRep: 2, coinEveryReps: 5 },
   squats: { xpPerRep: 1, coinEveryReps: 10 },
   pull_ups: { xpPerRep: 3, coinEveryReps: 3 },
@@ -171,7 +178,7 @@ export function getFriendChallengeEarnedRewards(
     options.targetReps !== undefined &&
     isFriendChallengeExerciseType(options.exerciseType)
   ) {
-    const rule = LEGACY_EXERCISE_RULES[options.exerciseType];
+    const rule = LEGACY_EXERCISE_RULES[options.exerciseType] ?? { xpPerRep: 1, coinEveryReps: 10 };
     const reps = Math.max(options.targetReps, 0);
     const winnerXp = Math.min(Math.floor(reps * rule.xpPerRep), LEGACY_MAX_XP);
 

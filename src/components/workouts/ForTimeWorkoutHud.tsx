@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 
-import { formatExerciseLabel } from '@/constants/challenges';
+import { formatExerciseCount, formatExerciseLabel } from '@/constants/challenges';
 import { formatRaceTime } from '@/constants/friendChallenges';
 import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -50,8 +50,8 @@ export function ForTimeWorkoutHud({
         {tierLabel ? <Text style={styles.tierLabel}>{tierLabel}</Text> : null}
         <Text style={styles.exerciseLabel}>{formatExerciseLabel(currentExercise.exerciseType, true)}</Text>
         <Text style={styles.repCount}>
-          {currentExerciseReps}
-          <Text style={styles.repTarget}> / {currentExercise.targetReps}</Text>
+          {formatExerciseCount(currentExercise.exerciseType, currentExerciseReps)}
+          <Text style={styles.repTarget}> / {formatExerciseCount(currentExercise.exerciseType, currentExercise.targetReps)}</Text>
         </Text>
         {timerStarted ? (
           <Text style={styles.meta}>{workoutTypeLabel} · finish the circuit to stop the clock</Text>

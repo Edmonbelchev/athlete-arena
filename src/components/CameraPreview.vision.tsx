@@ -14,7 +14,7 @@ import type { CameraPreviewProps } from '@/components/CameraPreview.types';
 import { RepCycleProgressBar } from '@/components/challenges/RepCycleProgressBar';
 import { PoseSkeletonOverlay } from '@/components/settings/PoseSkeletonOverlay';
 import { PullUpBarLineOverlay } from '@/components/settings/PullUpBarLineOverlay';
-import { POSE_LANDSCAPE_POST_SETTLE_FRAMES, POSE_LANDMARK_SMOOTH_ALPHA, POSE_LANDMARK_SMOOTH_ALPHA_JUMPING_JACK, POSE_LANDMARK_SMOOTH_ALPHA_JUMPING_SQUAT, POSE_LANDMARK_SMOOTH_ALPHA_PULL_UP } from '@/constants/poseDetection';
+import { POSE_LANDSCAPE_POST_SETTLE_FRAMES, POSE_LANDMARK_SMOOTH_ALPHA, POSE_LANDMARK_SMOOTH_ALPHA_JUMPING_JACK, POSE_LANDMARK_SMOOTH_ALPHA_JUMPING_SQUAT, POSE_LANDMARK_SMOOTH_ALPHA_PULL_UP, POSE_LANDMARK_SMOOTH_ALPHA_SIT_UP } from '@/constants/poseDetection';
 import { Radius, Spacing } from '@/constants/theme';
 import {
   isDisplayFrameStale,
@@ -56,6 +56,10 @@ function getPoseLandmarkSmoothAlpha(exerciseType: ActiveVisionCameraProps['exerc
 
   if (exerciseType === 'jumping_squats') {
     return POSE_LANDMARK_SMOOTH_ALPHA_JUMPING_SQUAT;
+  }
+
+  if (exerciseType === 'sit_ups') {
+    return POSE_LANDMARK_SMOOTH_ALPHA_SIT_UP;
   }
 
   return POSE_LANDMARK_SMOOTH_ALPHA;

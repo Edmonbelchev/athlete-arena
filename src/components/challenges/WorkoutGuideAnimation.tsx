@@ -5,7 +5,10 @@ import { StyleSheet, Text, View } from 'react-native';
 import type { ExerciseType } from '@/constants/challenges';
 import { Radius, Spacing } from '@/constants/theme';
 import { VISUAL_GUIDE_FRAME_INTERVAL_MS, VISUAL_GUIDE_CANVAS_BORDER, VISUAL_GUIDE_CANVAS_COLOR, VISUAL_GUIDE_CANVAS_MUTED_TEXT } from '@/constants/visualGuides';
+import { hasPoseGuide } from '@/features/visualGuides/poseGuides';
 import { useVisualGuideFrameUrls } from '@/hooks/use-visual-guide-frame-urls';
+
+import { PoseGuideFigure } from './PoseGuideFigure';
 
 interface WorkoutGuideAnimationProps {
   exerciseType: ExerciseType;
@@ -15,8 +18,45 @@ interface WorkoutGuideAnimationProps {
 
 const CROSSFADE_MS = 300;
 
-/** Frame loop from Supabase Storage (`visual_guides/{exercise}/frameN.webp`). */
+function getGuideSurface(isOverlay: boolean) {
+  return isOverlay
+    ? {
+        backgroundColor: 'rgba(0, 0, 0, 0.55)',
+        borderColor: 'rgba(255, 255, 255, 0.25)',
+        fallbackTextColor: '#FFFFFF',
+      }
+    : {
+        backgroundColor: VISUAL_GUIDE_CANVAS_COLOR,
+        borderColor: VISUAL_GUIDE_CANVAS_BORDER,
+        fallbackTextColor: VISUAL_GUIDE_CANVAS_MUTED_TEXT,
+      };
+}
+
+/**
+ * Exercise demo loop: an animated figure drawn in code where one exists (see poseGuides.ts),
+ * otherwise image frames from Supabase Storage.
+ */
 export function WorkoutGuideAnimation({ exerciseType, variant = 'setup' }: WorkoutGuideAnimationProps) {
+  if (hasPoseGuide(exerciseType)) {
+    const isOverlay = variant === 'overlay';
+    const guideSurface = getGuideSurface(isOverlay);
+    return (
+      <View
+        style={StyleSheet.flatten([
+          isOverlay ? styles.overlay : styles.setup,
+          { backgroundColor: guideSurface.backgroundColor, borderColor: guideSurface.borderColor },
+          isOverlay ? styles.drawnOverlayPadding : styles.drawnSetupPadding,
+        ])}>
+        <PoseGuideFigure exerciseType={exerciseType} />
+      </View>
+    );
+  }
+
+  return <ImageGuideAnimation exerciseType={exerciseType} variant={variant} />;
+}
+
+/** Frame loop from Supabase Storage (`visual_guides/{exercise}/frameN.webp`). */
+function ImageGuideAnimation({ exerciseType, variant = 'setup' }: WorkoutGuideAnimationProps) {
   const isOverlay = variant === 'overlay';
   const guideFrames = useVisualGuideFrameUrls(exerciseType);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -58,17 +98,7 @@ export function WorkoutGuideAnimation({ exerciseType, variant = 'setup' }: Worko
     return () => clearInterval(interval);
   }, [framesReady, guideFrames]);
 
-  const guideSurface = isOverlay
-    ? {
-        backgroundColor: 'rgba(0, 0, 0, 0.55)',
-        borderColor: 'rgba(255, 255, 255, 0.25)',
-        fallbackTextColor: '#FFFFFF',
-      }
-    : {
-        backgroundColor: VISUAL_GUIDE_CANVAS_COLOR,
-        borderColor: VISUAL_GUIDE_CANVAS_BORDER,
-        fallbackTextColor: VISUAL_GUIDE_CANVAS_MUTED_TEXT,
-      };
+  const guideSurface = getGuideSurface(isOverlay);
 
   if (!guideFrames || guideFrames.frames.length === 0) {
     return (
@@ -136,6 +166,12 @@ const styles = StyleSheet.create({
     borderRadius: Radius.md,
     borderWidth: 1,
     overflow: 'hidden',
+  },
+  drawnSetupPadding: {
+    padding: Spacing.two,
+  },
+  drawnOverlayPadding: {
+    padding: Spacing.half,
   },
   frameImage: {
     width: '100%',

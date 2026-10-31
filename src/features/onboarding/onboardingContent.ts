@@ -95,6 +95,16 @@ export const ONBOARDING_EXERCISE_BENEFITS: OnboardingBenefit[] = [
     muscles: 'Quadriceps, glutes, hamstrings, and hip stabilizers',
     note: 'Works one leg at a time - builds balance and evens out left-right strength.',
   },
+  {
+    exercise: 'Sit-ups',
+    muscles: 'Abdominals, hip flexors, and obliques',
+    note: 'Lift your torso from the floor to your knees - builds core strength for every other move.',
+  },
+  {
+    exercise: 'Plank',
+    muscles: 'Abdominals, lower back, shoulders, and glutes',
+    note: 'A timed hold in a straight line - the timer only runs while your form is good.',
+  },
 ];
 
 export const ONBOARDING_GENERAL_NOTE =

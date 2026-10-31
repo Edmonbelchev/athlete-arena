@@ -9,7 +9,7 @@ export function filterExercisesByQuery(
   const normalizedQuery = query.trim().toLowerCase();
 
   if (!normalizedQuery) {
-    return exerciseTypes;
+    return [...exerciseTypes];
   }
 
   return exerciseTypes.filter((exerciseType) => {

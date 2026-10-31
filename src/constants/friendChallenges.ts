@@ -10,6 +10,9 @@ export const FRIEND_CHALLENGE_REP_PRESETS: Record<ExerciseType, readonly number[
   jumping_jacks: [10, 15, 20, 25, 30, 40],
   jumping_squats: [10, 15, 20, 25, 30, 40, 50],
   lunges: [10, 16, 20, 24, 30, 40, 50],
+  sit_ups: [10, 15, 20, 25, 30, 40],
+  /** Seconds - the minimum hold; the longest hold wins. */
+  plank: [20, 30, 45, 60, 90, 120],
 } as const;
 
 export const FRIEND_CHALLENGE_REP_MIN = 1;

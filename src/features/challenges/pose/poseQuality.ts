@@ -8,6 +8,7 @@ import {
 
 import { PoseLandmarkIndex, type PoseLandmark } from './landmarks';
 import { hasBurpeeTrackingLandmarks } from './burpeePosture';
+import { getBestLegChain, getFloorBody } from './floorPoseGeometry';
 import {
   hasJumpingJackTrackingLandmarks,
   isJumpingJackFullBodyStable,
@@ -195,6 +196,28 @@ function getTrackingIndices(exerciseType: ExerciseType): number[] {
       PoseLandmarkIndex.RIGHT_ELBOW,
       PoseLandmarkIndex.LEFT_WRIST,
       PoseLandmarkIndex.RIGHT_WRIST,
+      PoseLandmarkIndex.LEFT_HIP,
+      PoseLandmarkIndex.RIGHT_HIP,
+      PoseLandmarkIndex.LEFT_KNEE,
+      PoseLandmarkIndex.RIGHT_KNEE,
+      PoseLandmarkIndex.LEFT_ANKLE,
+      PoseLandmarkIndex.RIGHT_ANKLE,
+    ];
+  }
+
+  if (exerciseType === 'sit_ups') {
+    return [
+      PoseLandmarkIndex.LEFT_SHOULDER,
+      PoseLandmarkIndex.RIGHT_SHOULDER,
+      PoseLandmarkIndex.LEFT_HIP,
+      PoseLandmarkIndex.RIGHT_HIP,
+    ];
+  }
+
+  if (exerciseType === 'plank') {
+    return [
+      PoseLandmarkIndex.LEFT_SHOULDER,
+      PoseLandmarkIndex.RIGHT_SHOULDER,
       PoseLandmarkIndex.LEFT_HIP,
       PoseLandmarkIndex.RIGHT_HIP,
       PoseLandmarkIndex.LEFT_KNEE,
@@ -403,6 +426,26 @@ function checkRequiredLandmarks(
     }
 
     return { ok: true, message: null };
+  }
+
+  // Floor exercises facing the camera: the engines check form themselves; the gate only makes
+  // sure the parts they measure are in view (the far side is often hidden by the pivot).
+  if (exerciseType === 'sit_ups') {
+    const body = getFloorBody(landmarks);
+    return body
+      ? { ok: true, message: null }
+      : { ok: false, message: 'Keep both shoulders in view - turn slightly so your knees do not hide them' };
+  }
+
+  if (exerciseType === 'plank') {
+    const body = getFloorBody(landmarks);
+    if (!body?.hipMid) {
+      return { ok: false, message: 'Keep your shoulders and hips in view' };
+    }
+
+    return getBestLegChain(landmarks)
+      ? { ok: true, message: null }
+      : { ok: false, message: 'Turn slightly so the camera sees at least one leg' };
   }
 
   const legVisible = hasCompleteLegChain(landmarks, 'left') || hasCompleteLegChain(landmarks, 'right');
