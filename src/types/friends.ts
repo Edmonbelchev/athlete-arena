@@ -1,5 +1,5 @@
 import type { ExerciseType } from '@/constants/challenges';
-import { formatExerciseLabel } from '@/constants/challenges';
+import { formatExerciseCount, formatExerciseLabel, formatHoldSeconds, isHoldExercise } from '@/constants/challenges';
 import { formatRaceTime } from '@/constants/friendChallenges';
 import type { CustomWorkoutExercise, CustomWorkoutType } from '@/types/customWorkouts';
 
@@ -197,7 +197,16 @@ export function getFriendChallengeTitle(challenge: FriendChallenge): string {
     return challenge.workoutTitle ?? 'Workout challenge';
   }
 
-  return `${challenge.targetReps} ${formatExerciseLabel(challenge.exerciseType ?? 'push_ups', true)}`;
+  return `${formatExerciseCount(challenge.exerciseType, challenge.targetReps)} ${formatExerciseLabel(challenge.exerciseType ?? 'push_ups', true)}`;
+}
+
+/** "You 0:45 · Alex 1:02" for holds, "You 12/20 · Alex 8/20" for reps. */
+export function formatFriendChallengeProgress(challenge: FriendChallenge, opponentName: string): string {
+  if (isHoldExercise(challenge.exerciseType)) {
+    return `You ${formatHoldSeconds(challenge.completedReps)} · ${opponentName} ${formatHoldSeconds(challenge.opponentCompletedReps)}`;
+  }
+
+  return `You ${challenge.completedReps}/${challenge.targetReps} · ${opponentName} ${challenge.opponentCompletedReps}/${challenge.targetReps}`;
 }
 
 export function getFriendChallengeKindLabel(challenge: FriendChallenge): string {

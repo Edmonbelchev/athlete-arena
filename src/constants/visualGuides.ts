@@ -41,6 +41,16 @@ export const VISUAL_GUIDE_BY_EXERCISE: Record<ExerciseType, VisualGuideExerciseC
     folder: 'lunges',
     frameFiles: ['frame1.webp', 'frame2.webp'],
   },
+  // Sit-ups and plank use drawn guides (features/visualGuides/poseGuides.ts); these image
+  // folders are only a fallback if a drawn guide is removed.
+  sit_ups: {
+    folder: 'sit-ups',
+    frameFiles: ['frame1.webp', 'frame2.webp'],
+  },
+  plank: {
+    folder: 'plank',
+    frameFiles: ['frame1.webp'],
+  },
 };
 
 /** Crossfade interval between frames in the loop. */

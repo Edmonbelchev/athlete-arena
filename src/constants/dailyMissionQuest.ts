@@ -41,6 +41,10 @@ export const DAILY_MISSION_QUEST: Partial<Record<ExerciseType, DailyMissionQuest
     questTitle: 'Lunge League',
     objectiveVerb: 'Complete',
   },
+  sit_ups: {
+    questTitle: 'Core Crusher',
+    objectiveVerb: 'Complete',
+  },
 };
 
 export function getDailyMissionQuestMeta(exerciseType: ExerciseType): DailyMissionQuestMeta {

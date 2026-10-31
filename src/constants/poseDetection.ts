@@ -186,6 +186,90 @@ export const SQUAT_POSTURE = {
   bottomHoldFrames: isNativeMobile ? 2 : 3,
 } as const;
 
+/**
+ * Floor exercises (sit-ups, plank) in portrait, body pointing toward the camera with a slight
+ * pivot. Lengths are in shoulder widths - the one body measure that stays reliable when the
+ * body is foreshortened toward the lens. Values were derived from a perspective model of a phone
+ * propped on the floor or at knee height, at 0-45° of pivot; tune them against real recordings.
+ */
+export const FLOOR_POSE = {
+  /** Width / height of the portrait camera preview landmarks are normalized to. */
+  viewAspect: 9 / 19.5,
+  /** Visibility a floor-exercise landmark needs to be used. */
+  minVisibility: 0.5,
+  /** Shoulder width (aspect-corrected, fraction of view height) below this is too far / noise. */
+  minShoulderWidth: 0.025,
+} as const;
+
+/** Sit-ups facing the camera (feet toward it), lying back with knees bent. */
+export const SIT_UP_POSTURE = {
+  /** Shoulder-above-hip height (shoulder widths) still plausible for lying on the floor. */
+  maxLyingShoulderAboveHip: 0.6,
+  /** Knees above hips (shoulder widths) when lying with knees bent and feet flat. */
+  minKneeAboveHipLying: 0.3,
+  /** Shoulder movement per frame (shoulder widths) still counted as lying still for calibration. */
+  maxCalibrationJitter: 0.08,
+  /** Still, lying time before counting starts; the lying position is recorded as the baseline (ms). */
+  calibrationMs: 700,
+  /** Rise above baseline (shoulder widths) that counts as leaving the floor. */
+  risingRise: 0.45,
+  /** Rise that counts as sitting up (~45° torso); a crunch (~20°) stays near 0.5. */
+  topRise: 0.88,
+  /** Rise that ends the top phase on the way down (hysteresis). */
+  leaveTopRise: 0.7,
+  /** Rise at or below which the user is back down - completes the rep. */
+  lyingRise: 0.3,
+  /** Frames at the top before it counts - one, so fast reps that only touch the top still count. */
+  topHoldFrames: 1,
+  /** Shortest full rep (ms) - faster cycles are jitter, not sit-ups. */
+  minRepMs: 350,
+  /** Hips rising above their lying baseline (shoulder widths) - standing up, bridging. */
+  maxHipLift: 0.6,
+  /** Shoulder width changing by more than this fraction means the user moved toward / away. */
+  maxShoulderWidthChange: 0.4,
+  /** Rise within ±this counts as resting flat - the only frames the baseline follows. */
+  restingRise: 0.12,
+  /** Baseline follows slow drift while resting flat (EMA weight per frame). */
+  baselineFollow: 0.05,
+  /** Bad frames (moved, stood up) before the set ends and calibration starts over. */
+  invalidFramesToRelease: 6,
+  /** Shoulders out of view this long ends the set (ms); shorter gaps freeze the count. */
+  lostTrackingMs: 3000,
+} as const;
+
+/** Plank facing the camera with a pivot: shoulders, hips and at least one leg in view. */
+export const PLANK_POSTURE = {
+  /** Shoulder→foot height on screen (shoulder widths) above this is standing / kneeling up. */
+  maxVerticalSpan: 3.0,
+  /** Share of maxVerticalSpan that applies when the knee stands in for the foot. */
+  kneeSpanFraction: 0.6,
+  /**
+   * Shoulder→hip sideways spread (shoulder widths) below this means the body points straight
+   * at the lens - sagging and piking cannot be seen, so the user must pivot (~15°+).
+   */
+  minTorsoSideways: 0.28,
+  /** Elbow below its shoulder (shoulder widths): the upper arm holds the body up, not lying flat. */
+  minUpperArmDrop: 0.55,
+  /** Elbow sideways offset allowed per unit of drop - the upper arm stands near vertical. */
+  maxUpperArmSlant: 0.5,
+  /** Hips below the shoulder→foot line, measured straight down (shoulder widths) - sagging. */
+  maxHipSag: 0.32,
+  /** Hips above the shoulder→foot line (shoulder widths) - piking. */
+  maxHipPike: 0.25,
+  /** Knee below the hip→ankle line (shoulder widths) - knees dropped to the floor. */
+  maxKneeDrop: 0.2,
+  /** Good form this long before the timer starts (ms). */
+  settleMs: 800,
+  /** Good form this long to resume after a pause (ms). */
+  resumeMs: 400,
+  /** Bad form tolerated before the timer pauses (ms); not counted toward the hold. */
+  graceMs: 1000,
+  /** Tracking lost (body out of view) tolerated before the timer pauses (ms). */
+  lostGraceMs: 1200,
+  /** Longest frame gap counted toward the hold (ms) - dropped frames do not add time. */
+  maxFrameGapMs: 250,
+} as const;
+
 export const BURPEE_THRESHOLDS = {
   /** Knee angle (degrees) - standing upright at top of rep (front view). */
   standingAngle: 155,
@@ -338,6 +422,9 @@ export const POSE_LANDMARK_SMOOTH_ALPHA = isNativeMobile ? 0.52 : 1;
 /** Same smoothing as regular squats. */
 export const POSE_LANDMARK_SMOOTH_ALPHA_JUMPING_SQUAT = POSE_LANDMARK_SMOOTH_ALPHA;
 
+/** Lighter smoothing for sit-ups so fast reps still reach the top threshold without lag. */
+export const POSE_LANDMARK_SMOOTH_ALPHA_SIT_UP = isNativeMobile ? 0.75 : 1;
+
 /** Faster landmark follow for pull-ups so quick peaks are not smoothed away. */
 export const POSE_LANDMARK_SMOOTH_ALPHA_PULL_UP = isNativeMobile ? 0.68 : 1;
 
@@ -402,10 +489,28 @@ export const POSE_GUIDANCE: Record<ExerciseType, { title: string; tips: readonly
   lunges: {
     title: 'Lunge setup',
     tips: [
-      'Prop your phone in portrait, face it, and step back until both legs are in frame',
+      'Prop your phone in portrait, face it (turning a little is fine), and step back until both legs are in frame',
       'Stand tall with feet side by side to start counting',
       'Step forward or back and lower until your back knee nears the floor',
       'Rise back up to finish - each leg counts as one rep',
+    ],
+  },
+  sit_ups: {
+    title: 'Sit-up setup',
+    tips: [
+      'Prop your phone upright on the floor and lie with your feet toward it',
+      'Turn slightly so your shoulders are not hidden behind your knees',
+      'Lie back with knees bent and hold still for a moment to start counting',
+      'Sit up until your chest faces your knees, then lie back down - crunches will not count',
+    ],
+  },
+  plank: {
+    title: 'Plank setup',
+    tips: [
+      'Prop your phone upright on the floor and face it with your head toward the camera',
+      'Turn slightly so the camera sees your shoulders, hips, and at least one leg',
+      'Hold a forearm or straight-arm plank with your body in a straight line',
+      'The timer runs only while your form is good - sagging, piking, or dropping your knees pauses it',
     ],
   },
 };

@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 
-import { formatExerciseLabel } from '@/constants/challenges';
+import { formatExerciseCount, formatExerciseLabel } from '@/constants/challenges';
 import { getCustomWorkoutTypeDefinition } from '@/constants/customWorkouts';
 import { Radius, Spacing } from '@/constants/theme';
 import {
@@ -51,7 +51,7 @@ export function WorkoutCircuitPreview({
             <Text style={[styles.tierLabel, { color: theme.textSecondary }]}>{tierReps} reps</Text>
             {exercises.map((exercise) => (
               <Text key={`${tierIndex}-${exercise.exerciseType}`} style={[styles.exercise, { color: theme.text }]}>
-                {tierReps} {formatExerciseLabel(exercise.exerciseType)}
+                {formatExerciseCount(exercise.exerciseType, tierReps)} {formatExerciseLabel(exercise.exerciseType)}
               </Text>
             ))}
           </View>
@@ -76,7 +76,7 @@ export function WorkoutCircuitPreview({
           <Text style={[styles.tierLabel, { color: theme.textSecondary }]}>Each round</Text>
           {exercises.map((exercise) => (
             <Text key={exercise.exerciseType} style={[styles.exercise, { color: theme.text }]}>
-              {exercise.targetReps} {formatExerciseLabel(exercise.exerciseType)}
+              {formatExerciseCount(exercise.exerciseType, exercise.targetReps)} {formatExerciseLabel(exercise.exerciseType)}
             </Text>
           ))}
         </View>
@@ -96,7 +96,7 @@ export function WorkoutCircuitPreview({
           style={[styles.row, index < exercises.length - 1 ? styles.rowBorder : null, { borderBottomColor: theme.border }]}>
           <Text style={[styles.step, { color: theme.primary }]}>{index + 1}</Text>
           <Text style={[styles.exercise, { color: theme.text }]}>
-            {exercise.targetReps} {formatExerciseLabel(exercise.exerciseType)}
+            {formatExerciseCount(exercise.exerciseType, exercise.targetReps)} {formatExerciseLabel(exercise.exerciseType)}
           </Text>
         </View>
       ))}

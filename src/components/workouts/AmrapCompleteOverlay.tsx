@@ -1,7 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import { AppIcon } from '@/components/ui/AppIcon';
-import { formatExerciseLabel } from '@/constants/challenges';
+import { formatExerciseCount, formatExerciseLabel } from '@/constants/challenges';
 import { formatWorkoutTimeLimit, getCustomWorkoutTypeLabel } from '@/constants/customWorkouts';
 import { Radius, Spacing } from '@/constants/theme';
 import type { AmrapWorkoutResult } from '@/types/customWorkouts';
@@ -52,7 +52,8 @@ export function AmrapCompleteOverlay({ result, sessionReward = null, completedQu
               {formatExerciseLabel(entry.exerciseType)}
             </Text>
             <Text style={[styles.breakdownMeta, { color: theme.textSecondary }]}>
-              {entry.targetReps} per round · {entry.totalReps} total
+              {formatExerciseCount(entry.exerciseType, entry.targetReps)} per round ·{' '}
+              {formatExerciseCount(entry.exerciseType, entry.totalReps)} total
             </Text>
           </View>
         ))}

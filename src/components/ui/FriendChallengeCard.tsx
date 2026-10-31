@@ -1,7 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
-import { formatExerciseLabel } from '@/constants/challenges';
+import { formatExerciseLabel, isHoldExercise } from '@/constants/challenges';
 import { formatCoinAmount } from '@/constants/coins';
 import {
   calculateFriendChallengeCoins,
@@ -21,6 +21,7 @@ import {
   formatFriendWorkoutScore,
   getCreatorDisplayName,
   getFriendChallengeKindLabel,
+  formatFriendChallengeProgress,
   getFriendChallengeTitle,
   getMyRaceSeconds,
   getOpponentDisplayName,
@@ -79,6 +80,12 @@ export function FriendChallengeCard({
         <Text style={[styles.timer, { color: theme.textSecondary }]}>
           {typeLabel} · {capLabel}
         </Text>
+      );
+    }
+
+    if (isHoldExercise(challenge.exerciseType)) {
+      return (
+        <Text style={[styles.timer, { color: theme.textSecondary }]}>Plank hold · longest hold wins</Text>
       );
     }
 
@@ -148,8 +155,7 @@ export function FriendChallengeCard({
 
     return (
       <Text style={[styles.progress, { color: theme.textSecondary }]}>
-        You: {challenge.completedReps}/{challenge.targetReps} · {opponentName}:{' '}
-        {challenge.opponentCompletedReps}/{challenge.targetReps}
+        {formatFriendChallengeProgress(challenge, opponentName)}
       </Text>
     );
   }
@@ -158,7 +164,7 @@ export function FriendChallengeCard({
   const subtitle =
     isWorkout && challenge.workoutType
       ? getCustomWorkoutTypeLabel(challenge.workoutType)
-      : `${challenge.targetReps} ${formatExerciseLabel(challenge.exerciseType ?? 'push_ups', true)}`;
+      : getFriendChallengeTitle(challenge);
 
   return (
     <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}>

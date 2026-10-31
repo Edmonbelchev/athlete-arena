@@ -16,6 +16,8 @@ import { SquatRepEngine } from './pose/squatRepEngine';
 import { JumpingSquatRepEngine } from './pose/jumpingSquatRepEngine';
 import { JumpingJackRepEngine } from './pose/jumpingJackRepEngine';
 import { LungeRepEngine } from './pose/lungeRepEngine';
+import { PlankHoldEngine } from './pose/plankHoldEngine';
+import { SitUpRepEngine } from './pose/sitUpRepEngine';
 import { PoseQualityGate, type PoseQualityResult, type PoseTrackingStatus } from './pose/poseQuality';
 import { getCoachSeverity } from './workoutCoachDisplay';
 import {
@@ -37,6 +39,9 @@ interface UseExercisePoseDetectionOptions {
 
 type RepEngine = ReturnType<typeof createRepEngine>;
 
+/** Engines that handle lost tracking themselves (sit-up sets, plank pauses) - never reset on partial frames. */
+const SELF_MANAGED_EXERCISES: ReadonlySet<ExerciseType> = new Set(['sit_ups', 'plank']);
+
 function getEngineArmed(engine: RepEngine, exerciseType: ExerciseType): boolean {
   switch (exerciseType) {
     case 'pull_ups':
@@ -51,6 +56,10 @@ function getEngineArmed(engine: RepEngine, exerciseType: ExerciseType): boolean 
       return (engine as JumpingJackRepEngine).armed;
     case 'lunges':
       return (engine as LungeRepEngine).armed;
+    case 'sit_ups':
+      return (engine as SitUpRepEngine).armed;
+    case 'plank':
+      return (engine as PlankHoldEngine).armed;
     default:
       return false;
   }
@@ -82,6 +91,11 @@ function resolveExerciseTrackingStatus(
       return resolveJumpingJackTrackingStatus(quality, (engine as JumpingJackRepEngine).armed);
     case 'lunges':
       return resolveSquatTrackingStatus(quality, (engine as LungeRepEngine).armed);
+    case 'sit_ups':
+      return resolveJumpingJackTrackingStatus(quality, (engine as SitUpRepEngine).armed);
+    case 'plank':
+      // Green only while the hold timer is running.
+      return resolveJumpingJackTrackingStatus(quality, (engine as PlankHoldEngine).isHolding);
     default:
       return quality.status;
   }
@@ -122,7 +136,7 @@ export function useExercisePoseDetection({
     if (!enabled) {
       engineRef.current.reset();
       qualityGateRef.current.reset();
-      setPhase(getInitialExercisePhase(exerciseType));
+        setPhase(getInitialExercisePhase(exerciseType));
       setTrackingStatus('partial');
       setCoachSeverity('tracking');
       setPullUpBarLineY(null);
@@ -151,8 +165,8 @@ export function useExercisePoseDetection({
         const lungeArmedEmpty =
           exerciseType === 'lunges' && (engineRef.current as LungeRepEngine).armed;
 
-        // A partial jumping-jack or lunge cycle must not survive leaving the camera.
-        if (exerciseType === 'jumping_jacks' || exerciseType === 'lunges') {
+        // A partial jumping-jack or lunge cycle must not survive leaving the camera; a plank pauses.
+        if (exerciseType === 'jumping_jacks' || exerciseType === 'lunges' || exerciseType === 'plank') {
           engineRef.current.update([]);
           setPhase(engineRef.current.phase);
         }
@@ -174,7 +188,8 @@ export function useExercisePoseDetection({
           !pushUpArmedEmpty &&
           !jumpingSquatArmedEmpty &&
           !jumpingJackArmedEmpty &&
-          !lungeArmedEmpty
+          !lungeArmedEmpty &&
+          !SELF_MANAGED_EXERCISES.has(exerciseType)
         ) {
           engineRef.current.reset();
           setPhase(getInitialExercisePhase(exerciseType));
@@ -232,7 +247,8 @@ export function useExercisePoseDetection({
         !(pushUpEngine?.hasStartedSet ?? false) &&
         !jumpingSquatArmed &&
         !jumpingJackArmed &&
-        !lungeArmed
+        !lungeArmed &&
+        !SELF_MANAGED_EXERCISES.has(exerciseType)
       ) {
         engineRef.current.reset();
         setPhase(getInitialExercisePhase(exerciseType));
@@ -248,7 +264,9 @@ export function useExercisePoseDetection({
         armedBeforeUpdate ||
         (exerciseType === 'push_ups' && landmarks.length > 0) ||
         (exerciseType === 'jumping_jacks' && (engine as JumpingJackRepEngine).armed) ||
-        (exerciseType === 'jumping_squats' && (engine as JumpingSquatRepEngine).armed);
+        (exerciseType === 'jumping_squats' && (engine as JumpingSquatRepEngine).armed) ||
+        // Holds must see every frame so bad form pauses the timer.
+        exerciseType === 'plank';
 
       const resolvedTrackingStatus = resolveExerciseTrackingStatus(
         exerciseType,
@@ -293,6 +311,8 @@ export function useExercisePoseDetection({
       const jumpingJackCounting =
         exerciseType === 'jumping_jacks' && (engine as JumpingJackRepEngine).armed;
       const lungeCounting = exerciseType === 'lunges' && (engine as LungeRepEngine).armed;
+      const sitUpCounting = exerciseType === 'sit_ups' && (engine as SitUpRepEngine).armed;
+      const plankCounting = exerciseType === 'plank' && (engine as PlankHoldEngine).isHolding;
 
       if (
         repCompleted &&
@@ -300,7 +320,9 @@ export function useExercisePoseDetection({
           pushUpCounting ||
           jumpingSquatCounting ||
           jumpingJackCounting ||
-          lungeCounting)
+          lungeCounting ||
+          sitUpCounting ||
+          plankCounting)
       ) {
         onRepDetectedRef.current();
       }

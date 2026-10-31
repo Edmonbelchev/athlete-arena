@@ -16,7 +16,12 @@ import { WorkoutCircuitPreview } from '@/components/workouts/WorkoutCircuitPrevi
 import { WorkoutXpPreviewCard } from '@/components/workouts/WorkoutXpPreviewCard';
 import { AuthTextInput } from '@/components/ui/AuthTextInput';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
-import { EXERCISE_LABELS, type ExerciseType } from '@/constants/challenges';
+import {
+  EXERCISE_LABELS,
+  formatExerciseCount,
+  isHoldExercise,
+  type ExerciseType,
+} from '@/constants/challenges';
 import { getDefaultRepsForExercise } from '@/constants/friendChallenges';
 import {
   CUSTOM_WORKOUT_TIME_PRESETS,
@@ -130,6 +135,12 @@ function adaptExercisesForContext(
           : exercise.targetReps,
     })),
   );
+}
+
+
+/** Holds step in 5-second increments; reps step by one. */
+function getTargetStep(exerciseType: ExerciseType): number {
+  return isHoldExercise(exerciseType) ? 5 : 1;
 }
 
 export function CreateWorkoutModal({
@@ -701,20 +712,34 @@ export function CreateWorkoutModal({
                     {!isLadderMode ? (
                       <View style={styles.repRow}>
                         <Text style={[styles.repLabel, { color: theme.text }]}>
-                          {isRoundsMode || !isForTime ? 'Reps per round' : 'Reps'}
+                          {isHoldExercise(exercise.exerciseType)
+                            ? isRoundsMode || !isForTime
+                              ? 'Seconds per round'
+                              : 'Seconds'
+                            : isRoundsMode || !isForTime
+                              ? 'Reps per round'
+                              : 'Reps'}
                         </Text>
                         <View style={styles.repControls}>
                           <Pressable
                             disabled={isBusy}
-                            onPress={() => updateExercise(index, { targetReps: Math.max(1, exercise.targetReps - 1) })}
+                            onPress={() =>
+                              updateExercise(index, {
+                                targetReps: Math.max(1, exercise.targetReps - getTargetStep(exercise.exerciseType)),
+                              })
+                            }
                             style={[styles.repButton, { borderColor: theme.border }]}>
                             <Text style={[styles.repButtonLabel, { color: theme.text }]}>-</Text>
                           </Pressable>
-                          <Text style={[styles.repValue, { color: theme.text }]}>{exercise.targetReps}</Text>
+                          <Text style={[styles.repValue, { color: theme.text }]}>
+                            {formatExerciseCount(exercise.exerciseType, exercise.targetReps)}
+                          </Text>
                           <Pressable
                             disabled={isBusy}
                             onPress={() =>
-                              updateExercise(index, { targetReps: Math.min(500, exercise.targetReps + 1) })
+                              updateExercise(index, {
+                                targetReps: Math.min(500, exercise.targetReps + getTargetStep(exercise.exerciseType)),
+                              })
                             }
                             style={[styles.repButton, { borderColor: theme.border }]}>
                             <Text style={[styles.repButtonLabel, { color: theme.text }]}>+</Text>

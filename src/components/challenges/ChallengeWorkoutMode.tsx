@@ -150,6 +150,7 @@ export function ChallengeWorkoutMode({
             <ChallengeRepHud
               currentReps={currentReps}
               targetReps={targetReps}
+              exerciseType={exerciseType}
               completed={completed}
               raceTimer={raceTimer}
             />

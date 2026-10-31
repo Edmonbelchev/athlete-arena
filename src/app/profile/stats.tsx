@@ -14,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { HomeSection } from '@/components/home/HomeSection';
 import { AppIcon } from '@/components/ui/AppIcon';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
+import { formatHoldSeconds } from '@/constants/challenges';
 import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { useUserStats } from '@/features/stats/useUserStats';
 import { useTheme } from '@/hooks/use-theme';
@@ -61,7 +62,9 @@ export default function StatsScreen() {
     movementStats.totalHalfBurpees > 0 ||
     movementStats.totalJumpingJacks > 0 ||
     movementStats.totalJumpingSquats > 0 ||
-    movementStats.totalLunges > 0;
+    movementStats.totalLunges > 0 ||
+    movementStats.totalSitUps > 0 ||
+    movementStats.totalPlankSeconds > 0;
 
   const exercises = [
     { label: 'Push-ups', value: movementStats.totalPushUps },
@@ -72,11 +75,22 @@ export default function StatsScreen() {
     { label: 'Jumping Jacks', value: movementStats.totalJumpingJacks },
     { label: 'Jumping Squats', value: movementStats.totalJumpingSquats },
     { label: 'Lunges', value: movementStats.totalLunges },
+    { label: 'Sit-ups', value: movementStats.totalSitUps },
     { label: 'Dips', value: movementStats.totalDips, hideWhenEmpty: true },
   ];
-  const doneExercises = exercises.filter((exercise) => exercise.value > 0).sort((a, b) => b.value - a.value);
-  const untriedExercises = exercises.filter((exercise) => exercise.value === 0 && !exercise.hideWhenEmpty);
-  const totalReps = doneExercises.reduce((sum, exercise) => sum + exercise.value, 0);
+  const doneRepExercises = exercises.filter((exercise) => exercise.value > 0).sort((a, b) => b.value - a.value);
+  const totalReps = doneRepExercises.reduce((sum, exercise) => sum + exercise.value, 0);
+  // Plank is time held, not reps: listed after the ranked rep exercises and kept out of the rep
+  // total and percentages.
+  const plank = { label: 'Plank', value: movementStats.totalPlankSeconds, isHold: true };
+  const doneExercises: { label: string; value: number; isHold?: boolean }[] = [
+    ...doneRepExercises,
+    ...(plank.value > 0 ? [plank] : []),
+  ];
+  const untriedExercises = [
+    ...exercises.filter((exercise) => exercise.value === 0 && !exercise.hideWhenEmpty),
+    ...(plank.value > 0 ? [] : [plank]),
+  ];
   const favourite = doneExercises[0] ?? null;
 
   const hasActivityStats =
@@ -173,10 +187,16 @@ export default function StatsScreen() {
                       <View style={styles.exerciseCopy}>
                         <Text style={[styles.exerciseName, { color: theme.text }]}>{exercise.label}</Text>
                         <Text style={[styles.exerciseShare, { color: theme.textSecondary }]}>
-                          {share > 0 ? `${share}% of your reps` : 'Less than 1% of your reps'}
+                          {exercise.isHold
+                            ? 'Total time held'
+                            : share > 0
+                              ? `${share}% of your reps`
+                              : 'Less than 1% of your reps'}
                         </Text>
                       </View>
-                      <Text style={[styles.exerciseValue, { color: theme.text }]}>{formatCount(exercise.value)}</Text>
+                      <Text style={[styles.exerciseValue, { color: theme.text }]}>
+                        {exercise.isHold ? formatHoldSeconds(exercise.value) : formatCount(exercise.value)}
+                      </Text>
                     </View>
                   );
                 })}

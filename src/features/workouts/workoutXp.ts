@@ -1,4 +1,4 @@
-import type { ExerciseType } from '@/constants/challenges';
+import { isHoldExercise, type ExerciseType } from '@/constants/challenges';
 import {
   AMRAP_XP_PER_WORKOUT_MINUTE,
   EMOM_INTERVAL_COMPLETION_BONUS_MAX,
@@ -7,6 +7,7 @@ import {
   FOR_TIME_SECONDS_PER_REP,
   FOR_TIME_SPEED_MULTIPLIER_MAX,
   FOR_TIME_SPEED_MULTIPLIER_MIN,
+  PLANK_SECONDS_PER_XP,
   WORKOUT_XP_EARNINGS_SCALE,
   WORKOUT_XP_MAX,
   WORKOUT_XP_MIN,
@@ -37,22 +38,33 @@ export function getExerciseXpPerRep(exerciseType: ExerciseType): number {
   return WORKOUT_XP_PER_REP[exerciseType] ?? 1;
 }
 
-export function sumRepXpFromBreakdown(breakdown: WorkoutXpBreakdownEntry[]): number {
-  return breakdown.reduce((sum, entry) => {
-    const reps = Math.max(0, entry.totalReps);
-    return sum + reps * getExerciseXpPerRep(entry.exerciseType);
-  }, 0);
+/** XP for an amount of one exercise: reps × per-rep XP, or one XP per PLANK_SECONDS_PER_XP seconds held. */
+function getAmountXp(exerciseType: ExerciseType, amount: number): number {
+  const value = Math.max(0, amount);
+  if (isHoldExercise(exerciseType)) {
+    return Math.floor(value / PLANK_SECONDS_PER_XP);
+  }
+
+  return value * getExerciseXpPerRep(exerciseType);
 }
 
+export function sumRepXpFromBreakdown(breakdown: WorkoutXpBreakdownEntry[]): number {
+  return breakdown.reduce((sum, entry) => sum + getAmountXp(entry.exerciseType, entry.totalReps), 0);
+}
+
+/**
+ * Rep-equivalents for the For Time par (FOR_TIME_SECONDS_PER_REP each). Hold seconds take
+ * one second of par each, not three.
+ */
 export function sumRequiredRepsFromBreakdown(breakdown: WorkoutXpBreakdownEntry[]): number {
-  return breakdown.reduce((sum, entry) => sum + Math.max(0, entry.targetReps), 0);
+  return breakdown.reduce((sum, entry) => {
+    const amount = Math.max(0, entry.targetReps);
+    return sum + (isHoldExercise(entry.exerciseType) ? Math.ceil(amount / FOR_TIME_SECONDS_PER_REP) : amount);
+  }, 0);
 }
 
 export function sumRequiredRepXpFromBreakdown(breakdown: WorkoutXpBreakdownEntry[]): number {
-  return breakdown.reduce((sum, entry) => {
-    const reps = Math.max(0, entry.targetReps);
-    return sum + reps * getExerciseXpPerRep(entry.exerciseType);
-  }, 0);
+  return breakdown.reduce((sum, entry) => sum + getAmountXp(entry.exerciseType, entry.targetReps), 0);
 }
 
 export function getForTimeParSeconds(breakdown: WorkoutXpBreakdownEntry[]): number {

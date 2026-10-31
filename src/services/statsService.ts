@@ -12,6 +12,8 @@ type MovementStatsRow = {
   total_jumping_jacks: number;
   total_jumping_squats: number;
   total_lunges: number;
+  total_sit_ups?: number;
+  total_plank_seconds?: number;
   daily_missions_completed: number;
   friend_races_completed: number;
 };
@@ -31,6 +33,8 @@ function mapMovementStats(row: MovementStatsRow | null | undefined): MovementSta
     totalJumpingJacks: Number(row.total_jumping_jacks),
     totalJumpingSquats: Number(row.total_jumping_squats),
     totalLunges: Number(row.total_lunges),
+    totalSitUps: Number(row.total_sit_ups ?? 0),
+    totalPlankSeconds: Number(row.total_plank_seconds ?? 0),
     dailyMissionsCompleted: Number(row.daily_missions_completed),
     friendRacesCompleted: Number(row.friend_races_completed),
   };
