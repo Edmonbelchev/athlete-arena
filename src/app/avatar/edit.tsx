@@ -249,10 +249,12 @@ export default function AvatarEditorScreen() {
             } else {
               delete preview[slot];
             }
+            const previewStyles = toAccessoryStyles(preview, wardrobe);
             return (
               <AvatarPortrait
-                appearance={appearance}
-                accessories={toAccessoryStyles(preview, wardrobe)}
+                // A race tile shows the look picking it gives: another race's hairstyle becomes the default one.
+                appearance={slot === 'race' ? changeRace(appearance, accessoryRace(previewStyles)) : appearance}
+                accessories={previewStyles}
                 size={size}
                 crop={slot === 'earrings' || slot === 'glasses' ? 'face' : 'portrait'}
                 showBackground={slot === 'background'}
