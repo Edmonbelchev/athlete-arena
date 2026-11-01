@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { LayoutChangeEvent, StyleSheet, Text, View } from 'react-native';
 import Svg, { Line } from 'react-native-svg';
+import { toLayoutUnits } from '@/lib/tabletScale';
 
 interface PullUpBarLineOverlayProps {
   /** Normalized y (0 = top, 1 = bottom) of the captured bar line. */
@@ -29,7 +30,7 @@ export function PullUpBarLineOverlay({ barLineY, visible }: PullUpBarLineOverlay
     <View style={styles.overlay} onLayout={handleLayout} pointerEvents="none">
       {showLine ? (
         <>
-          <Svg width={layout.width} height={layout.height}>
+          <Svg width={toLayoutUnits(layout.width)} height={toLayoutUnits(layout.height)}>
             <Line
               x1={0}
               y1={lineY}
@@ -41,7 +42,7 @@ export function PullUpBarLineOverlay({ barLineY, visible }: PullUpBarLineOverlay
               strokeLinecap="round"
             />
           </Svg>
-          <View style={StyleSheet.flatten([styles.label, { top: Math.max(lineY - 22, 8) }])}>
+          <View style={StyleSheet.flatten([styles.label, { top: Math.max(toLayoutUnits(lineY) - 22, 8) }])}>
             <Text style={styles.labelText}>BAR</Text>
           </View>
         </>

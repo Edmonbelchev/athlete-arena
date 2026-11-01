@@ -1,3 +1,4 @@
+import { installTabletScale } from '@/lib/tabletScale';
 import '@/lib/mediapipe/delayedPoseDetectorRelease';
 import { DarkTheme, DefaultTheme, ThemeProvider, Stack } from 'expo-router';
 import * as ScreenOrientation from 'expo-screen-orientation';
@@ -23,6 +24,9 @@ import { ChallengeNotificationBanner } from '@/components/notifications/Challeng
 import { AvatarHeadshotSync } from '@/components/avatar/AvatarHeadshotSync';
 import { OnboardingGate } from '@/components/onboarding/OnboardingGate';
 import { ModalCloseButton } from '@/components/ui/ModalCloseButton';
+
+// iPad: draw the phone layout larger so it fills the screen. Must run before the first render.
+installTabletScale();
 
 SplashScreen.preventAutoHideAsync();
 

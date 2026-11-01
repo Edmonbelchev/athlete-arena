@@ -16,6 +16,7 @@ import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { Radius, Spacing } from '@/constants/theme';
 import type { FriendChallenge } from '@/types/friends';
 import { useTheme } from '@/hooks/use-theme';
+import { toLayoutUnits } from '@/lib/tabletScale';
 
 interface FriendChallengesCarouselProps {
   challenges: FriendChallenge[];
@@ -125,10 +126,10 @@ export function FriendChallengesCarousel({
             snapToAlignment="start"
             disableIntervalMomentum
             onScroll={handleScroll}
-            style={{ width: slideWidth }}
-            contentContainerStyle={{ width: slideWidth * challenges.length }}>
+            style={{ width: toLayoutUnits(slideWidth) }}
+            contentContainerStyle={{ width: toLayoutUnits(slideWidth) * challenges.length }}>
             {challenges.map((challenge) => (
-              <View key={challenge.participantId} style={{ width: slideWidth }}>
+              <View key={challenge.participantId} style={{ width: toLayoutUnits(slideWidth) }}>
                 <FriendChallengeCard
                   challenge={challenge}
                   loading={busyChallengeId === challenge.participantId}
