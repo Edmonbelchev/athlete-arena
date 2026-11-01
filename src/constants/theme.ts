@@ -2,6 +2,8 @@ import '@/global.css';
 
 import { Platform } from 'react-native';
 
+import { IS_SCALED_TABLET, fullScreenLayoutWidth } from '@/lib/tabletScale';
+
 export const Colors = {
   light: {
     text: '#0F172A',
@@ -81,5 +83,6 @@ export const Radius = {
 } as const;
 
 export const BottomTabInset = Platform.select({ ios: 86, android: 96 }) ?? 86;
-export const MaxContentWidth = 480;
+/** Content column width; on scaled tablets it fills the screen (see tabletScale). */
+export const MaxContentWidth = IS_SCALED_TABLET ? fullScreenLayoutWidth() : 480;
 export const FitContentWidth = 'fit-content';

@@ -31,6 +31,7 @@ import { useProfile } from '@/features/profile/useProfile';
 import { useSidebar } from '@/features/sidebar/SidebarProvider';
 import { xpProgressInCurrentLevel } from '@/features/xp/levelUtils';
 import { useTheme } from '@/hooks/use-theme';
+import { toLayoutUnits } from '@/lib/tabletScale';
 
 interface NavItem {
   label: string;
@@ -86,7 +87,7 @@ export function AppSidebar() {
   const { achievements, refresh: refreshAchievements } = useAchievementPreview();
   const [logoutError, setLogoutError] = useState<string | null>(null);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const sidebarWidth = Math.min(width * 0.86, 340);
+  const sidebarWidth = Math.min(toLayoutUnits(width) * 0.86, 340);
   const displayName = profile?.display_name ?? profile?.username ?? 'Athlete';
   const totalXp = profile?.total_xp ?? 0;
   const xpProgress = xpProgressInCurrentLevel(totalXp);

@@ -9,6 +9,7 @@ import {
 } from '@/features/challenges/pose/drawPoseSkeleton';
 import { isLandmarkDrawable, type PoseLandmark } from '@/features/challenges/pose/landmarks';
 import { useTheme } from '@/hooks/use-theme';
+import { toLayoutUnits } from '@/lib/tabletScale';
 
 interface PoseSkeletonOverlayProps {
   landmarks: PoseLandmark[] | null;
@@ -47,7 +48,7 @@ export const PoseSkeletonOverlay = memo(function PoseSkeletonOverlay({
 
   return (
     <View style={styles.overlay} onLayout={handleLayout} pointerEvents="none">
-      <Svg width={width} height={height}>
+      <Svg width={toLayoutUnits(width)} height={toLayoutUnits(height)}>
         {POSE_CONNECTIONS.map(([startIndex, endIndex]) => {
           const start = landmarks[startIndex];
           const end = landmarks[endIndex];

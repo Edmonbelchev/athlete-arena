@@ -23,6 +23,7 @@ import {
 } from '@/services/challengeService';
 import type { DailyChallengeHome } from '@/types';
 import { useTheme } from '@/hooks/use-theme';
+import { toLayoutUnits } from '@/lib/tabletScale';
 
 interface DailyMissionsCarouselProps {
   missions: DailyChallengeHome[];
@@ -133,8 +134,8 @@ export function DailyMissionsCarousel({
             snapToAlignment="start"
             disableIntervalMomentum
             onScroll={handleScroll}
-            style={{ width: slideWidth }}
-            contentContainerStyle={{ width: slideWidth * missions.length, alignItems: 'stretch' }}>
+            style={{ width: toLayoutUnits(slideWidth) }}
+            contentContainerStyle={{ width: toLayoutUnits(slideWidth) * missions.length, alignItems: 'stretch' }}>
             {missions.map((mission, index) => {
               const missionIndex = resolveMissionIndex(
                 mission.exerciseType,
@@ -148,7 +149,7 @@ export function DailyMissionsCarousel({
               return (
                 <View
                   key={slideKey}
-                  style={{ width: slideWidth, paddingHorizontal: Spacing.half, alignSelf: 'stretch' }}>
+                  style={{ width: toLayoutUnits(slideWidth), paddingHorizontal: Spacing.half, alignSelf: 'stretch' }}>
                   <ChallengeCard
                     missionIndex={missionIndex}
                     missionLabel={`QUEST ${missionIndex + 1}`}
