@@ -17,3 +17,7 @@ verify_jwt = false
 
 [functions.engagement-push]
 verify_jwt = false
+
+# Called by a Database Webhook; checks its own x-report-alert-secret header instead.
+[functions.report-alert]
+verify_jwt = false
