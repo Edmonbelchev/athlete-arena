@@ -1,5 +1,6 @@
 import { mapPublicCosmetics } from '@/features/friends/friendCosmeticsUtils';
 import { assertSupabaseConfigured, supabase } from '@/lib/supabase';
+import { withoutHiddenUsers } from '@/services/safetyService';
 import type { LeaderboardEntry, LeaderboardPeriod } from '@/types/leaderboard';
 
 function mapLeaderboardEntry(row: {
@@ -47,7 +48,8 @@ export async function getXpLeaderboard(
     throw error;
   }
 
-  return (data ?? []).map(mapLeaderboardEntry);
+  // Blocked users (in either direction) are left out.
+  return withoutHiddenUsers((data ?? []).map(mapLeaderboardEntry), (entry) => entry.userId);
 }
 
 export async function getFriendsXpLeaderboard(
@@ -65,5 +67,5 @@ export async function getFriendsXpLeaderboard(
     throw error;
   }
 
-  return (data ?? []).map(mapLeaderboardEntry);
+  return withoutHiddenUsers((data ?? []).map(mapLeaderboardEntry), (entry) => entry.userId);
 }

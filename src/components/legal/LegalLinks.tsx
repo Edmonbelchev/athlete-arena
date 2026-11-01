@@ -50,6 +50,54 @@ export function LegalAgreementNotice() {
   );
 }
 
+interface LegalAgreementCheckboxProps {
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+  error?: string | null;
+}
+
+/**
+ * Required agreement at signup: Terms, Privacy Policy, and zero tolerance for objectionable
+ * content or abusive users (App Store Guideline 1.2).
+ */
+export function LegalAgreementCheckbox({ checked, onChange, error }: LegalAgreementCheckboxProps) {
+  const theme = useTheme();
+
+  return (
+    <View style={styles.checkboxBlock}>
+      <View style={styles.checkboxRow}>
+        <Pressable
+          accessibilityRole="checkbox"
+          accessibilityState={{ checked }}
+          accessibilityLabel="I agree to the Terms of Service and Privacy Policy"
+          hitSlop={8}
+          onPress={() => onChange(!checked)}
+          style={StyleSheet.flatten([
+            styles.checkbox,
+            {
+              borderColor: error ? theme.danger : checked ? theme.primary : theme.border,
+              backgroundColor: checked ? theme.primary : 'transparent',
+            },
+          ])}>
+          {checked ? <Text style={styles.checkmark}>✓</Text> : null}
+        </Pressable>
+        <View style={styles.checkboxCopy}>
+          <Text style={StyleSheet.flatten([styles.checkboxText, { color: theme.textSecondary }])}>
+            I agree to the{' '}
+          </Text>
+          <LegalLink label="Terms of Service" url={TERMS_OF_SERVICE_URL} />
+          <Text style={StyleSheet.flatten([styles.checkboxText, { color: theme.textSecondary }])}> and </Text>
+          <LegalLink label="Privacy Policy" url={PRIVACY_POLICY_URL} />
+          <Text style={StyleSheet.flatten([styles.checkboxText, { color: theme.textSecondary }])}>
+            . Abusive behavior and objectionable content aren&apos;t tolerated - users who post them are removed.
+          </Text>
+        </View>
+      </View>
+      {error ? <Text style={StyleSheet.flatten([styles.checkboxError, { color: theme.danger }])}>{error}</Text> : null}
+    </View>
+  );
+}
+
 export function LegalLinksFooter() {
   const theme = useTheme();
 
@@ -97,6 +145,44 @@ export function LegalLinksSection() {
 }
 
 const styles = StyleSheet.create({
+  checkboxBlock: {
+    gap: Spacing.one,
+  },
+  checkboxRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: Spacing.two,
+  },
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 1,
+  },
+  checkmark: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '900',
+    lineHeight: 16,
+  },
+  checkboxCopy: {
+    flex: 1,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+  },
+  checkboxText: {
+    fontSize: 13,
+    lineHeight: 20,
+    fontWeight: '600',
+  },
+  checkboxError: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
   agreementRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',

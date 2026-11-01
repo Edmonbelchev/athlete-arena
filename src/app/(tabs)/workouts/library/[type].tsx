@@ -50,6 +50,7 @@ export default function WorkoutLibraryByTypeScreen() {
     error,
     refresh,
     isPremium,
+    purchasesEnabled,
     startingTemplateId,
     actionTemplateId,
     openCreateModal,
@@ -222,9 +223,11 @@ export default function WorkoutLibraryByTypeScreen() {
           <AppIcon name={categoryIcon} size={28} color={accentColor} weight="semibold" />
           <Text style={[styles.emptyTitle, { color: theme.text }]}>No {typeDefinition.label} workouts yet</Text>
           <Text style={[styles.emptyBody, { color: theme.textSecondary }]}>
-            {isPremium
-              ? 'Create a workout in this format from My workouts, or ask a friend to share one with you.'
-              : 'Premium unlocks creating custom workouts in this format.'}
+            {!purchasesEnabled
+              ? 'Workouts friends share with you in this format will appear here.'
+              : isPremium
+                ? 'Create a workout in this format from My workouts, or ask a friend to share one with you.'
+                : 'Premium unlocks creating custom workouts in this format.'}
           </Text>
         </View>
       ) : null}

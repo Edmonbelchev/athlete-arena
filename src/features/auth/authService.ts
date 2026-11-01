@@ -1,5 +1,6 @@
 import { AUTH_EMAIL_REDIRECT_URL, AUTH_PASSWORD_RESET_REDIRECT_URL } from '@/constants/app';
 import { assertSupabaseConfigured, supabase } from '@/lib/supabase';
+import { invalidateHiddenUsers, isUsernameAllowed } from '@/services/safetyService';
 import type { AvatarBodyType } from '@/types/avatar';
 
 import {
@@ -14,6 +15,14 @@ interface SignUpParams {
   password: string;
   username: string;
   gender: AvatarBodyType;
+}
+
+/** The username contains language that isn't allowed (content filter). */
+export class UsernameNotAllowedError extends Error {
+  constructor() {
+    super('username_not_allowed');
+    this.name = 'UsernameNotAllowedError';
+  }
 }
 
 export class UsernameTakenError extends Error {
@@ -92,6 +101,11 @@ export async function signUpWithEmail({ email, password, username, gender }: Sig
 
   const normalizedUsername = normalizeUsername(username);
   const trimmedEmail = email.trim();
+
+  // The database would quietly replace a filtered username at signup; tell the user instead.
+  if (!(await isUsernameAllowed(normalizedUsername))) {
+    throw new UsernameNotAllowedError();
+  }
 
   if (!(await isUsernameAvailable(normalizedUsername))) {
     throw new UsernameTakenError();
@@ -178,6 +192,8 @@ export async function signOut() {
   assertSupabaseConfigured();
 
   const { error } = await supabase.auth.signOut();
+  // The next account on this device must not inherit this one's blocks.
+  invalidateHiddenUsers();
   if (error) {
     throw error;
   }

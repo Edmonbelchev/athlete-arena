@@ -16,7 +16,6 @@ import { AchievementBadges } from '@/components/sidebar/AchievementBadges';
 import { DailyMotivationCard } from '@/components/sidebar/DailyMotivationCard';
 import { CoinBadge } from '@/components/shop/CoinBadge';
 import { ProfileAvatar } from '@/components/profile/ProfileAvatar';
-import { BetaBadge } from '@/components/ui/BetaBadge';
 import { AppIcon } from '@/components/ui/AppIcon';
 import { XPProgressBar } from '@/components/ui/XPProgressBar';
 import { getRecentUnlockedAchievements } from '@/features/achievements/achievementUtils';
@@ -27,6 +26,7 @@ import { getAuthErrorMessage } from '@/features/auth/authErrors';
 import { useAuth } from '@/features/auth';
 import { useFriendChallengeRequestQuota } from '@/features/friends/useFriendChallengeRequestQuota';
 import { usePremium } from '@/features/subscription/usePremium';
+import { IN_APP_PURCHASES_ENABLED } from '@/features/subscription/purchaseAvailability';
 import { useProfile } from '@/features/profile/useProfile';
 import { useSidebar } from '@/features/sidebar/SidebarProvider';
 import { xpProgressInCurrentLevel } from '@/features/xp/levelUtils';
@@ -67,7 +67,8 @@ const NAV_SECTIONS: NavSection[] = [
     title: 'More',
     items: [
       { label: 'Settings', icon: 'settings', href: '/profile/settings' },
-      { label: 'Membership', icon: 'crown', href: '/profile/subscription' },
+      // Membership only where purchases are available (off on iOS for now).
+      ...(IN_APP_PURCHASES_ENABLED ? [{ label: 'Membership', icon: 'crown', href: '/profile/subscription' } as const] : []),
       { label: 'Support', icon: 'support', href: '/profile/support' },
     ],
   },
@@ -161,7 +162,6 @@ export function AppSidebar() {
                     {displayName}
                   </Text>
                   <CoinBadge amount={profile?.coin_balance ?? 0} />
-                  <BetaBadge showVersion />
                 </View>
               </View>
 
@@ -189,14 +189,18 @@ export function AppSidebar() {
 
             <FriendChallengeRequestQuotaBar
               quota={quota}
-              onUpgrade={() => {
-                close();
-                void showPremiumPaywall({ context: 'challenge_requests' }).then((unlocked) => {
-                  if (unlocked) {
-                    void refreshChallengeQuota();
-                  }
-                });
-              }}
+              onUpgrade={
+                IN_APP_PURCHASES_ENABLED
+                  ? () => {
+                      close();
+                      void showPremiumPaywall({ context: 'challenge_requests' }).then((unlocked) => {
+                        if (unlocked) {
+                          void refreshChallengeQuota();
+                        }
+                      });
+                    }
+                  : undefined
+              }
               onBuySlots={() => navigate('/(tabs)/shop?section=slots')}
             />
 

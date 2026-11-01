@@ -103,14 +103,21 @@ export default function AddFriendScreen() {
                   styles.resultRow,
                   { backgroundColor: theme.backgroundElement, borderColor: theme.border },
                 ])}>
-                <View style={styles.resultInfo}>
+                {/* Opens the profile, where the user can also be reported or blocked. */}
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`View @${user.username}'s profile`}
+                  style={styles.resultInfo}
+                  onPress={() =>
+                    router.push({ pathname: '/friends/[userId]', params: { userId: user.id, username: user.username } })
+                  }>
                   <Text style={StyleSheet.flatten([styles.resultName, { color: theme.text }])}>
                     {user.displayName ?? user.username}
                   </Text>
                   <Text style={StyleSheet.flatten([styles.resultMeta, { color: theme.textSecondary }])}>
                     @{user.username}
                   </Text>
-                </View>
+                </Pressable>
                 <PrimaryButton
                   label="Add"
                   loading={isSending === user.username}

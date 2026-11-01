@@ -25,6 +25,7 @@ import { useAchievementPreview } from '@/features/achievements/useAchievementPre
 import { getAuthErrorMessage } from '@/features/auth/authErrors';
 import { useAuth } from '@/features/auth';
 import { usePremium } from '@/features/subscription/usePremium';
+import { IN_APP_PURCHASES_ENABLED } from '@/features/subscription/purchaseAvailability';
 import { useProfile } from '@/features/profile/useProfile';
 import { useProfileStats } from '@/features/profile/useProfileStats';
 import { useShop } from '@/features/shop/ShopProvider';
@@ -115,12 +116,17 @@ export default function ProfileScreen() {
         icon: 'history' as const,
         onPress: () => router.push('/profile/history'),
       },
-      {
-        id: 'membership',
-        label: 'Membership',
-        icon: 'crown' as const,
-        onPress: () => router.push('/profile/subscription'),
-      },
+      // Membership only where purchases are available (off on iOS for now).
+      ...(IN_APP_PURCHASES_ENABLED
+        ? [
+            {
+              id: 'membership',
+              label: 'Membership',
+              icon: 'crown' as const,
+              onPress: () => router.push('/profile/subscription'),
+            },
+          ]
+        : []),
       {
         id: 'settings',
         label: 'Settings',

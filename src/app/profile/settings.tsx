@@ -6,12 +6,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { SettingsToggleRow } from '@/components/settings/SettingsToggleRow';
 import { LegalLinksSection } from '@/components/legal/LegalLinks';
 import { ThemeToggle } from '@/components/sidebar/ThemeToggle';
-import { BetaBadge } from '@/components/ui/BetaBadge';
 import { AppIcon } from '@/components/ui/AppIcon';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { APP_VERSION_LABEL } from '@/constants/app';
 import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { usePremium } from '@/features/subscription/usePremium';
+import { IN_APP_PURCHASES_ENABLED } from '@/features/subscription/purchaseAvailability';
 import { useCameraDebugOverlaysAccess } from '@/features/settings/cameraDebugAccess';
 import { useUserSettings } from '@/features/settings/UserSettingsProvider';
 import { leaveScreen } from '@/lib/navigation';
@@ -160,6 +160,7 @@ export default function SettingsScreen() {
             </View>
           ) : null}
 
+          {IN_APP_PURCHASES_ENABLED ? (
           <View style={styles.section}>
             <Text style={StyleSheet.flatten([styles.sectionTitle, { color: theme.text }])}>Membership</Text>
             <Text style={StyleSheet.flatten([styles.supportCopy, { color: theme.textSecondary }])}>
@@ -171,6 +172,19 @@ export default function SettingsScreen() {
               label={isPremium ? 'View membership' : 'Upgrade to Premium'}
               variant="secondary"
               onPress={() => router.push('/profile/subscription')}
+            />
+          </View>
+          ) : null}
+
+          <View style={styles.section}>
+            <Text style={StyleSheet.flatten([styles.sectionTitle, { color: theme.text }])}>Privacy &amp; safety</Text>
+            <Text style={StyleSheet.flatten([styles.supportCopy, { color: theme.textSecondary }])}>
+              To report or block someone, open their profile and tap ⋯. Manage the people you&apos;ve blocked here.
+            </Text>
+            <PrimaryButton
+              label="Blocked users"
+              variant="secondary"
+              onPress={() => router.push('/profile/blocked-users')}
             />
           </View>
 
@@ -195,9 +209,8 @@ export default function SettingsScreen() {
           <View style={styles.section}>
             <Text style={StyleSheet.flatten([styles.sectionTitle, { color: theme.text }])}>Support</Text>
             <Text style={StyleSheet.flatten([styles.supportCopy, { color: theme.textSecondary }])}>
-              Running {APP_VERSION_LABEL}. Report bugs or send feedback through a support ticket.
+              Version {APP_VERSION_LABEL.replace('v', '')}. Report bugs or send feedback through a support ticket.
             </Text>
-            <BetaBadge showVersion />
             <PrimaryButton
               label="Open Support"
               variant="secondary"

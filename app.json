@@ -13,7 +13,6 @@
       "buildNumber": "2",
       "infoPlist": {
         "NSCameraUsageDescription": "Athlete Arena uses the camera to see you during workouts and count repetitions.",
-        "NSLocationWhenInUseUsageDescription": "Athlete Arena does not use your location. This description is required because an included library references location APIs.",
         "ITSAppUsesNonExemptEncryption": false
       }
     },
@@ -56,7 +55,8 @@
         "react-native-vision-camera",
         {
           "cameraPermissionText": "Athlete Arena uses the camera to see you during workouts and count repetitions.",
-          "enableMicrophonePermission": false
+          "enableMicrophonePermission": false,
+          "enableLocation": false
         }
       ],
       [

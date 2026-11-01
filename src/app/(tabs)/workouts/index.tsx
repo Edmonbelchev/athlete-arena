@@ -14,7 +14,7 @@ import { getWorkoutCatalog } from '@/services/workoutCatalogService';
 
 export default function WorkoutsHubScreen() {
   const theme = useTheme();
-  const { isPremium } = usePremium();
+  const { isPremium, purchasesEnabled } = usePremium();
   const [officialCount, setOfficialCount] = useState(0);
   const [libraryCount, setLibraryCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -85,7 +85,9 @@ export default function WorkoutsHubScreen() {
             <HomeLinkBlock
               title="My workouts"
               description={
-                isPremium
+                !purchasesEnabled
+                  ? 'Workouts friends share with you'
+                  : isPremium
                   ? libraryCount > 0
                     ? `${libraryCount} saved · AMRAP, For Time, EMOM`
                     : 'Build, save, and share by workout format'

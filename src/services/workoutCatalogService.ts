@@ -1,6 +1,7 @@
 import { mapPublicCosmetics } from '@/features/friends/friendCosmeticsUtils';
 import { normalizeCustomWorkoutType } from '@/constants/customWorkouts';
 import { assertSupabaseConfigured, supabase } from '@/lib/supabase';
+import { withoutHiddenUsers } from '@/services/safetyService';
 import type {
   CatalogWorkoutDetail,
   CatalogWorkoutSummary,
@@ -209,7 +210,8 @@ export async function getCatalogWorkoutLeaderboard(
     throw error;
   }
 
-  return (data ?? []).map((row) => {
+  // Blocked users (in either direction) are left out.
+  const entries = (data ?? []).map((row) => {
     const cosmetics = mapPublicCosmetics(row);
 
     return {
@@ -226,4 +228,5 @@ export async function getCatalogWorkoutLeaderboard(
       isCurrentUser: row.is_current_user,
     };
   });
+  return withoutHiddenUsers(entries, (entry) => entry.userId);
 }

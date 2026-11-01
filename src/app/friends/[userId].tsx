@@ -5,6 +5,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { FriendAchievementSection } from '@/components/profile/FriendAchievementSection';
 import { FriendProfileHero } from '@/components/profile/FriendProfileHero';
+import { ReportUserModal } from '@/components/safety/ReportUserModal';
+import { UserSafetyMenu } from '@/components/safety/UserSafetyMenu';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { HomeProgressBlock } from '@/components/home/HomeProgressBlock';
 import { HomeSection } from '@/components/home/HomeSection';
 import { AppIcon } from '@/components/ui/AppIcon';
@@ -19,6 +22,8 @@ import { xpProgressInCurrentLevel } from '@/features/xp/levelUtils';
 import { leaveScreen } from '@/lib/navigation';
 import { formatUserError } from '@/lib/errors';
 import { sendFriendRequest } from '@/services/friendsService';
+import { blockUser, reportUser } from '@/services/safetyService';
+import type { UserReportReason } from '@/types/database';
 import { useTheme } from '@/hooks/use-theme';
 
 export default function FriendProfileScreen() {
@@ -35,6 +40,11 @@ export default function FriendProfileScreen() {
   const [isAddingFriend, setIsAddingFriend] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
+  const [safetyMenuOpen, setSafetyMenuOpen] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
+  const [blockConfirmOpen, setBlockConfirmOpen] = useState(false);
+  const [safetyBusy, setSafetyBusy] = useState(false);
+  const [safetyError, setSafetyError] = useState<string | null>(null);
   const {
     achievements,
     isLoading: isAchievementsLoading,
@@ -61,7 +71,96 @@ export default function FriendProfileScreen() {
         <AppIcon name="chevronBack" size={22} color={theme.text} />
       </Pressable>
     ),
+    // Report / block for anyone but yourself (App Store Guideline 1.2).
+    headerRight: isSelf
+      ? undefined
+      : () => (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Report or block"
+            onPress={() => setSafetyMenuOpen(true)}
+            style={styles.headerBack}>
+            <AppIcon name="more" size={22} color={theme.text} />
+          </Pressable>
+        ),
   } as const;
+
+  const reportedName = profile?.username ?? username ?? 'user';
+
+  async function handleBlock() {
+    setSafetyBusy(true);
+    setSafetyError(null);
+    try {
+      await blockUser(userId);
+      await refreshFriends({ loadFriends: true, loadRequests: true, silent: true });
+      setBlockConfirmOpen(false);
+      leaveScreen(router, '/(tabs)/friends');
+    } catch (err) {
+      setSafetyError(formatUserError(err, 'Could not block this user'));
+    } finally {
+      setSafetyBusy(false);
+    }
+  }
+
+  async function handleReport(report: { reason: UserReportReason; details: string; alsoBlock: boolean }) {
+    setSafetyBusy(true);
+    setSafetyError(null);
+    try {
+      await reportUser(userId, report.reason, report.details);
+      if (report.alsoBlock) {
+        await blockUser(userId);
+        await refreshFriends({ loadFriends: true, loadRequests: true, silent: true });
+        setReportOpen(false);
+        leaveScreen(router, '/(tabs)/friends');
+        return;
+      }
+      setReportOpen(false);
+      setActionSuccess('Thanks - your report was sent. We review every report within 24 hours.');
+    } catch (err) {
+      setSafetyError(formatUserError(err, 'Could not send the report'));
+    } finally {
+      setSafetyBusy(false);
+    }
+  }
+
+  const safetyModals = (
+    <>
+      <UserSafetyMenu
+        visible={safetyMenuOpen}
+        username={reportedName}
+        onClose={() => setSafetyMenuOpen(false)}
+        onReport={() => {
+          setSafetyMenuOpen(false);
+          setSafetyError(null);
+          setReportOpen(true);
+        }}
+        onBlock={() => {
+          setSafetyMenuOpen(false);
+          setSafetyError(null);
+          setBlockConfirmOpen(true);
+        }}
+      />
+      <ReportUserModal
+        visible={reportOpen}
+        username={reportedName}
+        isSubmitting={safetyBusy}
+        error={safetyError}
+        onClose={() => setReportOpen(false)}
+        onSubmit={(report) => void handleReport(report)}
+      />
+      <ConfirmDialog
+        visible={blockConfirmOpen}
+        title={`Block @${reportedName}?`}
+        message="You won't see each other on leaderboards, in search, or in friend requests, and you'll be removed from each other's friends. Pending challenges between you are cancelled. You can unblock them in Settings."
+        confirmLabel="Block"
+        destructive
+        loading={safetyBusy}
+        error={safetyError}
+        onConfirm={() => void handleBlock()}
+        onCancel={() => setBlockConfirmOpen(false)}
+      />
+    </>
+  );
 
   async function handleRefresh() {
     await Promise.all([refresh(), refreshAchievements()]);
@@ -121,6 +220,7 @@ export default function FriendProfileScreen() {
     return (
       <>
         <Stack.Screen options={headerOptions} />
+        {safetyModals}
         <View style={StyleSheet.flatten([styles.loading, { backgroundColor: theme.background }])}>
           <ActivityIndicator size="large" color={theme.primary} />
         </View>
@@ -132,6 +232,7 @@ export default function FriendProfileScreen() {
     return (
       <>
         <Stack.Screen options={headerOptions} />
+        {safetyModals}
         <View style={StyleSheet.flatten([styles.loading, { backgroundColor: theme.background }])}>
           <Text style={StyleSheet.flatten([styles.error, { color: theme.danger }])}>
             {error ?? 'Profile not found.'}
@@ -147,6 +248,7 @@ export default function FriendProfileScreen() {
   return (
     <>
       <Stack.Screen options={headerOptions} />
+        {safetyModals}
       <SafeAreaView
         edges={['bottom']}
         style={StyleSheet.flatten([styles.safeArea, { backgroundColor: theme.background }])}>
