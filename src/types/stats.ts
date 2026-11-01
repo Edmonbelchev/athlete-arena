@@ -10,6 +10,9 @@ export interface MovementStats {
   totalLunges: number;
   totalSitUps: number;
   totalPlankSeconds: number;
+  totalHighKnees: number;
+  totalShadowBoxing: number;
+  totalTuckJumps: number;
   dailyMissionsCompleted: number;
   friendRacesCompleted: number;
 }
@@ -26,6 +29,9 @@ export const EMPTY_MOVEMENT_STATS: MovementStats = {
   totalLunges: 0,
   totalSitUps: 0,
   totalPlankSeconds: 0,
+  totalHighKnees: 0,
+  totalShadowBoxing: 0,
+  totalTuckJumps: 0,
   dailyMissionsCompleted: 0,
   friendRacesCompleted: 0,
 };

@@ -4,10 +4,7 @@ import { AppIcon } from '@/components/ui/AppIcon';
 import { CoinIcon } from '@/components/ui/CoinIcon';
 import { EXERCISE_TYPES, formatExerciseLabel, type ExerciseType } from '@/constants/challenges';
 import { getDailyMissionQuestMeta, getQuestAccentColor } from '@/constants/dailyMissionQuest';
-import {
-  DAILY_MISSION_COIN_REWARD,
-  DAILY_MISSION_XP_REWARD,
-} from '@/constants/dailyMissionRewards';
+import { getDailyMissionReward } from '@/constants/dailyMissionRewards';
 import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import type { ChallengeHistoryEntry } from '@/types/challengeHistory';
@@ -36,6 +33,7 @@ export function QuestLogCard({ entry }: QuestLogCardProps) {
   const missionIndex = Math.max(EXERCISE_TYPES.indexOf(entry.exerciseType as ExerciseType), 0);
   const accentColor = theme[getQuestAccentColor(missionIndex)];
   const isCompleted = entry.status === 'completed';
+  const reward = getDailyMissionReward(entry.exerciseType);
 
   return (
     <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}>
@@ -57,11 +55,11 @@ export function QuestLogCard({ entry }: QuestLogCardProps) {
           <View style={styles.rewardRow}>
             <View style={[styles.rewardChip, { backgroundColor: `${theme.xp}14` }]}>
               <AppIcon name="star" size={12} color={theme.xp} weight="semibold" />
-              <Text style={[styles.rewardText, { color: theme.xp }]}>{DAILY_MISSION_XP_REWARD} XP</Text>
+              <Text style={[styles.rewardText, { color: theme.xp }]}>{reward.xp} XP</Text>
             </View>
             <View style={[styles.rewardChip, { backgroundColor: `${theme.accent}14` }]}>
               <CoinIcon size={12} />
-              <Text style={[styles.rewardText, { color: theme.accent }]}>{DAILY_MISSION_COIN_REWARD}</Text>
+              <Text style={[styles.rewardText, { color: theme.accent }]}>{reward.coins}</Text>
             </View>
           </View>
         ) : (

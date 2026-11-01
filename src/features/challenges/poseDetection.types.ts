@@ -24,8 +24,20 @@ export type SitUpPhase = 'LYING' | 'RISING' | 'TOP' | 'LOWERING';
 /** Plank hold phases - getting into position → timer running → form broken (timer paused). */
 export type PlankPhase = 'SETUP' | 'HOLDING' | 'PAUSED';
 
+/** High knees - both feet down → a knee up near hip height. */
+export type HighKneePhase = 'STANDING' | 'KNEE_UP';
+
+/** Tuck jumps - standing → airborne with both knees tucked → landed. */
+export type TuckJumpPhase = 'STANDING' | 'TUCK';
+
+/** Shadow boxing - fists at guard → an arm punched straight out. */
+export type ShadowBoxingPhase = 'GUARD' | 'PUNCH';
+
 export type ExercisePhase =
   | PushUpPhase
+  | HighKneePhase
+  | TuckJumpPhase
+  | ShadowBoxingPhase
   | SquatPhase
   | BurpeePhase
   | JumpingJackPhase

@@ -17,6 +17,7 @@ import { hasLungeArmedLegLandmarks } from './lungePosture';
 import { hasPullUpActiveTrackingLandmarks, hasPullUpTrackingLandmarks } from './pullUpPosture';
 import { hasPushUpTrackingLandmarks } from './pushUpPosture';
 import { hasBothSquatLegChains } from './squatPosture';
+import { getArmReading, getStandingBody, hasBothLegs } from './standingBody';
 
 export type PoseTrackingStatus = 'ready' | 'stabilizing' | 'partial' | 'awaiting_hang';
 
@@ -202,6 +203,32 @@ function getTrackingIndices(exerciseType: ExerciseType): number[] {
       PoseLandmarkIndex.RIGHT_KNEE,
       PoseLandmarkIndex.LEFT_ANKLE,
       PoseLandmarkIndex.RIGHT_ANKLE,
+    ];
+  }
+
+  if (exerciseType === 'high_knees' || exerciseType === 'tuck_jumps') {
+    return [
+      PoseLandmarkIndex.LEFT_SHOULDER,
+      PoseLandmarkIndex.RIGHT_SHOULDER,
+      PoseLandmarkIndex.LEFT_HIP,
+      PoseLandmarkIndex.RIGHT_HIP,
+      PoseLandmarkIndex.LEFT_KNEE,
+      PoseLandmarkIndex.RIGHT_KNEE,
+      PoseLandmarkIndex.LEFT_ANKLE,
+      PoseLandmarkIndex.RIGHT_ANKLE,
+    ];
+  }
+
+  if (exerciseType === 'shadow_boxing') {
+    return [
+      PoseLandmarkIndex.LEFT_SHOULDER,
+      PoseLandmarkIndex.RIGHT_SHOULDER,
+      PoseLandmarkIndex.LEFT_ELBOW,
+      PoseLandmarkIndex.RIGHT_ELBOW,
+      PoseLandmarkIndex.LEFT_WRIST,
+      PoseLandmarkIndex.RIGHT_WRIST,
+      PoseLandmarkIndex.LEFT_HIP,
+      PoseLandmarkIndex.RIGHT_HIP,
     ];
   }
 
@@ -426,6 +453,31 @@ function checkRequiredLandmarks(
     }
 
     return { ok: true, message: null };
+  }
+
+  // Standing cardio: the engines check form themselves; the gate only makes sure the parts they
+  // measure are in view.
+  if (exerciseType === 'high_knees' || exerciseType === 'tuck_jumps') {
+    if (!getStandingBody(landmarks)) {
+      return { ok: false, message: 'Stand tall facing the camera, shoulders and hips in view' };
+    }
+    return hasBothLegs(landmarks)
+      ? { ok: true, message: null }
+      : {
+          ok: false,
+          message:
+            exerciseType === 'tuck_jumps'
+              ? 'Step back - keep both legs in frame, with room to jump'
+              : 'Step back - keep both legs in frame from hips to ankles',
+        };
+  }
+
+  if (exerciseType === 'shadow_boxing') {
+    const body = getStandingBody(landmarks);
+    const armVisible = body && (getArmReading(landmarks, body, 'left') || getArmReading(landmarks, body, 'right'));
+    return armVisible
+      ? { ok: true, message: null }
+      : { ok: false, message: 'Keep your head, shoulders and arms in frame' };
   }
 
   // Floor exercises facing the camera: the engines check form themselves; the gate only makes

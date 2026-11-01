@@ -400,12 +400,18 @@ function polygonPath(points: Circle2D[]): string {
   return points.map((point, index) => `${index === 0 ? 'M' : 'L'}${round(point.x)} ${round(point.y)}`).join('') + 'Z';
 }
 
+/** Joints higher than this (m) don't shape the contact shadow. */
+const SHADOW_JOINT_MAX_HEIGHT = 0.75;
+
 /**
  * Soft ellipse on the floor under the body: as wide as the hips, as long as the body's footprint,
  * fading as the body rises (a lifted torso casts a smaller contact shadow).
  */
 function shadowPath(skeleton: Skeleton, camera: BodyCamera): string {
-  const joints = Object.values(skeleton);
+  // Only what is near the floor shapes the shadow: feet and knees when standing, the whole body
+  // in a plank. Arms punching or raised overhead must not stretch it.
+  const near = Object.values(skeleton).filter((joint) => joint.y < SHADOW_JOINT_MAX_HEIGHT);
+  const joints = near.length > 0 ? near : [skeleton.leftAnkle, skeleton.rightAnkle];
   const minZ = Math.min(...joints.map((joint) => joint.z));
   const maxZ = Math.max(...joints.map((joint) => joint.z));
   const minX = Math.min(...joints.map((joint) => joint.x));

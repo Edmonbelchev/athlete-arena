@@ -11,6 +11,9 @@ export const EXERCISE_TYPES = [
   'lunges',
   'sit_ups',
   'plank',
+  'high_knees',
+  'shadow_boxing',
+  'tuck_jumps',
 ] as const;
 
 export type ExerciseType = (typeof EXERCISE_TYPES)[number];
@@ -75,6 +78,11 @@ export const CHALLENGE_CONFIG: Record<ExerciseType, readonly ChallengeTier[]> = 
   sit_ups: [{ reps: 15 }, { reps: 20 }, { reps: 25 }, { reps: 30 }],
   /** Seconds; not used for daily quests. */
   plank: [{ reps: 30 }, { reps: 45 }, { reps: 60 }, { reps: 90 }],
+  /** Each knee lift is a rep. */
+  high_knees: [{ reps: 30 }, { reps: 40 }, { reps: 50 }, { reps: 60 }],
+  /** Each punch is a rep. */
+  shadow_boxing: [{ reps: 30 }, { reps: 40 }, { reps: 50 }, { reps: 60 }],
+  tuck_jumps: [{ reps: 10 }, { reps: 15 }, { reps: 20 }, { reps: 25 }],
 } as const;
 
 export const EXERCISE_LABELS: Record<DisplayExerciseType, string> = {
@@ -88,6 +96,9 @@ export const EXERCISE_LABELS: Record<DisplayExerciseType, string> = {
   lunges: 'Lunges',
   sit_ups: 'Sit-ups',
   plank: 'Plank',
+  high_knees: 'High Knees',
+  shadow_boxing: 'Shadow Boxing',
+  tuck_jumps: 'Tuck Jumps',
   dips: 'Dips',
 };
 

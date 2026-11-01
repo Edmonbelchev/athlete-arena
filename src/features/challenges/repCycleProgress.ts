@@ -87,6 +87,19 @@ export function getRepCycleProgress(
     return phase === 'HOLDING' ? 1 : 0;
   }
 
+  // Standing cardio counts at the top of the move (knee up / tuck / punch out).
+  if (exerciseType === 'high_knees') {
+    return phase === 'KNEE_UP' ? 1 : 0.05;
+  }
+
+  if (exerciseType === 'tuck_jumps') {
+    return phase === 'TUCK' ? 1 : 0.05;
+  }
+
+  if (exerciseType === 'shadow_boxing') {
+    return phase === 'PUNCH' ? 1 : 0.05;
+  }
+
   if (exerciseType === 'burpees' || exerciseType === 'half_burpees') {
     switch (phase) {
       case 'STANDING':

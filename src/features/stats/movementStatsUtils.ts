@@ -15,5 +15,8 @@ export function movementStatsToProfileStats(movement: MovementStats): ProfileSta
     totalLunges: movement.totalLunges,
     totalSitUps: movement.totalSitUps,
     totalPlankSeconds: movement.totalPlankSeconds,
+    totalHighKnees: movement.totalHighKnees,
+    totalShadowBoxing: movement.totalShadowBoxing,
+    totalTuckJumps: movement.totalTuckJumps,
   };
 }

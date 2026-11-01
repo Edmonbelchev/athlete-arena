@@ -1,8 +1,5 @@
 import type { ExerciseType } from '@/constants/challenges';
-import {
-  DAILY_MISSION_COIN_REWARD,
-  DAILY_MISSION_XP_REWARD,
-} from '@/constants/dailyMissionRewards';
+import { getDailyMissionReward } from '@/constants/dailyMissionRewards';
 import type { DailyChallengeHome } from '@/types';
 
 export interface DailyMissionCompletePayload {
@@ -39,8 +36,7 @@ export function findNewlyCompletedMissions(
       exerciseType: mission.exerciseType,
       targetReps: mission.targetReps,
       missionIndex: mission.missionIndex,
-      xp: DAILY_MISSION_XP_REWARD,
-      coins: DAILY_MISSION_COIN_REWARD,
+      ...getDailyMissionReward(mission.exerciseType),
     }));
 }
 
@@ -52,7 +48,6 @@ export function toDailyMissionCompletePayload(
     exerciseType: mission.exerciseType,
     targetReps: mission.targetReps,
     missionIndex: mission.missionIndex,
-    xp: DAILY_MISSION_XP_REWARD,
-    coins: DAILY_MISSION_COIN_REWARD,
+    ...getDailyMissionReward(mission.exerciseType),
   };
 }

@@ -11,6 +11,9 @@ export interface ProfileStats {
   totalLunges: number;
   totalSitUps: number;
   totalPlankSeconds: number;
+  totalHighKnees: number;
+  totalShadowBoxing: number;
+  totalTuckJumps: number;
 }
 
 export interface UpdateProfileInput {

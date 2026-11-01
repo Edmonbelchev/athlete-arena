@@ -28,6 +28,9 @@ const EMPTY_STATS: ProfileStats = {
   totalLunges: 0,
   totalSitUps: 0,
   totalPlankSeconds: 0,
+  totalHighKnees: 0,
+  totalShadowBoxing: 0,
+  totalTuckJumps: 0,
 };
 
 export function useProfileStats(): UseProfileStatsResult {

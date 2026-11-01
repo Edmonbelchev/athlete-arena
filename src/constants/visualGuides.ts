@@ -51,6 +51,19 @@ export const VISUAL_GUIDE_BY_EXERCISE: Record<ExerciseType, VisualGuideExerciseC
     folder: 'plank',
     frameFiles: ['frame1.webp'],
   },
+  // Drawn guides only (poseGuides.ts); no image fallback is uploaded for these.
+  high_knees: {
+    folder: 'high-knees',
+    frameFiles: [],
+  },
+  shadow_boxing: {
+    folder: 'shadow-boxing',
+    frameFiles: [],
+  },
+  tuck_jumps: {
+    folder: 'tuck-jumps',
+    frameFiles: [],
+  },
 };
 
 /** Crossfade interval between frames in the loop. */

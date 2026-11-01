@@ -257,6 +257,120 @@ const JUMPING_JACKS: PoseGuideDefinition = {
   mat: { halfWidth: 0.55, back: -0.45, front: 0.45 },
 };
 
+// --- High knees: facing the phone, running in place, knees driven to hip height. -----------
+
+/**
+ * Arm driven forward, fist out in front of the chest (in toward the centerline, so from the
+ * front it shows in front of the body rather than pulled back by the shoulder).
+ */
+const RUN_ARM_FORWARD: LimbPose = { upperPitch: 32, lowerPitch: 145, upperSpread: 4, lowerSpread: -32 };
+const RUN_ARM_BACK: LimbPose = { upperPitch: -24, lowerPitch: 40, upperSpread: 10, lowerSpread: 6 };
+const RUN_ARM_MID: LimbPose = { upperPitch: 12, lowerPitch: 120, upperSpread: 6, lowerSpread: -26 };
+/**
+ * Thigh driven up level with the hip, shin hanging, toes pointed down. The knee goes a little
+ * out to the side so the thigh shows from the front (straight at the lens it looks short).
+ */
+const KNEE_DRIVE: LimbPose = { upperPitch: 95, lowerPitch: 6, upperSpread: 16, lowerSpread: 8, footPitch: 45 };
+const SUPPORT_LEG: LimbPose = { upperPitch: 0, lowerPitch: 0, upperSpread: 3, lowerSpread: 3, footPitch: 90 };
+/** Between steps: both feet down, arms swinging through. */
+const RUN_FEET_DOWN: BodyPose = {
+  torsoPitch: 3,
+  leftLeg: { ...SUPPORT_LEG, upperPitch: 4 },
+  rightLeg: { ...SUPPORT_LEG, upperPitch: 4 },
+  leftArm: RUN_ARM_MID,
+  rightArm: RUN_ARM_MID,
+};
+/** One knee up; the opposite arm drives forward, like running. */
+const kneeUpPose = (side: BodySide): BodyPose => ({
+  torsoPitch: 4,
+  leftLeg: side === 'left' ? KNEE_DRIVE : SUPPORT_LEG,
+  rightLeg: side === 'right' ? KNEE_DRIVE : SUPPORT_LEG,
+  leftArm: side === 'left' ? RUN_ARM_BACK : RUN_ARM_FORWARD,
+  rightArm: side === 'right' ? RUN_ARM_BACK : RUN_ARM_FORWARD,
+});
+
+const HIGH_KNEES: PoseGuideDefinition = {
+  // Facing the phone, viewed from waist height so the raised thighs show.
+  camera: { height: 1.0, tiltDeg: 0, yawDeg: 0, distance: 2.6 },
+  keyframes: [
+    { pose: RUN_FEET_DOWN, moveMs: 170, holdMs: 60 },
+    { pose: kneeUpPose('left'), moveMs: 200, holdMs: 90 },
+    { pose: RUN_FEET_DOWN, moveMs: 170, holdMs: 60 },
+    { pose: kneeUpPose('right'), moveMs: 200, holdMs: 90 },
+  ],
+  mat: { halfWidth: 0.45, back: -0.45, front: 0.55 },
+  // Face-on, the pumping fists sit in front of the chest, level with it by depth.
+  limbsInFrontOfBody: true,
+};
+
+// --- Tuck jumps: facing the phone; dip, jump, pull both knees to the chest, land soft. --------
+
+const ARMS_BACK: LimbPose = { upperPitch: -38, lowerPitch: -24, upperSpread: 10, lowerSpread: 6 };
+/** Arms reaching forward toward the knees at the top of the tuck. */
+const ARMS_TO_KNEES: LimbPose = { upperPitch: 62, lowerPitch: 78, upperSpread: 12, lowerSpread: 2 };
+const TUCK_DIP = squatPose(0.32, () => ARMS_BACK);
+const TUCK_TAKEOFF: BodyPose = {
+  torsoPitch: 4,
+  leftLeg: { upperPitch: 0, lowerPitch: 0, upperSpread: 4, lowerSpread: 3, footPitch: 30 },
+  rightLeg: { upperPitch: 0, lowerPitch: 0, upperSpread: 4, lowerSpread: 3, footPitch: 30 },
+  leftArm: { upperPitch: 35, lowerPitch: 45, upperSpread: 10, lowerSpread: 6 },
+  rightArm: { upperPitch: 35, lowerPitch: 45, upperSpread: 10, lowerSpread: 6 },
+  lift: 0.28,
+};
+/** Knees pulled up past the hips with the hips well off the floor. */
+const TUCK_TOP: BodyPose = {
+  torsoPitch: 14,
+  leftLeg: { upperPitch: 102, lowerPitch: 14, upperSpread: 18, lowerSpread: 8, footPitch: 55 },
+  rightLeg: { upperPitch: 102, lowerPitch: 14, upperSpread: 18, lowerSpread: 8, footPitch: 55 },
+  leftArm: ARMS_TO_KNEES,
+  rightArm: ARMS_TO_KNEES,
+  lift: 0.62,
+};
+
+const TUCK_JUMPS: PoseGuideDefinition = {
+  camera: { ...PHONE_ON_FLOOR, yawDeg: 0, distance: 3.2 },
+  keyframes: [
+    { pose: SQUAT_STANDING, moveMs: 280, holdMs: 260, anchor: 'feet' },
+    { pose: TUCK_DIP, moveMs: 240, holdMs: 40, anchor: 'feet' },
+    // In the air the hips hold their place: knees come up in front instead of the feet staying
+    // pinned (which would push the whole body back).
+    { pose: TUCK_TAKEOFF, moveMs: 150, holdMs: 0, anchor: 'leftHip' },
+    { pose: TUCK_TOP, moveMs: 170, holdMs: 90, anchor: 'leftHip' },
+    { pose: TUCK_TAKEOFF, moveMs: 170, holdMs: 0, anchor: 'leftHip' },
+    // Land soft into the same dip (hips where they took off, so the feet land where they left),
+    // then stand tall.
+    { pose: TUCK_DIP, moveMs: 150, holdMs: 60, anchor: 'leftHip' },
+  ],
+  mat: { halfWidth: 0.5, back: -0.45, front: 0.55 },
+};
+
+// --- Shadow boxing: facing the phone, guard up; jab, back to guard, cross. ------------------
+
+/** Fists up by the chin, elbows bent in front of the body. */
+const GUARD_ARM: LimbPose = { upperPitch: 38, lowerPitch: 150, upperSpread: 2, lowerSpread: -26 };
+/** Arm straight out at shoulder height, aimed a little in toward the centerline. */
+const PUNCH_ARM: LimbPose = { upperPitch: 86, lowerPitch: 88, upperSpread: -10, lowerSpread: -10 };
+const BOXING_STANCE = {
+  leftLeg: { upperPitch: 14, lowerPitch: -4, upperSpread: 6, lowerSpread: 4, footPitch: 90 },
+  rightLeg: { upperPitch: -14, lowerPitch: -20, upperSpread: 6, lowerSpread: 4, footPitch: 60 },
+};
+const BOXING_GUARD: BodyPose = { torsoPitch: 6, ...BOXING_STANCE, leftArm: GUARD_ARM, rightArm: GUARD_ARM };
+const JAB: BodyPose = { ...BOXING_GUARD, torsoPitch: 9, leftArm: PUNCH_ARM };
+const CROSS: BodyPose = { ...BOXING_GUARD, torsoPitch: 11, rightArm: PUNCH_ARM };
+
+const SHADOW_BOXING: PoseGuideDefinition = {
+  // Facing the phone. Viewed from just above the shoulders, punches land in front of the chest
+  // instead of rising across the face (a punch straight at the lens has no length to show).
+  camera: { height: 1.6, tiltDeg: 8, yawDeg: 0, distance: 1.9 },
+  keyframes: [
+    { pose: BOXING_GUARD, moveMs: 160, holdMs: 260 },
+    { pose: JAB, moveMs: 130, holdMs: 100 },
+    { pose: BOXING_GUARD, moveMs: 150, holdMs: 200 },
+    { pose: CROSS, moveMs: 140, holdMs: 100 },
+  ],
+  mat: { halfWidth: 0.45, back: -0.5, front: 0.5 },
+};
+
 // --- Push-ups: head toward the phone, hands and toes planted, body pivots on the toes. -------
 
 /** At this angle the shoulders sit a straight arm's length above the floor: elbows locked out. */
@@ -448,4 +562,7 @@ export const POSE_GUIDES: Partial<Record<ExerciseType, PoseGuideDefinition>> = {
   burpees: BURPEES,
   half_burpees: HALF_BURPEES,
   pull_ups: PULL_UPS,
+  high_knees: HIGH_KNEES,
+  tuck_jumps: TUCK_JUMPS,
+  shadow_boxing: SHADOW_BOXING,
 };

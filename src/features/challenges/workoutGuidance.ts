@@ -269,6 +269,21 @@ export function getRepPhaseHint(exerciseType: ExerciseType, phase: ExercisePhase
         return 'Timer paused - get back into a straight plank';
       }
       return 'Get into a plank, head toward the camera, turned slightly';
+    case 'high_knees':
+      if (phase === 'KNEE_UP') {
+        return 'Drive the other knee up - keep running';
+      }
+      return 'Run in place - knees up to hip height';
+    case 'tuck_jumps':
+      if (phase === 'TUCK') {
+        return 'Land softly on both feet';
+      }
+      return 'Jump and pull both knees up to your chest';
+    case 'shadow_boxing':
+      if (phase === 'PUNCH') {
+        return 'Snap it back to your guard';
+      }
+      return 'Punch straight out, then back to your guard';
     default:
       return null;
   }

@@ -13,10 +13,7 @@ import Animated, {
 import { AppIcon } from '@/components/ui/AppIcon';
 import { CoinIcon } from '@/components/ui/CoinIcon';
 import { formatExerciseLabel, type ExerciseType } from '@/constants/challenges';
-import {
-  DAILY_MISSION_COIN_REWARD,
-  DAILY_MISSION_XP_REWARD,
-} from '@/constants/dailyMissionRewards';
+import { getDailyMissionReward } from '@/constants/dailyMissionRewards';
 import {
   getDailyMissionQuestMeta,
   getQuestAccentColor,
@@ -93,6 +90,7 @@ export function ChallengeCard({
 }: ChallengeCardProps) {
   const theme = useTheme();
   const swap = useQuestSwapAnimation(exerciseType, swapCharge);
+  const reward = getDailyMissionReward(exerciseType);
   const quest = getDailyMissionQuestMeta(exerciseType);
   const accentColor = theme[getQuestAccentColor(missionIndex)];
   const missionStatus = resolveMissionStatus(status, completedReps, targetReps);
@@ -156,11 +154,11 @@ export function ChallengeCard({
           <View style={styles.rewardRow}>
             <View style={[styles.rewardChip, { backgroundColor: `${theme.xp}18` }]}>
               <AppIcon name="star" size={12} color={theme.xp} weight="semibold" />
-              <Text style={[styles.rewardText, { color: theme.xp }]}>{DAILY_MISSION_XP_REWARD} XP</Text>
+              <Text style={[styles.rewardText, { color: theme.xp }]}>{reward.xp} XP</Text>
             </View>
             <View style={[styles.rewardChip, { backgroundColor: `${theme.accent}18` }]}>
               <CoinIcon size={12} />
-              <Text style={[styles.rewardText, { color: theme.accent }]}>{DAILY_MISSION_COIN_REWARD}</Text>
+              <Text style={[styles.rewardText, { color: theme.accent }]}>{reward.coins}</Text>
             </View>
           </View>
         </View>

@@ -10,8 +10,7 @@ import { DailyMissionCompleteOverlay } from '@/components/challenges/DailyMissio
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { formatExerciseLabel } from '@/constants/challenges';
 import {
-  DAILY_MISSION_COIN_REWARD,
-  DAILY_MISSION_XP_REWARD,
+  getDailyMissionReward,
 } from '@/constants/dailyMissionRewards';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useChallenge } from '@/features/challenges/useChallenge';
@@ -112,7 +111,7 @@ export default function ChallengeScreen() {
           completedAt: updated.completed_at,
         });
         notifyDailyChallengeRefresh();
-        applyXpDelta(DAILY_MISSION_XP_REWARD);
+        applyXpDelta(getDailyMissionReward(updated.exercise_type).xp);
         if (completesWeeklyStreak) {
           setShowWeeklyStreakComplete(true);
         }
@@ -154,8 +153,9 @@ export default function ChallengeScreen() {
 
   const autoRepCounting = Platform.OS === 'web' || supportsNativePoseDetection();
   const showSimulateButton = !__DEV__ && !isCompleted && !autoRepCounting;
-  const earnedXp = challenge && isCompleted ? DAILY_MISSION_XP_REWARD : 0;
-  const earnedCoins = challenge && isCompleted ? DAILY_MISSION_COIN_REWARD : 0;
+  const questReward = getDailyMissionReward(challenge?.exercise_type);
+  const earnedXp = challenge && isCompleted ? questReward.xp : 0;
+  const earnedCoins = challenge && isCompleted ? questReward.coins : 0;
 
   const handleLeave = useCallback(() => {
     if (isCompleted) {
