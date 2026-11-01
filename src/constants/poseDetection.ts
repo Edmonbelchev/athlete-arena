@@ -182,8 +182,18 @@ export const SQUAT_POSTURE = {
   maxKneeYDelta: isNativeMobile ? 0.14 : 0.12,
   /** Frames standing in a valid stance before rep counting begins. */
   readyFramesRequired: isNativeMobile ? 3 : 4,
-  /** Consecutive frames at squat depth before bottom counts toward a rep. */
+  /** Consecutive frames at squat depth before bottom counts toward a rep (jump squats). */
   bottomHoldFrames: isNativeMobile ? 2 : 3,
+  /**
+   * Squats: frames at depth needed. One: a fast rep can touch depth for a single camera frame,
+   * and both knees reading deep at once is not tracking noise.
+   */
+  squatDepthFrames: 1,
+  /**
+   * Squats: consecutive frames out of a valid stance (a leg out of view, feet apart) before the
+   * set ends. Single-frame tracking glitches at the bottom of a rep are skipped, not fatal.
+   */
+  badStanceGraceFrames: isNativeMobile ? 8 : 10,
 } as const;
 
 /**

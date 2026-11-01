@@ -54,8 +54,11 @@ export function useExerciseTransitionAnnouncement(
     setLabel(formatExerciseLabel(exerciseType, true));
 
     if (soundEnabled) {
-      player.seekTo(0);
-      player.play();
+      // Rewind before playing (seekTo is async; playing a finished sound early plays nothing).
+      void player
+        .seekTo(0)
+        .then(() => player.play())
+        .catch(() => player.play());
     }
 
     if (Platform.OS !== 'web') {

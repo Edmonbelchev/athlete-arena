@@ -1,5 +1,4 @@
-import type { ReactNode } from 'react';
-import type { MutableRefObject } from 'react';
+import type { MutableRefObject, ReactNode } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -18,7 +17,10 @@ import {
 } from '@/features/challenges/workoutGuidance';
 import type { PoseLandmark } from '@/features/challenges/pose/landmarks';
 import type { PoseTrackingStatus } from '@/features/challenges/pose/poseQuality';
+import { WorkoutEffectsLayer } from '@/components/workouts/WorkoutEffectsLayer';
 import { WorkoutExerciseTransitionOverlay } from '@/components/workouts/WorkoutExerciseTransitionOverlay';
+import { useUserSettings } from '@/features/settings/UserSettingsProvider';
+import { useWorkoutSounds } from '@/hooks/use-workout-sounds';
 import { useExerciseTransitionAnnouncement } from '@/hooks/use-exercise-transition-announcement';
 import { useKeepAwakeWhileActive } from '@/hooks/use-keep-awake-while-active';
 import { useWorkoutGuideAnimationVisible } from '@/hooks/use-workout-guide-animation-visible';
@@ -45,6 +47,8 @@ interface ChallengeWorkoutModeProps {
   hudOverlay?: ReactNode;
   centerOverlay?: ReactNode;
   exerciseTransitionKey?: string | number;
+  /** Reps across a multi-exercise workout (see WorkoutEffectsLayer). */
+  totalReps?: number;
   repSoundEnabled?: boolean;
   onDevSimulateRep?: () => void;
   devSimulateDisabled?: boolean;
@@ -71,13 +75,18 @@ export function ChallengeWorkoutMode({
   hudOverlay,
   centerOverlay,
   exerciseTransitionKey,
+  totalReps,
   repSoundEnabled = true,
   onDevSimulateRep,
   devSimulateDisabled,
   devSimulateLoading,
 }: ChallengeWorkoutModeProps) {
   const theme = useTheme();
+  const { preferences } = useUserSettings();
   const showCompletionOnly = completed && Boolean(completeOverlay);
+  const soundEnabled = repSoundEnabled && preferences.repSoundEnabled;
+  const play = useWorkoutSounds(soundEnabled);
+
   const exerciseTransitionLabel = useExerciseTransitionAnnouncement(
     exerciseType,
     exerciseTransitionKey,
@@ -156,6 +165,17 @@ export function ChallengeWorkoutMode({
             />
           )}
           {centerOverlay}
+          <WorkoutEffectsLayer
+            currentReps={currentReps}
+            targetReps={targetReps}
+            exerciseType={exerciseType}
+            // Multi-exercise workouts announce each exercise instead of celebrating halfway / done.
+            milestones={exerciseTransitionKey === undefined}
+            resetKey={exerciseTransitionKey}
+            totalReps={totalReps}
+            visuals={preferences.workoutEffectsEnabled}
+            play={play}
+          />
           <WorkoutExerciseTransitionOverlay label={exerciseTransitionLabel} />
         </View>
       </View>
