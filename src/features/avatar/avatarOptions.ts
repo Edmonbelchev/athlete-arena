@@ -4,12 +4,16 @@ import type {
   AvatarAppearance,
   AvatarBodyType,
   AvatarBrows,
+  AvatarElfEars,
   AvatarEyes,
   AvatarFacialHair,
   AvatarHair,
   AvatarHeadShape,
   AvatarMouth,
   AvatarNose,
+  AvatarOrcEars,
+  AvatarRace,
+  AvatarTusks,
   WearableItem,
 } from '@/types/avatar';
 
@@ -18,6 +22,8 @@ export interface AvatarChoice<T extends string> {
   label: string;
   /** Limits the option to one body type; omitted means available to both. */
   bodyType?: AvatarBodyType;
+  /** Limits the option to avatars wearing this race; omitted means available to everyone. */
+  race?: AvatarRace;
 }
 
 export interface AvatarColorChoice {
@@ -43,7 +49,7 @@ export const EYE_CHOICES: AvatarChoice<AvatarEyes>[] = [
   { id: 'almond', label: 'Almond' },
   { id: 'big', label: 'Big' },
   { id: 'narrow', label: 'Narrow' },
-  { id: 'lashes', label: 'Lashes' },
+  { id: 'lashes', label: 'Lashes', bodyType: 'female' },
   { id: 'happy', label: 'Happy' },
   { id: 'sleepy', label: 'Sleepy' },
   { id: 'wink', label: 'Wink' },
@@ -100,6 +106,31 @@ export const HAIR_CHOICES: AvatarChoice<AvatarHair>[] = [
   { id: 'bun', label: 'Bun', bodyType: 'female' },
   { id: 'space_buns', label: 'Space buns', bodyType: 'female' },
   { id: 'braids', label: 'Braids', bodyType: 'female' },
+  { id: 'elf_flowing', label: 'Flowing', race: 'elf' },
+  { id: 'elf_crown_braid', label: 'Crown braid', race: 'elf' },
+  { id: 'elf_high_knot', label: 'High knot', race: 'elf' },
+  { id: 'orc_topknot', label: 'Topknot', race: 'orc' },
+  { id: 'orc_war_braids', label: 'War braids', race: 'orc' },
+  { id: 'orc_crest', label: 'Crest', race: 'orc' },
+];
+
+export const ELF_EAR_CHOICES: AvatarChoice<AvatarElfEars>[] = [
+  { id: 'classic', label: 'Classic' },
+  { id: 'long', label: 'Long' },
+  { id: 'short', label: 'Short' },
+];
+
+export const ORC_EAR_CHOICES: AvatarChoice<AvatarOrcEars>[] = [
+  { id: 'nicked', label: 'Nicked' },
+  { id: 'pointed', label: 'Pointed' },
+  { id: 'droopy', label: 'Droopy' },
+];
+
+export const TUSK_CHOICES: AvatarChoice<AvatarTusks>[] = [
+  { id: 'classic', label: 'Classic' },
+  { id: 'large', label: 'Large' },
+  { id: 'broken', label: 'Broken' },
+  { id: 'none', label: 'None' },
 ];
 
 export const FACIAL_HAIR_CHOICES: AvatarChoice<AvatarFacialHair>[] = [
@@ -160,6 +191,7 @@ export const ACCESSORY_SLOTS: { slot: AccessorySlot; label: string; required: bo
   { slot: 'glasses', label: 'Glasses', required: false },
   { slot: 'earrings', label: 'Earrings', required: false },
   { slot: 'background', label: 'Background', required: false },
+  { slot: 'race', label: 'Race', required: false },
 ];
 
 /** Starting looks for new accounts; keep in sync with create_default_avatar (migration 128). */
@@ -177,6 +209,9 @@ export const DEFAULT_APPEARANCE: Record<AvatarBodyType, AvatarAppearance> = {
     hairColor: 'hair_black',
     facialHair: 'goatee',
     background: 'bg_indigo',
+    elfEars: 'classic',
+    orcEars: 'nicked',
+    tusks: 'classic',
   },
   female: {
     bodyType: 'female',
@@ -191,23 +226,36 @@ export const DEFAULT_APPEARANCE: Record<AvatarBodyType, AvatarAppearance> = {
     hairColor: 'hair_black',
     facialHair: 'none',
     background: 'bg_indigo',
+    elfEars: 'classic',
+    orcEars: 'nicked',
+    tusks: 'classic',
   },
 };
 
+/**
+ * Options available to a body type. Race-only options are included only for that race;
+ * pass `'any'` to allow every race's options (used when loading, before the race is known).
+ */
 export function choicesForBody<T extends string>(
   choices: AvatarChoice<T>[],
-  bodyType: AvatarBodyType
+  bodyType: AvatarBodyType,
+  race: AvatarRace | null | 'any' = null
 ): AvatarChoice<T>[] {
-  return choices.filter((choice) => !choice.bodyType || choice.bodyType === bodyType);
+  return choices.filter(
+    (choice) =>
+      (!choice.bodyType || choice.bodyType === bodyType) &&
+      (!choice.race || race === 'any' || choice.race === race)
+  );
 }
 
 function pickChoice<T extends string>(
   choices: AvatarChoice<T>[],
   value: unknown,
   bodyType: AvatarBodyType,
-  fallback: T
+  fallback: T,
+  race: AvatarRace | null | 'any' = 'any'
 ): T {
-  const allowed = choicesForBody(choices, bodyType);
+  const allowed = choicesForBody(choices, bodyType, race);
   return allowed.find((choice) => choice.id === value)?.id ?? fallback;
 }
 
@@ -219,8 +267,12 @@ export function resolveColor(colors: AvatarColorChoice[], id: string): string {
   return (colors.find((color) => color.id === id) ?? colors[0]).hex;
 }
 
-/** Coerces stored or partial data into a valid appearance for its body type. */
-export function normalizeAppearance(value: unknown): AvatarAppearance {
+/**
+ * Coerces stored or partial data into a valid appearance for its body type. With a race,
+ * race-only options of other races (e.g. orc hair after switching to elf) fall back to defaults;
+ * without one (`'any'`, the default) they are kept, since the race is stored separately.
+ */
+export function normalizeAppearance(value: unknown, race: AvatarRace | null | 'any' = 'any'): AvatarAppearance {
   const record = value && typeof value === 'object' ? (value as Record<string, unknown>) : {};
   const bodyType: AvatarBodyType = record.bodyType === 'female' ? 'female' : 'male';
   const defaults = DEFAULT_APPEARANCE[bodyType];
@@ -234,10 +286,13 @@ export function normalizeAppearance(value: unknown): AvatarAppearance {
     brows: pickChoice(BROW_CHOICES, record.brows, bodyType, defaults.brows),
     nose: pickChoice(NOSE_CHOICES, record.nose, bodyType, defaults.nose),
     mouth: pickChoice(MOUTH_CHOICES, record.mouth, bodyType, defaults.mouth),
-    hair: pickChoice(HAIR_CHOICES, record.hair, bodyType, defaults.hair),
+    hair: pickChoice(HAIR_CHOICES, record.hair, bodyType, defaults.hair, race),
     hairColor: pickColor(HAIR_COLORS, record.hairColor, defaults.hairColor),
     facialHair: pickChoice(FACIAL_HAIR_CHOICES, record.facialHair, bodyType, defaults.facialHair),
     background: pickColor(BACKGROUND_COLORS, record.background, defaults.background),
+    elfEars: pickChoice(ELF_EAR_CHOICES, record.elfEars, bodyType, defaults.elfEars),
+    orcEars: pickChoice(ORC_EAR_CHOICES, record.orcEars, bodyType, defaults.orcEars),
+    tusks: pickChoice(TUSK_CHOICES, record.tusks, bodyType, defaults.tusks),
   };
 }
 
@@ -247,6 +302,11 @@ export function changeBodyType(
   bodyType: AvatarBodyType
 ): AvatarAppearance {
   return normalizeAppearance({ ...appearance, bodyType });
+}
+
+/** Switches race (or back to human), dropping options that belong to another race. */
+export function changeRace(appearance: AvatarAppearance, race: AvatarRace | null): AvatarAppearance {
+  return normalizeAppearance(appearance, race);
 }
 
 export function wearableFitsBody(item: WearableItem, bodyType: AvatarBodyType): boolean {
@@ -281,7 +341,7 @@ function randomOf<T>(values: T[]): T {
   return values[Math.floor(Math.random() * values.length)];
 }
 
-export function randomizeAppearance(bodyType: AvatarBodyType): AvatarAppearance {
+export function randomizeAppearance(bodyType: AvatarBodyType, race: AvatarRace | null = null): AvatarAppearance {
   return {
     bodyType,
     headShape: randomOf(choicesForBody(HEAD_SHAPE_CHOICES, bodyType)).id,
@@ -291,9 +351,12 @@ export function randomizeAppearance(bodyType: AvatarBodyType): AvatarAppearance 
     brows: randomOf(choicesForBody(BROW_CHOICES, bodyType)).id,
     nose: randomOf(choicesForBody(NOSE_CHOICES, bodyType)).id,
     mouth: randomOf(choicesForBody(MOUTH_CHOICES, bodyType)).id,
-    hair: randomOf(choicesForBody(HAIR_CHOICES, bodyType)).id,
+    hair: randomOf(choicesForBody(HAIR_CHOICES, bodyType, race)).id,
     hairColor: randomOf(HAIR_COLORS.slice(0, 7)).id,
     facialHair: randomOf(choicesForBody(FACIAL_HAIR_CHOICES, bodyType)).id,
     background: randomOf(BACKGROUND_COLORS).id,
+    elfEars: randomOf(ELF_EAR_CHOICES).id,
+    orcEars: randomOf(ORC_EAR_CHOICES).id,
+    tusks: randomOf(TUSK_CHOICES).id,
   };
 }

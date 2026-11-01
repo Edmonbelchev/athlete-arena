@@ -213,19 +213,35 @@ export function AvatarGlasses({ accessories }: { accessories: AvatarAccessorySty
 
 // Head ----------------------------------------------------------------------
 
-export function AvatarHeadShapePart({ shape, skin }: { shape: AvatarHeadShape; skin: string }) {
+export function AvatarHeadShapePart({
+  shape,
+  skin,
+  showEars = true,
+  showBlush = true,
+}: {
+  shape: AvatarHeadShape;
+  skin: string;
+  /** Off when a race draws its own ears (AvatarRaceParts). */
+  showEars?: boolean;
+  /** Off for race skin (blue / green), where pink blush reads as blotches. */
+  showBlush?: boolean;
+}) {
   const earX = EAR_X[shape];
 
   return (
     <>
-      <Both>
-        <Circle cx={earX} cy={EAR_Y} r={7.5} fill={skin} />
-        <Circle cx={earX + 1} cy={EAR_Y} r={3.5} fill={shadeColor(skin, -0.12)} />
-      </Both>
+      {showEars ? (
+        <Both>
+          <Circle cx={earX} cy={EAR_Y} r={7.5} fill={skin} />
+          <Circle cx={earX + 1} cy={EAR_Y} r={3.5} fill={shadeColor(skin, -0.12)} />
+        </Both>
+      ) : null}
       <Path d={headPath(shape)} fill={skin} />
-      <Both>
-        <Circle cx={80} cy={88} r={5} fill="#F87171" opacity={0.18} />
-      </Both>
+      {showBlush ? (
+        <Both>
+          <Circle cx={80} cy={88} r={5} fill="#F87171" opacity={0.18} />
+        </Both>
+      ) : null}
     </>
   );
 }

@@ -3,6 +3,7 @@ import type {
   AccessorySlot,
   AvatarAccessories,
   AvatarAccessoryStyles,
+  AvatarRace,
   WearableBodyType,
   WearableItem,
   WearablePattern,
@@ -20,7 +21,7 @@ export interface WardrobeRpcRow {
   owned: boolean;
 }
 
-const SLOTS: AccessorySlot[] = ['top', 'headwear', 'glasses', 'earrings', 'background'];
+const SLOTS: AccessorySlot[] = ['top', 'headwear', 'glasses', 'earrings', 'background', 'race'];
 const STYLES: WearableStyle[] = [
   'tee',
   'hoodie',
@@ -39,6 +40,8 @@ const STYLES: WearableStyle[] = [
   'hoops',
   'drops',
   ...SCENE_STYLES,
+  'race_elf',
+  'race_orc',
 ];
 const PATTERNS: WearablePattern[] = ['stripe', 'star', 'camo'];
 const TIERS: WearableTier[] = ['basic', 'rare', 'legendary'];
@@ -116,4 +119,10 @@ export function toAccessoryStyles(
   }
 
   return styles;
+}
+
+/** The race an avatar is wearing (elf / orc), or null for human. */
+export function accessoryRace(styles: AvatarAccessoryStyles): AvatarRace | null {
+  const style = styles.race?.style;
+  return style === 'race_elf' ? 'elf' : style === 'race_orc' ? 'orc' : null;
 }
