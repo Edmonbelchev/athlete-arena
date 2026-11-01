@@ -15,6 +15,8 @@ const PAYWALL_CONTEXTS = new Set<PremiumPaywallContext>([
   'start_workout',
   'membership',
   'challenge_requests',
+  'avatar_races',
+  'quest_swaps',
 ]);
 
 function parsePaywallContext(value: string | undefined): PremiumPaywallContext {
