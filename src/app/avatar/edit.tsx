@@ -10,6 +10,7 @@ import {
   SegmentedControl,
 } from '@/components/avatar/AvatarEditorControls';
 import { AvatarPortrait } from '@/components/avatar/AvatarPortrait';
+import { raceSkinColor } from '@/components/avatar/AvatarRaceParts';
 import { AppIcon } from '@/components/ui/AppIcon';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
@@ -19,6 +20,7 @@ import {
   BODY_TYPE_CHOICES,
   BROW_CHOICES,
   DEFAULT_APPEARANCE,
+  ELF_EAR_CHOICES,
   EYE_CHOICES,
   EYE_COLORS,
   FACIAL_HAIR_CHOICES,
@@ -27,15 +29,18 @@ import {
   HEAD_SHAPE_CHOICES,
   MOUTH_CHOICES,
   NOSE_CHOICES,
+  ORC_EAR_CHOICES,
   SKIN_COLORS,
+  TUSK_CHOICES,
   changeBodyType,
+  changeRace,
   choicesForBody,
   normalizeAccessories,
   randomizeAppearance,
   wearableFitsBody,
   type AvatarChoice,
 } from '@/features/avatar/avatarOptions';
-import { toAccessoryStyles } from '@/features/avatar/avatarWardrobe';
+import { accessoryRace, toAccessoryStyles } from '@/features/avatar/avatarWardrobe';
 import { saveAvatarWithHeadshot } from '@/features/avatar/saveAvatarWithHeadshot';
 import { useProfile } from '@/features/profile/useProfile';
 import { useShop } from '@/features/shop/ShopProvider';
@@ -45,16 +50,27 @@ import { leaveScreen } from '@/lib/navigation';
 import { getMyAvatar, getMyWardrobe } from '@/services/avatarService';
 import type { AccessorySlot, AvatarAccessories, AvatarAppearance, WearableItem } from '@/types/avatar';
 
-type EditorTab = 'face' | 'eyes' | 'mouth' | 'hair' | 'beard' | 'outfit';
+type EditorTab = 'face' | 'race' | 'eyes' | 'mouth' | 'hair' | 'beard' | 'outfit' | 'background' | 'frame';
 
 const TABS: { id: EditorTab; label: string; maleOnly?: boolean }[] = [
   { id: 'face', label: 'Face' },
+  { id: 'race', label: 'Race' },
   { id: 'hair', label: 'Hair' },
   { id: 'eyes', label: 'Eyes' },
   { id: 'mouth', label: 'Mouth' },
   { id: 'beard', label: 'Beard', maleOnly: true },
   { id: 'outfit', label: 'Outfit' },
+  { id: 'background', label: 'Background' },
+  { id: 'frame', label: 'Frame' },
 ];
+
+/** Accessory slots shown on the Outfit tab; race and background have their own tabs. */
+const OUTFIT_SLOTS = ACCESSORY_SLOTS.filter(({ slot }) => slot !== 'race' && slot !== 'background');
+
+/** The tab that holds an accessory slot, for opening the editor on a just-bought item. */
+function tabForSlot(slot: AccessorySlot): EditorTab {
+  return slot === 'race' ? 'race' : slot === 'background' ? 'background' : 'outfit';
+}
 
 const PREVIEW_SIZE = 148;
 
@@ -63,7 +79,10 @@ export default function AvatarEditorScreen() {
   const router = useRouter();
   const { profile, refresh: refreshProfile } = useProfile();
   // `equip` comes from the shop's "Wear" button: open the outfit tab already wearing the item.
-  const { source, equip } = useLocalSearchParams<{ source?: string; equip?: string }>();
+  const { source, equip } = useLocalSearchParams<{
+    source?: string;
+    equip?: string;
+  }>();
   const isOnboarding = source === 'onboarding';
   const portraitRef = useRef<View>(null);
 
@@ -108,11 +127,13 @@ export default function AvatarEditorScreen() {
         const initialAccessories = equipItem
           ? { ...saved?.accessories, [equipItem.slot]: equipItem.id }
           : (saved?.accessories ?? {});
+        const normalizedAccessories = normalizeAccessories(initialAccessories, items, initialAppearance.bodyType);
         setWardrobe(items);
-        setAppearance(initialAppearance);
-        setAccessories(normalizeAccessories(initialAccessories, items, initialAppearance.bodyType));
+        // Drop race-only options (e.g. orc hair) the equipped race doesn't allow.
+        setAppearance(changeRace(initialAppearance, accessoryRace(toAccessoryStyles(normalizedAccessories, items))));
+        setAccessories(normalizedAccessories);
         if (equipItem) {
-          setTab('outfit');
+          setTab(tabForSlot(equipItem.slot));
         }
         setIsNew(!saved);
       } catch (err) {
@@ -134,15 +155,31 @@ export default function AvatarEditorScreen() {
   }, [equip, userId]);
 
   const accessoryStyles = useMemo(() => toAccessoryStyles(accessories, wardrobe), [accessories, wardrobe]);
+  const race = accessoryRace(accessoryStyles);
+  // Skin swatches show the tone as it will look: blue for elves, green for orcs.
+  const skinColors = useMemo(
+    () =>
+      SKIN_COLORS.map((choice) => ({
+        ...choice,
+        hex: raceSkinColor(race, choice.id, choice.hex),
+      })),
+    [race]
+  );
 
   const update = useCallback(<K extends keyof AvatarAppearance>(key: K, value: AvatarAppearance[K]) => {
     setAppearance((current) => ({ ...current, [key]: value }));
   }, []);
 
   const bodyType = appearance.bodyType;
-  const tabs = TABS.filter((entry) => !entry.maleOnly || bodyType === 'male');
-  const activeTab = tabs.some((entry) => entry.id === tab) ? tab : 'face';
   const fittingWardrobe = wardrobe.filter((item) => item.owned && wearableFitsBody(item, bodyType));
+  const ownsRace = fittingWardrobe.some((item) => item.slot === 'race');
+  const tabs = TABS.filter(
+    (entry) =>
+      (!entry.maleOnly || bodyType === 'male') &&
+      (entry.id !== 'race' || ownsRace) &&
+      (entry.id !== 'frame' || ownedFrames.length > 0)
+  );
+  const activeTab = tabs.some((entry) => entry.id === tab) ? tab : 'face';
 
   function handleBodyType(nextBodyType: AvatarAppearance['bodyType']) {
     if (nextBodyType === bodyType) {
@@ -153,15 +190,17 @@ export default function AvatarEditorScreen() {
   }
 
   function handleAccessory(slot: AccessorySlot, itemId: string | undefined) {
-    setAccessories((current) => {
-      const next = { ...current };
-      if (itemId) {
-        next[slot] = itemId;
-      } else {
-        delete next[slot];
-      }
-      return next;
-    });
+    const next = { ...accessories };
+    if (itemId) {
+      next[slot] = itemId;
+    } else {
+      delete next[slot];
+    }
+    setAccessories(next);
+    if (slot === 'race') {
+      // A different race (or none) can't keep another race's hairstyle.
+      setAppearance((current) => changeRace(current, accessoryRace(toAccessoryStyles(next, wardrobe))));
+    }
   }
 
   /** Tiles for an appearance attribute, each previewing the avatar with that option. */
@@ -172,7 +211,7 @@ export default function AvatarEditorScreen() {
   ) {
     return (
       <OptionTiles
-        options={choicesForBody(choices, bodyType)}
+        options={choicesForBody(choices, bodyType, race)}
         value={appearance[key] as Extract<AvatarAppearance[K], string>}
         onChange={(value) => update(key, value as AvatarAppearance[K])}
         renderPreview={(id, size) => (
@@ -187,6 +226,44 @@ export default function AvatarEditorScreen() {
     );
   }
 
+  /** Item tiles for one accessory slot, each previewing the avatar wearing it. */
+  function renderSlot({ slot, label, required }: { slot: AccessorySlot; label: string; required: boolean }) {
+    const items = fittingWardrobe.filter((item) => item.slot === slot);
+    if (items.length === 0) {
+      return null;
+    }
+    const options: { id: string | undefined; label: string }[] = [
+      ...(required ? [] : [{ id: undefined, label: 'None' }]),
+      ...items.map((item) => ({ id: item.id, label: item.title })),
+    ];
+    return (
+      <EditorSection key={slot} title={label}>
+        <OptionTiles
+          options={options}
+          value={accessories[slot]}
+          onChange={(itemId) => handleAccessory(slot, itemId)}
+          renderPreview={(itemId, size) => {
+            const preview = { ...accessories };
+            if (itemId) {
+              preview[slot] = itemId;
+            } else {
+              delete preview[slot];
+            }
+            return (
+              <AvatarPortrait
+                appearance={appearance}
+                accessories={toAccessoryStyles(preview, wardrobe)}
+                size={size}
+                crop={slot === 'earrings' || slot === 'glasses' ? 'face' : 'portrait'}
+                showBackground={slot === 'background'}
+              />
+            );
+          }}
+        />
+      </EditorSection>
+    );
+  }
+
   async function handleSave() {
     if (!userId) {
       return;
@@ -196,7 +273,12 @@ export default function AvatarEditorScreen() {
     setIsSaving(true);
 
     try {
-      await saveAvatarWithHeadshot({ userId, appearance, accessories, portraitRef });
+      await saveAvatarWithHeadshot({
+        userId,
+        appearance,
+        accessories,
+        portraitRef,
+      });
       if (frameId !== equippedFrameId) {
         await (frameId ? equipItem(frameId) : removeFrame());
       }
@@ -253,7 +335,8 @@ export default function AvatarEditorScreen() {
             {/* One scrolling page: the portrait scrolls away and the tab bar sticks to the top,
                 so the options always get the full screen height. */}
             <ScrollView style={styles.scroll} stickyHeaderIndices={[1]}>
-              <View style={StyleSheet.flatten([styles.hero, { backgroundColor: theme.card, borderColor: theme.border }])}>
+              <View
+                style={StyleSheet.flatten([styles.hero, { backgroundColor: theme.card, borderColor: theme.border }])}>
                 {isOnboarding ? (
                   <View style={styles.welcome}>
                     <Text style={StyleSheet.flatten([styles.welcomeTitle, { color: theme.text }])}>
@@ -268,7 +351,9 @@ export default function AvatarEditorScreen() {
                   <View
                     style={StyleSheet.flatten([
                       styles.portrait,
-                      { borderColor: selectedFrame?.metadata.borderColor ?? theme.card },
+                      {
+                        borderColor: selectedFrame?.metadata.borderColor ?? theme.card,
+                      },
                     ])}>
                     {/* The square inside the round frame is what gets saved as the profile picture. */}
                     <View ref={portraitRef} collapsable={false}>
@@ -283,10 +368,13 @@ export default function AvatarEditorScreen() {
                   <Pressable
                     accessibilityRole="button"
                     accessibilityLabel="Randomize avatar"
-                    onPress={() => setAppearance(randomizeAppearance(bodyType))}
+                    onPress={() => setAppearance(randomizeAppearance(bodyType, race))}
                     style={StyleSheet.flatten([
                       styles.shuffle,
-                      { backgroundColor: theme.primary, borderColor: theme.card },
+                      {
+                        backgroundColor: theme.primary,
+                        borderColor: theme.card,
+                      },
                     ])}>
                     <AppIcon name="shuffle" size={18} color="#FFFFFF" weight="bold" />
                   </Pressable>
@@ -309,10 +397,17 @@ export default function AvatarEditorScreen() {
                         style={StyleSheet.flatten([
                           styles.tab,
                           selected
-                            ? { backgroundColor: theme.primary, borderColor: theme.primary }
-                            : { backgroundColor: theme.card, borderColor: theme.border },
+                            ? {
+                                backgroundColor: theme.primary,
+                                borderColor: theme.primary,
+                              }
+                            : {
+                                backgroundColor: theme.card,
+                                borderColor: theme.border,
+                              },
                         ])}>
-                        <Text style={StyleSheet.flatten([styles.tabLabel, { color: selected ? '#FFFFFF' : theme.text }])}>
+                        <Text
+                          style={StyleSheet.flatten([styles.tabLabel, { color: selected ? '#FFFFFF' : theme.text }])}>
                           {entry.label}
                         </Text>
                       </Pressable>
@@ -326,7 +421,7 @@ export default function AvatarEditorScreen() {
                   <>
                     <EditorSection title="Skin tone">
                       <ColorSwatches
-                        colors={SKIN_COLORS}
+                        colors={skinColors}
                         value={appearance.skinColor}
                         onChange={(value) => update('skinColor', value)}
                       />
@@ -335,6 +430,28 @@ export default function AvatarEditorScreen() {
                       {renderAppearanceTiles('headShape', HEAD_SHAPE_CHOICES, 'portrait')}
                     </EditorSection>
                     <EditorSection title="Nose">{renderAppearanceTiles('nose', NOSE_CHOICES, 'face')}</EditorSection>
+                  </>
+                ) : null}
+
+                {activeTab === 'race' ? (
+                  <>
+                    {renderSlot({
+                      slot: 'race',
+                      label: 'Race',
+                      required: false,
+                    })}
+                    {race ? (
+                      <EditorSection title="Ears">
+                        {race === 'elf'
+                          ? renderAppearanceTiles('elfEars', ELF_EAR_CHOICES, 'portrait')
+                          : renderAppearanceTiles('orcEars', ORC_EAR_CHOICES, 'portrait')}
+                      </EditorSection>
+                    ) : null}
+                    {race === 'orc' ? (
+                      <EditorSection title="Tusks">
+                        {renderAppearanceTiles('tusks', TUSK_CHOICES, 'face')}
+                      </EditorSection>
+                    ) : null}
                   </>
                 ) : null}
 
@@ -347,7 +464,9 @@ export default function AvatarEditorScreen() {
                         onChange={(value) => update('hairColor', value)}
                       />
                     </EditorSection>
-                    <EditorSection title="Hairstyle">{renderAppearanceTiles('hair', HAIR_CHOICES, 'portrait')}</EditorSection>
+                    <EditorSection title="Hairstyle">
+                      {renderAppearanceTiles('hair', HAIR_CHOICES, 'portrait')}
+                    </EditorSection>
                   </>
                 ) : null}
 
@@ -361,7 +480,9 @@ export default function AvatarEditorScreen() {
                       />
                     </EditorSection>
                     <EditorSection title="Eyes">{renderAppearanceTiles('eyes', EYE_CHOICES, 'face')}</EditorSection>
-                    <EditorSection title="Eyebrows">{renderAppearanceTiles('brows', BROW_CHOICES, 'face')}</EditorSection>
+                    <EditorSection title="Eyebrows">
+                      {renderAppearanceTiles('brows', BROW_CHOICES, 'face')}
+                    </EditorSection>
                   </>
                 ) : null}
 
@@ -375,80 +496,16 @@ export default function AvatarEditorScreen() {
                   </EditorSection>
                 ) : null}
 
-                {activeTab === 'outfit' ? (
+                {activeTab === 'outfit' ? <>{OUTFIT_SLOTS.map(renderSlot)}</> : null}
+
+                {activeTab === 'background' ? (
                   <>
-                    {ACCESSORY_SLOTS.map(({ slot, label, required }) => {
-                      const items = fittingWardrobe.filter((item) => item.slot === slot);
-                      if (items.length === 0) {
-                        return null;
-                      }
-                      const options: { id: string | undefined; label: string }[] = [
-                        ...(required ? [] : [{ id: undefined, label: 'None' }]),
-                        ...items.map((item) => ({ id: item.id, label: item.title })),
-                      ];
-                      return (
-                        <EditorSection key={slot} title={label}>
-                          <OptionTiles
-                            options={options}
-                            value={accessories[slot]}
-                            onChange={(itemId) => handleAccessory(slot, itemId)}
-                            renderPreview={(itemId, size) => {
-                              const preview = { ...accessories };
-                              if (itemId) {
-                                preview[slot] = itemId;
-                              } else {
-                                delete preview[slot];
-                              }
-                              return (
-                                <AvatarPortrait
-                                  appearance={appearance}
-                                  accessories={toAccessoryStyles(preview, wardrobe)}
-                                  size={size}
-                                  crop={slot === 'earrings' || slot === 'glasses' ? 'face' : 'portrait'}
-                                  showBackground={slot === 'background'}
-                                />
-                              );
-                            }}
-                          />
-                        </EditorSection>
-                      );
+                    {renderSlot({
+                      slot: 'background',
+                      label: 'Scene',
+                      required: false,
                     })}
-                    {ownedFrames.length > 0 ? (
-                      <EditorSection title="Frame">
-                        <OptionTiles
-                          options={[
-                            { id: undefined, label: 'None' },
-                            ...ownedFrames.map((item) => ({ id: item.id, label: item.title.replace(' Frame', '') })),
-                          ]}
-                          value={frameId ?? undefined}
-                          onChange={(id) => setFrameId(id ?? null)}
-                          renderPreview={(id, size) => {
-                            const frame = ownedFrames.find((item) => item.id === id);
-                            return (
-                              <View
-                                style={StyleSheet.flatten([
-                                  styles.framePreview,
-                                  {
-                                    width: size - 8,
-                                    height: size - 8,
-                                    borderRadius: (size - 8) / 2,
-                                    borderColor: frame?.metadata.borderColor ?? 'transparent',
-                                    borderWidth: frame ? (frame.metadata.borderWidth ?? 3) + 1 : 0,
-                                  },
-                                ])}>
-                                <AvatarPortrait
-                                  appearance={appearance}
-                                  accessories={accessoryStyles}
-                                  size={size - 14}
-                                  showBackground
-                                />
-                              </View>
-                            );
-                          }}
-                        />
-                      </EditorSection>
-                    ) : null}
-                    <EditorSection title="Background">
+                    <EditorSection title="Color">
                       <ColorSwatches
                         colors={BACKGROUND_COLORS}
                         value={appearance.background}
@@ -457,13 +514,51 @@ export default function AvatarEditorScreen() {
                     </EditorSection>
                   </>
                 ) : null}
+
+                {activeTab === 'frame' ? (
+                  <EditorSection title="Frame">
+                    <OptionTiles
+                      options={[
+                        { id: undefined, label: 'None' },
+                        ...ownedFrames.map((item) => ({
+                          id: item.id,
+                          label: item.title.replace(' Frame', ''),
+                        })),
+                      ]}
+                      value={frameId ?? undefined}
+                      onChange={(id) => setFrameId(id ?? null)}
+                      renderPreview={(id, size) => {
+                        const frame = ownedFrames.find((item) => item.id === id);
+                        return (
+                          <View
+                            style={StyleSheet.flatten([
+                              styles.framePreview,
+                              {
+                                width: size - 8,
+                                height: size - 8,
+                                borderRadius: (size - 8) / 2,
+                                borderColor: frame?.metadata.borderColor ?? 'transparent',
+                                borderWidth: frame ? (frame.metadata.borderWidth ?? 3) + 1 : 0,
+                              },
+                            ])}>
+                            <AvatarPortrait
+                              appearance={appearance}
+                              accessories={accessoryStyles}
+                              size={size - 14}
+                              showBackground
+                            />
+                          </View>
+                        );
+                      }}
+                    />
+                  </EditorSection>
+                ) : null}
               </View>
             </ScrollView>
 
-            <View style={StyleSheet.flatten([styles.footer, { borderColor: theme.border, backgroundColor: theme.card }])}>
-              {error ? (
-                <Text style={StyleSheet.flatten([styles.error, { color: theme.danger }])}>{error}</Text>
-              ) : null}
+            <View
+              style={StyleSheet.flatten([styles.footer, { borderColor: theme.border, backgroundColor: theme.card }])}>
+              {error ? <Text style={StyleSheet.flatten([styles.error, { color: theme.danger }])}>{error}</Text> : null}
               <PrimaryButton
                 label={isNew ? 'Create Avatar' : 'Save Avatar'}
                 loading={isSaving}

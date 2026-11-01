@@ -39,6 +39,13 @@ import {
   SKIN_COLORS,
   resolveColor,
 } from '@/features/avatar/avatarOptions';
+import {
+  AvatarRaceEars,
+  AvatarRaceOverFace,
+  AvatarRaceUnderFace,
+  raceSkinColor,
+} from '@/components/avatar/AvatarRaceParts';
+import { accessoryRace } from '@/features/avatar/avatarWardrobe';
 import type { AvatarAccessoryStyles, AvatarAppearance } from '@/types/avatar';
 
 interface AvatarPortraitProps {
@@ -53,7 +60,8 @@ interface AvatarPortraitProps {
 
 /**
  * Layered SVG head-and-shoulders avatar. Layer order (back to front):
- * hair back → neck → top → head → beard → face → hair cap → hair volume → earrings → glasses → headwear.
+ * hair back → neck → top → head (+ race brow / cheeks) → beard → face (+ orc tusks) → hair cap →
+ * hair volume → race ears → earrings → glasses → headwear.
  * Hair caps and beards are clipped to the head outline so they fit every head shape.
  */
 export function AvatarPortrait({
@@ -72,7 +80,8 @@ export function AvatarPortrait({
   const topClipId = `${idPrefix}top`;
   const headwearClipId = `${idPrefix}headwear`;
 
-  const skin = resolveColor(SKIN_COLORS, appearance.skinColor);
+  const race = accessoryRace(accessories);
+  const skin = raceSkinColor(race, appearance.skinColor, resolveColor(SKIN_COLORS, appearance.skinColor));
   const hairColor = resolveColor(HAIR_COLORS, appearance.hairColor);
   const eyeColor = resolveColor(EYE_COLORS, appearance.eyeColor);
   const { x, y, size: box } = crop === 'face' ? FACE_VIEWBOX : PORTRAIT_VIEWBOX;
@@ -124,7 +133,8 @@ export function AvatarPortrait({
         <AvatarNeck skin={skin} />
         <AvatarTop accessories={accessories} background={background} clipId={topClipId} />
       </G>
-      <AvatarHeadShapePart shape={shape} skin={skin} />
+      <AvatarHeadShapePart shape={shape} skin={skin} showEars={race === null} showBlush={race === null} />
+      {race ? <AvatarRaceUnderFace race={race} skin={skin} /> : null}
       <AvatarFacialHair
         facialHair={appearance.facialHair}
         headShape={shape}
@@ -134,6 +144,7 @@ export function AvatarPortrait({
         jawClipId={jawClipId}
       />
       <AvatarFace appearance={appearance} skin={skin} eyeColor={eyeColor} hairColor={hairColor} />
+      {race ? <AvatarRaceOverFace race={race} bodyType={appearance.bodyType} tusks={appearance.tusks} /> : null}
       <AvatarHairCap
         hair={appearance.hair}
         bodyType={appearance.bodyType}
@@ -145,6 +156,16 @@ export function AvatarPortrait({
       <G transform={fit}>
         <AvatarHairFront hair={appearance.hair} bodyType={appearance.bodyType} color={hairColor} />
       </G>
+      {/* Race ears go over the hair so the tips show through long hairstyles. */}
+      {race ? (
+        <AvatarRaceEars
+          race={race}
+          ears={race === 'elf' ? appearance.elfEars : appearance.orcEars}
+          shape={shape}
+          skin={skin}
+          bodyType={appearance.bodyType}
+        />
+      ) : null}
       <AvatarEarrings accessories={accessories} headShape={shape} />
       <AvatarGlasses accessories={accessories} />
       <AvatarHeadwear

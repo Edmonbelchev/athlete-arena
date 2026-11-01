@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 
 import { AvatarPortrait } from '@/components/avatar/AvatarPortrait';
+import { RaceExtrasPreview } from '@/components/shop/RaceExtrasPreview';
 import { FriendChallengeRequestQuotaBar } from '@/components/friends/FriendChallengeRequestQuotaBar';
 import { CoinEarnInfo } from '@/components/rewards/CoinEarnInfo';
 import {
@@ -24,7 +25,8 @@ import { CoinIcon } from '@/components/ui/CoinIcon';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
-import { toAccessoryStyles } from '@/features/avatar/avatarWardrobe';
+import { changeRace } from '@/features/avatar/avatarOptions';
+import { accessoryRace, toAccessoryStyles } from '@/features/avatar/avatarWardrobe';
 import { saveAvatarWithHeadshot } from '@/features/avatar/saveAvatarWithHeadshot';
 import { useMyAvatar } from '@/features/avatar/useMyAvatar';
 import { useProfile } from '@/features/profile/useProfile';
@@ -32,7 +34,7 @@ import { useFriendChallengeRequestQuota } from '@/features/friends/useFriendChal
 import { useShop } from '@/features/shop/ShopProvider';
 import { useTheme } from '@/hooks/use-theme';
 import { formatUserError } from '@/lib/errors';
-import type { AccessorySlot, AvatarAccessories, WearableTier } from '@/types/avatar';
+import type { AccessorySlot, AvatarAccessories, AvatarAppearance, WearableTier } from '@/types/avatar';
 import type { ShopItemRecord } from '@/types/shop';
 
 /** Sections other screens can link to (`/(tabs)/shop?section=slots`). */
@@ -46,6 +48,7 @@ const CATEGORY_LABELS: Record<ShopCategory, string> = {
   glasses: 'Glasses',
   earrings: 'Earrings',
   background: 'Backgrounds',
+  race: 'Races',
   frames: 'Frames',
   emotes: 'Emotes',
   slots: 'Challenge Slots',
@@ -71,6 +74,8 @@ export function ShopScreenContent({ initialSection = 'outfits' }: ShopScreenCont
   const theme = useTheme();
   const [category, setCategory] = useState<ShopCategory>(initialSection === 'outfits' ? 'top' : initialSection);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  // Race extras (hair, ears, tusks) being tried on with a selected race item.
+  const [raceTry, setRaceTry] = useState<Partial<AvatarAppearance>>({});
   const [pending, setPending] = useState<ShopItemRecord | null>(null);
   const [purchaseError, setPurchaseError] = useState<string | null>(null);
   const { items, summary, isLoading, isUpdating, error, refresh, purchaseItem, equipItem, removeFrame, equippedFrame } =
@@ -148,7 +153,7 @@ export function ShopScreenContent({ initialSection = 'outfits' }: ShopScreenCont
     [bodyType, items],
   );
   const categories = useMemo<ShopCategory[]>(() => {
-    const slots: AccessorySlot[] = ['top', 'headwear', 'glasses', 'earrings', 'background'];
+    const slots: AccessorySlot[] = ['race', 'top', 'headwear', 'glasses', 'earrings', 'background'];
     const withItems = slots.filter((slot) => wearables.some((item) => item.wearable?.slot === slot));
     return [...withItems, 'frames', 'emotes', 'slots'];
   }, [wearables]);
@@ -171,6 +176,17 @@ export function ShopScreenContent({ initialSection = 'outfits' }: ShopScreenCont
       return toAccessoryStyles(avatar.accessories, avatar.wardrobe);
     }
     return toAccessoryStyles({ ...avatar.accessories, [wearable.slot]: wearable.id }, [...avatar.wardrobe, wearable]);
+  }
+
+  const fittingAccessories = lookWith(selected);
+  const fittingRace = selected?.wearable?.slot === 'race' ? accessoryRace(fittingAccessories) : null;
+  const fittingAppearance = fittingRace
+    ? { ...changeRace(avatar.appearance, fittingRace), ...raceTry }
+    : avatar.appearance;
+
+  function selectItem(id: string | null) {
+    setSelectedId(id);
+    setRaceTry({});
   }
 
   function startPurchase(item: ShopItemRecord) {
@@ -341,8 +357,8 @@ export function ShopScreenContent({ initialSection = 'outfits' }: ShopScreenCont
                     : null,
                 ])}>
                 <AvatarPortrait
-                  appearance={avatar.appearance}
-                  accessories={lookWith(selected)}
+                  appearance={fittingAppearance}
+                  accessories={fittingAccessories}
                   size={FITTING_ROOM_SIZE}
                   showBackground
                 />
@@ -359,13 +375,22 @@ export function ShopScreenContent({ initialSection = 'outfits' }: ShopScreenCont
                 <Text style={StyleSheet.flatten([styles.selectedTier, { color: TIER_COLORS[getItemTier(selected)] }])}>
                   {TIER_LABELS[getItemTier(selected)]}
                 </Text>
-                <Pressable accessibilityRole="button" onPress={() => setSelectedId(null)}>
+                <Pressable accessibilityRole="button" onPress={() => selectItem(null)}>
                   <Text style={StyleSheet.flatten([styles.resetLink, { color: theme.textSecondary }])}>
                     Back to my look
                   </Text>
                 </Pressable>
               </View>
-            ) : (
+            ) : null}
+            {fittingRace ? (
+              <RaceExtrasPreview
+                race={fittingRace}
+                appearance={fittingAppearance}
+                accessories={fittingAccessories}
+                onTry={(change) => setRaceTry((current) => ({ ...current, ...change }))}
+              />
+            ) : null}
+            {selected ? null : (
               <Text style={StyleSheet.flatten([styles.fittingHint, { color: theme.textSecondary }])}>
                 Tap any item to try it on before you buy.
               </Text>
@@ -428,7 +453,7 @@ export function ShopScreenContent({ initialSection = 'outfits' }: ShopScreenCont
                             item={isWorn(item) ? { ...item, equipped: true } : item}
                             selected={item.id === selectedId}
                             canAfford={coinBalance >= item.priceCoins}
-                            onPress={() => setSelectedId(item.id === selectedId ? null : item.id)}
+                            onPress={() => selectItem(item.id === selectedId ? null : item.id)}
                             preview={renderTilePreview(item)}
                           />
                         ))}

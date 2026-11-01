@@ -35,6 +35,9 @@ interface HairStyle {
 const SLICKED_CAP = 'M20 0 H180 V72 H133 Q124 46 100 46 Q76 46 67 72 H20 Z';
 const SHAVED_CAP = 'M20 0 H180 V70 H131 Q128 50 100 47 Q72 50 69 70 H20 Z';
 
+/** Metal cuffs on race hairstyles. */
+const BRONZE = '#C9A44C';
+
 function Shine({ color, d }: { color: string; d: string }) {
   return <Path d={d} stroke={shadeColor(color, 0.18)} strokeWidth={2.5} strokeLinecap="round" fill="none" />;
 }
@@ -307,6 +310,129 @@ const HAIR_STYLES: Record<AvatarHair | HairVariant, HairStyle> = {
         </>
       );
     },
+  },
+  // Race-only styles -------------------------------------------------------
+  elf_flowing: {
+    outset: 1.06,
+    // Center part, sleek curtains down past the shoulders, tapering to points.
+    cap: 'M20 0 H180 V84 H134 Q131 56 113 46 Q105 42 100 40 Q95 42 87 46 Q69 56 66 84 H20 Z',
+    capDetail: (color) => (
+      <>
+        <Path d="M100 30 L100 41" stroke={shadeColor(color, -0.3)} strokeWidth={1.4} strokeLinecap="round" />
+        <Shine color={color} d="M88 38 Q93 34 97 33" />
+      </>
+    ),
+    back: (color) => (
+      <Path
+        d="M64 64 Q60 24 100 24 Q140 24 136 64 L140 146 L131 156 L122 148 L111 157 L100 150 L89 157 L78 148 L69 156 L60 146 Z"
+        fill={color}
+      />
+    ),
+    front: (color) => (
+      <Both>
+        <Path d="M67 68 Q60 106 63 152 L68 158 L73 150 Q70 112 75 80 Z" fill={color} />
+        <Path d="M68 92 Q66 118 68 140" stroke={shadeColor(color, 0.15)} strokeWidth={1.2} fill="none" />
+      </Both>
+    ),
+  },
+  elf_crown_braid: {
+    outset: 1.05,
+    cap: SLICKED_CAP,
+    capDetail: (color) => <Shine color={color} d="M90 45 Q100 43 110 45" />,
+    back: (color) => (
+      <Path
+        d="M64 66 Q60 28 100 28 Q140 28 136 66 Q142 90 138 112 Q141 128 134 136 Q118 142 100 140 Q82 142 66 136 Q59 128 62 112 Q58 90 64 66 Z"
+        fill={color}
+      />
+    ),
+    // A braid running over the crown from temple to temple.
+    front: (color) => {
+      const dark = shadeColor(color, -0.32);
+      const links = [196, 212, 228, 244, 260].map((deg) => {
+        const angle = (deg * Math.PI) / 180;
+        return { x: 100 + Math.cos(angle) * 33, y: 64 + Math.sin(angle) * 29, deg };
+      });
+      return (
+        <Both>
+          <G fill={shadeColor(color, 0.06)} stroke={dark} strokeWidth={1}>
+            {links.map(({ x, y, deg }) => (
+              <Ellipse key={deg} cx={x} cy={y} rx={6.2} ry={4.6} transform={`rotate(${deg - 160} ${x} ${y})`} />
+            ))}
+          </G>
+        </Both>
+      );
+    },
+  },
+  elf_high_knot: {
+    outset: 1.05,
+    cap: SLICKED_CAP,
+    capDetail: (color) => <Shine color={color} d="M88 41 Q100 38 112 41" />,
+    back: (color) => (
+      <>
+        {/* Long tail falling from the knot down behind the shoulders. */}
+        <Path d="M104 22 Q140 22 144 70 Q146 108 136 140 Q130 110 128 82 Q124 48 100 34 Z" fill={color} />
+        <Ellipse cx={100} cy={22} rx={11} ry={10} fill={color} />
+        <Path d="M91 26 Q100 31 109 26" stroke={shadeColor(color, -0.3)} strokeWidth={1.6} fill="none" />
+        <Rect x={93} y={30} width={14} height={4} rx={2} fill={shadeColor(color, -0.35)} />
+      </>
+    ),
+    front: (color) => (
+      <Both>
+        <Path d="M71 60 Q64 80 67 100 Q69.5 102 71.5 100 Q70 82 76 64 Z" fill={color} />
+      </Both>
+    ),
+  },
+  orc_topknot: {
+    outset: 1.02,
+    cap: SHAVED_CAP,
+    shaved: true,
+    back: (color) => (
+      <>
+        <Path d="M92 38 Q86 26 92 18 Q96 11 100 9 Q104 11 108 18 Q114 26 108 38 Z" fill={color} />
+        <Path d="M96 16 Q98 23 97 30 M104 16 Q102 23 103 30" stroke={shadeColor(color, -0.3)} strokeWidth={1.2} fill="none" />
+        <Rect x={91} y={30} width={18} height={5} rx={2.5} fill={shadeColor(color, -0.4)} />
+      </>
+    ),
+  },
+  orc_war_braids: {
+    outset: 1.02,
+    cap: SHAVED_CAP,
+    shaved: true,
+    // A short strip of hair along the top of the head.
+    overlay: { outset: 1.07, region: 'M86 0 H114 V48 Q100 45 86 48 Z' },
+    front: (color) => {
+      const dark = shadeColor(color, -0.3);
+      return (
+        <Both>
+          <G fill={color}>
+            {[70, 80, 90, 100, 110].map((cy) => (
+              <Ellipse key={cy} cx={65} cy={cy} rx={5.5} ry={6} />
+            ))}
+          </G>
+          <G stroke={dark} strokeWidth={1.1} fill="none">
+            {[74, 84, 94, 104].map((y) => (
+              <Path key={y} d={`M61 ${y} Q65 ${y + 2.2} 69 ${y}`} />
+            ))}
+          </G>
+          <Rect x={60.5} y={115} width={9} height={5} rx={1.5} fill={BRONZE} stroke={shadeColor(BRONZE, -0.35)} strokeWidth={0.8} />
+          <Path d="M62.5 120 L63.5 126 L66.5 126 L67.5 120 Z" fill={color} />
+        </Both>
+      );
+    },
+  },
+  orc_crest: {
+    outset: 1.02,
+    cap: SHAVED_CAP,
+    shaved: true,
+    front: (color) => (
+      <>
+        <Path
+          d="M83 48 L77 32 L87 36 L84 20 L94 28 L100 11 L106 28 L116 20 L113 36 L123 32 L117 48 Q100 43 83 48 Z"
+          fill={color}
+        />
+        <Path d="M100 18 L100 40" stroke={shadeColor(color, 0.18)} strokeWidth={2} strokeLinecap="round" />
+      </>
+    ),
   },
 };
 

@@ -50,7 +50,20 @@ export type AvatarHair =
   | 'high_ponytail'
   | 'bun'
   | 'space_buns'
-  | 'braids';
+  | 'braids'
+  // Race-only styles (shown while an elf or orc race is equipped).
+  | 'elf_flowing'
+  | 'elf_crown_braid'
+  | 'elf_high_knot'
+  | 'orc_topknot'
+  | 'orc_war_braids'
+  | 'orc_crest';
+/** Ear shape for elves. */
+export type AvatarElfEars = 'classic' | 'long' | 'short';
+/** Ear shape for orcs. */
+export type AvatarOrcEars = 'nicked' | 'pointed' | 'droopy';
+/** Orc lower tusks. */
+export type AvatarTusks = 'classic' | 'large' | 'broken' | 'none';
 export type AvatarFacialHair =
   | 'none'
   | 'stubble'
@@ -75,9 +88,16 @@ export interface AvatarAppearance {
   hairColor: string;
   facialHair: AvatarFacialHair;
   background: string;
+  /** Race features; only drawn while that race is equipped. */
+  elfEars: AvatarElfEars;
+  orcEars: AvatarOrcEars;
+  tusks: AvatarTusks;
 }
 
-export type AccessorySlot = 'top' | 'headwear' | 'glasses' | 'earrings' | 'background';
+export type AccessorySlot = 'top' | 'headwear' | 'glasses' | 'earrings' | 'background' | 'race';
+
+/** Fantasy race (legendary shop item): changes ears, skin tone, and a few face details. */
+export type AvatarRace = 'elf' | 'orc';
 export type WearableBodyType = AvatarBodyType | 'unisex';
 
 export type WearableStyle =
@@ -109,7 +129,9 @@ export type WearableStyle =
   | 'scene_stadium'
   | 'scene_boxing_ring'
   | 'scene_rainy_city'
-  | 'scene_volcano';
+  | 'scene_volcano'
+  | 'race_elf'
+  | 'race_orc';
 
 export interface WearableColors {
   primary: string;
