@@ -11,8 +11,7 @@ import Animated, {
 import { formatHoldSeconds, isHoldExercise, type ExerciseType } from '@/constants/challenges';
 import { formatRaceTime, formatRaceTimeLimit } from '@/constants/friendChallenges';
 import { Radius, Spacing } from '@/constants/theme';
-import { useUserSettings } from '@/features/settings/UserSettingsProvider';
-import { useRepFeedback } from '@/hooks/use-rep-feedback';
+import { RepProgressBar } from '@/components/workouts/RepProgressBar';
 import { useTheme } from '@/hooks/use-theme';
 
 export type ChallengeRepHudRaceTimer =
@@ -42,20 +41,14 @@ export function ChallengeRepHud({
   raceTimer = null,
 }: ChallengeRepHudProps) {
   const isHold = isHoldExercise(exerciseType);
-  // Holds tick every second; give feedback every 10 seconds instead.
+  // Holds tick every second; pulse every 10 seconds instead. (Sounds live in WorkoutEffectsLayer.)
   const feedbackCount = isHold ? Math.floor(currentReps / 10) : currentReps;
   const theme = useTheme();
-  const { preferences } = useUserSettings();
   const prevRepsRef = useRef(feedbackCount);
   const countScale = useSharedValue(1);
   const ringScale = useSharedValue(1);
   const ringOpacity = useSharedValue(0);
   const flashOpacity = useSharedValue(0);
-
-  useRepFeedback(feedbackCount, {
-    enabled: !completed,
-    soundEnabled: preferences.repSoundEnabled,
-  });
 
   useEffect(() => {
     if (completed || feedbackCount <= prevRepsRef.current) {
@@ -117,7 +110,7 @@ export function ChallengeRepHud({
         <Text
           style={StyleSheet.flatten([
             styles.count,
-            { color: completed ? theme.success : '#FFFFFF' },
+            { color: completed || currentReps >= targetReps ? theme.success : '#FFFFFF' },
           ])}>
           {isHold ? formatHoldSeconds(currentReps) : currentReps}
           <Text style={styles.target}> / {isHold ? formatHoldSeconds(targetReps) : targetReps}</Text>
@@ -149,6 +142,7 @@ export function ChallengeRepHud({
             <Text style={StyleSheet.flatten([styles.timerValue, { color: theme.danger }])}>Reached</Text>
           </View>
         ) : null}
+        <RepProgressBar current={currentReps} target={targetReps} />
       </Animated.View>
     </View>
   );

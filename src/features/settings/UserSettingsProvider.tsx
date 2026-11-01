@@ -35,6 +35,7 @@ interface UserSettingsContextValue {
   setShowPoseSkeleton: (show: boolean) => void;
   setShowRepProgressBar: (show: boolean) => void;
   setRepSoundEnabled: (enabled: boolean) => void;
+  setWorkoutEffectsEnabled: (enabled: boolean) => void;
   setNotificationPreference: (
     key: keyof NotificationPreferences,
     enabled: boolean,
@@ -211,6 +212,13 @@ export function UserSettingsProvider({ children }: { children: React.ReactNode }
     [persistToAccount],
   );
 
+  const setWorkoutEffectsEnabled = useCallback(
+    (workoutEffectsEnabled: boolean) => {
+      void persistToAccount({ workoutEffectsEnabled });
+    },
+    [persistToAccount],
+  );
+
   const setNotificationPreference = useCallback(
     (key: keyof NotificationPreferences, enabled: boolean) => {
       void persistToAccount({
@@ -235,6 +243,7 @@ export function UserSettingsProvider({ children }: { children: React.ReactNode }
       setShowPoseSkeleton,
       setShowRepProgressBar,
       setRepSoundEnabled,
+      setWorkoutEffectsEnabled,
       setNotificationPreference,
       completeOnboarding,
       isReady,
@@ -247,6 +256,7 @@ export function UserSettingsProvider({ children }: { children: React.ReactNode }
       setShowPoseSkeleton,
       setShowRepProgressBar,
       setRepSoundEnabled,
+      setWorkoutEffectsEnabled,
       setNotificationPreference,
       completeOnboarding,
       isReady,

@@ -34,6 +34,7 @@ export default function SettingsScreen() {
     setShowPoseSkeleton,
     setShowRepProgressBar,
     setRepSoundEnabled,
+    setWorkoutEffectsEnabled,
     setNotificationPreference,
     isSaving,
     saveError,
@@ -119,12 +120,20 @@ export default function SettingsScreen() {
                 </>
               ) : null}
               <SettingsToggleRow
-                label="Rep sound"
-                description="Play a soft ding when a rep is counted during workouts."
+                label="Workout sounds"
+                description="Rep tones, hold ticks, milestone chimes and end-of-round countdown beeps during workouts."
                 value={preferences.repSoundEnabled}
                 onValueChange={setRepSoundEnabled}
                 disabled={isSaving}
               />
+              <SettingsToggleRow
+                label="Workout effects"
+                description="Rep pops and halfway / target celebrations on the camera screen."
+                value={preferences.workoutEffectsEnabled}
+                onValueChange={setWorkoutEffectsEnabled}
+                disabled={isSaving}
+              />
+
             </View>
           ) : null}
 

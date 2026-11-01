@@ -3,11 +3,11 @@ import * as Haptics from 'expo-haptics';
 import { useCallback, useEffect, useRef } from 'react';
 import { Platform } from 'react-native';
 
-const REP_DING = require('@/assets/sounds/rep-ding.wav');
+const COUNTDOWN_BEEP = require('@/assets/sounds/countdown-beep.wav');
 
 const COUNTDOWN_VOLUME = 0.22;
 
-/** Plays a ding on each second with 5-1 seconds left in the current round. */
+/** Plays a countdown beep on each second with 5-1 seconds left in the current round. */
 export function useEmomCountdownFeedback(
   secondsRemainingInInterval: number,
   {
@@ -18,16 +18,19 @@ export function useEmomCountdownFeedback(
     soundEnabled?: boolean;
   } = {},
 ) {
-  const playerA = useAudioPlayer(REP_DING);
-  const playerB = useAudioPlayer(REP_DING);
+  const playerA = useAudioPlayer(COUNTDOWN_BEEP);
+  const playerB = useAudioPlayer(COUNTDOWN_BEEP);
   const activePlayerRef = useRef(0);
   const lastAnnouncedSecondRef = useRef<number | null>(null);
 
   const playTick = useCallback(() => {
     const player = activePlayerRef.current === 0 ? playerA : playerB;
     activePlayerRef.current = 1 - activePlayerRef.current;
-    player.seekTo(0);
-    player.play();
+    // Rewind before playing (seekTo is async; playing a finished sound early plays nothing).
+    void player
+      .seekTo(0)
+      .then(() => player.play())
+      .catch(() => player.play());
   }, [playerA, playerB]);
 
   useEffect(() => {

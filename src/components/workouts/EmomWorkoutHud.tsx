@@ -2,6 +2,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { formatExerciseCount, formatExerciseLabel } from '@/constants/challenges';
 import { formatRaceTime } from '@/constants/friendChallenges';
+import { RepProgressBar } from '@/components/workouts/RepProgressBar';
 import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import type { CustomWorkoutExercise } from '@/types/customWorkouts';
@@ -71,6 +72,7 @@ export function EmomWorkoutHud({
         ) : (
           <Text style={styles.meta}>{formatRaceTime(timeLimitSeconds)} EMOM</Text>
         )}
+        {isResting ? null : <RepProgressBar current={currentExerciseReps} target={currentExercise.targetReps} />}
       </View>
     </View>
   );
@@ -116,6 +118,7 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.two,
     gap: Spacing.half,
     alignItems: 'center',
+    overflow: 'hidden',
   },
   exerciseLabel: {
     color: 'rgba(255,255,255,0.82)',

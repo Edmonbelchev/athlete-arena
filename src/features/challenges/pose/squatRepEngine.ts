@@ -18,12 +18,19 @@ function getSquatZones(): AngleThresholdConfig {
   };
 }
 
+/**
+ * Stand → depth → stand. Built for fast reps and real camera tracking:
+ * - depth counts on the first frame both knees are deep (fast reps touch depth briefly);
+ * - once depth is reached it sticks until standing, so wobbling at the bottom can't undo it;
+ * - short stretches of bad tracking are skipped instead of ending the set.
+ */
 export class SquatRepEngine {
   phase: SquatPhase = 'STANDING';
   private readyFrames = 0;
   private isArmed = false;
   private reachedBottom = false;
   private bottomHoldFrames = 0;
+  private badStanceFrames = 0;
 
   get armed(): boolean {
     return this.isArmed;
@@ -41,9 +48,15 @@ export class SquatRepEngine {
     const inStance = isValidSquatStance(landmarks);
 
     if (this.isArmed && !inStance) {
-      this.releaseSet();
+      // Ride out brief glitches (a joint dropping out for a frame or two); a sustained bad
+      // stance (walking off, one-legged moves) ends the set.
+      this.badStanceFrames += 1;
+      if (this.badStanceFrames >= SQUAT_POSTURE.badStanceGraceFrames) {
+        this.releaseSet();
+      }
       return false;
     }
+    this.badStanceFrames = 0;
 
     if (isSquatStandingReady(landmarks)) {
       this.readyFrames += 1;
@@ -72,35 +85,22 @@ export class SquatRepEngine {
     let repCompleted = false;
 
     if (bothHigh) {
-      if (this.reachedBottom && (this.phase === 'ASCENDING' || this.phase === 'BOTTOM')) {
-        repCompleted = true;
-      }
+      repCompleted = this.reachedBottom;
       this.phase = 'STANDING';
       this.reachedBottom = false;
       this.bottomHoldFrames = 0;
     } else if (bothLow) {
+      this.phase = 'BOTTOM';
       this.bottomHoldFrames += 1;
-
-      if (this.phase === 'STANDING' || this.phase === 'DESCENDING') {
-        this.phase = 'BOTTOM';
-      } else if (this.phase === 'ASCENDING') {
-        this.phase = 'BOTTOM';
-        this.reachedBottom = false;
-        this.bottomHoldFrames = 0;
-      }
-
-      if (this.phase === 'BOTTOM' && this.bottomHoldFrames >= SQUAT_POSTURE.bottomHoldFrames) {
+      if (this.bottomHoldFrames >= SQUAT_POSTURE.squatDepthFrames) {
         this.reachedBottom = true;
       }
     } else {
       this.bottomHoldFrames = 0;
 
       if (eitherMid) {
-        if (this.phase === 'STANDING') {
-          this.phase = 'DESCENDING';
-        } else if (this.phase === 'BOTTOM' || this.phase === 'ASCENDING') {
-          this.phase = 'ASCENDING';
-        }
+        // Rising once depth was reached; otherwise still on the way down.
+        this.phase = this.reachedBottom ? 'ASCENDING' : 'DESCENDING';
       }
     }
 
@@ -109,11 +109,7 @@ export class SquatRepEngine {
 
   /** Walking, one-legged poses, and other non-squat stances end the set. */
   private releaseSet(): void {
-    this.phase = 'STANDING';
-    this.reachedBottom = false;
-    this.bottomHoldFrames = 0;
-    this.readyFrames = 0;
-    this.isArmed = false;
+    this.reset();
   }
 
   reset(): void {
@@ -121,6 +117,7 @@ export class SquatRepEngine {
     this.reachedBottom = false;
     this.bottomHoldFrames = 0;
     this.readyFrames = 0;
+    this.badStanceFrames = 0;
     this.isArmed = false;
   }
 }

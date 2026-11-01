@@ -17,8 +17,10 @@ export interface UserPreferences {
   showPoseSkeleton: boolean;
   /** Red → green bar showing progress through each rep on the camera preview. */
   showRepProgressBar: boolean;
-  /** Soft ding when a rep is counted during workouts. */
+  /** Workout sounds: rep tones, countdown beeps, hold ticks and milestone chimes. */
   repSoundEnabled: boolean;
+  /** "+1" rep pops and halfway / target celebrations on the camera screen. */
+  workoutEffectsEnabled: boolean;
   hasCompletedOnboarding: boolean;
   /** IANA timezone for scheduled push delivery (e.g. Europe/Sofia). */
   timezone: string;
@@ -51,6 +53,7 @@ export function getDefaultUserPreferences(systemDark = false): UserPreferences {
     showPoseSkeleton: Platform.OS === 'web',
     showRepProgressBar: true,
     repSoundEnabled: true,
+    workoutEffectsEnabled: true,
     hasCompletedOnboarding: false,
     timezone: getDeviceTimezone(),
     notifications: { ...DEFAULT_NOTIFICATION_PREFERENCES },
@@ -101,6 +104,10 @@ export function parseUserPreferences(
       typeof record.repSoundEnabled === 'boolean'
         ? record.repSoundEnabled
         : fallback.repSoundEnabled,
+    workoutEffectsEnabled:
+      typeof record.workoutEffectsEnabled === 'boolean'
+        ? record.workoutEffectsEnabled
+        : fallback.workoutEffectsEnabled,
     hasCompletedOnboarding:
       typeof record.hasCompletedOnboarding === 'boolean'
         ? record.hasCompletedOnboarding
@@ -127,6 +134,7 @@ export function mergeUserPreferences(
     showPoseSkeleton: patch.showPoseSkeleton ?? current.showPoseSkeleton,
     showRepProgressBar: patch.showRepProgressBar ?? current.showRepProgressBar,
     repSoundEnabled: patch.repSoundEnabled ?? current.repSoundEnabled,
+    workoutEffectsEnabled: patch.workoutEffectsEnabled ?? current.workoutEffectsEnabled,
     hasCompletedOnboarding: current.hasCompletedOnboarding || nextHasCompletedOnboarding,
     timezone: patch.timezone ?? current.timezone,
     notifications: patch.notifications
