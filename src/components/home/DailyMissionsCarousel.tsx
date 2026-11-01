@@ -32,6 +32,8 @@ interface DailyMissionsCarouselProps {
   rerollUsedOn?: string | null;
   /** Pays for swaps after the free one of the day. */
   coinBalance?: number;
+  /** Premium: every swap is free. */
+  unlimitedSwaps?: boolean;
   onStartMission: (mission: DailyChallengeHome, listIndex: number) => void;
   onRerollMission: (mission: DailyChallengeHome, listIndex: number, exerciseType: ExerciseType) => void;
 }
@@ -42,6 +44,7 @@ export function DailyMissionsCarousel({
   rerollingMissionIndex,
   rerollUsedOn,
   coinBalance = 0,
+  unlimitedSwaps = false,
   onStartMission,
   onRerollMission,
 }: DailyMissionsCarouselProps) {
@@ -144,7 +147,7 @@ export function DailyMissionsCarousel({
               );
               const slideKey = mission.templateId ?? `mission-${mission.exerciseType}-${missionIndex}`;
               const canReroll = isMissionSwappable(mission);
-              const freeSwap = canUseDailyQuestReroll(rerollUsedOn);
+              const freeSwap = unlimitedSwaps || canUseDailyQuestReroll(rerollUsedOn);
 
               return (
                 <View
@@ -225,7 +228,13 @@ export function DailyMissionsCarousel({
         visible={rerollTarget !== null}
         mode="single"
         title="Swap quest exercise"
-        subtitle="Pick a different exercise for this quest slot. You can do this once per day."
+        subtitle={
+          unlimitedSwaps
+            ? 'Pick a different exercise for this quest slot. Swaps are unlimited with Premium.'
+            : canUseDailyQuestReroll(rerollUsedOn)
+              ? 'Pick a different exercise for this quest slot. Your first swap today is free.'
+              : `Pick a different exercise for this quest slot. This swap costs ${DAILY_QUEST_REROLL_COST} coins.`
+        }
         allowedExerciseTypes={rerollEligibleExercises}
         onClose={() => setRerollTarget(null)}
         onSelect={(exerciseType) => {
@@ -233,7 +242,7 @@ export function DailyMissionsCarousel({
             return;
           }
 
-          if (!canUseDailyQuestReroll(rerollUsedOn)) {
+          if (!unlimitedSwaps && !canUseDailyQuestReroll(rerollUsedOn)) {
             setPendingCharge({
               missionIndex: resolveMissionIndex(
                 rerollTarget.mission.exerciseType,

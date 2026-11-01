@@ -18,6 +18,7 @@ import { useMissionComplete } from '@/features/challenges/MissionCompleteProvide
 import { useActiveFriendChallengeCount } from '@/features/friends/useActiveFriendChallengeCount';
 import { useChallengeNotificationRefresh } from '@/features/notifications/useChallengeNotificationRefresh';
 import { useProfile } from '@/features/profile/useProfile';
+import { usePremium } from '@/features/subscription/usePremium';
 import { useDailySpin } from '@/features/spin/useDailySpin';
 import { useWeeklyMissionStreak } from '@/features/streaks/useWeeklyMissionStreak';
 import { xpProgressInCurrentLevel } from '@/features/xp/levelUtils';
@@ -48,6 +49,7 @@ export default function HomeScreen() {
   const theme = useTheme();
   const { profile, isLoading: isProfileLoading, error: profileError, refresh: refreshProfile, applyXpDelta } =
     useProfile();
+  const { isPremium } = usePremium();
   const {
     missions,
     isLoading: isChallengeLoading,
@@ -222,7 +224,11 @@ export default function HomeScreen() {
 
         <HomeSection
           title="Daily Quests"
-          subtitle="Reps from any workout count · one free swap a day, then 50 coins each"
+          subtitle={
+            isPremium
+              ? 'Reps from any workout count · unlimited swaps with Premium'
+              : 'Reps from any workout count · one free swap a day, then 50 coins each'
+          }
           actionLabel="Quest log"
           onAction={() => router.push('/profile/quest-log')}>
           {missions.length > 0 ? (
@@ -232,6 +238,7 @@ export default function HomeScreen() {
               rerollingMissionIndex={rerollingMissionIndex}
               rerollUsedOn={profile?.daily_quest_reroll_used_on}
               coinBalance={profile?.coin_balance ?? 0}
+              unlimitedSwaps={isPremium}
               onStartMission={(mission, index) => void handleStartDailyMission(mission, index)}
               onRerollMission={(mission, index, exerciseType) =>
                 void handleRerollDailyMission(mission, index, exerciseType)

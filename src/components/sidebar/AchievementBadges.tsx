@@ -41,7 +41,7 @@ export function AchievementBadges({ unlocked, upcoming, onViewAll }: Achievement
                 { backgroundColor: theme.backgroundElement, borderColor: theme.border },
               ])}>
               <AppIcon name={achievement.icon} size={20} color={theme.primary} />
-              <Text style={StyleSheet.flatten([styles.badgeLabel, { color: theme.text }])}>
+              <Text numberOfLines={2} style={StyleSheet.flatten([styles.badgeLabel, { color: theme.text }])}>
                 {achievement.title}
               </Text>
             </View>
@@ -95,13 +95,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: Spacing.two,
   },
+  // Badges share the row equally, so long titles wrap instead of pushing past the sidebar edge.
   badge: {
+    flex: 1,
+    minWidth: 0,
     alignItems: 'center',
     borderRadius: Radius.md,
     borderWidth: 1,
-    paddingHorizontal: Spacing.two,
+    paddingHorizontal: Spacing.one,
     paddingVertical: Spacing.two,
-    minWidth: 72,
     gap: Spacing.one,
   },
   badgeLabel: {

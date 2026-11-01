@@ -32,6 +32,8 @@ import { useMyAvatar } from '@/features/avatar/useMyAvatar';
 import { useProfile } from '@/features/profile/useProfile';
 import { useFriendChallengeRequestQuota } from '@/features/friends/useFriendChallengeRequestQuota';
 import { useShop } from '@/features/shop/ShopProvider';
+import { IN_APP_PURCHASES_ENABLED } from '@/features/subscription/purchaseAvailability';
+import { usePremium } from '@/features/subscription/usePremium';
 import { useTheme } from '@/hooks/use-theme';
 import { formatUserError } from '@/lib/errors';
 import type { AccessorySlot, AvatarAccessories, AvatarAppearance, WearableTier } from '@/types/avatar';
@@ -81,6 +83,7 @@ export function ShopScreenContent({ initialSection = 'outfits' }: ShopScreenCont
   const { items, summary, isLoading, isUpdating, error, refresh, purchaseItem, equipItem, removeFrame, equippedFrame } =
     useShop();
   const avatar = useMyAvatar();
+  const { isPremium, showPremiumPaywall } = usePremium();
   const { profile, refresh: refreshProfile } = useProfile();
   const userId = profile?.id;
   // Equipping or removing an outfit item from the shop: the new look is rendered
@@ -187,6 +190,14 @@ export function ShopScreenContent({ initialSection = 'outfits' }: ShopScreenCont
   function selectItem(id: string | null) {
     setSelectedId(id);
     setRaceTry({});
+  }
+
+  /** Races come with Premium; the paywall's success refreshes ownership. */
+  async function openRacePaywall() {
+    const unlocked = await showPremiumPaywall({ context: 'avatar_races' });
+    if (unlocked) {
+      await Promise.all([refresh(), avatar.refresh()]);
+    }
   }
 
   function startPurchase(item: ShopItemRecord) {
@@ -545,7 +556,11 @@ export function ShopScreenContent({ initialSection = 'outfits' }: ShopScreenCont
             </Text>
             {selected.owned ? (
               <Text style={StyleSheet.flatten([styles.actionMeta, { color: theme.success }])}>
-                {selected.equipped || isWorn(selected) ? 'Equipped' : 'Owned'}
+                {selected.equipped || isWorn(selected)
+                  ? 'Equipped'
+                  : isPremium && selected.wearable?.slot === 'race'
+                    ? 'Included with Premium'
+                    : 'Owned'}
               </Text>
             ) : (
               <View style={styles.priceRow}>
@@ -561,6 +576,13 @@ export function ShopScreenContent({ initialSection = 'outfits' }: ShopScreenCont
                 ) : null}
               </View>
             )}
+            {!selected.owned && !isPremium && selected.wearable?.slot === 'race' && IN_APP_PURCHASES_ENABLED ? (
+              <Pressable accessibilityRole="button" onPress={() => void openRacePaywall()}>
+                <Text style={StyleSheet.flatten([styles.premiumLink, { color: theme.streak }])}>
+                  Free with Premium
+                </Text>
+              </Pressable>
+            ) : null}
           </View>
           {renderAction(selected)}
         </View>
@@ -858,6 +880,11 @@ const styles = StyleSheet.create({
   actionMeta: {
     fontSize: 13,
     fontWeight: '700',
+  },
+  premiumLink: {
+    fontSize: 13,
+    fontWeight: '800',
+    marginTop: 2,
   },
   priceRow: {
     flexDirection: 'row',
