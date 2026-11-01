@@ -59,6 +59,7 @@ export default function WorkoutLibraryHubScreen() {
     error,
     refresh,
     isPremium,
+    purchasesEnabled,
     openCreateModal,
     ...overlays
   } = session;
@@ -94,7 +95,11 @@ export default function WorkoutLibraryHubScreen() {
 
         <TabScreenHeader
           title="My workouts"
-          subtitle="Pick a format, then browse your saved and shared workouts"
+          subtitle={
+            purchasesEnabled
+              ? 'Pick a format, then browse your saved and shared workouts'
+              : 'Pick a format, then browse workouts friends shared with you'
+          }
           rightSlot={
             <View style={[styles.headerBadge, { backgroundColor: `${theme.primary}18` }]}>
               <AppIcon name="dumbbell" size={22} color={theme.primary} weight="bold" />
@@ -102,6 +107,7 @@ export default function WorkoutLibraryHubScreen() {
           }
         />
 
+        {purchasesEnabled ? (
         <View style={styles.createSection}>
           <Pressable
             accessibilityRole="button"
@@ -137,6 +143,7 @@ export default function WorkoutLibraryHubScreen() {
             </Text>
           ) : null}
         </View>
+        ) : null}
 
         {error ? (
           <View style={[styles.messageCard, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
@@ -165,9 +172,11 @@ export default function WorkoutLibraryHubScreen() {
                 <AppIcon name="dumbbell" size={28} color={theme.primary} weight="semibold" />
                 <Text style={[styles.emptyTitle, { color: theme.text }]}>No saved workouts yet</Text>
                 <Text style={[styles.emptyBody, { color: theme.textSecondary }]}>
-                  {isPremium
-                    ? 'Create your first workout, or open a format below once you have saved templates.'
-                    : 'Upgrade to premium to create custom workouts, or try an official Arena workout.'}
+                  {!purchasesEnabled
+                    ? 'Workouts friends share with you will appear here. Arena workouts are free for everyone.'
+                    : isPremium
+                      ? 'Create your first workout, or open a format below once you have saved templates.'
+                      : 'Upgrade to premium to create custom workouts, or try an official Arena workout.'}
                 </Text>
               </View>
             )}

@@ -7,6 +7,13 @@ export type Json =
   | Json[];
 
 export type ExerciseType = 'push_ups' | 'squats' | 'pull_ups' | 'dips' | 'burpees' | 'half_burpees' | 'jumping_jacks' | 'jumping_squats' | 'lunges' | 'sit_ups' | 'plank';
+export type UserReportReason =
+  | 'inappropriate_name'
+  | 'inappropriate_bio'
+  | 'offensive_avatar'
+  | 'harassment'
+  | 'cheating'
+  | 'other';
 export type ChallengeStatus = 'pending' | 'in_progress' | 'completed' | 'declined' | 'expired';
 export type FriendshipStatus = 'pending' | 'accepted' | 'declined';
 export type SpinRarity = 'common' | 'rare' | 'epic' | 'legendary';
@@ -625,6 +632,30 @@ export interface Database {
           username: string;
           display_name: string | null;
         }[];
+      };
+      block_user: {
+        Args: { p_user_id: string };
+        Returns: undefined;
+      };
+      unblock_user: {
+        Args: { p_user_id: string };
+        Returns: undefined;
+      };
+      get_hidden_user_ids: {
+        Args: Record<string, never>;
+        Returns: { user_id: string }[];
+      };
+      get_blocked_users: {
+        Args: Record<string, never>;
+        Returns: { user_id: string; username: string; display_name: string | null; blocked_at: string }[];
+      };
+      report_user: {
+        Args: { p_user_id: string; p_reason: UserReportReason; p_details?: string | null };
+        Returns: undefined;
+      };
+      is_username_allowed: {
+        Args: { p_username: string };
+        Returns: boolean;
       };
       is_username_available: {
         Args: {

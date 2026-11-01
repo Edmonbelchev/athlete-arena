@@ -12,6 +12,7 @@ import {
 } from 'react';
 
 import { useAuth } from '@/features/auth';
+import { IN_APP_PURCHASES_ENABLED } from '@/features/subscription/purchaseAvailability';
 import type { PremiumPaywallContext } from '@/features/subscription/premiumPaywallContent';
 import {
   customerHasPremiumEntitlement,
@@ -34,6 +35,8 @@ export interface ShowPremiumPaywallOptions {
 }
 
 interface PremiumContextValue extends PremiumStatus {
+  /** False where purchases are switched off (iOS for now): hide every upgrade prompt. */
+  purchasesEnabled: boolean;
   subscription: PremiumSubscriptionDetails | null;
   managementUrl: string | null;
   isLoading: boolean;
@@ -228,7 +231,7 @@ export function PremiumProvider({ children }: { children: ReactNode }) {
 
   const showPremiumPaywall = useCallback(
     (options?: ShowPremiumPaywallOptions) => {
-      if (!session?.user.id) {
+      if (!session?.user.id || !IN_APP_PURCHASES_ENABLED) {
         return Promise.resolve(false);
       }
 
@@ -310,8 +313,16 @@ export function PremiumProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo(
     () => ({
-      isPremium: supabaseStatus.isPremium || revenueCatPremium,
-      provider: supabaseStatus.isPremium ? supabaseStatus.provider : revenueCatPremium ? 'revenuecat' : null,
+      // Where purchases are off, Premium reads as off too (see purchaseAvailability.ts).
+      isPremium: IN_APP_PURCHASES_ENABLED && (supabaseStatus.isPremium || revenueCatPremium),
+      provider: !IN_APP_PURCHASES_ENABLED
+        ? null
+        : supabaseStatus.isPremium
+          ? supabaseStatus.provider
+          : revenueCatPremium
+            ? 'revenuecat'
+            : null,
+      purchasesEnabled: IN_APP_PURCHASES_ENABLED,
       expiresAt: subscription?.expiresAt ?? supabaseStatus.expiresAt,
       subscription,
       managementUrl,

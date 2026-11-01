@@ -3,6 +3,7 @@ import Purchases, { LOG_LEVEL, type CustomerInfo } from 'react-native-purchases'
 import RevenueCatUI, { PAYWALL_RESULT } from 'react-native-purchases-ui';
 
 import { PREMIUM_ENTITLEMENT_ID } from '@/constants/subscription';
+import { IN_APP_PURCHASES_ENABLED } from '@/features/subscription/purchaseAvailability';
 import { env } from '@/lib/env';
 import {
   formatSubscriptionPlanLabel,
@@ -41,6 +42,11 @@ function logRevenueCatMessage(logLevel: LOG_LEVEL, message: string): void {
 }
 
 export function getRevenueCatApiKey(): string | null {
+  // Purchases switched off on this platform: RevenueCat is never configured.
+  if (!IN_APP_PURCHASES_ENABLED) {
+    return null;
+  }
+
   if (Platform.OS === 'ios') {
     return env.revenueCatIosApiKey || null;
   }

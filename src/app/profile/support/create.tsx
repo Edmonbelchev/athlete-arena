@@ -77,7 +77,7 @@ export default function CreateSupportTicketScreen() {
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
           <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
             <Text style={StyleSheet.flatten([styles.subtitle, { color: theme.textSecondary }])}>
-              Tell us what happened or share your ideas. User reporting is not available during beta.
+              Tell us what happened or share your ideas. To report another user, open their profile and tap ⋯ then Report.
             </Text>
 
             <Text style={StyleSheet.flatten([styles.label, { color: theme.textSecondary }])}>CATEGORY</Text>

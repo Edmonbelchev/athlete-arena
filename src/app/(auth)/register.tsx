@@ -13,7 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { GenderPicker } from '@/components/auth/GenderPicker';
 import { ResendConfirmationEmail } from '@/components/auth/ResendConfirmationEmail';
-import { LegalAgreementNotice } from '@/components/legal/LegalLinks';
+import { LegalAgreementCheckbox } from '@/components/legal/LegalLinks';
 import { AuthTextInput } from '@/components/ui/AuthTextInput';
 import { BrandLogo } from '@/components/ui/BrandLogo';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
@@ -24,6 +24,7 @@ import { getAuthErrorMessage } from '@/features/auth/authErrors';
 import {
     EmailAlreadyRegisteredError,
     signUpWithEmail,
+    UsernameNotAllowedError,
     UsernameTakenError,
 } from '@/features/auth/authService';
 import {
@@ -54,6 +55,8 @@ export default function RegisterScreen() {
   const [formError, setFormError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [termsError, setTermsError] = useState<string | null>(null);
 
   function validateForm(): boolean {
     const nextErrors: {
@@ -94,7 +97,9 @@ export default function RegisterScreen() {
     }
 
     setFieldErrors(nextErrors);
-    return Object.keys(nextErrors).length === 0;
+    const termsOk = agreedToTerms;
+    setTermsError(termsOk ? null : 'Please agree to the Terms of Service to create an account.');
+    return Object.keys(nextErrors).length === 0 && termsOk;
   }
 
   async function handleRegister() {
@@ -123,7 +128,7 @@ export default function RegisterScreen() {
         `Account created. Check your inbox for a confirmation email from ${SUPPORT_EMAIL}, then sign in.`,
       );
     } catch (error) {
-      if (error instanceof UsernameTakenError) {
+      if (error instanceof UsernameTakenError || error instanceof UsernameNotAllowedError) {
         setFieldErrors((current) => ({
           ...current,
           username: getAuthErrorMessage(error),
@@ -230,7 +235,16 @@ export default function RegisterScreen() {
               onPress={() => void handleRegister()}
             />
 
-            <LegalAgreementNotice />
+            <LegalAgreementCheckbox
+              checked={agreedToTerms}
+              error={termsError}
+              onChange={(checked) => {
+                setAgreedToTerms(checked);
+                if (checked) {
+                  setTermsError(null);
+                }
+              }}
+            />
 
             <Link href="/(auth)/login" asChild>
               <Pressable style={styles.linkPressable}>

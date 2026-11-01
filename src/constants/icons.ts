@@ -30,7 +30,10 @@ export type AppIconName =
   | 'swap'
   | 'announcement'
   | 'checkmark'
-  | 'shuffle';
+  | 'shuffle'
+  | 'flag'
+  | 'block'
+  | 'more';
 
 export const APP_ICONS: Record<AppIconName, SymbolViewProps['name']> = {
   home: { ios: 'house.fill', android: 'home', web: 'home' },
@@ -87,4 +90,7 @@ export const APP_ICONS: Record<AppIconName, SymbolViewProps['name']> = {
     web: 'check_circle',
   },
   shuffle: { ios: 'shuffle', android: 'shuffle', web: 'shuffle' },
+  flag: { ios: 'flag.fill', android: 'flag', web: 'flag' },
+  block: { ios: 'hand.raised.fill', android: 'block', web: 'block' },
+  more: { ios: 'ellipsis', android: 'more_horiz', web: 'more_horiz' },
 };

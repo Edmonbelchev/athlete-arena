@@ -7,7 +7,6 @@ import { OnboardingCameraTry } from '@/components/onboarding/OnboardingCameraTry
 import { OnboardingShell } from '@/components/onboarding/OnboardingShell';
 import { AppIcon } from '@/components/ui/AppIcon';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
-import { BetaBadge } from '@/components/ui/BetaBadge';
 import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import {
   ONBOARDING_BENEFITS_INTRO,
@@ -122,7 +121,6 @@ export default function OnboardingScreen() {
                   ])}>
                   <AppIcon name="dumbbell" size={36} color={theme.primary} />
                 </View>
-                <BetaBadge showVersion />
               </View>
               <Text style={StyleSheet.flatten([styles.title, { color: theme.text }])}>
                 {ONBOARDING_WELCOME.title}

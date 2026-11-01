@@ -13,7 +13,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { SupportTicketCard } from '@/components/support/SupportTicketCard';
 import { AppIcon } from '@/components/ui/AppIcon';
-import { BetaBadge } from '@/components/ui/BetaBadge';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { APP_VERSION_LABEL } from '@/constants/app';
 import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
@@ -76,12 +75,8 @@ export default function SupportScreen() {
           refreshControl={
             <RefreshControl refreshing={isLoading} onRefresh={() => void loadTickets()} tintColor={theme.primary} />
           }>
-          <View style={styles.introRow}>
-            <BetaBadge showVersion />
-          </View>
-
           <Text style={StyleSheet.flatten([styles.subtitle, { color: theme.textSecondary }])}>
-            Athlete Arena is in beta ({APP_VERSION_LABEL}). Report bugs or share feedback - we read every ticket.
+            Report bugs or share feedback - we read every ticket. ({APP_VERSION_LABEL})
           </Text>
 
           <PrimaryButton label="New Support Ticket" onPress={() => router.push('/profile/support/create')} />
@@ -131,9 +126,6 @@ const styles = StyleSheet.create({
     maxWidth: MaxContentWidth,
     alignSelf: 'center',
     width: '100%',
-  },
-  introRow: {
-    alignItems: 'flex-start',
   },
   subtitle: {
     fontSize: 15,

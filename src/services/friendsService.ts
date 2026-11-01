@@ -1,4 +1,5 @@
 import { assertSupabaseConfigured, supabase } from '@/lib/supabase';
+import { withoutHiddenUsers } from '@/services/safetyService';
 import { mapPublicCosmetics } from '@/features/friends/friendCosmeticsUtils';
 import type { FriendPublicProfile, FriendRequest, FriendSummary, UserSearchResult } from '@/types/friends';
 
@@ -57,11 +58,13 @@ export async function searchUsersByUsername(query: string): Promise<UserSearchRe
     throw error;
   }
 
-  return (data ?? []).map((row) => ({
+  const results = (data ?? []).map((row) => ({
     id: row.id,
     username: row.username,
     displayName: row.display_name,
   }));
+  // Blocked users (in either direction) never show up in search.
+  return withoutHiddenUsers(results, (user) => user.id);
 }
 
 export async function sendFriendRequest(username: string): Promise<void> {
@@ -110,7 +113,7 @@ export async function getIncomingFriendRequests(): Promise<FriendRequest[]> {
     throw error;
   }
 
-  return (data ?? []).map(mapFriendRequest);
+  return withoutHiddenUsers((data ?? []).map(mapFriendRequest), (request) => request.requesterId);
 }
 
 export async function getFriendProfile(userId: string): Promise<FriendPublicProfile | null> {

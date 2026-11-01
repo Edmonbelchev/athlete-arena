@@ -14,6 +14,10 @@ export function getAuthErrorMessage(error: unknown): string {
       return 'That username is already taken.';
     }
 
+    if (error.message === 'username_not_allowed') {
+      return 'That username contains language that isn\'t allowed. Please choose another.';
+    }
+
     if (error.message === 'email_already_registered') {
       return 'An account with this email already exists.';
     }

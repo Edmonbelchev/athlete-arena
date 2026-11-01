@@ -243,6 +243,14 @@ function RootNavigator() {
             }}
           />
           <Stack.Screen
+            name="profile/blocked-users"
+            options={{
+              presentation: 'modal',
+              headerShown: true,
+              title: 'Blocked users',
+            }}
+          />
+          <Stack.Screen
             name="premium-paywall"
             options={{
               presentation: 'modal',

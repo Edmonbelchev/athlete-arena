@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import * as Haptics from 'expo-haptics';
 
 import { getCustomWorkoutSessionPath } from '@/constants/customWorkouts';
+import { IN_APP_PURCHASES_ENABLED } from '@/features/subscription/purchaseAvailability';
 import { usePremium } from '@/features/subscription/usePremium';
 import { setPendingCustomWorkoutLaunch } from '@/features/workouts/customWorkoutLaunchStore';
 import { useCustomWorkoutTemplates } from '@/features/workouts/useCustomWorkoutTemplates';
@@ -207,7 +208,10 @@ export function useWorkoutLibrarySession(options: UseWorkoutLibrarySessionOption
   }, [confirmDialog, handleDeleteOwnedTemplate, handleRemoveSharedTemplate]);
 
   return {
-    templates,
+    // Where purchases are off (iOS for now), the library only holds workouts friends shared:
+    // creating custom workouts is Premium, and owned ones could not be started there anyway.
+    templates: IN_APP_PURCHASES_ENABLED ? templates : templates.filter((template) => !template.isOwner),
+    purchasesEnabled: IN_APP_PURCHASES_ENABLED,
     isLoading,
     isRefreshing,
     error,

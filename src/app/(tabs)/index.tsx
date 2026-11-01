@@ -5,7 +5,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ComingSoonBlock } from '@/components/home/ComingSoonBlock';
 import { DailyMissionsCarousel } from '@/components/home/DailyMissionsCarousel';
-import { EarlyAccessNotice } from '@/components/home/EarlyAccessNotice';
 import { HomeLinkBlock } from '@/components/home/HomeLinkBlock';
 import { HomeProgressBlock } from '@/components/home/HomeProgressBlock';
 import { HomeSection } from '@/components/home/HomeSection';
@@ -300,7 +299,6 @@ export default function HomeScreen() {
           </View>
         </HomeSection>
 
-        <EarlyAccessNotice />
       </ScrollView>
     </SafeAreaView>
   );

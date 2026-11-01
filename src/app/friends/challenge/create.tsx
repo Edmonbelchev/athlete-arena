@@ -33,6 +33,7 @@ import {
 import { useFriendChallengeRequestQuota } from '@/features/friends/useFriendChallengeRequestQuota';
 import { useFriends } from '@/features/friends/useFriends';
 import { usePremium } from '@/features/subscription/usePremium';
+import { IN_APP_PURCHASES_ENABLED } from '@/features/subscription/purchaseAvailability';
 import { useShop } from '@/features/shop/ShopProvider';
 import { getOwnedEmotes } from '@/features/shop/shopUtils';
 import { parseStructureConfig } from '@/features/workouts/forTimeStructure';
@@ -382,8 +383,8 @@ export default function CreateFriendChallengeScreen() {
 
           <FriendChallengeRequestQuotaBar
             quota={quota}
-            showUpgradeButton={atRequestLimit}
-            onUpgrade={() => void handleUpgradeForUnlimited()}
+            showUpgradeButton={atRequestLimit && IN_APP_PURCHASES_ENABLED}
+            onUpgrade={IN_APP_PURCHASES_ENABLED ? () => void handleUpgradeForUnlimited() : undefined}
             onBuySlots={() => router.push('/(tabs)/shop?section=slots')}
           />
 
