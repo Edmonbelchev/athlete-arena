@@ -45,6 +45,18 @@ export const DAILY_MISSION_QUEST: Partial<Record<ExerciseType, DailyMissionQuest
     questTitle: 'Core Crusher',
     objectiveVerb: 'Complete',
   },
+  high_knees: {
+    questTitle: 'Knee Drive',
+    objectiveVerb: 'Complete',
+  },
+  shadow_boxing: {
+    questTitle: 'Punch Out',
+    objectiveVerb: 'Complete',
+  },
+  tuck_jumps: {
+    questTitle: 'Tuck & Fly',
+    objectiveVerb: 'Complete',
+  },
 };
 
 export function getDailyMissionQuestMeta(exerciseType: ExerciseType): DailyMissionQuestMeta {

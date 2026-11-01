@@ -13,6 +13,9 @@ import { JumpingJackRepEngine } from './pose/jumpingJackRepEngine';
 import { LungeRepEngine } from './pose/lungeRepEngine';
 import { PlankHoldEngine } from './pose/plankHoldEngine';
 import { SitUpRepEngine } from './pose/sitUpRepEngine';
+import type { HighKneeRepEngine } from './pose/highKneeRepEngine';
+import type { ShadowBoxingRepEngine } from './pose/shadowBoxingRepEngine';
+import type { TuckJumpRepEngine } from './pose/tuckJumpRepEngine';
 
 function isLandmarkVisible(
   landmark: PoseLandmark | undefined,
@@ -74,6 +77,10 @@ function getSetupSeverity(
       return (engine as SitUpRepEngine).armed ? 'ready' : 'setup';
     case 'plank':
       return (engine as PlankHoldEngine).isHolding ? 'ready' : 'setup';
+    case 'high_knees':
+    case 'tuck_jumps':
+    case 'shadow_boxing':
+      return (engine as HighKneeRepEngine | TuckJumpRepEngine | ShadowBoxingRepEngine).armed ? 'ready' : 'setup';
     default:
       return trackingStatus === 'ready' ? 'ready' : 'setup';
   }

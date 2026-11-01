@@ -18,6 +18,9 @@ import { JumpingJackRepEngine } from './pose/jumpingJackRepEngine';
 import { LungeRepEngine } from './pose/lungeRepEngine';
 import { PlankHoldEngine } from './pose/plankHoldEngine';
 import { SitUpRepEngine } from './pose/sitUpRepEngine';
+import type { HighKneeRepEngine } from './pose/highKneeRepEngine';
+import type { ShadowBoxingRepEngine } from './pose/shadowBoxingRepEngine';
+import type { TuckJumpRepEngine } from './pose/tuckJumpRepEngine';
 import { PoseQualityGate, type PoseQualityResult, type PoseTrackingStatus } from './pose/poseQuality';
 import { getCoachSeverity } from './workoutCoachDisplay';
 import {
@@ -40,7 +43,17 @@ interface UseExercisePoseDetectionOptions {
 type RepEngine = ReturnType<typeof createRepEngine>;
 
 /** Engines that handle lost tracking themselves (sit-up sets, plank pauses) - never reset on partial frames. */
-const SELF_MANAGED_EXERCISES: ReadonlySet<ExerciseType> = new Set(['sit_ups', 'plank']);
+const SELF_MANAGED_EXERCISES: ReadonlySet<ExerciseType> = new Set([
+  'sit_ups',
+  'plank',
+  'high_knees',
+  'tuck_jumps',
+  'shadow_boxing',
+]);
+
+/** Standing cardio engines: they check form and tracking themselves and count only while armed. */
+type StandingCardioEngine = HighKneeRepEngine | TuckJumpRepEngine | ShadowBoxingRepEngine;
+const STANDING_CARDIO_EXERCISES: ReadonlySet<ExerciseType> = new Set(['high_knees', 'tuck_jumps', 'shadow_boxing']);
 
 function getEngineArmed(engine: RepEngine, exerciseType: ExerciseType): boolean {
   switch (exerciseType) {
@@ -60,6 +73,10 @@ function getEngineArmed(engine: RepEngine, exerciseType: ExerciseType): boolean 
       return (engine as SitUpRepEngine).armed;
     case 'plank':
       return (engine as PlankHoldEngine).armed;
+    case 'high_knees':
+    case 'tuck_jumps':
+    case 'shadow_boxing':
+      return (engine as StandingCardioEngine).armed;
     default:
       return false;
   }
@@ -96,6 +113,10 @@ function resolveExerciseTrackingStatus(
     case 'plank':
       // Green only while the hold timer is running.
       return resolveJumpingJackTrackingStatus(quality, (engine as PlankHoldEngine).isHolding);
+    case 'high_knees':
+    case 'tuck_jumps':
+    case 'shadow_boxing':
+      return resolveJumpingJackTrackingStatus(quality, (engine as StandingCardioEngine).armed);
     default:
       return quality.status;
   }
@@ -313,6 +334,8 @@ export function useExercisePoseDetection({
       const lungeCounting = exerciseType === 'lunges' && (engine as LungeRepEngine).armed;
       const sitUpCounting = exerciseType === 'sit_ups' && (engine as SitUpRepEngine).armed;
       const plankCounting = exerciseType === 'plank' && (engine as PlankHoldEngine).isHolding;
+      const standingCardioCounting =
+        STANDING_CARDIO_EXERCISES.has(exerciseType) && (engine as StandingCardioEngine).armed;
 
       if (
         repCompleted &&
@@ -322,7 +345,8 @@ export function useExercisePoseDetection({
           jumpingJackCounting ||
           lungeCounting ||
           sitUpCounting ||
-          plankCounting)
+          plankCounting ||
+          standingCardioCounting)
       ) {
         onRepDetectedRef.current();
       }

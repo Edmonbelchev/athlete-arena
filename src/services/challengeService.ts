@@ -1,5 +1,5 @@
 import { DAILY_QUEST_EXERCISE_TYPES, EXERCISE_TYPES, type ExerciseType } from '@/constants/challenges';
-import { DAILY_MISSION_XP_REWARD } from '@/constants/dailyMissionRewards';
+import { getDailyMissionReward } from '@/constants/dailyMissionRewards';
 import { assertSupabaseConfigured, supabase } from '@/lib/supabase';
 import { clearMovementStatsCache } from '@/services/statsService';
 import type { Database } from '@/types/database';
@@ -72,7 +72,7 @@ function mapDailyChallengeHome(
     challengeDate: row.challenge_date,
     exerciseType: row.exercise_type,
     targetReps: row.target_reps,
-    xpReward: DAILY_MISSION_XP_REWARD,
+    xpReward: getDailyMissionReward(row.exercise_type).xp,
     catalogSlot: row.catalog_slot,
     userChallengeId: row.user_challenge_id,
     status: row.user_status ?? 'not_started',
@@ -107,7 +107,7 @@ function buildMissionsFromTemplates(
         challengeDate: template.challenge_date,
         exerciseType: userChallenge?.exercise_type ?? template.exercise_type,
         targetReps: userChallenge?.target_reps ?? template.target_reps,
-        xpReward: DAILY_MISSION_XP_REWARD,
+        xpReward: getDailyMissionReward(userChallenge?.exercise_type ?? template.exercise_type).xp,
         catalogSlot: template.catalog_slot,
         userChallengeId: userChallenge?.id ?? null,
         status: userChallenge?.status ?? 'not_started',

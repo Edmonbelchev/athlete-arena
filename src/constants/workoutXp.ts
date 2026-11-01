@@ -11,14 +11,26 @@ export const WORKOUT_XP_PER_REP: Record<ExerciseType, number> = {
   sit_ups: 1,
   /** Holds earn per PLANK_SECONDS_PER_XP seconds instead (see workoutXp.ts). */
   plank: 1,
+  high_knees: 1,
+  shadow_boxing: 1,
   burpees: 2,
   pull_ups: 2,
+  tuck_jumps: 2,
 };
 
 export const FOR_TIME_SECONDS_PER_REP = 3;
 
 /** Plank seconds per workout XP - long holds are easy to sustain, so seconds earn less than reps. */
 export const PLANK_SECONDS_PER_XP = 5;
+
+/**
+ * Light cardio reps per workout XP: every knee lift / punch is a rep, so they earn half.
+ * Keep in sync with sum_workout_rep_xp_from_breakdown (136_lighter_cardio_rewards.sql).
+ */
+export const REPS_PER_XP: Partial<Record<ExerciseType, number>> = {
+  high_knees: 2,
+  shadow_boxing: 2,
+};
 export const FOR_TIME_MIN_PAR_SECONDS = 120;
 export const FOR_TIME_MIN_ELAPSED_SECONDS = 30;
 export const FOR_TIME_SPEED_MULTIPLIER_MIN = 0.5;

@@ -6,7 +6,7 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[];
 
-export type ExerciseType = 'push_ups' | 'squats' | 'pull_ups' | 'dips' | 'burpees' | 'half_burpees' | 'jumping_jacks' | 'jumping_squats' | 'lunges' | 'sit_ups' | 'plank';
+export type ExerciseType = 'push_ups' | 'squats' | 'pull_ups' | 'dips' | 'burpees' | 'half_burpees' | 'jumping_jacks' | 'jumping_squats' | 'lunges' | 'sit_ups' | 'plank' | 'high_knees' | 'shadow_boxing' | 'tuck_jumps';
 export type UserReportReason =
   | 'inappropriate_name'
   | 'inappropriate_bio'
@@ -1198,6 +1198,9 @@ export interface Database {
           total_lunges: number;
           total_sit_ups: number;
           total_plank_seconds: number;
+          total_high_knees: number;
+          total_shadow_boxing: number;
+          total_tuck_jumps: number;
           daily_missions_completed: number;
           friend_races_completed: number;
         }[];

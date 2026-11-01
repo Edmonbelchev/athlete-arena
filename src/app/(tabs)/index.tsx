@@ -29,7 +29,7 @@ import {
 } from '@/lib/dailyChallengeSync';
 import { formatUserError } from '@/lib/errors';
 import {
-  DAILY_MISSION_XP_REWARD,
+  getDailyMissionReward,
 } from '@/constants/dailyMissionRewards';
 import {
   finalizeDailyMission,
@@ -142,7 +142,7 @@ export default function HomeScreen() {
             completedAt: updated.completed_at,
           }),
         );
-        applyXpDelta(DAILY_MISSION_XP_REWARD);
+        applyXpDelta(getDailyMissionReward(updated.exercise_type).xp);
         void refreshProfile();
         void refreshWeeklyStreak();
         return;

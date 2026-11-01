@@ -29,6 +29,9 @@ const GUIDED = [
   'burpees',
   'half_burpees',
   'pull_ups',
+  'high_knees',
+  'tuck_jumps',
+  'shadow_boxing',
 ] as const;
 
 describe('drawn exercise guides', () => {
@@ -145,6 +148,9 @@ describe('drawn exercise guides', () => {
       burpees: 1,
       half_burpees: 1,
       pull_ups: 1,
+      high_knees: 2,
+      tuck_jumps: 1,
+      shadow_boxing: 2,
     } as const;
 
     for (const [exerciseType, perLoop] of Object.entries(REPS_PER_LOOP) as [keyof typeof REPS_PER_LOOP, number][]) {

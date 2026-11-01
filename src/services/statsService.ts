@@ -14,6 +14,9 @@ type MovementStatsRow = {
   total_lunges: number;
   total_sit_ups?: number;
   total_plank_seconds?: number;
+  total_high_knees?: number;
+  total_shadow_boxing?: number;
+  total_tuck_jumps?: number;
   daily_missions_completed: number;
   friend_races_completed: number;
 };
@@ -35,6 +38,9 @@ function mapMovementStats(row: MovementStatsRow | null | undefined): MovementSta
     totalLunges: Number(row.total_lunges),
     totalSitUps: Number(row.total_sit_ups ?? 0),
     totalPlankSeconds: Number(row.total_plank_seconds ?? 0),
+    totalHighKnees: Number(row.total_high_knees ?? 0),
+    totalShadowBoxing: Number(row.total_shadow_boxing ?? 0),
+    totalTuckJumps: Number(row.total_tuck_jumps ?? 0),
     dailyMissionsCompleted: Number(row.daily_missions_completed),
     friendRacesCompleted: Number(row.friend_races_completed),
   };

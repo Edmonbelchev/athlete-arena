@@ -424,6 +424,69 @@ export const LUNGE_POSTURE = {
 } as const;
 
 /** Minimal smoothing lag so quick jack peaks are not washed out. */
+/**
+ * High knees: each knee that rises near hip height is a rep. Knee drop is how far the knee hangs
+ * below the hips in torso lengths (about 0.85 standing, 0 with the thigh level).
+ */
+export const HIGH_KNEE_POSTURE = {
+  /** Knee at least this high (drop at most) counts the rep - roughly thigh 60 degrees up. */
+  maxKneeDropForRep: 0.4,
+  /** The knee must come back down this far before that leg can count again. */
+  minKneeDropToReset: 0.6,
+  /**
+   * The other leg must be this straight (knee this far down) while a knee comes up: in a squat
+   * both knees rise to hip level together, and that is not a high knee.
+   */
+  minSupportKneeDrop: 0.6,
+  /** Both knees down for this many frames arms the set. */
+  readyFramesRequired: isNativeMobile ? 3 : 4,
+  /** Frames without both legs in view before the set ends. */
+  lostTrackingFramesToDisarm: isNativeMobile ? 12 : 15,
+} as const;
+
+/**
+ * Tuck jumps: both knees pulled up while the hips stay at or above standing height - a squat
+ * also brings the knees level with the hips, but by dropping the hips.
+ */
+export const TUCK_JUMP_POSTURE = {
+  /** Both knees at least this high (drop at most). */
+  maxKneeDropForTuck: 0.45,
+  /** Both knees back down (landed) before the next jump counts. */
+  minKneeDropToLand: 0.6,
+  /** Hips may sit at most this far (torso lengths) below their standing height during the tuck. */
+  maxHipDropForTuck: 0.12,
+  readyFramesRequired: isNativeMobile ? 3 : 4,
+  lostTrackingFramesToDisarm: isNativeMobile ? 12 : 15,
+} as const;
+
+/**
+ * Shadow boxing, judged by the elbow - it works for punches thrown straight at the camera (where
+ * the arm foreshortens to almost nothing on screen) as well as across it. Heights are in torso
+ * lengths below the shoulder (negative = above). Measured on a simulated body from waist, chest
+ * and floor-level phones, facing and angled:
+ *   guard: elbow 0.31-0.47 below, fist well above the elbow
+ *   punch: elbow 0.31 above to 0.06 below (upper arm level), fist near shoulder height
+ *   arm hanging: elbow 0.58 below, fist below it    arm overhead: elbow 0.53+ above, fist 0.98+ above
+ */
+export const SHADOW_BOXING_POSTURE = {
+  /** Guard: elbow down by the ribs... */
+  minGuardElbowDrop: 0.22,
+  /** ...with the fist raised at least this far above the elbow (forearm up). */
+  minGuardForearmRise: 0.2,
+  /** Punch: upper arm raised to about level - the elbow within this band around the shoulder. */
+  maxPunchElbowDrop: 0.15,
+  maxPunchElbowRise: 0.45,
+  /** Punch: fist around shoulder height (rejects arms raised overhead). */
+  maxPunchWristRise: 0.85,
+  maxPunchWristDrop: 0.4,
+  /** Both visible arms at guard for this many frames arms the set. */
+  readyFramesRequired: isNativeMobile ? 3 : 4,
+  lostTrackingFramesToDisarm: isNativeMobile ? 12 : 15,
+} as const;
+
+/** Light smoothing for fast standing moves, so quick knees and punches aren't averaged away. */
+export const POSE_LANDMARK_SMOOTH_ALPHA_FAST_STANDING = isNativeMobile ? 0.85 : 1;
+
 export const POSE_LANDMARK_SMOOTH_ALPHA_JUMPING_JACK = isNativeMobile ? 0.92 : 1;
 
 /** EMA smoothing for native camera landmarks (0 = frozen, 1 = raw). */
@@ -521,6 +584,30 @@ export const POSE_GUIDANCE: Record<ExerciseType, { title: string; tips: readonly
       'Turn slightly so the camera sees your shoulders, hips, and at least one leg',
       'Hold a forearm or straight-arm plank with your body in a straight line',
       'The timer runs only while your form is good - sagging, piking, or dropping your knees pauses it',
+    ],
+  },
+  high_knees: {
+    title: 'High knees setup',
+    tips: [
+      'Prop your phone in portrait and step back until your whole body is in frame',
+      'Face the camera and run in place, driving each knee up to hip height',
+      'Every knee that reaches hip height counts as a rep',
+    ],
+  },
+  shadow_boxing: {
+    title: 'Shadow boxing setup',
+    tips: [
+      'Prop your phone in portrait and keep your head, shoulders and arms in frame',
+      'Face the camera in a boxing stance, fists up by your chin',
+      'Punch out at shoulder height, then bring it back to your guard',
+    ],
+  },
+  tuck_jumps: {
+    title: 'Tuck jump setup',
+    tips: [
+      'Prop your phone in portrait and step back so you stay in frame mid-jump',
+      'Face the camera, jump and pull both knees up toward your chest',
+      'Land softly with both feet - knees must come up to hip height to count',
     ],
   },
 };

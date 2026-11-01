@@ -4,7 +4,7 @@ import { AppIcon } from '@/components/ui/AppIcon';
 import { CoinIcon } from '@/components/ui/CoinIcon';
 import { formatExerciseLabel } from '@/constants/challenges';
 import { getDailyMissionQuestMeta, getQuestAccentColor } from '@/constants/dailyMissionQuest';
-import { DAILY_MISSION_COIN_REWARD } from '@/constants/dailyMissionRewards';
+import { getDailyMissionReward } from '@/constants/dailyMissionRewards';
 import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import type { DailyChallengeHome } from '@/types';
@@ -49,7 +49,7 @@ export function WorkoutRewardsSummary({ sessionReward, completedQuests = [] }: W
   }
 
   const totalXp = workoutXp + completedQuests.reduce((sum, quest) => sum + quest.xpReward, 0);
-  const totalCoins = workoutCoins + completedQuests.length * DAILY_MISSION_COIN_REWARD;
+  const totalCoins = workoutCoins + completedQuests.reduce((sum, quest) => sum + getDailyMissionReward(quest.exerciseType).coins, 0);
 
   return (
     <View style={[styles.card, { backgroundColor: theme.backgroundElement, borderColor: theme.primary }]}>
@@ -85,7 +85,7 @@ export function WorkoutRewardsSummary({ sessionReward, completedQuests = [] }: W
                 Quest cleared · {quest.targetReps} {formatExerciseLabel(quest.exerciseType, true).toLowerCase()}
               </Text>
             </View>
-            <RewardAmounts xp={quest.xpReward} coins={DAILY_MISSION_COIN_REWARD} />
+            <RewardAmounts xp={quest.xpReward} coins={getDailyMissionReward(quest.exerciseType).coins} />
           </View>
         );
       })}

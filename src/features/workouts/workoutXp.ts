@@ -8,6 +8,7 @@ import {
   FOR_TIME_SPEED_MULTIPLIER_MAX,
   FOR_TIME_SPEED_MULTIPLIER_MIN,
   PLANK_SECONDS_PER_XP,
+  REPS_PER_XP,
   WORKOUT_XP_EARNINGS_SCALE,
   WORKOUT_XP_MAX,
   WORKOUT_XP_MIN,
@@ -43,6 +44,11 @@ function getAmountXp(exerciseType: ExerciseType, amount: number): number {
   const value = Math.max(0, amount);
   if (isHoldExercise(exerciseType)) {
     return Math.floor(value / PLANK_SECONDS_PER_XP);
+  }
+
+  const repsPerXp = REPS_PER_XP[exerciseType];
+  if (repsPerXp) {
+    return Math.floor(value / repsPerXp);
   }
 
   return value * getExerciseXpPerRep(exerciseType);
