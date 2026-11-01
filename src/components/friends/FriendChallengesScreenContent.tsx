@@ -15,6 +15,7 @@ import { FriendChallengePartnersList } from '@/components/friends/FriendChalleng
 import { HomeSection } from '@/components/home/HomeSection';
 import { ProfileAvatar } from '@/components/profile/ProfileAvatar';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
+import { ShowMoreButton } from '@/components/ui/ShowMoreButton';
 import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { useAuth } from '@/features/auth';
 import {
@@ -23,7 +24,15 @@ import {
 } from '@/features/friends/friendChallengeOverview';
 import { useFriendChallenges } from '@/features/friends/useFriendChallenges';
 import { useChallengeNotificationRefresh } from '@/features/notifications/useChallengeNotificationRefresh';
+import { usePagedList } from '@/hooks/use-paged-list';
 import { useTheme } from '@/hooks/use-theme';
+
+/** First page per section; "Show more" reveals the same amount again. Urgent items stay on top. */
+const PAGE_SIZE = {
+  yourMove: 4,
+  waiting: 3,
+  rivals: 5,
+} as const;
 
 interface FriendChallengesScreenContentProps {
   onRefresh?: () => void;
@@ -90,6 +99,9 @@ export function FriendChallengesScreenContent({ onRefresh }: FriendChallengesScr
     () => buildFriendChallengeOverview(challenges, session?.user.id ?? ''),
     [challenges, session?.user.id],
   );
+  const yourMove = usePagedList(overview.yourMove, PAGE_SIZE.yourMove);
+  const waiting = usePagedList(overview.waiting, PAGE_SIZE.waiting);
+  const rivals = usePagedList(overview.rivals, PAGE_SIZE.rivals);
 
   const handleRefresh = useCallback(async () => {
     setIsRefreshing(true);
@@ -151,9 +163,10 @@ export function FriendChallengesScreenContent({ onRefresh }: FriendChallengesScr
       {overview.yourMove.length > 0 ? (
         <HomeSection title="Your move" subtitle="Respond or race now" badge={overview.yourMove.length}>
           <View style={styles.list}>
-            {overview.yourMove.map((challenge) => (
+            {yourMove.visibleItems.map((challenge) => (
               <FriendChallengeActionRow key={challenge.participantId} challenge={challenge} />
             ))}
+            <ShowMoreButton list={yourMove} />
           </View>
         </HomeSection>
       ) : null}
@@ -161,9 +174,10 @@ export function FriendChallengesScreenContent({ onRefresh }: FriendChallengesScr
       {overview.waiting.length > 0 ? (
         <HomeSection title="Waiting on friends" subtitle="You finished - their turn">
           <View style={styles.list}>
-            {overview.waiting.map((challenge) => (
+            {waiting.visibleItems.map((challenge) => (
               <FriendChallengeActionRow key={challenge.participantId} challenge={challenge} />
             ))}
+            <ShowMoreButton list={waiting} />
           </View>
         </HomeSection>
       ) : null}
@@ -171,9 +185,10 @@ export function FriendChallengesScreenContent({ onRefresh }: FriendChallengesScr
       {overview.rivals.length > 0 ? (
         <HomeSection title="Rivals" subtitle="Your head-to-head record with each friend">
           <View style={styles.list}>
-            {overview.rivals.map((rival) => (
+            {rivals.visibleItems.map((rival) => (
               <RivalRow key={rival.friendId} rival={rival} />
             ))}
+            <ShowMoreButton list={rivals} />
           </View>
         </HomeSection>
       ) : null}

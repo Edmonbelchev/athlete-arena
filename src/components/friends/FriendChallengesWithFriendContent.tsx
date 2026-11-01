@@ -13,6 +13,7 @@ import { FriendChallengeHistoryCard } from '@/components/friends/FriendChallenge
 import { FriendChallengesCarousel } from '@/components/home/FriendChallengesCarousel';
 import { HomeSection } from '@/components/home/HomeSection';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
+import { ShowMoreButton } from '@/components/ui/ShowMoreButton';
 import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useFriendChallengesWithFriend } from '@/features/friends/useFriendChallengesWithFriend';
 import { useChallengeNotificationRefresh } from '@/features/notifications/useChallengeNotificationRefresh';
@@ -21,7 +22,11 @@ import {
   acceptFriendChallenge,
   declineFriendChallenge,
 } from '@/services/friendChallengeService';
+import { usePagedList } from '@/hooks/use-paged-list';
 import { useTheme } from '@/hooks/use-theme';
+
+/** Completed races shown per page. */
+const HISTORY_PAGE_SIZE = 8;
 
 interface FriendChallengesWithFriendContentProps {
   friendId: string;
@@ -46,6 +51,7 @@ export function FriendChallengesWithFriendContent({
   const [actionError, setActionError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const history = usePagedList(historyChallenges, HISTORY_PAGE_SIZE);
 
   const displayError = error ?? actionError;
 
@@ -169,10 +175,11 @@ export function FriendChallengesWithFriendContent({
               styles.historyContainer,
               { backgroundColor: theme.backgroundElement, borderColor: theme.border },
             ])}>
-            {historyChallenges.map((challenge) => (
+            {history.visibleItems.map((challenge) => (
               <FriendChallengeHistoryCard key={challenge.participantId} challenge={challenge} />
             ))}
           </View>
+          <ShowMoreButton list={history} />
         </HomeSection>
       ) : null}
 
