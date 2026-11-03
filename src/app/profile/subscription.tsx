@@ -166,7 +166,7 @@ export default function SubscriptionScreen() {
                   ? subscription?.expiresAt
                     ? `${subscription.willRenew ? 'Renews' : 'Active until'} ${renewalDate}`
                     : 'Everything below is unlocked.'
-                  : 'Custom workouts, unlimited races and quest swaps, and the Elf and Orc avatar races.'}
+                  : 'Custom workouts, unlimited races and quest swaps, and the Android avatar race.'}
               </Text>
 
               {!isPremium ? (

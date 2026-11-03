@@ -20,7 +20,6 @@ import {
   BODY_TYPE_CHOICES,
   BROW_CHOICES,
   DEFAULT_APPEARANCE,
-  ELF_EAR_CHOICES,
   EYE_CHOICES,
   EYE_COLORS,
   FACIAL_HAIR_CHOICES,
@@ -29,9 +28,8 @@ import {
   HEAD_SHAPE_CHOICES,
   MOUTH_CHOICES,
   NOSE_CHOICES,
-  ORC_EAR_CHOICES,
+  RACE_FEATURES,
   SKIN_COLORS,
-  TUSK_CHOICES,
   changeBodyType,
   changeRace,
   choicesForBody,
@@ -39,6 +37,7 @@ import {
   randomizeAppearance,
   wearableFitsBody,
   type AvatarChoice,
+  type RaceFeatureKey,
 } from '@/features/avatar/avatarOptions';
 import { accessoryRace, toAccessoryStyles } from '@/features/avatar/avatarWardrobe';
 import { saveAvatarWithHeadshot } from '@/features/avatar/saveAvatarWithHeadshot';
@@ -442,18 +441,17 @@ export default function AvatarEditorScreen() {
                       label: 'Race',
                       required: false,
                     })}
-                    {race ? (
-                      <EditorSection title="Ears">
-                        {race === 'elf'
-                          ? renderAppearanceTiles('elfEars', ELF_EAR_CHOICES, 'portrait')
-                          : renderAppearanceTiles('orcEars', ORC_EAR_CHOICES, 'portrait')}
-                      </EditorSection>
-                    ) : null}
-                    {race === 'orc' ? (
-                      <EditorSection title="Tusks">
-                        {renderAppearanceTiles('tusks', TUSK_CHOICES, 'face')}
-                      </EditorSection>
-                    ) : null}
+                    {race
+                      ? RACE_FEATURES[race].map((feature) => (
+                          <EditorSection key={feature.key} title={feature.title}>
+                            {renderAppearanceTiles(
+                              feature.key,
+                              feature.choices as AvatarChoice<Extract<AvatarAppearance[RaceFeatureKey], string>>[],
+                              feature.crop
+                            )}
+                          </EditorSection>
+                        ))
+                      : null}
                   </>
                 ) : null}
 

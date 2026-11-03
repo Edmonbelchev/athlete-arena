@@ -42,6 +42,7 @@ const STYLES: WearableStyle[] = [
   ...SCENE_STYLES,
   'race_elf',
   'race_orc',
+  'race_android',
 ];
 const PATTERNS: WearablePattern[] = ['stripe', 'star', 'camo'];
 const TIERS: WearableTier[] = ['basic', 'rare', 'legendary'];
@@ -121,8 +122,22 @@ export function toAccessoryStyles(
   return styles;
 }
 
-/** The race an avatar is wearing (elf / orc), or null for human. */
+const RACE_BY_STYLE: Partial<Record<WearableStyle, AvatarRace>> = {
+  race_elf: 'elf',
+  race_orc: 'orc',
+  race_android: 'android',
+};
+
+/**
+ * Items Premium includes (no coins needed while it is active): the Android race. Elf and Orc
+ * are bought with coins. Keep in sync with premium_includes_item (migration 138).
+ */
+export function isIncludedWithPremium(item: Pick<WearableItem, 'style'> | null | undefined): boolean {
+  return item?.style === 'race_android';
+}
+
+/** The race an avatar is wearing, or null for human. */
 export function accessoryRace(styles: AvatarAccessoryStyles): AvatarRace | null {
   const style = styles.race?.style;
-  return style === 'race_elf' ? 'elf' : style === 'race_orc' ? 'orc' : null;
+  return (style && RACE_BY_STYLE[style]) ?? null;
 }

@@ -26,7 +26,7 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { MaxContentWidth, Radius, Spacing } from '@/constants/theme';
 import { changeRace } from '@/features/avatar/avatarOptions';
-import { accessoryRace, toAccessoryStyles } from '@/features/avatar/avatarWardrobe';
+import { accessoryRace, isIncludedWithPremium, toAccessoryStyles } from '@/features/avatar/avatarWardrobe';
 import { saveAvatarWithHeadshot } from '@/features/avatar/saveAvatarWithHeadshot';
 import { useMyAvatar } from '@/features/avatar/useMyAvatar';
 import { useProfile } from '@/features/profile/useProfile';
@@ -558,7 +558,7 @@ export function ShopScreenContent({ initialSection = 'outfits' }: ShopScreenCont
               <Text style={StyleSheet.flatten([styles.actionMeta, { color: theme.success }])}>
                 {selected.equipped || isWorn(selected)
                   ? 'Equipped'
-                  : isPremium && selected.wearable?.slot === 'race'
+                  : isPremium && isIncludedWithPremium(selected.wearable)
                     ? 'Included with Premium'
                     : 'Owned'}
               </Text>
@@ -576,7 +576,7 @@ export function ShopScreenContent({ initialSection = 'outfits' }: ShopScreenCont
                 ) : null}
               </View>
             )}
-            {!selected.owned && !isPremium && selected.wearable?.slot === 'race' && IN_APP_PURCHASES_ENABLED ? (
+            {!selected.owned && !isPremium && isIncludedWithPremium(selected.wearable) && IN_APP_PURCHASES_ENABLED ? (
               <Pressable accessibilityRole="button" onPress={() => void openRacePaywall()}>
                 <Text style={StyleSheet.flatten([styles.premiumLink, { color: theme.streak }])}>
                   Free with Premium
