@@ -61,6 +61,7 @@ export interface FriendChallengeRpcRow {
   workout_type: 'amrap' | 'for_time' | 'emom' | null;
   structure_config: unknown;
   workout_exercises: unknown;
+  max_effort?: boolean | null;
 }
 
 export interface Database {
@@ -741,6 +742,7 @@ export interface Database {
           p_message?: string | null;
           p_time_limit_seconds?: number | null;
           p_emote_id?: string | null;
+          p_max_effort?: boolean;
         };
         Returns: string;
       };
@@ -868,6 +870,10 @@ export interface Database {
       };
       record_friend_hold_progress: {
         Args: { p_participant_id: string; p_held_seconds: number; p_finish: boolean };
+        Returns: Database['public']['Tables']['friend_challenge_participants']['Row'];
+      };
+      record_friend_max_reps: {
+        Args: { p_participant_id: string; p_reps: number; p_finish: boolean };
         Returns: Database['public']['Tables']['friend_challenge_participants']['Row'];
       };
       create_friend_workout_challenge: {

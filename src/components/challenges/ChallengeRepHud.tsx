@@ -21,6 +21,8 @@ export type ChallengeRepHudRaceTimer =
       elapsedSeconds: number;
       secondsRemaining: number | null;
       timeLimitSeconds: number | null;
+      /** Max reps: show the time left as the main clock (most reps in the window wins). */
+      countdown?: boolean;
     }
   | { kind: 'expired' };
 
@@ -31,6 +33,8 @@ interface ChallengeRepHudProps {
   exerciseType?: ExerciseType;
   completed?: boolean;
   raceTimer?: ChallengeRepHudRaceTimer | null;
+  /** Max challenges: no target to reach - just the count, no "/ target" or progress bar. */
+  openEnded?: boolean;
 }
 
 export function ChallengeRepHud({
@@ -39,6 +43,7 @@ export function ChallengeRepHud({
   exerciseType,
   completed = false,
   raceTimer = null,
+  openEnded = false,
 }: ChallengeRepHudProps) {
   const isHold = isHoldExercise(exerciseType);
   // Holds tick every second; pulse every 10 seconds instead. (Sounds live in WorkoutEffectsLayer.)
@@ -110,10 +115,12 @@ export function ChallengeRepHud({
         <Text
           style={StyleSheet.flatten([
             styles.count,
-            { color: completed || currentReps >= targetReps ? theme.success : '#FFFFFF' },
+            { color: completed || (!openEnded && currentReps >= targetReps) ? theme.success : '#FFFFFF' },
           ])}>
           {isHold ? formatHoldSeconds(currentReps) : currentReps}
-          <Text style={styles.target}> / {isHold ? formatHoldSeconds(targetReps) : targetReps}</Text>
+          {openEnded ? null : (
+            <Text style={styles.target}> / {isHold ? formatHoldSeconds(targetReps) : targetReps}</Text>
+          )}
         </Text>
         {raceTimer?.kind === 'hint' ? (
           <Text style={styles.timerHint}>{raceTimer.message}</Text>
@@ -121,11 +128,13 @@ export function ChallengeRepHud({
         {raceTimer?.kind === 'running' ? (
           <View style={styles.timerBlock}>
             <View style={styles.timerDivider} />
-            <Text style={styles.timerLabel}>TIME</Text>
+            <Text style={styles.timerLabel}>{raceTimer.countdown ? 'TIME LEFT' : 'TIME'}</Text>
             <Text style={StyleSheet.flatten([styles.timerValue, { color: theme.streak }])}>
-              {formatRaceTime(raceTimer.elapsedSeconds)}
+              {formatRaceTime(raceTimer.countdown ? (raceTimer.secondsRemaining ?? 0) : raceTimer.elapsedSeconds)}
             </Text>
-            {raceTimer.timeLimitSeconds ? (
+            {raceTimer.countdown ? (
+              <Text style={styles.timerMeta}>Most reps wins</Text>
+            ) : raceTimer.timeLimitSeconds ? (
               <Text style={styles.timerMeta}>
                 {formatRaceTimeLimit(raceTimer.timeLimitSeconds)} ·{' '}
                 {formatRaceTime(raceTimer.secondsRemaining ?? 0)} left
@@ -142,7 +151,7 @@ export function ChallengeRepHud({
             <Text style={StyleSheet.flatten([styles.timerValue, { color: theme.danger }])}>Reached</Text>
           </View>
         ) : null}
-        <RepProgressBar current={currentReps} target={targetReps} />
+        {openEnded ? null : <RepProgressBar current={currentReps} target={targetReps} />}
       </Animated.View>
     </View>
   );

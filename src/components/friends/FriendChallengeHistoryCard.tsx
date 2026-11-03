@@ -53,7 +53,7 @@ export function FriendChallengeHistoryCard({ challenge }: FriendChallengeHistory
 
   const timeLabel = isWorkout
     ? formatFriendWorkoutScore(challenge)
-    : isHoldExercise(challenge.exerciseType)
+    : isHoldExercise(challenge.exerciseType) || challenge.maxEffort
       ? formatFriendChallengeProgress(challenge, opponentName)
       : myRaceSeconds !== null
       ? `You ${formatRaceTime(myRaceSeconds)}${

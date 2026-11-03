@@ -38,6 +38,8 @@ interface FriendChallengeCompleteOverlayProps {
   headToHead?: { me: HeadToHeadPlayer; opponent: HeadToHeadPlayer } | null;
   /** Hold challenge (plank): the "times" are seconds held and the longest hold wins. */
   isHold?: boolean;
+  /** Max reps challenge: the "times" are reps done and the most reps wins. */
+  isMaxReps?: boolean;
 }
 
 function ConfettiPiece({
@@ -143,9 +145,14 @@ function getOverlayCopy(
   opponentTimeSeconds: number | null,
   opponentForfeited: boolean,
   isHold: boolean,
+  isMaxReps: boolean,
 ): { eyebrow: string; title: string; subtitle: string | null } {
   if (isHold) {
     return getHoldOverlayCopy(variant, raceTimeSeconds, opponentName, opponentTimeSeconds, opponentForfeited);
+  }
+
+  if (isMaxReps) {
+    return getMaxRepsOverlayCopy(variant, raceTimeSeconds, opponentName, opponentTimeSeconds, opponentForfeited);
   }
 
   const myTimeLabel = raceTimeSeconds !== null ? formatRaceTime(raceTimeSeconds) : '--:--';
@@ -212,6 +219,36 @@ function getHoldOverlayCopy(
   }
 }
 
+function getMaxRepsOverlayCopy(
+  variant: FriendChallengeCompleteVariant,
+  reps: number | null,
+  opponentName: string,
+  opponentReps: number | null,
+  opponentForfeited: boolean,
+): { eyebrow: string; title: string; subtitle: string | null } {
+  const mine = `${reps ?? 0} reps`;
+  const theirs = opponentReps !== null ? `${opponentReps} reps` : '--';
+
+  switch (variant) {
+    case 'finished':
+      return { eyebrow: 'TIME UP', title: mine, subtitle: `Waiting for ${opponentName} to go…` };
+    case 'winner':
+      return {
+        eyebrow: opponentForfeited ? 'OPPONENT FORFEITED' : 'MOST REPS - YOU WON',
+        title: mine,
+        subtitle: opponentForfeited ? `${opponentName} forfeited` : `You ${mine} · ${opponentName} ${theirs}`,
+      };
+    case 'lost':
+      return {
+        eyebrow: 'CHALLENGE COMPLETE',
+        title: mine,
+        subtitle: `${opponentName} did more · You ${mine} · ${opponentName} ${theirs}`,
+      };
+    case 'tie':
+      return { eyebrow: 'TIE', title: mine, subtitle: `You both did ${mine}` };
+  }
+}
+
 export function FriendChallengeCompleteOverlay({
   variant,
   raceTimeSeconds,
@@ -224,6 +261,7 @@ export function FriendChallengeCompleteOverlay({
   headline = null,
   headToHead = null,
   isHold = false,
+  isMaxReps = false,
 }: FriendChallengeCompleteOverlayProps) {
   const theme = useTheme();
   const copy = getOverlayCopy(
@@ -233,6 +271,7 @@ export function FriendChallengeCompleteOverlay({
     opponentTimeSeconds,
     opponentForfeited,
     isHold,
+    isMaxReps,
   );
   const confettiCount = variant === 'winner' ? 20 : 12;
   const accentColor =

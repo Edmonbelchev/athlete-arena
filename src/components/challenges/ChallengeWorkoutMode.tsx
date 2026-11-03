@@ -53,6 +53,8 @@ interface ChallengeWorkoutModeProps {
   onDevSimulateRep?: () => void;
   devSimulateDisabled?: boolean;
   devSimulateLoading?: boolean;
+  /** Max challenges: count without a target (no "/ target", progress bar or halfway / done cues). */
+  openEnded?: boolean;
 }
 
 export function ChallengeWorkoutMode({
@@ -80,6 +82,7 @@ export function ChallengeWorkoutMode({
   onDevSimulateRep,
   devSimulateDisabled,
   devSimulateLoading,
+  openEnded = false,
 }: ChallengeWorkoutModeProps) {
   const theme = useTheme();
   const { preferences } = useUserSettings();
@@ -162,6 +165,7 @@ export function ChallengeWorkoutMode({
               exerciseType={exerciseType}
               completed={completed}
               raceTimer={raceTimer}
+              openEnded={openEnded}
             />
           )}
           {centerOverlay}
@@ -170,7 +174,7 @@ export function ChallengeWorkoutMode({
             targetReps={targetReps}
             exerciseType={exerciseType}
             // Multi-exercise workouts announce each exercise instead of celebrating halfway / done.
-            milestones={exerciseTransitionKey === undefined}
+            milestones={exerciseTransitionKey === undefined && !openEnded}
             resetKey={exerciseTransitionKey}
             totalReps={totalReps}
             visuals={preferences.workoutEffectsEnabled}
