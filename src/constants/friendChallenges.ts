@@ -42,6 +42,23 @@ export const FRIEND_CHALLENGE_TIME_PRESETS: readonly { label: string; seconds: n
   { label: '90 min', seconds: 5400 },
 ] as const;
 
+/**
+ * Max reps windows: as many reps as possible in this time. Keep within the 30-600 seconds
+ * create_friend_challenge allows (supabase/migrations/137_friend_max_challenges.sql).
+ */
+export const FRIEND_CHALLENGE_MAX_DURATIONS: readonly number[] = [30, 60, 120, 180, 300] as const;
+export const DEFAULT_FRIEND_CHALLENGE_MAX_DURATION = 120;
+
+/** "30 sec", "2 min", "1:30 min". */
+export function formatChallengeDuration(seconds: number): string {
+  if (seconds < 60) {
+    return `${seconds} sec`;
+  }
+  const minutes = Math.floor(seconds / 60);
+  const remainder = seconds % 60;
+  return remainder === 0 ? `${minutes} min` : `${minutes}:${remainder.toString().padStart(2, '0')} min`;
+}
+
 export const FRIEND_CHALLENGE_TIME_MIN_SECONDS = 60;
 export const FRIEND_CHALLENGE_TIME_MAX_SECONDS = 5400;
 

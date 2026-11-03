@@ -15,10 +15,13 @@ import { WorkoutCircuitPreview } from '@/components/workouts/WorkoutCircuitPrevi
 import { EXERCISE_LABELS, formatExerciseCount, isHoldExercise, type ExerciseType } from '@/constants/challenges';
 
 import {
+    DEFAULT_FRIEND_CHALLENGE_MAX_DURATION,
+    FRIEND_CHALLENGE_MAX_DURATIONS,
     FRIEND_CHALLENGE_REP_MAX,
     FRIEND_CHALLENGE_REP_MIN,
     FRIEND_CHALLENGE_REP_PRESETS,
     FRIEND_CHALLENGE_TIME_PRESETS,
+    formatChallengeDuration,
     formatRaceTimeLimit,
     getDefaultRepsForExercise,
     isFriendChallengeRequestLimitError,
@@ -86,6 +89,9 @@ export default function CreateFriendChallengeScreen() {
   const [targetReps, setTargetReps] = useState(getDefaultRepsForExercise('push_ups'));
   const [customReps, setCustomReps] = useState('');
   const [timeLimitSeconds, setTimeLimitSeconds] = useState<number | null>(null);
+  /** 'race': reach the target first (holds: the minimum, longest wins); 'max': most reps / longest hold. */
+  const [goal, setGoal] = useState<'race' | 'max'>('race');
+  const [maxDurationSeconds, setMaxDurationSeconds] = useState(DEFAULT_FRIEND_CHALLENGE_MAX_DURATION);
   const [message, setMessage] = useState('');
   const [selectedEmoteId, setSelectedEmoteId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -246,6 +252,7 @@ export default function CreateFriendChallengeScreen() {
 
   const repPresets = FRIEND_CHALLENGE_REP_PRESETS[exerciseType];
   const isHold = isHoldExercise(exerciseType);
+  const isMax = goal === 'max';
 
   function handleExerciseChange(next: ExerciseType) {
     setExerciseType(next);
@@ -334,10 +341,12 @@ export default function CreateFriendChallengeScreen() {
       const participantId = await createFriendChallenge(
         selectedFriendId,
         exerciseType,
-        targetReps,
+        isMax ? 1 : targetReps,
         message.trim() || undefined,
-        timeLimitSeconds,
+        // Max reps: the window to rep in. Max hold: no limit, the hold ends when form breaks.
+        isMax ? (isHold ? null : maxDurationSeconds) : timeLimitSeconds,
         selectedEmoteId,
+        isMax,
       );
       router.replace({
         pathname: '/challenge/friend/[participantId]',
@@ -377,7 +386,7 @@ export default function CreateFriendChallengeScreen() {
         <ScrollView contentContainerStyle={styles.content}>
           <Text style={StyleSheet.flatten([styles.subtitle, { color: theme.textSecondary }])}>
             {isFriendLocked
-              ? `Set up a speed race with ${selectedDisplayName ?? 'your friend'}`
+              ? `Set up a challenge with ${selectedDisplayName ?? 'your friend'}`
               : `Create a custom challenge${selectedUsername ? ` for @${selectedUsername}` : ''}`}
           </Text>
 
@@ -442,6 +451,7 @@ export default function CreateFriendChallengeScreen() {
             challengeKind={challengeKind}
             exerciseType={exerciseType}
             targetReps={targetReps}
+            maxEffort={challengeKind === 'exercise' && isMax}
           />
 
           {challengeKind === 'workout' ? (
@@ -468,6 +478,79 @@ export default function CreateFriendChallengeScreen() {
             onSelectExercise={handleExerciseChange}
           />
 
+          <Text style={StyleSheet.flatten([styles.label, { color: theme.textSecondary }])}>GOAL</Text>
+          <View style={styles.exerciseRow}>
+            {(['race', 'max'] as const).map((option) => {
+              const selected = goal === option;
+              const label =
+                option === 'race' ? (isHold ? 'Minimum hold' : 'Speed race') : isHold ? 'Max hold' : 'Max reps';
+              return (
+                <Pressable
+                  key={option}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected }}
+                  onPress={() => setGoal(option)}
+                  style={StyleSheet.flatten([
+                    styles.exerciseChip,
+                    {
+                      backgroundColor: selected ? theme.primary : theme.backgroundElement,
+                      borderColor: selected ? theme.primary : theme.border,
+                    },
+                  ])}>
+                  <Text
+                    style={StyleSheet.flatten([
+                      styles.exerciseChipText,
+                      { color: selected ? '#FFFFFF' : theme.text },
+                    ])}>
+                    {label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+
+          {isMax ? (
+            isHold ? (
+              <Text style={StyleSheet.flatten([styles.help, { color: theme.textSecondary }])}>
+                Hold as long as you can - your hold ends when your form breaks. The longest hold wins.
+              </Text>
+            ) : (
+              <>
+                <Text style={StyleSheet.flatten([styles.label, { color: theme.textSecondary }])}>TIME</Text>
+                <Text style={StyleSheet.flatten([styles.help, { color: theme.textSecondary }])}>
+                  As many reps as you can in the time - the most reps wins. Your timer starts with your first rep.
+                </Text>
+                <View style={styles.repRow}>
+                  {FRIEND_CHALLENGE_MAX_DURATIONS.map((seconds) => {
+                    const selected = maxDurationSeconds === seconds;
+                    return (
+                      <Pressable
+                        key={seconds}
+                        accessibilityRole="button"
+                        accessibilityState={{ selected }}
+                        onPress={() => setMaxDurationSeconds(seconds)}
+                        style={StyleSheet.flatten([
+                          styles.repChip,
+                          {
+                            backgroundColor: selected ? theme.primary : theme.backgroundElement,
+                            borderColor: selected ? theme.primary : theme.border,
+                          },
+                        ])}>
+                        <Text
+                          style={StyleSheet.flatten([
+                            styles.repChipText,
+                            { color: selected ? '#FFFFFF' : theme.text },
+                          ])}>
+                          {formatChallengeDuration(seconds)}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </>
+            )
+          ) : (
+            <>
           <Text style={StyleSheet.flatten([styles.label, { color: theme.textSecondary }])}>
             {isHold ? 'MINIMUM HOLD' : 'TARGET REPS'}
           </Text>
@@ -550,6 +633,8 @@ export default function CreateFriendChallengeScreen() {
               );
             })}
           </View>
+            </>
+          )}
             </>
           )}
             </>

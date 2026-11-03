@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 
-import { formatExerciseAmount, type ExerciseType } from '@/constants/challenges';
+import { formatExerciseAmount, isHoldExercise, type ExerciseType } from '@/constants/challenges';
 import { formatCoinAmount } from '@/constants/coins';
 import {
   calculateFriendChallengeCoins,
@@ -13,7 +13,9 @@ import {
   FRIEND_CHALLENGE_PARTICIPATION_XP,
   FRIEND_CHALLENGE_WINNER_BONUS_COINS,
   FRIEND_CHALLENGE_WINNER_BONUS_XP,
+  FRIEND_CHALLENGE_FULL_REWARD_REPS,
   getFriendChallengeReward,
+  isFriendChallengeExerciseType,
   WORKOUT_FULL_REWARD_REPS,
 } from '@/constants/friendChallengeRewards';
 import { Radius, Spacing } from '@/constants/theme';
@@ -24,12 +26,15 @@ interface FriendChallengeRewardInfoProps {
   challengeKind: FriendChallengeKind;
   exerciseType: ExerciseType;
   targetReps: number;
+  /** Max challenge: rewards follow the reps / seconds each player does. */
+  maxEffort?: boolean;
 }
 
 export function FriendChallengeRewardInfo({
   challengeKind,
   exerciseType,
   targetReps,
+  maxEffort = false,
 }: FriendChallengeRewardInfoProps) {
   const theme = useTheme();
 
@@ -60,9 +65,15 @@ export function FriendChallengeRewardInfo({
     );
   }
 
-  const finish = getFriendChallengeReward('exercise', 'finish', targetReps, exerciseType);
-  const win = getFriendChallengeReward('exercise', 'win', targetReps, exerciseType);
-  const noShow = getFriendChallengeReward('exercise', 'noShow', targetReps, exerciseType);
+  // Max challenges pay for what each player does, up to the full-reward amount.
+  const rewardReps =
+    maxEffort && isFriendChallengeExerciseType(exerciseType)
+      ? FRIEND_CHALLENGE_FULL_REWARD_REPS[exerciseType]
+      : targetReps;
+  const finish = getFriendChallengeReward('exercise', 'finish', rewardReps, exerciseType);
+  const win = getFriendChallengeReward('exercise', 'win', rewardReps, exerciseType);
+  const noShow = getFriendChallengeReward('exercise', 'noShow', rewardReps, exerciseType);
+  const upTo = maxEffort ? 'up to ' : '';
 
   return (
     <View
@@ -70,21 +81,24 @@ export function FriendChallengeRewardInfo({
         styles.card,
         { backgroundColor: theme.backgroundElement, borderColor: theme.border },
       ])}>
-      <Text style={StyleSheet.flatten([styles.title, { color: theme.text }])}>Race rewards</Text>
+      <Text style={StyleSheet.flatten([styles.title, { color: theme.text }])}>
+        {maxEffort ? 'Challenge rewards' : 'Race rewards'}
+      </Text>
       <Text style={StyleSheet.flatten([styles.line, { color: theme.textSecondary }])}>
         {formatFriendChallengeRewardRule(exerciseType)}
       </Text>
       <Text style={StyleSheet.flatten([styles.line, { color: theme.textSecondary }])}>
-        Finish: +{finish.xp} XP & {formatCoinAmount(finish.coins)} · Win: extra +{win.xp} XP &{' '}
+        Finish: {upTo}+{finish.xp} XP & {formatCoinAmount(finish.coins)} · Win: extra {upTo}+{win.xp} XP &{' '}
         {formatCoinAmount(win.coins)}
       </Text>
       <Text style={StyleSheet.flatten([styles.line, { color: theme.textSecondary }])}>
-        Friend doesn&apos;t finish in {FRIEND_CHALLENGE_EXPIRY_DAYS} days: extra +{noShow.xp} XP &{' '}
+        Friend doesn&apos;t finish in {FRIEND_CHALLENGE_EXPIRY_DAYS} days: extra {upTo}+{noShow.xp} XP &{' '}
         {formatCoinAmount(noShow.coins)}
       </Text>
       <Text style={StyleSheet.flatten([styles.preview, { color: theme.xp }])}>
-        At {formatExerciseAmount(exerciseType, targetReps)}: Winner +{calculateFriendChallengeXp(exerciseType, targetReps)} XP &{' '}
-        {formatCoinAmount(calculateFriendChallengeCoins(exerciseType, targetReps))}
+        {maxEffort
+          ? `Rewards follow your own ${isHoldExercise(exerciseType) ? 'hold time' : 'reps'} · full at ${formatExerciseAmount(exerciseType, rewardReps)}`
+          : `At ${formatExerciseAmount(exerciseType, targetReps)}: Winner +${calculateFriendChallengeXp(exerciseType, targetReps)} XP & ${formatCoinAmount(calculateFriendChallengeCoins(exerciseType, targetReps))}`}
       </Text>
     </View>
   );

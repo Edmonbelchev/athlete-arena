@@ -15,6 +15,8 @@ interface ChallengeWorkoutSetupProps {
   exerciseLabel: string;
   exerciseType: ExerciseType;
   targetReps: number;
+  /** Replaces the target line, e.g. "Max reps in 2 min" for max challenges. */
+  targetLabel?: string;
   subtitle?: string;
   preview?: ReactNode;
   onStart: () => void;
@@ -36,6 +38,7 @@ export function ChallengeWorkoutSetup({
   exerciseLabel,
   exerciseType,
   targetReps,
+  targetLabel,
   subtitle,
   preview,
   onStart,
@@ -58,7 +61,7 @@ export function ChallengeWorkoutSetup({
         </Text>
         <Text style={StyleSheet.flatten([styles.title, { color: theme.text }])}>{exerciseLabel}</Text>
         <Text style={StyleSheet.flatten([styles.target, { color: theme.text }])}>
-          {formatExerciseAmount(exerciseType, targetReps)}
+          {targetLabel ?? formatExerciseAmount(exerciseType, targetReps)}
         </Text>
         {subtitle ? (
           <Text style={StyleSheet.flatten([styles.subtitle, { color: theme.textSecondary }])}>{subtitle}</Text>

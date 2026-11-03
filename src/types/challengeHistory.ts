@@ -1,6 +1,6 @@
 import type { ExerciseType } from '@/constants/challenges';
 import { formatExerciseCount, formatExerciseLabel, formatHoldSeconds, isHoldExercise } from '@/constants/challenges';
-import { formatRaceTime } from '@/constants/friendChallenges';
+import { formatChallengeDuration, formatRaceTime } from '@/constants/friendChallenges';
 import { formatCoinAmount } from '@/constants/coins';
 import {
   getFriendChallengeEarnedRewards,
@@ -41,6 +41,9 @@ export interface ChallengeHistoryEntry {
   workoutSessionId?: string | null;
   workoutSessionXp?: number | null;
   workoutSessionCoins?: number | null;
+  /** Friend max challenge: most reps in `timeLimitSeconds`, or the longest hold. */
+  maxEffort?: boolean;
+  timeLimitSeconds?: number | null;
 }
 
 /** Everything a history entry paid - for friend workouts, the challenge plus the workout run. */
@@ -93,10 +96,11 @@ export function getHistoryResultLabel(entry: ChallengeHistoryEntry, myUserId?: s
     if (entry.winnerUserId && myUserId) {
       const coinSuffix = coins > 0 ? ` · ${formatCoinAmount(coins)}` : '';
 
+      const contest = entry.maxEffort ? 'challenge' : 'race';
       if (entry.winnerUserId === myUserId) {
-        return `Won the race · +${earned} XP${coinSuffix}`;
+        return `Won the ${contest} · +${earned} XP${coinSuffix}`;
       }
-      return `Lost the race · +${earned} XP${coinSuffix}`;
+      return `Lost the ${contest} · +${earned} XP${coinSuffix}`;
     }
 
     if (entry.raceSeconds !== null && entry.opponentRaceSeconds !== null) {
@@ -122,12 +126,24 @@ export function getHistoryKindLabel(entry: ChallengeHistoryEntry): string {
     return entry.workoutType === 'for_time' ? 'Friend For Time' : 'Friend workout';
   }
 
+  if (entry.maxEffort) {
+    return 'Friend max challenge';
+  }
+
   return entry.raceSeconds !== null ? 'Friend speed race' : 'Friend challenge';
 }
 
 export function getHistoryTitle(entry: ChallengeHistoryEntry): string {
   if (entry.workoutTitle) {
     return entry.workoutTitle;
+  }
+
+  if (entry.exerciseType && entry.maxEffort) {
+    const label = formatExerciseLabel(entry.exerciseType, true);
+    if (isHoldExercise(entry.exerciseType)) {
+      return `LONGEST ${label}`;
+    }
+    return entry.timeLimitSeconds ? `MAX ${label} · ${formatChallengeDuration(entry.timeLimitSeconds)}` : `MAX ${label}`;
   }
 
   if (entry.exerciseType) {
@@ -156,6 +172,10 @@ export function getHistoryScoreLine(entry: ChallengeHistoryEntry): string {
 
     if (isHoldExercise(entry.exerciseType)) {
       return `You held ${formatHoldSeconds(entry.completedReps)} · ${opponent} ${formatHoldSeconds(opponentReps)}`;
+    }
+
+    if (entry.maxEffort) {
+      return `You ${entry.completedReps} reps · ${opponent} ${opponentReps} reps`;
     }
 
     if (entry.raceSeconds !== null) {

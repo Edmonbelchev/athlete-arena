@@ -13,7 +13,7 @@ import {
 import { WorkoutCircuitPreview } from '@/components/workouts/WorkoutCircuitPreview';
 import { EmoteDisplay } from '@/components/shop/EmoteDisplay';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
-import { formatExerciseLabel, isHoldExercise } from '@/constants/challenges';
+import { formatExerciseLabel, formatHoldSeconds, isHoldExercise } from '@/constants/challenges';
 import { getCustomWorkoutSessionPath, getCustomWorkoutTypeLabel } from '@/constants/customWorkouts';
 import { getFriendChallengeCoinReward } from '@/constants/coins';
 import {
@@ -42,6 +42,7 @@ import {
     acceptFriendChallenge,
     completeFriendChallenge,
     recordFriendHoldProgress,
+    recordFriendMaxReps,
     declineFriendChallenge,
 } from '@/services/friendChallengeService';
 import {
@@ -53,10 +54,11 @@ import {
     hasFriendChallengeStarted,
     isFriendChallengeResolved,
     isFriendChallengeWaitingOnOpponent,
+    isMaxRepsChallenge,
     type FriendChallenge,
 } from '@/types/friends';
 import type { HeadToHeadPlayer } from '@/components/challenges/HeadToHead';
-import { formatRaceTime, formatRaceTimeLimit } from '@/constants/friendChallenges';
+import { formatChallengeDuration, formatRaceTime, formatRaceTimeLimit } from '@/constants/friendChallenges';
 import type { AppIconName } from '@/constants/icons';
 import { ProfileAvatar } from '@/components/profile/ProfileAvatar';
 import { AppIcon } from '@/components/ui/AppIcon';
@@ -149,11 +151,14 @@ function getChallengeInfoChips(challenge: FriendChallenge): string[] {
     return chips;
   }
 
-  return [
-    formatExerciseLabel(challenge.exerciseType ?? 'push_ups'),
-    `${challenge.targetReps} reps`,
-    formatRaceTimeLimit(challenge.timeLimitSeconds),
-  ];
+  const exerciseLabel = formatExerciseLabel(challenge.exerciseType ?? 'push_ups');
+  if (challenge.maxEffort) {
+    return isHoldExercise(challenge.exerciseType)
+      ? [exerciseLabel, 'Longest hold wins', 'Ends when your form breaks']
+      : [exerciseLabel, `Max reps in ${formatChallengeDuration(challenge.timeLimitSeconds ?? 0)}`, 'Most reps wins'];
+  }
+
+  return [exerciseLabel, `${challenge.targetReps} reps`, formatRaceTimeLimit(challenge.timeLimitSeconds)];
 }
 
 /** Big result for the finish screen plus each side's score card. */
@@ -194,6 +199,16 @@ function getFriendResultScores(
     }
 
     const reps = mine ? challenge.completedReps : challenge.opponentCompletedReps;
+    if (challenge.maxEffort) {
+      const isHold = isHoldExercise(challenge.exerciseType);
+      return {
+        ...base,
+        score: finished ? (isHold ? formatHoldSeconds(reps) : String(reps)) : '—',
+        caption: isHold ? 'held' : 'reps',
+        detail: null,
+      };
+    }
+
     return {
       ...base,
       score: finished && time !== null ? formatRaceTime(time) : '—',
@@ -254,6 +269,8 @@ const HOLD_SYNC_EVERY_SECONDS = 5;
 const HOLD_FINISH_AFTER_BREAK_MS = 3000;
 /** Upper bound for counting hold seconds locally (the server caps target values the same way). */
 const HOLD_MAX_SECONDS = 3600;
+/** Max reps attempts have no target; the counter just needs a ceiling (the server's cap). */
+const MAX_REPS_COUNTER_CAP = 5000;
 
 export default function FriendChallengeScreen() {
   const theme = useTheme();
@@ -268,6 +285,13 @@ export default function FriendChallengeScreen() {
   const [isSyncing, setIsSyncing] = useState(false);
   const [isPendingAction, setIsPendingAction] = useState(false);
   const [isTimedOut, setIsTimedOut] = useState(false);
+  /** Max reps: the time window is over - counting stops while the final score is saved. */
+  const [maxTimeUp, setMaxTimeUp] = useState(false);
+  const [isFinishingMax, setIsFinishingMax] = useState(false);
+  const maxFinishingRef = useRef(false);
+  /** Set once the time is up, so the timer (which keeps reporting expiry) finishes only once. */
+  const maxTimeUpRef = useRef(false);
+  const finishMaxRepsRef = useRef<() => void>(() => {});
   const { workoutStarted, startWorkout } = useWorkoutSession('friend', participantId);
   const isSyncingRef = useRef(false);
   const challengeRef = useRef(challenge);
@@ -310,6 +334,9 @@ export default function FriendChallengeScreen() {
   const exerciseType = challenge?.exerciseType ?? 'push_ups';
   /** Plank: count seconds held; the longest hold wins instead of the fastest finish. */
   const isHoldChallenge = !isWorkoutChallenge && isHoldExercise(exerciseType);
+  /** Max challenge: most reps in the time window, or the longest hold (no minimum). */
+  const isMaxChallenge = !isWorkoutChallenge && Boolean(challenge?.maxEffort);
+  const isMaxReps = isMaxChallenge && !isHoldChallenge;
   const showExerciseWorkout =
     Boolean(challenge) &&
     !isWorkoutChallenge &&
@@ -322,6 +349,14 @@ export default function FriendChallengeScreen() {
   }, [router]);
 
   const handleTimerExpire = useCallback(() => {
+    // Max reps: running out of time is the end of the attempt, not a lost race.
+    if (challengeRef.current && isMaxRepsChallenge(challengeRef.current)) {
+      if (!maxTimeUpRef.current) {
+        finishMaxRepsRef.current();
+      }
+      return;
+    }
+
     setIsTimedOut(true);
     void refresh({ silent: true });
   }, [refresh]);
@@ -409,8 +444,27 @@ export default function FriendChallengeScreen() {
         activeChallenge.status === 'expired' ||
         activeChallenge.opponentStatus === 'declined' ||
         isTimedOut ||
+        maxFinishingRef.current ||
         isSyncingRef.current
       ) {
+        return;
+      }
+
+      if (isMaxRepsChallenge(activeChallenge)) {
+        // Save the running count; the time running out ends the attempt (finishMaxReps). A rep
+        // skipped while a save is in flight is included in the next save's total.
+        isSyncingRef.current = true;
+        try {
+          await recordFriendMaxReps(participantId, repCount, false);
+          if (!activeChallenge.startedAt) {
+            // The first rep started the clock.
+            await refresh({ silent: true });
+          }
+        } catch (err) {
+          setSyncError(formatUserError(err, 'Failed to save your reps'));
+        } finally {
+          isSyncingRef.current = false;
+        }
         return;
       }
 
@@ -451,9 +505,9 @@ export default function FriendChallengeScreen() {
   );
 
   const repCounter = useRepCounter({
-    targetReps: isHoldChallenge ? HOLD_MAX_SECONDS : targetReps,
+    targetReps: isHoldChallenge ? HOLD_MAX_SECONDS : isMaxReps ? MAX_REPS_COUNTER_CAP : targetReps,
     initialReps: challenge?.completedReps ?? 0,
-    enabled: canAttempt,
+    enabled: canAttempt && !maxTimeUp,
     onRepDetected: (repCount) => {
       void handleRepDetected(repCount);
     },
@@ -467,7 +521,8 @@ export default function FriendChallengeScreen() {
     processLandmarks,
   } = useExercisePoseDetection({
     exerciseType,
-    enabled: canAttempt && !isWorkoutChallenge && cameraActive && showExerciseWorkout && !overlayVariant,
+    enabled:
+      canAttempt && !maxTimeUp && !isWorkoutChallenge && cameraActive && showExerciseWorkout && !overlayVariant,
     posePreviewLayoutRef,
     onRepDetected: () => {
       repCounter.simulateRep();
@@ -475,6 +530,37 @@ export default function FriendChallengeScreen() {
   });
 
   const heldSeconds = repCounter.currentReps;
+  const repCountRef = useRef(0);
+  repCountRef.current = repCounter.currentReps;
+
+  /** Max reps: the time is up - save the final count and end the attempt. */
+  const finishMaxReps = useCallback(async () => {
+    if (!participantId || maxFinishingRef.current) {
+      return;
+    }
+
+    maxFinishingRef.current = true;
+    maxTimeUpRef.current = true;
+    setMaxTimeUp(true);
+    setIsFinishingMax(true);
+    setSyncError(null);
+
+    try {
+      await recordFriendMaxReps(participantId, repCountRef.current, true);
+      await refresh({ silent: true });
+      await refreshMissionsAndCelebrate();
+      void refreshProfile();
+    } catch (err) {
+      setSyncError(formatUserError(err, 'Failed to save your score'));
+      // Allow "Try again"; counting stays stopped.
+      maxFinishingRef.current = false;
+    } finally {
+      setIsFinishingMax(false);
+    }
+  }, [participantId, refresh, refreshMissionsAndCelebrate, refreshProfile]);
+  finishMaxRepsRef.current = () => {
+    void finishMaxReps();
+  };
   const canFinishHold = isHoldChallenge && canAttempt && heldSeconds >= targetReps;
 
   const finishHold = useCallback(async () => {
@@ -557,10 +643,20 @@ export default function FriendChallengeScreen() {
               elapsedSeconds,
               secondsRemaining,
               timeLimitSeconds: challenge.timeLimitSeconds,
+              countdown: isMaxReps,
             };
   const workoutFooter =
-    showSimulateButton || syncError || canFinishHold ? (
+    showSimulateButton || syncError || canFinishHold || maxTimeUp ? (
       <>
+        {maxTimeUp && !overlayVariant ? (
+          syncError && !isFinishingMax ? (
+            <PrimaryButton label="Save my score" size="compact" onPress={() => void finishMaxReps()} />
+          ) : (
+            <Text style={StyleSheet.flatten([styles.hint, { color: theme.textSecondary }])}>
+              Time&apos;s up! Saving your reps…
+            </Text>
+          )
+        ) : null}
         {canFinishHold ? (
           <PrimaryButton label="Finish hold" size="compact" loading={isSyncing} onPress={() => void finishHold()} />
         ) : null}
@@ -619,6 +715,7 @@ export default function FriendChallengeScreen() {
           exerciseType={exerciseType}
           currentReps={repCounter.currentReps}
           targetReps={challenge.targetReps}
+          openEnded={isMaxChallenge}
           trackingStatus={trackingStatus}
           coachSeverity={coachSeverity}
           repPhase={posePhase}
@@ -635,10 +732,13 @@ export default function FriendChallengeScreen() {
               <FriendChallengeCompleteOverlay
                 key={overlayKey}
                 variant={overlayVariant}
-                raceTimeSeconds={isHoldChallenge ? challenge.completedReps : myTime}
+                raceTimeSeconds={isHoldChallenge || isMaxReps ? challenge.completedReps : myTime}
                 opponentName={opponentName}
-                opponentTimeSeconds={isHoldChallenge ? challenge.opponentCompletedReps : opponentTime}
+                opponentTimeSeconds={
+                  isHoldChallenge || isMaxReps ? challenge.opponentCompletedReps : opponentTime
+                }
                 isHold={isHoldChallenge}
+                isMaxReps={isMaxReps}
                 xp={earnedXp}
                 coins={earnedCoins}
                 emote={equippedEmote}
@@ -703,7 +803,14 @@ export default function FriendChallengeScreen() {
             exerciseLabel={formatExerciseLabel(exerciseType, true)}
             exerciseType={exerciseType}
             targetReps={challenge.targetReps}
-            subtitle={`Speed race vs ${opponentName}`}
+            targetLabel={
+              isMaxReps
+                ? `Max reps in ${formatChallengeDuration(challenge.timeLimitSeconds ?? 0)}`
+                : isMaxChallenge
+                  ? 'Hold as long as you can'
+                  : undefined
+            }
+            subtitle={`${isMaxChallenge ? 'Max challenge' : 'Speed race'} vs ${opponentName}`}
             onStart={startWorkout}
             onCancel={handleLeave}
           />
@@ -721,7 +828,7 @@ export default function FriendChallengeScreen() {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled">
           <ChallengeHeader
-            kindLabel={isWorkoutChallenge ? 'Workout challenge' : 'Speed race'}
+            kindLabel={isWorkoutChallenge ? 'Workout challenge' : isMaxChallenge ? 'Max challenge' : 'Speed race'}
             title={getFriendChallengeTitle(challenge)}
             opponentName={opponentName}
             theme={theme}
@@ -753,7 +860,11 @@ export default function FriendChallengeScreen() {
                 message={
                   isWorkoutChallenge
                     ? 'Accept to unlock the workout and post your score.'
-                    : 'Accept, then race to the target reps as fast as you can.'
+                    : isMaxReps
+                      ? `Accept, then do as many reps as you can in ${formatChallengeDuration(challenge.timeLimitSeconds ?? 0)}.`
+                      : isMaxChallenge
+                        ? 'Accept, then hold as long as you can - the longest hold wins.'
+                        : 'Accept, then race to the target reps as fast as you can.'
                 }
                 theme={theme}>
                 <PrimaryButton

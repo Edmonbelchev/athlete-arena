@@ -1,6 +1,6 @@
 import type { ExerciseType } from '@/constants/challenges';
 import { formatExerciseCount, formatExerciseLabel, formatHoldSeconds, isHoldExercise } from '@/constants/challenges';
-import { formatRaceTime } from '@/constants/friendChallenges';
+import { formatChallengeDuration, formatRaceTime } from '@/constants/friendChallenges';
 import type { CustomWorkoutExercise, CustomWorkoutType } from '@/types/customWorkouts';
 
 import type { ShopAvatarDisplay, ShopFrameDisplay } from '@/types/shop';
@@ -79,8 +79,13 @@ export interface FriendChallenge {
   targetReps: number;
   xpReward: number;
   message: string | null;
-  /** Max seconds allowed per attempt once started. */
+  /** Max seconds allowed per attempt once started; for max reps, the window to rep in. */
   timeLimitSeconds: number | null;
+  /**
+   * Max challenge: no target - most reps within `timeLimitSeconds` wins, or for holds the
+   * longest hold (ended when form breaks). `targetReps` is then just the 1 rep / second minimum.
+   */
+  maxEffort: boolean;
   deadlineAt: string | null;
   status: ChallengeStatus;
   completedReps: number;
@@ -192,9 +197,30 @@ export function hasFriendChallengeTimerStarted(challenge: FriendChallenge): bool
   return hasFriendChallengeStarted(challenge);
 }
 
+/** Max reps challenge (not a max hold): reps within a time window. */
+export function isMaxRepsChallenge(challenge: FriendChallenge): boolean {
+  return challenge.challengeKind === 'exercise' && challenge.maxEffort && !isHoldExercise(challenge.exerciseType);
+}
+
+/** "MAX PUSH-UPS · 2 min" / "LONGEST PLANK" (like "20 PUSH-UPS" for races). */
+export function formatMaxChallengeTitle(
+  exerciseType: ExerciseType | null,
+  timeLimitSeconds: number | null,
+): string {
+  const label = formatExerciseLabel(exerciseType ?? 'push_ups', true);
+  if (isHoldExercise(exerciseType)) {
+    return `LONGEST ${label}`;
+  }
+  return timeLimitSeconds ? `MAX ${label} · ${formatChallengeDuration(timeLimitSeconds)}` : `MAX ${label}`;
+}
+
 export function getFriendChallengeTitle(challenge: FriendChallenge): string {
   if (challenge.challengeKind === 'workout') {
     return challenge.workoutTitle ?? 'Workout challenge';
+  }
+
+  if (challenge.maxEffort) {
+    return formatMaxChallengeTitle(challenge.exerciseType, challenge.timeLimitSeconds);
   }
 
   return `${formatExerciseCount(challenge.exerciseType, challenge.targetReps)} ${formatExerciseLabel(challenge.exerciseType ?? 'push_ups', true)}`;
@@ -206,11 +232,18 @@ export function formatFriendChallengeProgress(challenge: FriendChallenge, oppone
     return `You ${formatHoldSeconds(challenge.completedReps)} · ${opponentName} ${formatHoldSeconds(challenge.opponentCompletedReps)}`;
   }
 
+  if (challenge.maxEffort) {
+    return `You ${challenge.completedReps} reps · ${opponentName} ${challenge.opponentCompletedReps} reps`;
+  }
+
   return `You ${challenge.completedReps}/${challenge.targetReps} · ${opponentName} ${challenge.opponentCompletedReps}/${challenge.targetReps}`;
 }
 
 export function getFriendChallengeKindLabel(challenge: FriendChallenge): string {
-  return challenge.challengeKind === 'workout' ? 'WORKOUT CHALLENGE' : 'SPEED RACE';
+  if (challenge.challengeKind === 'workout') {
+    return 'WORKOUT CHALLENGE';
+  }
+  return challenge.maxEffort ? 'MAX CHALLENGE' : 'SPEED RACE';
 }
 
 export function formatFriendWorkoutScore(challenge: FriendChallenge): string {

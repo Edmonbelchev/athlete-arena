@@ -16,6 +16,7 @@ function mapFriendChallenge(row: FriendChallengeRpcRow): FriendChallenge {
     xpReward: row.xp_reward,
     message: row.message,
     timeLimitSeconds: row.time_limit_seconds,
+    maxEffort: row.max_effort ?? false,
     deadlineAt: row.deadline_at,
     status: row.status,
     completedReps: row.completed_reps,
@@ -215,6 +216,7 @@ export async function createFriendChallenge(
   message?: string,
   timeLimitSeconds?: number | null,
   emoteId?: string | null,
+  maxEffort = false,
 ): Promise<string> {
   assertSupabaseConfigured();
 
@@ -225,6 +227,8 @@ export async function createFriendChallenge(
     p_message: message ?? null,
     p_time_limit_seconds: timeLimitSeconds ?? null,
     p_emote_id: emoteId ?? null,
+    // Only sent for max challenges, so speed races keep working before migration 137 runs.
+    ...(maxEffort ? { p_max_effort: true } : {}),
   });
 
   if (error) {
@@ -305,6 +309,28 @@ export async function completeFriendChallenge(
   }
 
   clearMovementStatsCache();
+}
+
+/**
+ * Max reps challenges: saves the reps done so far; `finish` (or the time running out on the
+ * server) ends the attempt. The timer starts with the first rep; the most reps wins.
+ */
+export async function recordFriendMaxReps(participantId: string, reps: number, finish: boolean): Promise<void> {
+  assertSupabaseConfigured();
+
+  const { error } = await supabase.rpc('record_friend_max_reps', {
+    p_participant_id: participantId,
+    p_reps: reps,
+    p_finish: finish,
+  });
+
+  if (error) {
+    throw error;
+  }
+
+  if (finish) {
+    clearMovementStatsCache();
+  }
 }
 
 /**

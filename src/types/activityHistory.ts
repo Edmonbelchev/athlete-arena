@@ -105,6 +105,7 @@ export function mapActivityHistoryRow(row: {
   workout_session_id?: string | null;
   workout_session_xp?: number | null;
   workout_session_coins?: number | null;
+  max_effort?: boolean | null;
 }): ActivityHistoryEntry {
   if (row.category === 'solo_workout') {
     const xpEarned =
@@ -161,5 +162,7 @@ export function mapActivityHistoryRow(row: {
     workoutSessionId: row.workout_session_id ?? null,
     workoutSessionXp: row.workout_session_xp ?? null,
     workoutSessionCoins: row.workout_session_coins ?? null,
+    maxEffort: row.max_effort ?? false,
+    timeLimitSeconds: row.time_limit_seconds,
   };
 }
