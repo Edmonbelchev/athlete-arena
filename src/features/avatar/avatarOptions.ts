@@ -1,6 +1,8 @@
 import type {
   AccessorySlot,
   AvatarAccessories,
+  AvatarAndroidEyes,
+  AvatarAndroidPlating,
   AvatarAppearance,
   AvatarBodyType,
   AvatarBrows,
@@ -112,6 +114,9 @@ export const HAIR_CHOICES: AvatarChoice<AvatarHair>[] = [
   { id: 'orc_topknot', label: 'Topknot', race: 'orc' },
   { id: 'orc_war_braids', label: 'War braids', race: 'orc' },
   { id: 'orc_crest', label: 'Crest', race: 'orc' },
+  { id: 'android_crest', label: 'Light crest', race: 'android' },
+  { id: 'android_cables', label: 'Cables', race: 'android' },
+  { id: 'android_sleek', label: 'Sleek shell', race: 'android' },
 ];
 
 export const ELF_EAR_CHOICES: AvatarChoice<AvatarElfEars>[] = [
@@ -132,6 +137,49 @@ export const TUSK_CHOICES: AvatarChoice<AvatarTusks>[] = [
   { id: 'broken', label: 'Broken' },
   { id: 'none', label: 'None' },
 ];
+
+export const ANDROID_EYE_CHOICES: AvatarChoice<AvatarAndroidEyes>[] = [
+  { id: 'glow', label: 'Glow' },
+  { id: 'visor', label: 'Visor' },
+  { id: 'optic', label: 'Optic' },
+];
+
+export const ANDROID_PLATING_CHOICES: AvatarChoice<AvatarAndroidPlating>[] = [
+  { id: 'seams', label: 'Seams' },
+  { id: 'circuit', label: 'Circuit' },
+  { id: 'jaw', label: 'Jaw plate' },
+  { id: 'none', label: 'None' },
+];
+
+/** Appearance keys a race adds to the editor (besides its hairstyles), in display order. */
+export type RaceFeatureKey = 'elfEars' | 'orcEars' | 'tusks' | 'androidEyes' | 'androidPlating';
+
+export interface RaceFeature {
+  key: RaceFeatureKey;
+  title: string;
+  choices: AvatarChoice<string>[];
+  /** Tile preview: the whole portrait (ears) or a face close-up. */
+  crop: 'portrait' | 'face';
+}
+
+export const RACE_FEATURES: Record<AvatarRace, RaceFeature[]> = {
+  elf: [{ key: 'elfEars', title: 'Ears', choices: ELF_EAR_CHOICES, crop: 'portrait' }],
+  orc: [
+    { key: 'orcEars', title: 'Ears', choices: ORC_EAR_CHOICES, crop: 'portrait' },
+    { key: 'tusks', title: 'Tusks', choices: TUSK_CHOICES, crop: 'face' },
+  ],
+  android: [
+    { key: 'androidEyes', title: 'Eyes', choices: ANDROID_EYE_CHOICES, crop: 'face' },
+    { key: 'androidPlating', title: 'Plating', choices: ANDROID_PLATING_CHOICES, crop: 'face' },
+  ],
+};
+
+/** Display names, e.g. for "Elf hairstyles". */
+export const RACE_LABELS: Record<AvatarRace, string> = {
+  elf: 'Elf',
+  orc: 'Orc',
+  android: 'Android',
+};
 
 export const FACIAL_HAIR_CHOICES: AvatarChoice<AvatarFacialHair>[] = [
   { id: 'none', label: 'None' },
@@ -212,6 +260,8 @@ export const DEFAULT_APPEARANCE: Record<AvatarBodyType, AvatarAppearance> = {
     elfEars: 'classic',
     orcEars: 'nicked',
     tusks: 'classic',
+    androidEyes: 'glow',
+    androidPlating: 'seams',
   },
   female: {
     bodyType: 'female',
@@ -229,6 +279,8 @@ export const DEFAULT_APPEARANCE: Record<AvatarBodyType, AvatarAppearance> = {
     elfEars: 'classic',
     orcEars: 'nicked',
     tusks: 'classic',
+    androidEyes: 'glow',
+    androidPlating: 'seams',
   },
 };
 
@@ -293,6 +345,8 @@ export function normalizeAppearance(value: unknown, race: AvatarRace | null | 'a
     elfEars: pickChoice(ELF_EAR_CHOICES, record.elfEars, bodyType, defaults.elfEars),
     orcEars: pickChoice(ORC_EAR_CHOICES, record.orcEars, bodyType, defaults.orcEars),
     tusks: pickChoice(TUSK_CHOICES, record.tusks, bodyType, defaults.tusks),
+    androidEyes: pickChoice(ANDROID_EYE_CHOICES, record.androidEyes, bodyType, defaults.androidEyes),
+    androidPlating: pickChoice(ANDROID_PLATING_CHOICES, record.androidPlating, bodyType, defaults.androidPlating),
   };
 }
 
@@ -358,5 +412,7 @@ export function randomizeAppearance(bodyType: AvatarBodyType, race: AvatarRace |
     elfEars: randomOf(ELF_EAR_CHOICES).id,
     orcEars: randomOf(ORC_EAR_CHOICES).id,
     tusks: randomOf(TUSK_CHOICES).id,
+    androidEyes: randomOf(ANDROID_EYE_CHOICES).id,
+    androidPlating: randomOf(ANDROID_PLATING_CHOICES).id,
   };
 }

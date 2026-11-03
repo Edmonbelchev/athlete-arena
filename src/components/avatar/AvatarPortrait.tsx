@@ -43,6 +43,7 @@ import {
   AvatarRaceEars,
   AvatarRaceOverFace,
   AvatarRaceUnderFace,
+  androidGlowColor,
   raceSkinColor,
 } from '@/components/avatar/AvatarRaceParts';
 import { accessoryRace } from '@/features/avatar/avatarWardrobe';
@@ -84,6 +85,7 @@ export function AvatarPortrait({
   const skin = raceSkinColor(race, appearance.skinColor, resolveColor(SKIN_COLORS, appearance.skinColor));
   const hairColor = resolveColor(HAIR_COLORS, appearance.hairColor);
   const eyeColor = resolveColor(EYE_COLORS, appearance.eyeColor);
+  const glow = androidGlowColor(appearance.eyeColor);
   const { x, y, size: box } = crop === 'face' ? FACE_VIEWBOX : PORTRAIT_VIEWBOX;
   const shape = appearance.headShape;
   const fit = headFitTransform(shape);
@@ -134,7 +136,9 @@ export function AvatarPortrait({
         <AvatarTop accessories={accessories} background={background} clipId={topClipId} />
       </G>
       <AvatarHeadShapePart shape={shape} skin={skin} showEars={race === null} showBlush={race === null} />
-      {race ? <AvatarRaceUnderFace race={race} skin={skin} /> : null}
+      {race ? (
+        <AvatarRaceUnderFace race={race} skin={skin} plating={appearance.androidPlating} glow={glow} />
+      ) : null}
       <AvatarFacialHair
         facialHair={appearance.facialHair}
         headShape={shape}
@@ -144,7 +148,16 @@ export function AvatarPortrait({
         jawClipId={jawClipId}
       />
       <AvatarFace appearance={appearance} skin={skin} eyeColor={eyeColor} hairColor={hairColor} />
-      {race ? <AvatarRaceOverFace race={race} bodyType={appearance.bodyType} tusks={appearance.tusks} /> : null}
+      {race ? (
+        <AvatarRaceOverFace
+          race={race}
+          bodyType={appearance.bodyType}
+          tusks={appearance.tusks}
+          skin={skin}
+          androidEyes={appearance.androidEyes}
+          glow={glow}
+        />
+      ) : null}
       <AvatarHairCap
         hair={appearance.hair}
         bodyType={appearance.bodyType}
@@ -164,6 +177,7 @@ export function AvatarPortrait({
           shape={shape}
           skin={skin}
           bodyType={appearance.bodyType}
+          glow={glow}
         />
       ) : null}
       <AvatarEarrings accessories={accessories} headShape={shape} />

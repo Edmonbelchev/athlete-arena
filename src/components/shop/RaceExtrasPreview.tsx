@@ -3,18 +3,18 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { AvatarPortrait } from '@/components/avatar/AvatarPortrait';
 import { Radius, Spacing } from '@/constants/theme';
 import {
-  ELF_EAR_CHOICES,
   HAIR_CHOICES,
-  ORC_EAR_CHOICES,
-  TUSK_CHOICES,
+  RACE_FEATURES,
+  RACE_LABELS,
   type AvatarChoice,
+  type RaceFeatureKey,
 } from '@/features/avatar/avatarOptions';
 import { useTheme } from '@/hooks/use-theme';
 import type { AvatarAccessoryStyles, AvatarAppearance, AvatarRace } from '@/types/avatar';
 
 const TILE_SIZE = 64;
 
-type RaceOptionKey = 'elfEars' | 'orcEars' | 'tusks' | 'hair';
+type RaceOptionKey = RaceFeatureKey | 'hair';
 
 interface RaceSection {
   key: RaceOptionKey;
@@ -26,20 +26,14 @@ interface RaceSection {
 /** What a race unlocks in the avatar editor, in display order. */
 export function raceSections(race: AvatarRace): RaceSection[] {
   const hair = HAIR_CHOICES.filter((choice) => choice.race === race);
-  return race === 'elf'
-    ? [
-        { key: 'hair', title: 'Elf hairstyles', choices: hair, crop: 'portrait' },
-        { key: 'elfEars', title: 'Ears', choices: ELF_EAR_CHOICES, crop: 'portrait' },
-      ]
-    : [
-        { key: 'hair', title: 'Orc hairstyles', choices: hair, crop: 'portrait' },
-        { key: 'orcEars', title: 'Ears', choices: ORC_EAR_CHOICES, crop: 'portrait' },
-        { key: 'tusks', title: 'Tusks', choices: TUSK_CHOICES, crop: 'face' },
-      ];
+  return [
+    { key: 'hair', title: `${RACE_LABELS[race]} hairstyles`, choices: hair, crop: 'portrait' },
+    ...RACE_FEATURES[race],
+  ];
 }
 
 /**
- * Shop preview of a race's extra options (hairstyles, ears, tusks). Tapping a tile tries it on
+ * Shop preview of a race's extra options (hairstyles, ears, tusks, eyes, plating). Tapping a tile tries it on
  * in the fitting room; the choices themselves are made in the avatar editor after buying.
  */
 export function RaceExtrasPreview({

@@ -23,8 +23,8 @@ export const PREMIUM_BENEFIT_DETAILS: PremiumBenefit[] = [
   { title: 'Share workouts with friends', detail: 'Send your circuits to anyone.', icon: 'friends' },
   { title: 'Unlimited friend challenge requests', detail: 'No monthly cap on races.', icon: 'swords' },
   {
-    title: 'Elf and Orc avatar races (worth 10,000 coins)',
-    detail: 'Both legendary races, with ears, tusks and hairstyles.',
+    title: 'Android avatar race (worth 5,000 coins)',
+    detail: 'Metal plating, glowing eyes and its own hairstyles.',
     icon: 'star',
   },
   { title: 'Unlimited daily quest swaps', detail: 'Swap quests free, as often as you like.', icon: 'swap' },
@@ -62,7 +62,7 @@ export function getPremiumPaywallContent(context: PremiumPaywallContext): Premiu
       return {
         title: 'Upgrade to Premium',
         subtitle:
-          'Unlock custom workouts, unlimited challenge requests and quest swaps, and the Elf and Orc races. Arena workouts stay free for everyone.',
+          'Unlock custom workouts, unlimited challenge requests and quest swaps, and the Android avatar race. Arena workouts stay free for everyone.',
         ctaLabel: 'See plans',
       };
     case 'avatar_races':
@@ -87,7 +87,7 @@ export function getPremiumPaywallContent(context: PremiumPaywallContext): Premiu
       return {
         title: 'Go Premium',
         subtitle:
-          'Unlock custom workouts, unlimited challenge requests and quest swaps, the Elf and Orc races, and more. Arena workouts stay free for everyone.',
+          'Unlock custom workouts, unlimited challenge requests and quest swaps, the Android avatar race, and more. Arena workouts stay free for everyone.',
         ctaLabel: 'See plans',
       };
   }

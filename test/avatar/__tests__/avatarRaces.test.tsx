@@ -23,8 +23,11 @@ jest.mock('react-native-svg', () => {
 });
 
 import { AvatarPortrait } from '@/components/avatar/AvatarPortrait';
-import { raceSkinColor } from '@/components/avatar/AvatarRaceParts';
+import { androidGlowColor, raceSkinColor } from '@/components/avatar/AvatarRaceParts';
+import { isIncludedWithPremium } from '@/features/avatar/avatarWardrobe';
 import {
+  ANDROID_EYE_CHOICES,
+  ANDROID_PLATING_CHOICES,
   DEFAULT_APPEARANCE,
   ELF_EAR_CHOICES,
   EYE_CHOICES,
@@ -93,7 +96,7 @@ describe('avatar races', () => {
     });
   }
 
-  for (const race of ['elf', 'orc'] as const) {
+  for (const race of ['elf', 'orc', 'android'] as const) {
     it(`every skin tone maps to its own ${race} shade, light to dark`, () => {
       const shades = SKIN_COLORS.map((choice) => raceSkinColor(race, choice.id, choice.hex));
       expect(new Set(shades).size).toBe(SKIN_COLORS.length);
@@ -149,11 +152,58 @@ describe('avatar races', () => {
     expect(changeRace(orcLook, 'elf')).toEqual({ ...orcLook, hair: DEFAULT_APPEARANCE.male.hair });
     expect(changeRace(orcLook, null).hair).toBe(DEFAULT_APPEARANCE.male.hair);
     // Loading (race unknown) keeps race hair and fills missing race options with defaults.
-    const { elfEars, orcEars, tusks, ...stored } = orcLook;
+    const { elfEars, orcEars, tusks, androidEyes, ...stored } = orcLook;
     void elfEars;
     void orcEars;
     void tusks;
+    void androidEyes;
     expect(normalizeAppearance(stored)).toEqual({ ...orcLook, tusks: 'classic' });
+  });
+
+  for (const bodyType of ['male', 'female'] as const) {
+    it(`android (${bodyType}): metal skin, receptor ears glowing in the eye color`, () => {
+      const svg = render('race_android', bodyType, { eyeColor: 'eye_green' });
+      const skinId = DEFAULT_APPEARANCE[bodyType].skinColor;
+      const skinHex = SKIN_COLORS.find((choice) => choice.id === skinId)!.hex;
+      expect(svg).toContain(raceSkinColor('android', skinId, skinHex));
+      expect(svg).not.toContain(skinHex);
+      expect(svg).toContain(androidGlowColor('eye_green'));
+      expect(svg).not.toContain(HUMAN_EAR);
+      expect(svg).not.toContain(TUSK);
+    });
+  }
+
+  it('android options each draw differently, and only for androids', () => {
+    const variants = <T extends string>(race: WearableStyle, key: keyof AvatarAppearance, ids: T[]) =>
+      ids.map((id) => render(race, 'male', { [key]: id }));
+    for (const [race, key, choices] of [
+      ['race_android', 'androidEyes', ANDROID_EYE_CHOICES],
+      ['race_android', 'androidPlating', ANDROID_PLATING_CHOICES],
+    ] as const) {
+      const drawn = variants(race, key, choices.map(({ id }) => id));
+      expect(new Set(drawn).size).toBe(choices.length);
+    }
+    expect(render('race_elf', 'male', { androidEyes: 'visor' })).toBe(render('race_elf', 'male'));
+    expect(render(null, 'male', { androidPlating: 'circuit' })).toBe(render(null, 'male'));
+  });
+
+  it('Premium includes only the Android race; Elf and Orc are bought with coins', () => {
+    expect(isIncludedWithPremium({ style: 'race_android' })).toBe(true);
+    expect(isIncludedWithPremium({ style: 'race_elf' })).toBe(false);
+    expect(isIncludedWithPremium({ style: 'race_orc' })).toBe(false);
+    expect(isIncludedWithPremium({ style: 'cap' })).toBe(false);
+  });
+
+  it('android hairstyles stay with androids', () => {
+    for (const bodyType of ['male', 'female'] as const) {
+      const android = choicesForBody(HAIR_CHOICES, bodyType, 'android').map(({ id }) => id);
+      const elf = choicesForBody(HAIR_CHOICES, bodyType, 'elf').map(({ id }) => id);
+      expect(android).toEqual(expect.arrayContaining(['android_crest', 'android_cables', 'android_sleek']));
+      expect(android.some((id) => id.startsWith('elf_') || id.startsWith('orc_'))).toBe(false);
+      expect(elf.some((id) => id.startsWith('android_'))).toBe(false);
+    }
+    const look: AvatarAppearance = { ...DEFAULT_APPEARANCE.female, hair: 'android_cables', androidEyes: 'visor' };
+    expect(changeRace(look, 'elf')).toEqual({ ...look, hair: DEFAULT_APPEARANCE.female.hair });
   });
 
   it('lashes are female-only; a male avatar with lashes falls back to the default eyes', () => {

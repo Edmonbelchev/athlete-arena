@@ -1,10 +1,12 @@
-import { G, Path } from 'react-native-svg';
+import { Circle, G, Path, Rect } from 'react-native-svg';
 
 import { Both } from '@/components/avatar/AvatarHeadParts';
 import { EAR_X, EAR_Y, MIRROR_TRANSFORM } from '@/components/avatar/avatarGeometry';
 import { mixColors, shadeColor } from '@/features/avatar/avatarColors';
 import { SKIN_COLORS } from '@/features/avatar/avatarOptions';
 import type {
+  AvatarAndroidEyes,
+  AvatarAndroidPlating,
   AvatarBodyType,
   AvatarElfEars,
   AvatarHeadShape,
@@ -14,9 +16,10 @@ import type {
 } from '@/types/avatar';
 
 /**
- * Fantasy races (legendary shop items). A race only changes a few features - ears, skin tone
- * (blue elves, green orcs), orc tusks and brow - so every other customization (hair, face, beard, hats, glasses,
- * earrings, tops, backgrounds) still applies. Each race adapts to the avatar's body type.
+ * Races (legendary shop items). A race only changes a few features - ears, skin tone (blue
+ * elves, green orcs, metal androids), orc tusks and brow, android eyes and plating - so every
+ * other customization (hair, face, beard, hats, glasses, earrings, tops, backgrounds) still
+ * applies. Each race adapts to the avatar's body type.
  *
  * Paths describe the LEFT side (x < 100) and are mirrored with <Both>, like the rest of the
  * avatar art. Ear lobes stay at the human lobe (EAR_X - 1.5, EAR_Y + 7) so earrings still fit.
@@ -46,12 +49,41 @@ const RACE_SKIN: Record<AvatarRace, Record<string, string>> = {
     skin_5: '#4D6F34',
     skin_6: '#364F25',
   },
+  // White ceramic, silver, steel, gunmetal, graphite.
+  android: {
+    skin_1: '#EEF1F5',
+    skin_2: '#D3D9E1',
+    skin_3: '#AFB8C4',
+    skin_4: '#8691A0',
+    skin_5: '#5F6978',
+    skin_6: '#3E4652',
+  },
 };
 
 /** Fallback hue for a tone that is not in the palette. */
-const RACE_HUE: Record<AvatarRace, string> = { elf: '#5B86C5', orc: '#5E8A3C' };
+const RACE_HUE: Record<AvatarRace, string> = {
+  elf: '#5B86C5',
+  orc: '#5E8A3C',
+  android: '#8691A0',
+};
 
-/** The skin color to draw for a race: blue for elves, green for orcs, at the chosen lightness. */
+/** Android glow (eyes, ear rings, circuits) for each eye color: amber, gold, cyan, mint, white. */
+const ANDROID_GLOW: Record<string, string> = {
+  eye_brown: '#FFB020',
+  eye_hazel: '#FFD84A',
+  eye_blue: '#3EE2FF',
+  eye_green: '#4DFFA0',
+  eye_gray: '#E8F1FF',
+};
+
+export function androidGlowColor(eyeColorId: string): string {
+  return ANDROID_GLOW[eyeColorId] ?? ANDROID_GLOW.eye_blue;
+}
+
+/** Dark glass behind android optics. */
+const LENS = '#0D1424';
+
+/** The skin color to draw for a race: blue for elves, green for orcs, metal for androids, at the chosen lightness. */
 export function raceSkinColor(race: AvatarRace | null, skinColorId: string, skinHex: string): string {
   if (!race) {
     return skinHex;
@@ -139,23 +171,40 @@ function orcEarPath(earX: number, style: AvatarOrcEars, female: boolean): EarPat
   };
 }
 
-/** Race ears, drawn over the hair so the tips show through long hairstyles. */
+/**
+ * Race ears at the side of the head, drawn over the hair so the tips show through long
+ * hairstyles. Androids get round receptor discs.
+ */
 export function AvatarRaceEars({
   race,
   ears,
   shape,
   skin,
   bodyType,
+  glow,
 }: {
   race: AvatarRace;
-  /** Ear style id for this race (AvatarElfEars or AvatarOrcEars). */
+  /** Ear style id for elves and orcs (AvatarElfEars or AvatarOrcEars). */
   ears: AvatarElfEars | AvatarOrcEars;
   shape: AvatarHeadShape;
   skin: string;
   bodyType: AvatarBodyType;
+  /** Android glow color. */
+  glow: string;
 }) {
   const female = bodyType === 'female';
   const earX = EAR_X[shape];
+
+  if (race === 'android') {
+    return (
+      <Both>
+        <Circle cx={earX} cy={EAR_Y + 1} r={7.2} fill={shadeColor(skin, -0.12)} stroke={shadeColor(skin, -0.42)} strokeWidth={0.9} />
+        <Circle cx={earX} cy={EAR_Y + 1} r={4} fill={LENS} stroke={glow} strokeWidth={1.3} />
+        <Circle cx={earX} cy={EAR_Y + 1} r={1.3} fill={glow} />
+      </Both>
+    );
+  }
+
   const ear =
     race === 'elf'
       ? elfEarPath(earX, isElfEars(ears) ? ears : 'classic', female)
@@ -177,8 +226,69 @@ function isOrcEars(value: string): value is AvatarOrcEars {
   return value === 'nicked' || value === 'pointed' || value === 'droopy';
 }
 
-/** Drawn on the head, under the face: the orc's heavy brow ridge, the elf's high cheekbones. */
-export function AvatarRaceUnderFace({ race, skin }: { race: AvatarRace; skin: string }) {
+/** Android face plating, drawn on the head under the face. */
+function AndroidPlating({ plating, skin, glow }: { plating: AvatarAndroidPlating; skin: string; glow: string }) {
+  const seam = shadeColor(skin, -0.32);
+  if (plating === 'seams') {
+    return (
+      <G stroke={seam} strokeWidth={0.9} fill="none" strokeLinecap="round">
+        <Path d="M80 50 Q100 45 120 50" />
+        <Both>
+          <Path d="M73.5 63 Q75 80 78.5 90 Q82.5 99 90 103.5" />
+          <Circle cx={76.5} cy={58} r={1.1} fill={seam} stroke="none" />
+        </Both>
+      </G>
+    );
+  }
+
+  if (plating === 'circuit') {
+    // Glowing traces on one side of the face only.
+    return (
+      <G stroke={glow} strokeWidth={0.9} fill="none" strokeLinecap="round" strokeLinejoin="round" opacity={0.9}>
+        <Path d="M71.5 81 H77 L81 77.5 H85" />
+        <Path d="M72.5 89 H79 L83 93" />
+        <Path d="M92 46 V52 L95.5 55.5" />
+        <G fill={glow} stroke="none">
+          <Circle cx={85.6} cy={77.5} r={1.2} />
+          <Circle cx={83.5} cy={93.5} r={1.2} />
+          <Circle cx={95.8} cy={56} r={1.2} />
+        </G>
+      </G>
+    );
+  }
+
+  if (plating === 'jaw') {
+    return (
+      <Both>
+        <Path d="M71 84 Q75.5 99 87 104.5 Q93.5 107.2 100 107.4" stroke={seam} strokeWidth={1.1} fill="none" />
+        <Circle cx={74} cy={88.5} r={1.1} fill={seam} />
+        <Circle cx={84} cy={101} r={1.1} fill={seam} />
+      </Both>
+    );
+  }
+
+  return null;
+}
+
+/**
+ * Drawn on the head, under the face: the orc's heavy brow ridge, the elf's high cheekbones,
+ * android plating.
+ */
+export function AvatarRaceUnderFace({
+  race,
+  skin,
+  plating = 'none',
+  glow = '#3EE2FF',
+}: {
+  race: AvatarRace;
+  skin: string;
+  plating?: AvatarAndroidPlating;
+  glow?: string;
+}) {
+  if (race === 'android') {
+    return <AndroidPlating plating={plating} skin={skin} glow={glow} />;
+  }
+
   if (race === 'orc') {
     return (
       <Both>
@@ -211,16 +321,61 @@ function tuskPath(half: number, tipY: number, chipped = false): string {
   return `M${92 - half} ${base} Q${91.5} ${tipY + 3} ${93} ${tipY} Q${94.5 + half * 0.3} ${tipY + 4} ${93.5 + half} ${base} Z`;
 }
 
-/** Drawn over the mouth: the orc's lower tusks (smaller for female avatars). */
+/** Android eyes over the drawn eyes, glowing in `glow`. */
+function AndroidEyes({ eyes, skin, glow }: { eyes: AvatarAndroidEyes; skin: string; glow: string }) {
+  const rim = shadeColor(skin, -0.45);
+  if (eyes === 'visor') {
+    return (
+      <G>
+        <Rect x={74} y={68.5} width={52} height={11} rx={5.5} fill={LENS} stroke={rim} strokeWidth={0.9} />
+        <Path d="M79.5 74 H120.5" stroke={glow} strokeWidth={2.2} strokeLinecap="round" />
+        <Path d="M80 71 H95" stroke="#FFFFFF" strokeWidth={0.9} strokeLinecap="round" opacity={0.35} />
+      </G>
+    );
+  }
+
+  if (eyes === 'optic') {
+    // One eye replaced by a lens, the other glowing.
+    return (
+      <G>
+        <Circle cx={88} cy={74} r={6.2} fill={LENS} stroke={rim} strokeWidth={1} />
+        <Circle cx={88} cy={74} r={3.8} fill="none" stroke={glow} strokeWidth={1.4} />
+        <Circle cx={88} cy={74} r={1.6} fill={glow} />
+        <Circle cx={112} cy={74} r={4.6} fill={glow} opacity={0.25} />
+        <Circle cx={112} cy={74} r={2.5} fill={glow} />
+      </G>
+    );
+  }
+
+  return (
+    <Both>
+      <Circle cx={88} cy={74} r={5.4} fill={glow} opacity={0.28} />
+      <Circle cx={88} cy={74} r={3} fill={glow} />
+      <Circle cx={87} cy={73} r={1} fill="#FFFFFF" />
+    </Both>
+  );
+}
+
+/** Drawn over the face: the orc's lower tusks (smaller for female avatars), android eyes. */
 export function AvatarRaceOverFace({
   race,
   bodyType,
   tusks,
+  skin = '#AFB8C4',
+  androidEyes = 'glow',
+  glow = '#3EE2FF',
 }: {
   race: AvatarRace;
   bodyType: AvatarBodyType;
   tusks: AvatarTusks;
+  skin?: string;
+  androidEyes?: AvatarAndroidEyes;
+  glow?: string;
 }) {
+  if (race === 'android') {
+    return <AndroidEyes eyes={androidEyes} skin={skin} glow={glow} />;
+  }
+
   if (race !== 'orc' || tusks === 'none') {
     return null;
   }

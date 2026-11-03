@@ -434,6 +434,72 @@ const HAIR_STYLES: Record<AvatarHair | HairVariant, HairStyle> = {
       </>
     ),
   },
+  // Android: synthetic hair - a light strip, cable bundles, a smooth shell.
+  android_crest: {
+    // Bare metal head with a crest - no stubble.
+    outset: 1,
+    front: (color) => (
+      <>
+        <Path d="M94 49 L93 24 Q94 13 100 11 Q106 13 107 24 L106 49 Q100 46 94 49 Z" fill={color} />
+        {/* Light strip down the middle of the crest. */}
+        <Path d="M100 16 L100 45" stroke={mixColors(color, '#FFFFFF', 0.65)} strokeWidth={2.2} strokeLinecap="round" />
+        <G fill={shadeColor(color, -0.35)}>
+          <Rect x={92.5} y={30} width={15} height={2} rx={1} />
+          <Rect x={92.5} y={39} width={15} height={2} rx={1} />
+        </G>
+      </>
+    ),
+  },
+  android_cables: {
+    outset: 1.03,
+    cap: 'M20 0 H180 V70 H132 Q127 50 100 47 Q73 50 68 70 H20 Z',
+    capDetail: (color) => (
+      <G stroke={shadeColor(color, -0.3)} strokeWidth={1.2} fill="none">
+        <Path d="M100 33 L100 47" />
+        <Path d="M82 40 Q90 37 100 37 Q110 37 118 40" />
+      </G>
+    ),
+    back: (color) => (
+      <Both>
+        <G stroke={color} strokeWidth={5.5} strokeLinecap="round" fill="none">
+          {[
+            { x: 68, bx: 57, end: 118 },
+            { x: 74, bx: 64, end: 128 },
+            { x: 80, bx: 72, end: 122 },
+          ].map(({ x, bx, end }) => (
+            <Path key={x} d={`M${x} 50 Q${bx - 2} 84 ${bx} ${end}`} />
+          ))}
+        </G>
+        {/* Metal connectors on the cable ends. */}
+        <G fill="#9AA4B2" stroke="#5B6573" strokeWidth={0.7}>
+          <Rect x={54} y={112} width={6} height={6} rx={1.2} />
+          <Rect x={61} y={122} width={6} height={6} rx={1.2} />
+          <Rect x={69} y={116} width={6} height={6} rx={1.2} />
+        </G>
+      </Both>
+    ),
+    front: (color) => (
+      <Both>
+        <Path d="M68 56 Q62 78 63 98" stroke={shadeColor(color, -0.1)} strokeWidth={4.5} strokeLinecap="round" fill="none" />
+        <Rect x={60} y={97} width={6} height={5} rx={1.2} fill="#9AA4B2" stroke="#5B6573" strokeWidth={0.7} />
+      </Both>
+    ),
+  },
+  android_sleek: {
+    outset: 1.08,
+    // A smooth, helmet-like shell with a seam down the middle and over the ears.
+    cap: 'M20 0 H180 V78 H133 Q132 58 124 51 Q112 47 100 48 Q88 47 76 51 Q68 58 67 78 H20 Z',
+    capDetail: (color) => (
+      <>
+        <G stroke={shadeColor(color, -0.32)} strokeWidth={1.1} fill="none">
+          <Path d="M100 30 L100 48" />
+          <Path d="M70 64 Q78 56 90 52" />
+          <Path d="M130 64 Q122 56 110 52" />
+        </G>
+        <Shine color={color} d="M84 38 Q92 33 98 32" />
+      </>
+    ),
+  },
 };
 
 function hairStyleFor(hair: AvatarHair, bodyType: AvatarBodyType): HairStyle {
