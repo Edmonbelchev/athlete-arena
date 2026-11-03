@@ -12,7 +12,7 @@
       "bundleIdentifier": "com.athletearena.app",
       "supportsTablet": true,
       "requireFullScreen": true,
-      "buildNumber": "2",
+      "buildNumber": "3",
       "infoPlist": {
         "NSCameraUsageDescription": "Athlete Arena uses the camera to see you during workouts and count repetitions.",
         "ITSAppUsesNonExemptEncryption": false
