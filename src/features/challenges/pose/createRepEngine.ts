@@ -9,6 +9,8 @@ import { HalfBurpeeRepEngine } from './halfBurpeeRepEngine';
 import { HighKneeRepEngine } from './highKneeRepEngine';
 import { ShadowBoxingRepEngine } from './shadowBoxingRepEngine';
 import { TuckJumpRepEngine } from './tuckJumpRepEngine';
+import { StarJumpRepEngine } from './starJumpRepEngine';
+import { KneeStrikeRepEngine } from './kneeStrikeRepEngine';
 import { BurpeeRepEngine } from './burpeeRepEngine';
 import { PlankHoldEngine } from './plankHoldEngine';
 import { PushUpRepEngine } from './pushUpRepEngine';
@@ -73,6 +75,14 @@ export function createRepEngine(exerciseType: ExerciseType): RepEngine {
 
   if (exerciseType === 'shadow_boxing') {
     return new ShadowBoxingRepEngine();
+  }
+
+  if (exerciseType === 'star_jumps') {
+    return new StarJumpRepEngine();
+  }
+
+  if (exerciseType === 'knee_strikes') {
+    return new KneeStrikeRepEngine();
   }
 
   throw new Error(`Unsupported exercise type: ${String(exerciseType)}`);

@@ -14,6 +14,8 @@ export const EXERCISE_TYPES = [
   'high_knees',
   'shadow_boxing',
   'tuck_jumps',
+  'star_jumps',
+  'knee_strikes',
 ] as const;
 
 export type ExerciseType = (typeof EXERCISE_TYPES)[number];
@@ -58,6 +60,10 @@ export function getInitialExercisePhase(exerciseType: ExerciseType): ExercisePha
     return 'SETUP';
   }
 
+  if (exerciseType === 'knee_strikes') {
+    return 'GUARD';
+  }
+
   return isElbowBasedExercise(exerciseType) ? 'UP' : 'STANDING';
 }
 
@@ -83,6 +89,9 @@ export const CHALLENGE_CONFIG: Record<ExerciseType, readonly ChallengeTier[]> = 
   /** Each punch is a rep. */
   shadow_boxing: [{ reps: 30 }, { reps: 40 }, { reps: 50 }, { reps: 60 }],
   tuck_jumps: [{ reps: 10 }, { reps: 15 }, { reps: 20 }, { reps: 25 }],
+  star_jumps: [{ reps: 15 }, { reps: 20 }, { reps: 25 }, { reps: 30 }],
+  /** Each knee strike is a rep. */
+  knee_strikes: [{ reps: 30 }, { reps: 40 }, { reps: 50 }, { reps: 60 }],
 } as const;
 
 export const EXERCISE_LABELS: Record<DisplayExerciseType, string> = {
@@ -99,6 +108,8 @@ export const EXERCISE_LABELS: Record<DisplayExerciseType, string> = {
   high_knees: 'High Knees',
   shadow_boxing: 'Shadow Boxing',
   tuck_jumps: 'Tuck Jumps',
+  star_jumps: 'Star Jumps',
+  knee_strikes: 'Knee Strikes',
   dips: 'Dips',
 };
 

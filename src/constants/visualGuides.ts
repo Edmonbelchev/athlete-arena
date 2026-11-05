@@ -64,6 +64,14 @@ export const VISUAL_GUIDE_BY_EXERCISE: Record<ExerciseType, VisualGuideExerciseC
     folder: 'tuck-jumps',
     frameFiles: [],
   },
+  star_jumps: {
+    folder: 'star-jumps',
+    frameFiles: [],
+  },
+  knee_strikes: {
+    folder: 'knee-strikes',
+    frameFiles: [],
+  },
 };
 
 /** Crossfade interval between frames in the loop. */

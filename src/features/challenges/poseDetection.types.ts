@@ -33,8 +33,16 @@ export type TuckJumpPhase = 'STANDING' | 'TUCK';
 /** Shadow boxing - fists at guard → an arm punched straight out. */
 export type ShadowBoxingPhase = 'GUARD' | 'PUNCH';
 
+/** Star jumps - landed (feet together, arms down) → airborne in an X. */
+export type StarJumpPhase = 'STANDING' | 'STAR';
+
+/** Knee strikes - both feet down, fists up → a knee driven up. */
+export type KneeStrikePhase = 'GUARD' | 'STRIKE';
+
 export type ExercisePhase =
   | PushUpPhase
+  | StarJumpPhase
+  | KneeStrikePhase
   | HighKneePhase
   | TuckJumpPhase
   | ShadowBoxingPhase

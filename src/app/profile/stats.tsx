@@ -67,7 +67,9 @@ export default function StatsScreen() {
     movementStats.totalPlankSeconds > 0 ||
     movementStats.totalHighKnees > 0 ||
     movementStats.totalShadowBoxing > 0 ||
-    movementStats.totalTuckJumps > 0;
+    movementStats.totalTuckJumps > 0 ||
+    movementStats.totalStarJumps > 0 ||
+    movementStats.totalKneeStrikes > 0;
 
   const exercises = [
     { label: 'Push-ups', value: movementStats.totalPushUps },
@@ -82,6 +84,8 @@ export default function StatsScreen() {
     { label: 'High Knees', value: movementStats.totalHighKnees },
     { label: 'Shadow Boxing', value: movementStats.totalShadowBoxing },
     { label: 'Tuck Jumps', value: movementStats.totalTuckJumps },
+    { label: 'Star Jumps', value: movementStats.totalStarJumps },
+    { label: 'Knee Strikes', value: movementStats.totalKneeStrikes },
     { label: 'Dips', value: movementStats.totalDips, hideWhenEmpty: true },
   ];
   const doneRepExercises = exercises.filter((exercise) => exercise.value > 0).sort((a, b) => b.value - a.value);

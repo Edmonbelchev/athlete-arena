@@ -21,6 +21,8 @@ import { SitUpRepEngine } from './pose/sitUpRepEngine';
 import type { HighKneeRepEngine } from './pose/highKneeRepEngine';
 import type { ShadowBoxingRepEngine } from './pose/shadowBoxingRepEngine';
 import type { TuckJumpRepEngine } from './pose/tuckJumpRepEngine';
+import type { StarJumpRepEngine } from './pose/starJumpRepEngine';
+import type { KneeStrikeRepEngine } from './pose/kneeStrikeRepEngine';
 import { PoseQualityGate, type PoseQualityResult, type PoseTrackingStatus } from './pose/poseQuality';
 import { getCoachSeverity } from './workoutCoachDisplay';
 import {
@@ -49,11 +51,24 @@ const SELF_MANAGED_EXERCISES: ReadonlySet<ExerciseType> = new Set([
   'high_knees',
   'tuck_jumps',
   'shadow_boxing',
+  'star_jumps',
+  'knee_strikes',
 ]);
 
 /** Standing cardio engines: they check form and tracking themselves and count only while armed. */
-type StandingCardioEngine = HighKneeRepEngine | TuckJumpRepEngine | ShadowBoxingRepEngine;
-const STANDING_CARDIO_EXERCISES: ReadonlySet<ExerciseType> = new Set(['high_knees', 'tuck_jumps', 'shadow_boxing']);
+type StandingCardioEngine =
+  | HighKneeRepEngine
+  | TuckJumpRepEngine
+  | ShadowBoxingRepEngine
+  | StarJumpRepEngine
+  | KneeStrikeRepEngine;
+const STANDING_CARDIO_EXERCISES: ReadonlySet<ExerciseType> = new Set([
+  'high_knees',
+  'tuck_jumps',
+  'shadow_boxing',
+  'star_jumps',
+  'knee_strikes',
+]);
 
 function getEngineArmed(engine: RepEngine, exerciseType: ExerciseType): boolean {
   switch (exerciseType) {
@@ -76,6 +91,8 @@ function getEngineArmed(engine: RepEngine, exerciseType: ExerciseType): boolean 
     case 'high_knees':
     case 'tuck_jumps':
     case 'shadow_boxing':
+    case 'star_jumps':
+    case 'knee_strikes':
       return (engine as StandingCardioEngine).armed;
     default:
       return false;
@@ -116,6 +133,8 @@ function resolveExerciseTrackingStatus(
     case 'high_knees':
     case 'tuck_jumps':
     case 'shadow_boxing':
+    case 'star_jumps':
+    case 'knee_strikes':
       return resolveJumpingJackTrackingStatus(quality, (engine as StandingCardioEngine).armed);
     default:
       return quality.status;

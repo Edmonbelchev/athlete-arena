@@ -100,6 +100,14 @@ export function getRepCycleProgress(
     return phase === 'PUNCH' ? 1 : 0.05;
   }
 
+  if (exerciseType === 'star_jumps') {
+    return phase === 'STAR' ? 1 : 0.05;
+  }
+
+  if (exerciseType === 'knee_strikes') {
+    return phase === 'STRIKE' ? 1 : 0.05;
+  }
+
   if (exerciseType === 'burpees' || exerciseType === 'half_burpees') {
     switch (phase) {
       case 'STANDING':

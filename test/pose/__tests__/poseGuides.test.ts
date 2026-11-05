@@ -32,6 +32,8 @@ const GUIDED = [
   'high_knees',
   'tuck_jumps',
   'shadow_boxing',
+  'star_jumps',
+  'knee_strikes',
 ] as const;
 
 describe('drawn exercise guides', () => {
@@ -151,6 +153,8 @@ describe('drawn exercise guides', () => {
       high_knees: 2,
       tuck_jumps: 1,
       shadow_boxing: 2,
+      star_jumps: 1,
+      knee_strikes: 2,
     } as const;
 
     for (const [exerciseType, perLoop] of Object.entries(REPS_PER_LOOP) as [keyof typeof REPS_PER_LOOP, number][]) {

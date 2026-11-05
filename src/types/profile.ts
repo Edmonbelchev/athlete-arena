@@ -14,6 +14,8 @@ export interface ProfileStats {
   totalHighKnees: number;
   totalShadowBoxing: number;
   totalTuckJumps: number;
+  totalStarJumps: number;
+  totalKneeStrikes: number;
 }
 
 export interface UpdateProfileInput {
