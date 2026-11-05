@@ -17,6 +17,8 @@ type MovementStatsRow = {
   total_high_knees?: number;
   total_shadow_boxing?: number;
   total_tuck_jumps?: number;
+  total_star_jumps?: number;
+  total_knee_strikes?: number;
   daily_missions_completed: number;
   friend_races_completed: number;
 };
@@ -41,6 +43,8 @@ function mapMovementStats(row: MovementStatsRow | null | undefined): MovementSta
     totalHighKnees: Number(row.total_high_knees ?? 0),
     totalShadowBoxing: Number(row.total_shadow_boxing ?? 0),
     totalTuckJumps: Number(row.total_tuck_jumps ?? 0),
+    totalStarJumps: Number(row.total_star_jumps ?? 0),
+    totalKneeStrikes: Number(row.total_knee_strikes ?? 0),
     dailyMissionsCompleted: Number(row.daily_missions_completed),
     friendRacesCompleted: Number(row.friend_races_completed),
   };

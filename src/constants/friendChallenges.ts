@@ -16,6 +16,8 @@ export const FRIEND_CHALLENGE_REP_PRESETS: Record<ExerciseType, readonly number[
   high_knees: [20, 30, 40, 50, 60, 80],
   shadow_boxing: [20, 30, 40, 50, 60, 80],
   tuck_jumps: [5, 10, 15, 20, 25, 30],
+  star_jumps: [5, 10, 15, 20, 25, 30],
+  knee_strikes: [20, 30, 40, 50, 60, 80],
 } as const;
 
 export const FRIEND_CHALLENGE_REP_MIN = 1;

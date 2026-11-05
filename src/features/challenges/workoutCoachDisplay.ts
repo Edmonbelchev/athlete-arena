@@ -16,6 +16,8 @@ import { SitUpRepEngine } from './pose/sitUpRepEngine';
 import type { HighKneeRepEngine } from './pose/highKneeRepEngine';
 import type { ShadowBoxingRepEngine } from './pose/shadowBoxingRepEngine';
 import type { TuckJumpRepEngine } from './pose/tuckJumpRepEngine';
+import type { StarJumpRepEngine } from './pose/starJumpRepEngine';
+import type { KneeStrikeRepEngine } from './pose/kneeStrikeRepEngine';
 
 function isLandmarkVisible(
   landmark: PoseLandmark | undefined,
@@ -80,7 +82,13 @@ function getSetupSeverity(
     case 'high_knees':
     case 'tuck_jumps':
     case 'shadow_boxing':
-      return (engine as HighKneeRepEngine | TuckJumpRepEngine | ShadowBoxingRepEngine).armed ? 'ready' : 'setup';
+    case 'star_jumps':
+    case 'knee_strikes':
+      return (
+        engine as HighKneeRepEngine | TuckJumpRepEngine | ShadowBoxingRepEngine | StarJumpRepEngine | KneeStrikeRepEngine
+      ).armed
+        ? 'ready'
+        : 'setup';
     default:
       return trackingStatus === 'ready' ? 'ready' : 'setup';
   }

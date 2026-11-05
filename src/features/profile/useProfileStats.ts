@@ -31,6 +31,8 @@ const EMPTY_STATS: ProfileStats = {
   totalHighKnees: 0,
   totalShadowBoxing: 0,
   totalTuckJumps: 0,
+  totalStarJumps: 0,
+  totalKneeStrikes: 0,
 };
 
 export function useProfileStats(): UseProfileStatsResult {

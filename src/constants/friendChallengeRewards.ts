@@ -44,10 +44,12 @@ export const FRIEND_CHALLENGE_FULL_REWARD_REPS: Record<FriendChallengeRewardExer
   sit_ups: 30,
   /** Seconds held. */
   plank: 60,
-  /** Light cardio (every knee lift / punch is a rep): twice the reps for the full reward. */
+  /** Light cardio (every knee lift / punch / knee strike is a rep): twice the reps for the full reward. */
   high_knees: 120,
   shadow_boxing: 120,
   tuck_jumps: 20,
+  star_jumps: 30,
+  knee_strikes: 120,
   dips: 50,
 };
 

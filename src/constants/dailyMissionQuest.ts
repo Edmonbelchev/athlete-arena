@@ -57,6 +57,14 @@ export const DAILY_MISSION_QUEST: Partial<Record<ExerciseType, DailyMissionQuest
     questTitle: 'Tuck & Fly',
     objectiveVerb: 'Complete',
   },
+  star_jumps: {
+    questTitle: 'Star Power',
+    objectiveVerb: 'Complete',
+  },
+  knee_strikes: {
+    questTitle: 'Muay Thai Knees',
+    objectiveVerb: 'Complete',
+  },
 };
 
 export function getDailyMissionQuestMeta(exerciseType: ExerciseType): DailyMissionQuestMeta {

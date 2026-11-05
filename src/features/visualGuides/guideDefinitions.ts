@@ -371,6 +371,66 @@ const SHADOW_BOXING: PoseGuideDefinition = {
   mat: { halfWidth: 0.45, back: -0.5, front: 0.5 },
 };
 
+// --- Star jumps: facing the phone; crouch, explode up into a big X, land feet together. ------
+
+/** Crouched with arms down by the shins, ready to spring. */
+const STAR_CROUCH: BodyPose = {
+  ...squatPose(0.45, () => ({ upperPitch: 10, lowerPitch: 10, upperSpread: 12, lowerSpread: 6 })),
+};
+/** Arms and legs stretched wide into an X, hips well off the floor. */
+const STAR_TOP: BodyPose = {
+  torsoPitch: 0,
+  leftLeg: { upperPitch: 0, lowerPitch: 0, upperSpread: 30, lowerSpread: 30, footPitch: 40 },
+  rightLeg: { upperPitch: 0, lowerPitch: 0, upperSpread: 30, lowerSpread: 30, footPitch: 40 },
+  leftArm: { upperPitch: 0, lowerPitch: 0, upperSpread: 135, lowerSpread: 140 },
+  rightArm: { upperPitch: 0, lowerPitch: 0, upperSpread: 135, lowerSpread: 140 },
+  lift: 0.5,
+};
+
+const STAR_JUMPS: PoseGuideDefinition = {
+  camera: { ...PHONE_ON_FLOOR, yawDeg: 0, distance: 3.3 },
+  keyframes: [
+    { pose: JACK_CLOSED, moveMs: 260, holdMs: 220, anchor: 'feet' },
+    { pose: STAR_CROUCH, moveMs: 260, holdMs: 60, anchor: 'feet' },
+    { pose: STAR_TOP, moveMs: 220, holdMs: 120, anchor: 'leftHip' },
+    // Land soft back into the crouch, then stand tall.
+    { pose: STAR_CROUCH, moveMs: 220, holdMs: 80, anchor: 'leftHip' },
+  ],
+  mat: { halfWidth: 0.6, back: -0.45, front: 0.45 },
+};
+
+// --- Knee strikes: facing the phone, fists up in a guard; drive each knee up high. ----------
+
+/** Thigh driven up above hip level, shin tucked under. */
+const KNEE_STRIKE_LEG: LimbPose = { upperPitch: 110, lowerPitch: 0, upperSpread: 18, lowerSpread: 8, footPitch: 40 };
+const KNEE_GUARD: BodyPose = {
+  torsoPitch: 4,
+  leftLeg: SUPPORT_LEG,
+  rightLeg: SUPPORT_LEG,
+  leftArm: GUARD_ARM,
+  rightArm: GUARD_ARM,
+};
+/** One knee up; the torso leans back a little into the strike, guard stays up. */
+const kneeStrikePose = (side: BodySide): BodyPose => ({
+  ...KNEE_GUARD,
+  torsoPitch: -4,
+  leftLeg: side === 'left' ? KNEE_STRIKE_LEG : SUPPORT_LEG,
+  rightLeg: side === 'right' ? KNEE_STRIKE_LEG : SUPPORT_LEG,
+});
+
+const KNEE_STRIKES: PoseGuideDefinition = {
+  // Same view as high knees: waist height, so the raised thighs show.
+  camera: { height: 1.0, tiltDeg: 0, yawDeg: 0, distance: 2.6 },
+  keyframes: [
+    { pose: KNEE_GUARD, moveMs: 200, holdMs: 160 },
+    { pose: kneeStrikePose('left'), moveMs: 180, holdMs: 120 },
+    { pose: KNEE_GUARD, moveMs: 200, holdMs: 160 },
+    { pose: kneeStrikePose('right'), moveMs: 180, holdMs: 120 },
+  ],
+  mat: { halfWidth: 0.45, back: -0.45, front: 0.55 },
+  limbsInFrontOfBody: true,
+};
+
 // --- Push-ups: head toward the phone, hands and toes planted, body pivots on the toes. -------
 
 /** At this angle the shoulders sit a straight arm's length above the floor: elbows locked out. */
@@ -565,4 +625,6 @@ export const POSE_GUIDES: Partial<Record<ExerciseType, PoseGuideDefinition>> = {
   high_knees: HIGH_KNEES,
   tuck_jumps: TUCK_JUMPS,
   shadow_boxing: SHADOW_BOXING,
+  star_jumps: STAR_JUMPS,
+  knee_strikes: KNEE_STRIKES,
 };

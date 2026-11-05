@@ -284,6 +284,16 @@ export function getRepPhaseHint(exerciseType: ExerciseType, phase: ExercisePhase
         return 'Snap it back to your guard';
       }
       return 'Punch straight out, then back to your guard';
+    case 'star_jumps':
+      if (phase === 'STAR') {
+        return 'Land with feet together and arms down';
+      }
+      return 'Explode up into an X - arms and legs wide';
+    case 'knee_strikes':
+      if (phase === 'STRIKE') {
+        return 'Plant that foot and drive the other knee';
+      }
+      return 'Fists up - drive your knee up to hip height';
     default:
       return null;
   }

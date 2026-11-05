@@ -10,6 +10,7 @@ import {
   View,
 } from 'react-native';
 
+import { CountInput } from '@/components/workouts/CountInput';
 import { ExercisePickerModal } from '@/components/workouts/ExercisePickerModal';
 import { FriendPickerModal } from '@/components/workouts/FriendPickerModal';
 import { WorkoutCircuitPreview } from '@/components/workouts/WorkoutCircuitPreview';
@@ -18,7 +19,7 @@ import { AuthTextInput } from '@/components/ui/AuthTextInput';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import {
   EXERCISE_LABELS,
-  formatExerciseCount,
+  EXERCISE_TYPES,
   isHoldExercise,
   type ExerciseType,
 } from '@/constants/challenges';
@@ -143,6 +144,11 @@ function getTargetStep(exerciseType: ExerciseType): number {
   return isHoldExercise(exerciseType) ? 5 : 1;
 }
 
+/** Holds go up to 30 minutes (seconds); reps up to 500. Same caps as the database (141). */
+function getTargetMax(exerciseType: ExerciseType): number {
+  return isHoldExercise(exerciseType) ? 1800 : 500;
+}
+
 export function CreateWorkoutModal({
   visible,
   templateId,
@@ -173,6 +179,11 @@ export function CreateWorkoutModal({
 
   const typeDefinition = getCustomWorkoutTypeDefinition(workoutType);
   const isForTime = workoutType === 'for_time';
+  // Holds (plank) don't fit an EMOM's "reps every minute", so they can't be picked there.
+  const pickableExerciseTypes = useMemo(
+    () => (workoutType === 'emom' ? EXERCISE_TYPES.filter((exerciseType) => !isHoldExercise(exerciseType)) : undefined),
+    [workoutType],
+  );
   const isBusy = isSaving || isSharing || isLoadingTemplate;
   const modalTitle = templateId ? 'Edit workout' : 'Create workout';
 
@@ -331,6 +342,15 @@ export function CreateWorkoutModal({
           ? cloneCustomWorkoutExercises(DEFAULT_CUSTOM_WORKOUT_EXERCISES)
           : adaptExercisesForContext(exercises, { ladderMode: false, fromLadder: forTimeStructure === 'ladder' }),
       );
+    }
+
+    if (nextType === 'emom') {
+      setExercises((current) => {
+        const repExercises = current.filter((exercise) => !isHoldExercise(exercise.exerciseType));
+        return repExercises.length > 0
+          ? repExercises
+          : cloneCustomWorkoutExercises(DEFAULT_CUSTOM_WORKOUT_EXERCISES);
+      });
     }
   }
 
@@ -638,7 +658,14 @@ export function CreateWorkoutModal({
                             style={[styles.repButton, { borderColor: theme.border }]}>
                             <Text style={[styles.repButtonLabel, { color: theme.text }]}>-</Text>
                           </Pressable>
-                          <Text style={[styles.repValue, { color: theme.text }]}>{roundsCount}</Text>
+                          <CountInput
+                            value={roundsCount}
+                            min={1}
+                            max={50}
+                            disabled={isBusy}
+                            onChange={setRoundsCount}
+                            accessibilityLabel="Rounds"
+                          />
                           <Pressable
                             disabled={isBusy}
                             onPress={() => setRoundsCount((current) => Math.min(50, current + 1))}
@@ -731,14 +758,25 @@ export function CreateWorkoutModal({
                             style={[styles.repButton, { borderColor: theme.border }]}>
                             <Text style={[styles.repButtonLabel, { color: theme.text }]}>-</Text>
                           </Pressable>
-                          <Text style={[styles.repValue, { color: theme.text }]}>
-                            {formatExerciseCount(exercise.exerciseType, exercise.targetReps)}
-                          </Text>
+                          <CountInput
+                            value={exercise.targetReps}
+                            min={1}
+                            max={getTargetMax(exercise.exerciseType)}
+                            suffix={isHoldExercise(exercise.exerciseType) ? 's' : undefined}
+                            disabled={isBusy}
+                            onChange={(targetReps) => updateExercise(index, { targetReps })}
+                            accessibilityLabel={`${EXERCISE_LABELS[exercise.exerciseType]} ${
+                              isHoldExercise(exercise.exerciseType) ? 'seconds' : 'reps'
+                            }`}
+                          />
                           <Pressable
                             disabled={isBusy}
                             onPress={() =>
                               updateExercise(index, {
-                                targetReps: Math.min(500, exercise.targetReps + getTargetStep(exercise.exerciseType)),
+                                targetReps: Math.min(
+                                  getTargetMax(exercise.exerciseType),
+                                  exercise.targetReps + getTargetStep(exercise.exerciseType),
+                                ),
                               })
                             }
                             style={[styles.repButton, { borderColor: theme.border }]}>
@@ -813,6 +851,7 @@ export function CreateWorkoutModal({
       <ExercisePickerModal
         mode="multi"
         visible={showAddExercisePicker}
+        allowedExerciseTypes={pickableExerciseTypes}
         onClose={() => setShowAddExercisePicker(false)}
         onAdd={addExercises}
       />
@@ -820,6 +859,7 @@ export function CreateWorkoutModal({
       <ExercisePickerModal
         mode="single"
         visible={pickerExerciseIndex !== null}
+        allowedExerciseTypes={pickableExerciseTypes}
         selectedExerciseType={
           pickerExerciseIndex !== null ? exercises[pickerExerciseIndex]?.exerciseType : undefined
         }
@@ -925,9 +965,9 @@ const styles = StyleSheet.create({
   },
   exercisePickerLabel: { fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.4 },
   exercisePickerValue: { fontSize: 16, fontWeight: '800' },
-  repRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  repLabel: { fontSize: 14, fontWeight: '700' },
-  repControls: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two },
+  repRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.two },
+  repLabel: { flex: 1, fontSize: 14, fontWeight: '700' },
+  repControls: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, flexShrink: 0 },
   repButton: {
     width: 36,
     height: 36,
@@ -937,7 +977,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   repButtonLabel: { fontSize: 18, fontWeight: '800' },
-  repValue: { minWidth: 28, textAlign: 'center', fontSize: 18, fontWeight: '900' },
   removeAction: { fontSize: 13, fontWeight: '700' },
   error: { fontSize: 14, fontWeight: '600', textAlign: 'center' },
   success: { fontSize: 14, fontWeight: '600', textAlign: 'center' },

@@ -62,7 +62,13 @@ function getPoseLandmarkSmoothAlpha(exerciseType: ActiveVisionCameraProps['exerc
     return POSE_LANDMARK_SMOOTH_ALPHA_SIT_UP;
   }
 
-  if (exerciseType === 'high_knees' || exerciseType === 'tuck_jumps' || exerciseType === 'shadow_boxing') {
+  if (
+    exerciseType === 'high_knees' ||
+    exerciseType === 'tuck_jumps' ||
+    exerciseType === 'shadow_boxing' ||
+    exerciseType === 'star_jumps' ||
+    exerciseType === 'knee_strikes'
+  ) {
     return POSE_LANDMARK_SMOOTH_ALPHA_FAST_STANDING;
   }
 

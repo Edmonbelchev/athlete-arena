@@ -189,7 +189,7 @@ function getTrackingIndices(exerciseType: ExerciseType): number[] {
     ];
   }
 
-  if (exerciseType === 'jumping_jacks') {
+  if (exerciseType === 'jumping_jacks' || exerciseType === 'star_jumps' || exerciseType === 'knee_strikes') {
     return [
       PoseLandmarkIndex.LEFT_SHOULDER,
       PoseLandmarkIndex.RIGHT_SHOULDER,
@@ -457,7 +457,12 @@ function checkRequiredLandmarks(
 
   // Standing cardio: the engines check form themselves; the gate only makes sure the parts they
   // measure are in view.
-  if (exerciseType === 'high_knees' || exerciseType === 'tuck_jumps') {
+  if (
+    exerciseType === 'high_knees' ||
+    exerciseType === 'tuck_jumps' ||
+    exerciseType === 'star_jumps' ||
+    exerciseType === 'knee_strikes'
+  ) {
     if (!getStandingBody(landmarks)) {
       return { ok: false, message: 'Stand tall facing the camera, shoulders and hips in view' };
     }
@@ -466,7 +471,7 @@ function checkRequiredLandmarks(
       : {
           ok: false,
           message:
-            exerciseType === 'tuck_jumps'
+            exerciseType === 'tuck_jumps' || exerciseType === 'star_jumps'
               ? 'Step back - keep both legs in frame, with room to jump'
               : 'Step back - keep both legs in frame from hips to ankles',
         };

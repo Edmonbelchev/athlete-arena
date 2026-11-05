@@ -484,6 +484,45 @@ export const SHADOW_BOXING_POSTURE = {
   lostTrackingFramesToDisarm: isNativeMobile ? 12 : 15,
 } as const;
 
+/**
+ * Star jumps: an explosive jump into an X. Spread is ankle distance over torso width (as for jumping
+ * jacks, where feet "open" at about 0.8); heights are in torso lengths.
+ */
+export const STAR_JUMP_POSTURE = {
+  /** Feet wide - twice a jumping jack's open threshold. */
+  minStarAnkleSpread: 1.6,
+  /** Both wrists at least this far above the shoulders. */
+  minStarWristRise: 0.25,
+  /**
+   * Hips at least this far above standing height: a real jump. This is what tells a star jump
+   * from a jumping jack, whose small hop lifts the hips under 0.1.
+   */
+  minStarHipRise: 0.3,
+  /** Landed: feet back together... */
+  maxLandedAnkleSpread: 0.8,
+  /** ...and both arms down (wrists at most this far above the shoulders). */
+  maxLandedWristRise: 0,
+  readyFramesRequired: isNativeMobile ? 3 : 4,
+  lostTrackingFramesToDisarm: isNativeMobile ? 12 : 15,
+} as const;
+
+/**
+ * Knee strikes: like high knees but driven higher with the fists up in a guard. Knee drops are in
+ * torso lengths below the hips (about 0.85 standing straight, near 0 with the thigh level).
+ */
+export const KNEE_STRIKE_POSTURE = {
+  /** Knee at least this high counts the strike - a bit higher than a high knee. */
+  maxKneeDropForRep: 0.3,
+  /** The knee must come back down this far before that leg can count again. */
+  minKneeDropToReset: 0.6,
+  /** The other leg stays straight during the strike (rules out squats and tuck jumps). */
+  minSupportKneeDrop: 0.6,
+  /** Fists at most this far below the shoulders - up by the chest or higher. */
+  maxWristDrop: 0.5,
+  readyFramesRequired: isNativeMobile ? 3 : 4,
+  lostTrackingFramesToDisarm: isNativeMobile ? 12 : 15,
+} as const;
+
 /** Light smoothing for fast standing moves, so quick knees and punches aren't averaged away. */
 export const POSE_LANDMARK_SMOOTH_ALPHA_FAST_STANDING = isNativeMobile ? 0.85 : 1;
 
@@ -600,6 +639,22 @@ export const POSE_GUIDANCE: Record<ExerciseType, { title: string; tips: readonly
       'Prop your phone in portrait and keep your head, shoulders and arms in frame',
       'Face the camera in a boxing stance, fists up by your chin',
       'Punch out at shoulder height, then bring it back to your guard',
+    ],
+  },
+  star_jumps: {
+    title: 'Star jump setup',
+    tips: [
+      'Prop your phone in portrait and step back so you stay in frame mid-jump, arms included',
+      'Start with feet together and arms down, then jump up into a big X - arms and legs wide',
+      'Land with feet together and arms down before the next jump',
+    ],
+  },
+  knee_strikes: {
+    title: 'Knee strike setup',
+    tips: [
+      'Prop your phone in portrait and step back until your whole body is in frame',
+      'Face the camera with your fists up in a guard',
+      'Drive each knee up to hip height or higher - every strike counts as a rep',
     ],
   },
   tuck_jumps: {
