@@ -1,6 +1,7 @@
-import { describe, expect, it } from '@jest/globals';
+import { afterEach, describe, expect, it } from '@jest/globals';
 
-import { POSE_LANDMARK_SMOOTH_ALPHA_SIT_UP } from '@/constants/poseDetection';
+import { FLOOR_POSE, POSE_LANDMARK_SMOOTH_ALPHA_SIT_UP } from '@/constants/poseDetection';
+import { setFloorViewAspect } from '@/features/challenges/pose/floorPoseGeometry';
 import { getPlankFormIssue, PlankHoldEngine } from '@/features/challenges/pose/plankHoldEngine';
 import { PoseLandmarkSmoother } from '@/features/challenges/pose/smoothPoseLandmarks';
 import { SitUpRepEngine } from '@/features/challenges/pose/sitUpRepEngine';
@@ -347,5 +348,73 @@ describe('plank hold timer', () => {
     const engine = new PlankHoldEngine();
     expect(run(engine, hold(STANDING, 300), { ...cam, distance: 3, bodyOffset: 0 })).toBe(0);
     expect(engine.armed).toBe(false);
+  });
+});
+
+describe('floor exercises on other screens and camera angles', () => {
+  afterEach(() => setFloorViewAspect(FLOOR_POSE.viewAspect));
+
+  // iPad preview (~0.81 wide per tall) instead of a phone's 9:19.5.
+  const TABLET_VIEWPORT = { width: 820, height: 1010 };
+  const tabletCamera = (yaw: number): PerspectiveCamera => ({ ...plankCamera(yaw, CAMERA_SETUPS[0]), viewport: TABLET_VIEWPORT });
+
+  for (const yaw of [20, 30, 45]) {
+    it(`judges form on a tablet-shaped preview - ${yaw}° pivot`, () => {
+      setFloorViewAspect(TABLET_VIEWPORT.width / TABLET_VIEWPORT.height);
+      const issue = (pose: BodyPose) => getPlankFormIssue(projectPerspective(pose, tabletCamera(yaw)));
+      expect(issue(HIGH_PLANK)).toBeNull();
+      expect(issue(FOREARM_PLANK)).toBeNull();
+      expect(issue(SAGGING)).toBe('hips_low');
+      expect(issue(PIKED)).toBe('hips_high');
+    });
+  }
+
+  // Filmed mostly from the side: the shoulders overlap and their on-screen width collapses.
+  for (const yaw of [60, 70]) {
+    it(`accepts straight planks and flags bad hips from a side-on angle - ${yaw}° pivot`, () => {
+      const cam = plankCamera(yaw, CAMERA_SETUPS[0]);
+      const issue = (pose: BodyPose) => getPlankFormIssue(projectPerspective(pose, cam));
+      expect(issue(HIGH_PLANK)).toBeNull();
+      expect(issue(FOREARM_PLANK)).toBeNull();
+      expect(issue(SAGGING)).toBe('hips_low');
+      expect(issue(PIKED)).toBe('hips_high');
+    });
+  }
+
+  for (const yaw of [30, 60]) {
+    it(`counts sit-ups and ignores crunches on a tablet-shaped preview - ${yaw}° pivot`, () => {
+      setFloorViewAspect(TABLET_VIEWPORT.width / TABLET_VIEWPORT.height);
+      const cam: PerspectiveCamera = { ...camera(yaw, CAMERA_SETUPS[0], 2.0), viewport: TABLET_VIEWPORT };
+      expect(run(new SitUpRepEngine(), sitUpSet(5, 80), cam)).toBe(5);
+      expect(run(new SitUpRepEngine(), sitUpSet(5, 20), cam)).toBe(0);
+    });
+  }
+
+  it('ignores a hidden leg guessed folded back toward the head', () => {
+    const landmarks = projectPerspective(FOREARM_PLANK, plankCamera(30, CAMERA_SETUPS[0]));
+    // Far leg (right) gets confident guesses placed back toward the shoulders.
+    const shoulder = landmarks[12];
+    for (const index of [26, 28]) landmarks[index] = { ...shoulder, y: shoulder.y + 0.02, visibility: 0.95 };
+    expect(getPlankFormIssue(landmarks)).toBeNull();
+  });
+
+  it('skips the knees check when the lower leg is poorly tracked', () => {
+    const landmarks = projectPerspective(FOREARM_PLANK, plankCamera(30, CAMERA_SETUPS[0]));
+    // Near-side ankle misplaced upward with middling confidence makes a straight leg look bent.
+    landmarks[27] = { ...landmarks[27], y: landmarks[27].y - 0.06, visibility: 0.6 };
+    landmarks[28] = { ...landmarks[28], visibility: 0.1 };
+    expect(getPlankFormIssue(landmarks)).toBeNull();
+  });
+
+  it('counts the time of a brief wobble once form returns', () => {
+    const cam = plankCamera(30, CAMERA_SETUPS[0]);
+    const steady = new PlankHoldEngine();
+    const wobbly = new PlankHoldEngine();
+    // 0.8 s settle, then 10.5 s with a 0.5 s sag in the middle.
+    const steadyFrames = hold(FOREARM_PLANK, Math.ceil(11300 / FRAME_MS));
+    const wobblyFrames = [...steadyFrames];
+    wobblyFrames.splice(150, 15, ...hold(SAGGING, 15));
+    expect(run(wobbly, wobblyFrames, cam)).toBe(run(steady, steadyFrames, cam));
+    expect(wobbly.isHolding).toBe(true);
   });
 });

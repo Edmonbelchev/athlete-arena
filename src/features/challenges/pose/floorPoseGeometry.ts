@@ -10,7 +10,7 @@ import { PoseLandmarkIndex, type PoseLandmark, type Point2D } from './landmarks'
  * are unreliable. Shoulder width is not: the shoulder line runs across the image and stays about
  * the same size through the movement. Every length here is measured in shoulder widths.
  *
- * Landmarks are view-normalized (x by width, y by height), so x is rescaled by the portrait
+ * Landmarks are view-normalized (x by width, y by height), so x is rescaled by the preview's
  * aspect before measuring distances.
  */
 
@@ -23,6 +23,11 @@ export interface FloorBody {
   /** Shoulder width in aspect-corrected units - the scale for every threshold. */
   shoulderWidth: number;
   hipMid: Point2D | null;
+  /**
+   * Body-size ruler that holds up from any pivot: shoulder width, or the torso length scaled to
+   * shoulder width when the camera sees the body from the side and the shoulders overlap.
+   */
+  scale: number;
 }
 
 export interface FloorLegChain {
@@ -31,6 +36,9 @@ export interface FloorLegChain {
   hip: Point2D;
   knee: Point2D | null;
   ankle: Point2D | null;
+  /** Tracking confidence of the knee and ankle (0 when not used). */
+  kneeVisibility: number;
+  ankleVisibility: number;
 }
 
 const SIDE_INDICES = {
@@ -55,9 +63,21 @@ export function isFloorLandmarkVisible(
   return Boolean(landmark && (landmark.visibility ?? 1) >= minVisibility);
 }
 
+let viewAspect: number = FLOOR_POSE.viewAspect;
+
+/**
+ * Width / height of the camera preview the landmarks are normalized to. Set from the real preview
+ * size: a phone and an iPad differ by almost 2x, and a wrong aspect skews every floor measurement.
+ */
+export function setFloorViewAspect(aspect: number): void {
+  if (Number.isFinite(aspect) && aspect > 0) {
+    viewAspect = aspect;
+  }
+}
+
 /** Aspect-corrected point: one unit of x covers the same screen distance as one unit of y. */
 export function toFloorSpace(landmark: PoseLandmark): Point2D {
-  return { x: landmark.x * FLOOR_POSE.viewAspect, y: landmark.y };
+  return { x: landmark.x * viewAspect, y: landmark.y };
 }
 
 function midpoint(a: Point2D, b: Point2D): Point2D {
@@ -83,18 +103,32 @@ export function getFloorBody(landmarks: PoseLandmark[]): FloorBody | null {
     .filter((hip): hip is PoseLandmark => isFloorLandmarkVisible(hip))
     .map(toFloorSpace);
 
+  const shoulderMid = midpoint(shoulderLeft, shoulderRight);
+  const hipMid = hips.length === 2 ? midpoint(hips[0], hips[1]) : (hips[0] ?? null);
+  const torsoLength = hipMid ? Math.hypot(hipMid.x - shoulderMid.x, hipMid.y - shoulderMid.y) : 0;
+
   return {
     shoulderLeft,
     shoulderRight,
-    shoulderMid: midpoint(shoulderLeft, shoulderRight),
+    shoulderMid,
     shoulderWidth,
-    hipMid: hips.length === 2 ? midpoint(hips[0], hips[1]) : (hips[0] ?? null),
+    hipMid,
+    scale: Math.max(shoulderWidth, torsoLength * FLOOR_POSE.shoulderWidthPerTorso),
   };
+}
+
+/** True when `point` lies beyond the hip, continuing the shoulder→hip direction on screen. */
+function continuesPastHip(shoulder: Point2D, hip: Point2D, point: Point2D): boolean {
+  return (hip.x - shoulder.x) * (point.x - hip.x) + (hip.y - shoulder.y) * (point.y - hip.y) > 0;
 }
 
 /**
  * Shoulder, hip and lower leg on one side. With a pivot, one side faces the camera and its leg
  * is the one MediaPipe sees best, so the side with the most visible leg wins.
+ *
+ * A leg hidden behind the body still gets confident-looking guesses, often folded back toward the
+ * head. In a plank the leg always carries on past the hip, away from the shoulder - a knee or
+ * ankle that does not is a guess and is dropped.
  */
 export function getBestLegChain(landmarks: PoseLandmark[]): FloorLegChain | null {
   let best: { chain: FloorLegChain; score: number } | null = null;
@@ -107,10 +141,14 @@ export function getBestLegChain(landmarks: PoseLandmark[]): FloorLegChain | null
       continue;
     }
 
+    const shoulderPoint = toFloorSpace(shoulder);
+    const hipPoint = toFloorSpace(hip);
     const knee = landmarks[indices.knee];
     const ankle = landmarks[indices.ankle];
-    const kneeVisible = isFloorLandmarkVisible(knee);
-    const ankleVisible = isFloorLandmarkVisible(ankle);
+    const kneeVisible =
+      isFloorLandmarkVisible(knee) && continuesPastHip(shoulderPoint, hipPoint, toFloorSpace(knee));
+    const ankleVisible =
+      isFloorLandmarkVisible(ankle) && continuesPastHip(shoulderPoint, hipPoint, toFloorSpace(ankle));
     if (!kneeVisible && !ankleVisible) {
       continue;
     }
@@ -125,10 +163,12 @@ export function getBestLegChain(landmarks: PoseLandmark[]): FloorLegChain | null
       score,
       chain: {
         side,
-        shoulder: toFloorSpace(shoulder),
-        hip: toFloorSpace(hip),
+        shoulder: shoulderPoint,
+        hip: hipPoint,
         knee: kneeVisible ? toFloorSpace(knee) : null,
         ankle: ankleVisible ? toFloorSpace(ankle) : null,
+        kneeVisibility: kneeVisible ? (knee.visibility ?? 1) : 0,
+        ankleVisibility: ankleVisible ? (ankle.visibility ?? 1) : 0,
       },
     };
   }

@@ -79,10 +79,11 @@ export function getPlankFormIssue(landmarks: PoseLandmark[]): PlankFormIssue | n
     return 'no_leg';
   }
 
-  // Standing or kneeling upright: the body spans several shoulder widths vertically. The knee
+  // Standing or kneeling upright: the body spans several body widths vertically. Measured with
+  // body.scale - filmed from the side the shoulders overlap and their own width collapses. The knee
   // sits about halfway down the body, so the limit shrinks when it stands in for the ankle.
   const maxVerticalSpan = PLANK_POSTURE.maxVerticalSpan * (chain.ankle ? 1 : PLANK_POSTURE.kneeSpanFraction);
-  if (Math.abs(foot.y - chain.shoulder.y) / width > maxVerticalSpan) {
+  if (Math.abs(foot.y - chain.shoulder.y) / body.scale > maxVerticalSpan) {
     return 'not_down';
   }
 
@@ -98,18 +99,23 @@ export function getPlankFormIssue(landmarks: PoseLandmark[]): PlankFormIssue | n
     return 'too_low';
   }
 
+  // Straightness is judged against body.scale, not shoulder width (see FloorBody.scale).
+  const scale = body.scale;
   const hipOffset = verticalOffsetBelowLine(chain.shoulder, foot, chain.hip);
-  if (hipOffset !== null && hipOffset / width > PLANK_POSTURE.maxHipSag) {
+  if (hipOffset !== null && hipOffset / scale > PLANK_POSTURE.maxHipSag) {
     return 'hips_low';
   }
 
-  if (hipOffset !== null && hipOffset / width < -PLANK_POSTURE.maxHipPike) {
+  if (hipOffset !== null && hipOffset / scale < -PLANK_POSTURE.maxHipPike) {
     return 'hips_high';
   }
 
-  if (chain.knee && chain.ankle) {
+  const legTrackedWell =
+    chain.kneeVisibility >= PLANK_POSTURE.kneeCheckMinVisibility &&
+    chain.ankleVisibility >= PLANK_POSTURE.kneeCheckMinVisibility;
+  if (chain.knee && chain.ankle && legTrackedWell) {
     const kneeDrop = verticalOffsetBelowLine(chain.hip, chain.ankle, chain.knee);
-    if (kneeDrop !== null && kneeDrop / width > PLANK_POSTURE.maxKneeDrop) {
+    if (kneeDrop !== null && kneeDrop / scale > PLANK_POSTURE.maxKneeDrop) {
       return 'knees';
     }
   }
@@ -130,13 +136,16 @@ const ISSUE_HINTS: Record<PlankFormIssue, string> = {
 
 /**
  * Timed plank hold. update() returns true each time another full second of good form is held,
- * so holds plug into rep counting (one "rep" per second). Time only accrues on good-form frames:
- * a short wobble is forgiven without counting, a longer break pauses the timer until form returns.
+ * so holds plug into rep counting (one "rep" per second). A short wobble is forgiven: if form
+ * returns within the grace window that time still counts, since single-frame misreads are far
+ * more common than real breaks. A longer break pauses the timer and its time is dropped.
  * Losing tracking (body out of view) gets a slightly longer grace than a form break.
  */
 export class PlankHoldEngine {
   phase: PlankPhase = 'SETUP';
   private heldMs = 0;
+  /** Time spent in the current grace window; credited if form returns before the timer pauses. */
+  private graceMs = 0;
   private reportedSeconds = 0;
   private goodSinceMs: number | null = null;
   private badSinceMs: number | null = null;
@@ -179,8 +188,13 @@ export class PlankHoldEngine {
       this.goodSinceMs = null;
       this.badSinceMs ??= nowMs;
       const grace = issue === 'not_in_frame' || issue === 'no_leg' ? PLANK_POSTURE.lostGraceMs : PLANK_POSTURE.graceMs;
-      if (this.phase === 'HOLDING' && nowMs - this.badSinceMs >= grace) {
-        this.phase = 'PAUSED';
+      if (this.phase === 'HOLDING') {
+        if (nowMs - this.badSinceMs >= grace) {
+          this.phase = 'PAUSED';
+          this.graceMs = 0;
+        } else {
+          this.graceMs += Math.max(0, frameGap);
+        }
       }
       return false;
     }
@@ -197,9 +211,11 @@ export class PlankHoldEngine {
       return false;
     }
 
-    this.heldMs += Math.max(0, frameGap);
+    this.heldMs += Math.max(0, frameGap) + this.graceMs;
+    this.graceMs = 0;
+    // One second per call: a credited grace window can add two at once, the next frame catches up.
     if (this.heldSeconds > this.reportedSeconds) {
-      this.reportedSeconds = this.heldSeconds;
+      this.reportedSeconds += 1;
       return true;
     }
 
@@ -209,6 +225,7 @@ export class PlankHoldEngine {
   reset(): void {
     this.phase = 'SETUP';
     this.heldMs = 0;
+    this.graceMs = 0;
     this.reportedSeconds = 0;
     this.goodSinceMs = null;
     this.badSinceMs = null;
