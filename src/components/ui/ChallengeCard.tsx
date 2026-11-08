@@ -34,6 +34,8 @@ interface ChallengeCardProps {
   missionIndex?: number;
   missionLabel?: string;
   isRerolled?: boolean;
+  /** Times this quest was swapped; lowers the reward shown. */
+  rerollCount?: number;
   canReroll?: boolean;
   /** Coins the next swap costs; 0 while the free swap of the day is unused. */
   rerollCoinCost?: number;
@@ -80,6 +82,7 @@ export function ChallengeCard({
   missionIndex = 0,
   missionLabel,
   isRerolled = false,
+  rerollCount = 0,
   canReroll = false,
   rerollCoinCost = 0,
   canAffordReroll = true,
@@ -90,7 +93,7 @@ export function ChallengeCard({
 }: ChallengeCardProps) {
   const theme = useTheme();
   const swap = useQuestSwapAnimation(exerciseType, swapCharge);
-  const reward = getDailyMissionReward(exerciseType);
+  const reward = getDailyMissionReward(exerciseType, rerollCount);
   const quest = getDailyMissionQuestMeta(exerciseType);
   const accentColor = theme[getQuestAccentColor(missionIndex)];
   const missionStatus = resolveMissionStatus(status, completedReps, targetReps);

@@ -20,6 +20,7 @@ type DailyChallengeHomeRow = {
   completed_reps: number;
   completed_at: string | null;
   is_rerolled?: boolean;
+  reroll_count?: number;
 };
 
 type TemplateRow = {
@@ -41,6 +42,7 @@ type UserChallengeRow = {
   completed_reps: number;
   completed_at: string | null;
   is_rerolled?: boolean;
+  reroll_count?: number;
 };
 
 export function resolveMissionIndex(
@@ -72,13 +74,14 @@ function mapDailyChallengeHome(
     challengeDate: row.challenge_date,
     exerciseType: row.exercise_type,
     targetReps: row.target_reps,
-    xpReward: getDailyMissionReward(row.exercise_type).xp,
+    xpReward: getDailyMissionReward(row.exercise_type, row.reroll_count).xp,
     catalogSlot: row.catalog_slot,
     userChallengeId: row.user_challenge_id,
     status: row.user_status ?? 'not_started',
     completedReps: row.completed_reps,
     completedAt: row.completed_at,
     isRerolled: row.is_rerolled ?? false,
+    rerollCount: row.reroll_count ?? (row.is_rerolled ? 1 : 0),
   };
 }
 
@@ -107,13 +110,17 @@ function buildMissionsFromTemplates(
         challengeDate: template.challenge_date,
         exerciseType: userChallenge?.exercise_type ?? template.exercise_type,
         targetReps: userChallenge?.target_reps ?? template.target_reps,
-        xpReward: getDailyMissionReward(userChallenge?.exercise_type ?? template.exercise_type).xp,
+        xpReward: getDailyMissionReward(
+          userChallenge?.exercise_type ?? template.exercise_type,
+          userChallenge?.reroll_count,
+        ).xp,
         catalogSlot: template.catalog_slot,
         userChallengeId: userChallenge?.id ?? null,
         status: userChallenge?.status ?? 'not_started',
         completedReps: userChallenge?.completed_reps ?? 0,
         completedAt: userChallenge?.completed_at ?? null,
         isRerolled: userChallenge?.is_rerolled ?? false,
+        rerollCount: userChallenge?.reroll_count ?? (userChallenge?.is_rerolled ? 1 : 0),
       };
     })
     .sort((left, right) => left.missionIndex - right.missionIndex);
@@ -156,6 +163,17 @@ async function fetchTodayTemplates(today: string): Promise<TemplateRow[]> {
 }
 
 async function fetchTodayUserChallenges(today: string): Promise<UserChallengeRow[]> {
+  const withRerollCount = await supabase
+    .from('daily_challenges')
+    .select(
+      'id, exercise_type, mission_index, target_reps, status, completed_reps, completed_at, is_rerolled, reroll_count',
+    )
+    .eq('challenge_date', today);
+
+  if (!withRerollCount.error) {
+    return (withRerollCount.data ?? []) as UserChallengeRow[];
+  }
+
   const fullSelect = await supabase
     .from('daily_challenges')
     .select('id, exercise_type, mission_index, target_reps, status, completed_reps, completed_at, is_rerolled')

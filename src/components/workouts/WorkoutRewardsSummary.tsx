@@ -49,7 +49,7 @@ export function WorkoutRewardsSummary({ sessionReward, completedQuests = [] }: W
   }
 
   const totalXp = workoutXp + completedQuests.reduce((sum, quest) => sum + quest.xpReward, 0);
-  const totalCoins = workoutCoins + completedQuests.reduce((sum, quest) => sum + getDailyMissionReward(quest.exerciseType).coins, 0);
+  const totalCoins = workoutCoins + completedQuests.reduce((sum, quest) => sum + getDailyMissionReward(quest.exerciseType, quest.rerollCount).coins, 0);
 
   return (
     <View style={[styles.card, { backgroundColor: theme.backgroundElement, borderColor: theme.primary }]}>
@@ -85,7 +85,7 @@ export function WorkoutRewardsSummary({ sessionReward, completedQuests = [] }: W
                 Quest cleared · {quest.targetReps} {formatExerciseLabel(quest.exerciseType, true).toLowerCase()}
               </Text>
             </View>
-            <RewardAmounts xp={quest.xpReward} coins={getDailyMissionReward(quest.exerciseType).coins} />
+            <RewardAmounts xp={quest.xpReward} coins={getDailyMissionReward(quest.exerciseType, quest.rerollCount).coins} />
           </View>
         );
       })}

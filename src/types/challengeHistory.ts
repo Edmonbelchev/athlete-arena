@@ -6,7 +6,7 @@ import {
   getFriendChallengeEarnedRewards,
   isFriendChallengeExerciseType,
 } from '@/constants/friendChallengeRewards';
-import { getDailyMissionReward } from '@/constants/dailyMissionRewards';
+import { getDailyMissionRewardForXp } from '@/constants/dailyMissionRewards';
 import type { ChallengeStatus } from '@/types/friends';
 import type { CustomWorkoutType } from '@/types/customWorkouts';
 
@@ -53,7 +53,7 @@ export function getHistoryEarnedRewards(entry: ChallengeHistoryEntry): { xp: num
   }
 
   if (entry.kind === 'daily') {
-    return { xp: entry.xpReward, coins: getDailyMissionReward(entry.exerciseType).coins };
+    return { xp: entry.xpReward, coins: getDailyMissionRewardForXp(entry.exerciseType, entry.xpReward).coins };
   }
 
   const challenge = getFriendChallengeEarnedRewards(entry.xpEarned, entry.coinsEarned ?? null, {
@@ -77,7 +77,7 @@ export function getHistoryOpponentName(entry: ChallengeHistoryEntry): string | n
 export function getHistoryResultLabel(entry: ChallengeHistoryEntry, myUserId?: string): string {
   if (entry.kind === 'daily') {
     if (entry.status === 'completed') {
-      return `Completed · +${entry.xpReward} XP · ${formatCoinAmount(getDailyMissionReward(entry.exerciseType).coins)}`;
+      return `Completed · +${entry.xpReward} XP · ${formatCoinAmount(getDailyMissionRewardForXp(entry.exerciseType, entry.xpReward).coins)}`;
     }
     return 'Missed';
   }
