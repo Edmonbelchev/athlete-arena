@@ -29,9 +29,6 @@ import {
 } from '@/lib/dailyChallengeSync';
 import { formatUserError } from '@/lib/errors';
 import {
-  getDailyMissionReward,
-} from '@/constants/dailyMissionRewards';
-import {
   finalizeDailyMission,
   getOrCreateDailyChallenge,
   rerollDailyMission,
@@ -137,12 +134,13 @@ export default function HomeScreen() {
             xpReward: mission.xpReward,
             catalogSlot: mission.catalogSlot,
             userChallengeId: updated.id,
+            rerollCount: updated.reroll_count ?? mission.rerollCount,
             status: 'completed',
             completedReps: updated.completed_reps,
             completedAt: updated.completed_at,
           }),
         );
-        applyXpDelta(getDailyMissionReward(updated.exercise_type).xp);
+        applyXpDelta(updated.xp_reward);
         void refreshProfile();
         void refreshWeeklyStreak();
         return;

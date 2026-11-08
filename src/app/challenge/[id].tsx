@@ -111,7 +111,7 @@ export default function ChallengeScreen() {
           completedAt: updated.completed_at,
         });
         notifyDailyChallengeRefresh();
-        applyXpDelta(getDailyMissionReward(updated.exercise_type).xp);
+        applyXpDelta(updated.xp_reward);
         if (completesWeeklyStreak) {
           setShowWeeklyStreakComplete(true);
         }
@@ -153,7 +153,7 @@ export default function ChallengeScreen() {
 
   const autoRepCounting = Platform.OS === 'web' || supportsNativePoseDetection();
   const showSimulateButton = !__DEV__ && !isCompleted && !autoRepCounting;
-  const questReward = getDailyMissionReward(challenge?.exercise_type);
+  const questReward = getDailyMissionReward(challenge?.exercise_type, challenge?.reroll_count);
   const earnedXp = challenge && isCompleted ? questReward.xp : 0;
   const earnedCoins = challenge && isCompleted ? questReward.coins : 0;
 

@@ -35,6 +35,9 @@ export interface DailyChallenge {
   status: ChallengeStatus;
   completed_at: string | null;
   created_at: string;
+  is_rerolled?: boolean;
+  /** Times this quest was swapped; each swap lowers its reward (migration 139). */
+  reroll_count?: number;
 }
 
 /** Global daily mission plus optional per-user progress for the home screen. */
@@ -51,4 +54,6 @@ export interface DailyChallengeHome {
   completedReps: number;
   completedAt: string | null;
   isRerolled?: boolean;
+  /** Times this quest was swapped; each swap lowers its reward. */
+  rerollCount?: number;
 }

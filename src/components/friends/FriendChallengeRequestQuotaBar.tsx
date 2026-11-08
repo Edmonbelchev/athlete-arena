@@ -21,6 +21,18 @@ export function getFriendChallengeRequestRemaining(quota: FriendChallengeRequest
   return Math.max(quota.monthlyLimit - quota.usedCount, 0);
 }
 
+/**
+ * Everything the user can send this month: what they've sent plus what's left of the free
+ * monthly allowance plus bought slots (which never expire). Null for Premium (unlimited).
+ */
+export function getFriendChallengeRequestAllowance(quota: FriendChallengeRequestQuota): number | null {
+  const remaining = getFriendChallengeRequestRemaining(quota);
+  if (remaining === null) {
+    return null;
+  }
+  return quota.usedCount + remaining + Math.max(quota.bonusSlots, 0);
+}
+
 export function FriendChallengeRequestQuotaBar({
   quota,
   onUpgrade,
@@ -31,11 +43,9 @@ export function FriendChallengeRequestQuotaBar({
   const remaining = getFriendChallengeRequestRemaining(quota);
   const atLimit = !quota.canCreate;
   const usingBonusSlots = !quota.isPremium && remaining === 0 && quota.bonusSlots > 0;
-  const bonusLabel = `${quota.bonusSlots} bonus slot${quota.bonusSlots === 1 ? '' : 's'}`;
-  const progress =
-    quota.monthlyLimit && quota.monthlyLimit > 0
-      ? Math.min(quota.usedCount / quota.monthlyLimit, 1)
-      : 1;
+  const bonusLabel = `${quota.bonusSlots} bought slot${quota.bonusSlots === 1 ? '' : 's'}`;
+  const allowance = getFriendChallengeRequestAllowance(quota);
+  const progress = allowance && allowance > 0 ? Math.min(quota.usedCount / allowance, 1) : 1;
 
   return (
     <View
@@ -59,7 +69,7 @@ export function FriendChallengeRequestQuotaBar({
             ? 'Unlimited'
             : quota.monthlyLimit === null
               ? ''
-              : `${quota.usedCount} / ${quota.monthlyLimit}`}
+              : `${quota.usedCount} / ${allowance}`}
         </Text>
       </View>
 
@@ -83,10 +93,10 @@ export function FriendChallengeRequestQuotaBar({
           : remaining === null
             ? ''
             : usingBonusSlots
-              ? `Monthly limit used - ${bonusLabel} left.`
+              ? `${quota.monthlyLimit} free this month used - ${bonusLabel} left (they never expire).`
               : atLimit
                 ? 'Limit reached for this month.'
-                : `${remaining} remaining this month${quota.bonusSlots > 0 ? ` + ${bonusLabel}` : ''}`}
+                : `${remaining} free remaining this month${quota.bonusSlots > 0 ? ` + ${bonusLabel}` : ''}`}
       </Text>
 
       {!quota.isPremium && onBuySlots && (atLimit || usingBonusSlots) ? (

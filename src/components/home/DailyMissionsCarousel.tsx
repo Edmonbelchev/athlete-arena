@@ -12,7 +12,7 @@ import {
 import { ChallengeCard } from '@/components/ui/ChallengeCard';
 import { ExercisePickerModal } from '@/components/workouts/ExercisePickerModal';
 import { getQuestAccentColor } from '@/constants/dailyMissionQuest';
-import { DAILY_QUEST_REROLL_COST } from '@/constants/dailyMissionRewards';
+import { DAILY_QUEST_REROLL_COST, describeSwapRewardCut } from '@/constants/dailyMissionRewards';
 import { type ExerciseType } from '@/constants/challenges';
 import { Radius, Spacing } from '@/constants/theme';
 import {
@@ -163,6 +163,7 @@ export function DailyMissionsCarousel({
                     loading={startingMissionIndex === missionIndex}
                     rerollLoading={rerollingMissionIndex === missionIndex}
                     isRerolled={mission.isRerolled}
+                    rerollCount={mission.rerollCount}
                     canReroll={canReroll && rerollEligibleExercises.length > 0}
                     rerollCoinCost={freeSwap ? 0 : DAILY_QUEST_REROLL_COST}
                     canAffordReroll={freeSwap || coinBalance >= DAILY_QUEST_REROLL_COST}
@@ -228,13 +229,13 @@ export function DailyMissionsCarousel({
         visible={rerollTarget !== null}
         mode="single"
         title="Swap quest exercise"
-        subtitle={
+        subtitle={`${
           unlimitedSwaps
             ? 'Pick a different exercise for this quest slot. Swaps are unlimited with Premium.'
             : canUseDailyQuestReroll(rerollUsedOn)
               ? 'Pick a different exercise for this quest slot. Your first swap today is free.'
               : `Pick a different exercise for this quest slot. This swap costs ${DAILY_QUEST_REROLL_COST} coins.`
-        }
+        } ${describeSwapRewardCut(rerollTarget?.mission.rerollCount ?? 0)}`}
         allowedExerciseTypes={rerollEligibleExercises}
         onClose={() => setRerollTarget(null)}
         onSelect={(exerciseType) => {
