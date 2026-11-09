@@ -36,7 +36,7 @@ export function findNewlyCompletedMissions(
       exerciseType: mission.exerciseType,
       targetReps: mission.targetReps,
       missionIndex: mission.missionIndex,
-      ...getDailyMissionReward(mission.exerciseType),
+      ...getDailyMissionReward(mission.exerciseType, mission.rerollCount),
     }));
 }
 
@@ -48,6 +48,6 @@ export function toDailyMissionCompletePayload(
     exerciseType: mission.exerciseType,
     targetReps: mission.targetReps,
     missionIndex: mission.missionIndex,
-    ...getDailyMissionReward(mission.exerciseType),
+    ...getDailyMissionReward(mission.exerciseType, mission.rerollCount),
   };
 }

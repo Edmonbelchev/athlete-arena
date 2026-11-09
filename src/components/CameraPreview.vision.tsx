@@ -22,6 +22,7 @@ import {
   shouldEmitDisplayFrame,
 } from '@/features/challenges/pose/displayFrameThrottle';
 import type { PoseLandmark } from '@/features/challenges/pose/landmarks';
+import { setFloorViewAspect } from '@/features/challenges/pose/floorPoseGeometry';
 import { mapLandmarksToViewNormalized } from '@/features/challenges/pose/mapLandmarksToView';
 import { arePoseLandmarksPlausible } from '@/features/challenges/pose/poseLandmarkSanity';
 import { PoseViewSettleGate } from '@/features/challenges/pose/poseViewSettle';
@@ -186,6 +187,8 @@ function VisionCameraPreviewActive({
       if (width <= 0 || height <= 0) {
         return;
       }
+      // Floor exercises measure in aspect-corrected units; landmarks are normalized to this view.
+      setFloorViewAspect(width / height);
 
       const viewLandmarks = landmarkSmootherRef.current.smooth(
         mapLandmarksToViewNormalized(

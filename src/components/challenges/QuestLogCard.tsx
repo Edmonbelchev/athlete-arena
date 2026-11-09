@@ -4,7 +4,7 @@ import { AppIcon } from '@/components/ui/AppIcon';
 import { CoinIcon } from '@/components/ui/CoinIcon';
 import { EXERCISE_TYPES, formatExerciseLabel, type ExerciseType } from '@/constants/challenges';
 import { getDailyMissionQuestMeta, getQuestAccentColor } from '@/constants/dailyMissionQuest';
-import { getDailyMissionReward } from '@/constants/dailyMissionRewards';
+import { getDailyMissionRewardForXp } from '@/constants/dailyMissionRewards';
 import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import type { ChallengeHistoryEntry } from '@/types/challengeHistory';
@@ -33,7 +33,7 @@ export function QuestLogCard({ entry }: QuestLogCardProps) {
   const missionIndex = Math.max(EXERCISE_TYPES.indexOf(entry.exerciseType as ExerciseType), 0);
   const accentColor = theme[getQuestAccentColor(missionIndex)];
   const isCompleted = entry.status === 'completed';
-  const reward = getDailyMissionReward(entry.exerciseType);
+  const reward = getDailyMissionRewardForXp(entry.exerciseType, entry.xpReward);
 
   return (
     <View style={[styles.card, { backgroundColor: theme.card, borderColor: theme.border }]}>

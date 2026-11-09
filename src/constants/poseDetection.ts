@@ -209,6 +209,12 @@ export const FLOOR_POSE = {
   minVisibility: 0.5,
   /** Shoulder width (aspect-corrected, fraction of view height) below this is too far / noise. */
   minShoulderWidth: 0.025,
+  /**
+   * Shoulder width as a share of shoulder-to-hip length on an average body. Filmed from the side,
+   * the shoulders overlap and their on-screen width collapses while the torso shows its full
+   * length - the torso stands in as the ruler so form thresholds keep their real-world size.
+   */
+  shoulderWidthPerTorso: 0.7,
 } as const;
 
 /** Sit-ups facing the camera (feet toward it), lying back with knees bent. */
@@ -268,6 +274,12 @@ export const PLANK_POSTURE = {
   maxHipPike: 0.25,
   /** Knee below the hip→ankle line (shoulder widths) - knees dropped to the floor. */
   maxKneeDrop: 0.2,
+  /**
+   * Knee and ankle confidence needed for the knees-down check. Lower legs on the floor are the
+   * model's weakest points (dark floors, furniture, far side); a misplaced ankle makes a straight
+   * leg look bent, so the check is skipped rather than guessed when tracking is weak.
+   */
+  kneeCheckMinVisibility: 0.8,
   /** Good form this long before the timer starts (ms). */
   settleMs: 800,
   /** Good form this long to resume after a pause (ms). */
@@ -619,8 +631,8 @@ export const POSE_GUIDANCE: Record<ExerciseType, { title: string; tips: readonly
   plank: {
     title: 'Plank setup',
     tips: [
-      'Prop your phone upright on the floor and face it with your head toward the camera',
-      'Turn slightly so the camera sees your shoulders, hips, and at least one leg',
+      'Prop your phone upright on the floor about 2 m (6 ft) away and face it with your head toward the camera',
+      'Turn slightly so the camera sees your shoulders, hips, and your feet - too close and it has to guess',
       'Hold a forearm or straight-arm plank with your body in a straight line',
       'The timer runs only while your form is good - sagging, piking, or dropping your knees pauses it',
     ],

@@ -14,6 +14,7 @@ import {
   POSE_DISPLAY_STALE_MS,
   shouldEmitDisplayFrame,
 } from '@/features/challenges/pose/displayFrameThrottle';
+import { setFloorViewAspect } from '@/features/challenges/pose/floorPoseGeometry';
 import type { PoseLandmark } from '@/features/challenges/pose/landmarks';
 import { createWebPoseLandmarker, type WebPoseLandmarker } from '@/lib/mediapipeWeb';
 import { POSE_QUALITY } from '@/constants/poseDetection';
@@ -157,6 +158,11 @@ export function CameraPreview({
                 now,
               );
               const landmarks = result.landmarks[0];
+              // Landmarks are normalized to the video frame; floor exercises need its aspect.
+              const { videoWidth, videoHeight } = videoRef.current;
+              if (videoWidth > 0 && videoHeight > 0) {
+                setFloorViewAspect(videoWidth / videoHeight);
+              }
 
               if (canvas && ctx) {
                 syncCanvasToVideo(canvas, videoRef.current);

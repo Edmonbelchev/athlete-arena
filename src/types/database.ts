@@ -295,6 +295,8 @@ export interface Database {
           status: ChallengeStatus;
           completed_at: string | null;
           created_at: string;
+          is_rerolled: boolean;
+          reroll_count: number;
         };
         Insert: {
           id?: string;
@@ -321,6 +323,8 @@ export interface Database {
           status?: ChallengeStatus;
           completed_at?: string | null;
           created_at?: string;
+          is_rerolled?: boolean;
+          reroll_count?: number;
         };
         Relationships: [
           {
