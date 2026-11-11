@@ -1,5 +1,6 @@
 import type { ExerciseType } from '@/constants/challenges';
 import type { CustomWorkoutType, ForTimeStructureConfig } from '@/types/customWorkouts';
+import { isRepOnlyAmrapScore } from '@/constants/customWorkouts';
 import { formatRaceTime } from '@/constants/friendChallenges';
 import type { ShopAvatarDisplay, ShopFrameDisplay } from '@/types/shop';
 
@@ -91,6 +92,11 @@ export function getWorkoutLeaderboardScoreLabel(
 }
 
 export function formatWorkoutAmrapScore(completedRounds: number, totalReps: number): string {
+  // Single-exercise AMRAP: every rep is a round - show reps only.
+  if (isRepOnlyAmrapScore('amrap', completedRounds, totalReps)) {
+    return `${totalReps} reps`;
+  }
+
   return `${completedRounds} rounds · ${totalReps} reps`;
 }
 

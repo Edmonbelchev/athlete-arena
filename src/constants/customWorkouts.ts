@@ -172,3 +172,49 @@ export const DEFAULT_AMRAP_EXERCISES = DEFAULT_CUSTOM_WORKOUT_EXERCISES;
 
 /** @deprecated Use formatWorkoutTimeLimit */
 export const formatAmrapTimeLimit = formatWorkoutTimeLimit;
+
+/**
+ * Per-exercise target stored for a single-exercise AMRAP. There is no rep goal (just as many reps
+ * as possible before the cap), but the database requires a target between 1 and 500 - with 1,
+ * every rep is a full "round", so rounds-based scoring (leaderboards, friend challenges) still
+ * ranks by total reps.
+ */
+export const SINGLE_EXERCISE_AMRAP_TARGET_REPS = 1;
+
+/** AMRAP with exactly one exercise: no reps per round, just max reps until the time cap. */
+export function isSingleExerciseAmrap(
+  workoutType: CustomWorkoutType | string,
+  exercises: readonly unknown[],
+): boolean {
+  return workoutType === 'amrap' && exercises.length === 1;
+}
+
+/** Exercises as they should be saved / launched (single-exercise AMRAP gets the fixed target). */
+export function normalizeWorkoutExercisesForSave<T extends { exerciseType: ExerciseType; targetReps: number }>(
+  workoutType: CustomWorkoutType | string,
+  exercises: readonly T[],
+): T[] {
+  if (!isSingleExerciseAmrap(workoutType, exercises)) {
+    return exercises.map((exercise) => ({ ...exercise }));
+  }
+
+  return exercises.map((exercise) => ({ ...exercise, targetReps: SINGLE_EXERCISE_AMRAP_TARGET_REPS }));
+}
+
+/**
+ * True when an AMRAP score is reps only (single-exercise AMRAP: one rep = one round). A circuit
+ * round always holds at least two reps, so rounds can only equal reps (above zero) here.
+ */
+export function isRepOnlyAmrapScore(
+  workoutType: CustomWorkoutType | string | null | undefined,
+  completedRounds: number | null | undefined,
+  totalReps: number | null | undefined,
+): boolean {
+  return (
+    (workoutType === 'amrap' || workoutType == null) &&
+    typeof completedRounds === 'number' &&
+    typeof totalReps === 'number' &&
+    totalReps > 0 &&
+    completedRounds === totalReps
+  );
+}

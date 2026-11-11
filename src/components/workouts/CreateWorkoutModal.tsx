@@ -40,6 +40,9 @@ import {
   formatWorkoutTimeLimit,
   getCustomWorkoutSessionPath,
   getCustomWorkoutTypeDefinition,
+  isSingleExerciseAmrap,
+  normalizeWorkoutExercisesForSave,
+  SINGLE_EXERCISE_AMRAP_TARGET_REPS,
 } from '@/constants/customWorkouts';
 import { Radius, Spacing } from '@/constants/theme';
 import { setPendingCustomWorkoutLaunch } from '@/features/workouts/customWorkoutLaunchStore';
@@ -263,6 +266,13 @@ export function CreateWorkoutModal({
   const isLadderMode = isForTime && forTimeStructure === 'ladder';
   const isRoundsMode = isForTime && forTimeStructure === 'rounds';
   const isBlockMode = isLadderMode || isRoundsMode;
+  // One-exercise AMRAP: just max reps until the cap - no reps per round to set.
+  const isSingleAmrap = isSingleExerciseAmrap(workoutType, exercises);
+  // What gets saved / launched (the hidden reps input keeps its value in case another exercise is added).
+  const exercisesForSave = useMemo(
+    () => normalizeWorkoutExercisesForSave(workoutType, exercises),
+    [exercises, workoutType],
+  );
 
   const buildStructureConfig = useCallback((): ForTimeStructureConfig | null => {
     if (!isForTime) {
@@ -300,14 +310,21 @@ export function CreateWorkoutModal({
     }
 
     setExercises((current) => [
-      ...current,
+      // A saved single-exercise AMRAP stores 1 rep; give it real reps per round once it becomes a circuit.
+      ...(isSingleExerciseAmrap(workoutType, current)
+        ? current.map((exercise) =>
+            exercise.targetReps === SINGLE_EXERCISE_AMRAP_TARGET_REPS
+              ? { ...exercise, targetReps: getDefaultRepsForExercise(exercise.exerciseType) }
+              : exercise,
+          )
+        : current),
       ...exerciseTypes.map((exerciseType) => ({
         exerciseType,
         targetReps: isLadderMode ? 1 : getDefaultRepsForExercise(exerciseType),
       })),
     ]);
     setShowAddExercisePicker(false);
-  }, [isLadderMode]);
+  }, [isLadderMode, workoutType]);
 
   const removeExercise = useCallback((index: number) => {
     setExercises((current) => current.filter((_, exerciseIndex) => exerciseIndex !== index));
@@ -321,7 +338,19 @@ export function CreateWorkoutModal({
     const previousDefaults = getDefaultExercisesForContext(workoutType, forTimeStructure);
     const shouldResetExercises = exercisesMatchDefaults(exercises, previousDefaults);
 
+    // Leaving a single-exercise AMRAP: its hidden 1-rep target needs real reps again.
+    const baseExercises = isSingleExerciseAmrap(workoutType, exercises)
+      ? exercises.map((exercise) =>
+          exercise.targetReps === SINGLE_EXERCISE_AMRAP_TARGET_REPS
+            ? { ...exercise, targetReps: getDefaultRepsForExercise(exercise.exerciseType) }
+            : exercise,
+        )
+      : exercises;
+
     setWorkoutType(nextType);
+    if (baseExercises !== exercises) {
+      setExercises(baseExercises);
+    }
 
     if (nextType === 'for_time') {
       setTimeLimitSeconds(FOR_TIME_TIME_LIMIT_SECONDS);
@@ -329,7 +358,7 @@ export function CreateWorkoutModal({
       setExercises(
         shouldResetExercises
           ? cloneCustomWorkoutExercises(DEFAULT_FOR_TIME_EXERCISES)
-          : adaptExercisesForContext(exercises, { ladderMode: false, fromLadder: forTimeStructure === 'ladder' }),
+          : adaptExercisesForContext(baseExercises, { ladderMode: false, fromLadder: forTimeStructure === 'ladder' }),
       );
       return;
     }
@@ -399,10 +428,10 @@ export function CreateWorkoutModal({
       templateId: savedTemplateId,
       catalogWorkoutId: null,
       timeLimitSeconds,
-      exercises: cloneCustomWorkoutExercises(exercises),
+      exercises: cloneCustomWorkoutExercises(exercisesForSave),
       structureConfig: buildStructureConfig(),
     };
-  }, [buildStructureConfig, exercises, savedTemplateId, timeLimitSeconds, title, workoutType]);
+  }, [buildStructureConfig, exercisesForSave, savedTemplateId, timeLimitSeconds, title, workoutType]);
 
   async function handleSaveTemplate() {
     if (!canSubmit) {
@@ -416,7 +445,7 @@ export function CreateWorkoutModal({
       title: title.trim(),
       workoutType,
       timeLimitSeconds,
-      exercises,
+      exercises: exercisesForSave,
       structureConfig: buildStructureConfig(),
     };
 
@@ -736,7 +765,13 @@ export function CreateWorkoutModal({
                       </Text>
                     </Pressable>
 
-                    {!isLadderMode ? (
+                    {isSingleAmrap ? (
+                      <Text style={[styles.singleAmrapHint, { color: theme.textSecondary }]}>
+                        {isHoldExercise(exercise.exerciseType)
+                          ? 'Hold as long as you can before the time cap - no target to set.'
+                          : 'As many reps as possible before the time cap - no reps to set.'}
+                      </Text>
+                    ) : !isLadderMode ? (
                       <View style={styles.repRow}>
                         <Text style={[styles.repLabel, { color: theme.text }]}>
                           {isHoldExercise(exercise.exerciseType)
@@ -796,14 +831,14 @@ export function CreateWorkoutModal({
 
               <WorkoutCircuitPreview
                 workoutType={workoutType}
-                exercises={exercises}
+                exercises={exercisesForSave}
                 structureConfig={buildStructureConfig()}
               />
 
               <WorkoutXpPreviewCard
                 workoutType={workoutType}
                 exercises={
-                  isForTime ? resolveForTimeSteps(exercises, buildStructureConfig()) : exercises
+                  isForTime ? resolveForTimeSteps(exercises, buildStructureConfig()) : exercisesForSave
                 }
                 timeLimitSeconds={isForTime ? 0 : timeLimitSeconds}
               />
@@ -965,6 +1000,7 @@ const styles = StyleSheet.create({
   },
   exercisePickerLabel: { fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.4 },
   exercisePickerValue: { fontSize: 16, fontWeight: '800' },
+  singleAmrapHint: { fontSize: 13, lineHeight: 18, fontWeight: '600' },
   repRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.two },
   repLabel: { flex: 1, fontSize: 14, fontWeight: '700' },
   repControls: { flexDirection: 'row', alignItems: 'center', gap: Spacing.two, flexShrink: 0 },

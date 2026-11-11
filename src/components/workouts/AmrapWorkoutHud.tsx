@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 
-import { formatExerciseCount, formatExerciseLabel } from '@/constants/challenges';
+import { formatExerciseCount, formatExerciseLabel, isHoldExercise } from '@/constants/challenges';
 import { formatRaceTime } from '@/constants/friendChallenges';
 import { RepProgressBar } from '@/components/workouts/RepProgressBar';
 import { Radius, Spacing } from '@/constants/theme';
@@ -15,6 +15,8 @@ interface AmrapWorkoutHudProps {
   secondsRemaining: number | null;
   timeLimitSeconds: number;
   timerStarted?: boolean;
+  /** Single-exercise AMRAP: max reps until the cap - no rounds, target or progress bar. */
+  singleExercise?: boolean;
 }
 
 export function AmrapWorkoutHud({
@@ -25,8 +27,33 @@ export function AmrapWorkoutHud({
   secondsRemaining,
   timeLimitSeconds,
   timerStarted = true,
+  singleExercise = false,
 }: AmrapWorkoutHudProps) {
   const theme = useTheme();
+
+  if (singleExercise) {
+    return (
+      <View style={styles.wrap} pointerEvents="none">
+        <View style={styles.topRow}>
+          <View style={styles.chip}>
+            <Text style={styles.chipLabel}>TIME LEFT</Text>
+            <Text style={[styles.chipValue, { color: theme.streak }]}>
+              {formatRaceTime(timerStarted ? (secondsRemaining ?? 0) : timeLimitSeconds)}
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.mainHud}>
+          <Text style={styles.exerciseLabel}>{formatExerciseLabel(currentExercise.exerciseType, true)}</Text>
+          <Text style={styles.repCount}>{formatExerciseCount(currentExercise.exerciseType, currentExerciseReps)}</Text>
+          <Text style={styles.meta}>
+            {formatRaceTime(timeLimitSeconds)} {workoutTypeLabel} · as many{' '}
+            {isHoldExercise(currentExercise.exerciseType) ? 'seconds' : 'reps'} as possible
+          </Text>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.wrap} pointerEvents="none">

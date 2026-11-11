@@ -9,6 +9,7 @@ import {
 import { getDailyMissionRewardForXp } from '@/constants/dailyMissionRewards';
 import type { ChallengeStatus } from '@/types/friends';
 import type { CustomWorkoutType } from '@/types/customWorkouts';
+import { isRepOnlyAmrapScore } from '@/constants/customWorkouts';
 
 export type ChallengeHistoryKind = 'daily' | 'friend';
 export type ChallengeHistoryFriendKind = 'exercise' | 'workout';
@@ -167,6 +168,13 @@ export function getHistoryScoreLine(entry: ChallengeHistoryEntry): string {
 
       const myRounds = entry.completedRounds ?? 0;
       const opponentRounds = entry.opponentCompletedRounds ?? 0;
+      if (
+        isRepOnlyAmrapScore(entry.workoutType, myRounds, entry.completedReps) ||
+        isRepOnlyAmrapScore(entry.workoutType, opponentRounds, opponentReps)
+      ) {
+        // Single-exercise AMRAP: every rep is a round.
+        return `You ${entry.completedReps} reps · ${opponent} ${opponentReps} reps`;
+      }
       return `You ${myRounds} rounds · ${opponent} ${opponentRounds} rounds`;
     }
 
@@ -190,6 +198,10 @@ export function getHistoryScoreLine(entry: ChallengeHistoryEntry): string {
   if (entry.friendChallengeKind === 'workout') {
     if (entry.workoutType === 'for_time' && entry.raceSeconds !== null) {
       return `Finished in ${formatRaceTime(entry.raceSeconds)}`;
+    }
+
+    if (isRepOnlyAmrapScore(entry.workoutType, entry.completedRounds, entry.completedReps)) {
+      return `${entry.completedReps} reps completed`;
     }
 
     return `${entry.completedRounds ?? 0} rounds completed`;

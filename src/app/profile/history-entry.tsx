@@ -8,7 +8,7 @@ import { RewardTiles } from '@/components/rewards/RewardTiles';
 import { AppIcon } from '@/components/ui/AppIcon';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { formatExerciseLabel } from '@/constants/challenges';
-import { formatWorkoutTimeLimit, getCustomWorkoutTypeLabel } from '@/constants/customWorkouts';
+import { formatWorkoutTimeLimit, getCustomWorkoutTypeLabel, isRepOnlyAmrapScore } from '@/constants/customWorkouts';
 import { getDailyMissionQuestMeta } from '@/constants/dailyMissionQuest';
 import { formatRaceTime } from '@/constants/friendChallenges';
 import type { AppIconName } from '@/constants/icons';
@@ -212,10 +212,15 @@ function getPlayer(entry: ChallengeHistoryEntry, side: 'mine' | 'theirs', isWinn
     }
 
     const rounds = mine ? entry.completedRounds : entry.opponentCompletedRounds;
+    const reps = mine ? entry.completedReps : entry.opponentCompletedReps;
+    // Single-exercise AMRAP: every rep is a round - show it as reps.
+    const repOnly =
+      isRepOnlyAmrapScore(entry.workoutType, entry.completedRounds, entry.completedReps) ||
+      isRepOnlyAmrapScore(entry.workoutType, entry.opponentCompletedRounds, entry.opponentCompletedReps);
     return {
       ...base,
-      score: finished && rounds !== null ? String(rounds) : '—',
-      caption: entry.workoutType === 'emom' ? 'minutes' : 'rounds',
+      score: finished && rounds !== null ? String(repOnly ? (reps ?? rounds) : rounds) : '—',
+      caption: entry.workoutType === 'emom' ? 'minutes' : repOnly ? 'reps' : 'rounds',
     };
   }
 
@@ -411,7 +416,8 @@ function SoloWorkoutDetail({ entry, theme }: { entry: SoloWorkoutHistoryEntry; t
   const isForTime = entry.workoutType === 'for_time';
 
   const tiles: Array<{ label: string; value: string }> = [];
-  if (!isForTime) {
+  // Single-exercise AMRAP: every rep is a round - total reps says it all.
+  if (!isForTime && !isRepOnlyAmrapScore(entry.workoutType, entry.completedRounds, entry.totalReps)) {
     tiles.push({
       label: entry.workoutType === 'emom' ? 'Minutes' : 'Rounds',
       value: String(entry.completedRounds),

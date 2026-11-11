@@ -1,8 +1,12 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import { AppIcon } from '@/components/ui/AppIcon';
-import { formatExerciseCount, formatExerciseLabel } from '@/constants/challenges';
-import { formatWorkoutTimeLimit, getCustomWorkoutTypeLabel } from '@/constants/customWorkouts';
+import { formatExerciseCount, formatExerciseLabel, isHoldExercise } from '@/constants/challenges';
+import {
+  formatWorkoutTimeLimit,
+  getCustomWorkoutTypeLabel,
+  isSingleExerciseAmrap,
+} from '@/constants/customWorkouts';
 import { Radius, Spacing } from '@/constants/theme';
 import type { AmrapWorkoutResult } from '@/types/customWorkouts';
 import { WorkoutRewardsSummary } from '@/components/workouts/WorkoutRewardsSummary';
@@ -20,6 +24,8 @@ interface AmrapCompleteOverlayProps {
 export function AmrapCompleteOverlay({ result, sessionReward = null, completedQuests = [] }: AmrapCompleteOverlayProps) {
   const theme = useTheme();
   const typeLabel = getCustomWorkoutTypeLabel(result.workoutType);
+  const singleExercise = isSingleExerciseAmrap(result.workoutType, result.exerciseBreakdown);
+  const singleEntry = singleExercise ? result.exerciseBreakdown[0] : null;
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
@@ -31,33 +37,49 @@ export function AmrapCompleteOverlay({ result, sessionReward = null, completedQu
         <Text style={[styles.title, { color: theme.text }]}>{result.title}</Text>
       </View>
 
-      <View style={styles.statsRow}>
-        <View style={[styles.statCard, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
-          <Text style={[styles.statValue, { color: theme.primary }]}>{result.completedRounds}</Text>
-          <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Rounds</Text>
+      {singleEntry ? (
+        <View style={styles.statsRow}>
+          <View style={[styles.statCard, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
+            <Text style={[styles.statValue, { color: theme.xp }]}>
+              {formatExerciseCount(singleEntry.exerciseType, result.totalReps)}
+            </Text>
+            <Text style={[styles.statLabel, { color: theme.textSecondary }]}>
+              {isHoldExercise(singleEntry.exerciseType) ? 'Total held' : 'Total reps'} ·{' '}
+              {formatExerciseLabel(singleEntry.exerciseType)}
+            </Text>
+          </View>
         </View>
-        <View style={[styles.statCard, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
-          <Text style={[styles.statValue, { color: theme.xp }]}>{result.totalReps}</Text>
-          <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Total reps</Text>
+      ) : (
+        <View style={styles.statsRow}>
+          <View style={[styles.statCard, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
+            <Text style={[styles.statValue, { color: theme.primary }]}>{result.completedRounds}</Text>
+            <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Rounds</Text>
+          </View>
+          <View style={[styles.statCard, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
+            <Text style={[styles.statValue, { color: theme.xp }]}>{result.totalReps}</Text>
+            <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Total reps</Text>
+          </View>
         </View>
-      </View>
+      )}
 
       <WorkoutRewardsSummary sessionReward={sessionReward} completedQuests={completedQuests} />
 
-      <View style={[styles.breakdownCard, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
-        <Text style={[styles.breakdownTitle, { color: theme.text }]}>Exercise breakdown</Text>
-        {result.exerciseBreakdown.map((entry) => (
-          <View key={entry.exerciseType} style={styles.breakdownRow}>
-            <Text style={[styles.breakdownExercise, { color: theme.text }]}>
-              {formatExerciseLabel(entry.exerciseType)}
-            </Text>
-            <Text style={[styles.breakdownMeta, { color: theme.textSecondary }]}>
-              {formatExerciseCount(entry.exerciseType, entry.targetReps)} per round ·{' '}
-              {formatExerciseCount(entry.exerciseType, entry.totalReps)} total
-            </Text>
-          </View>
-        ))}
-      </View>
+      {singleExercise ? null : (
+        <View style={[styles.breakdownCard, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
+          <Text style={[styles.breakdownTitle, { color: theme.text }]}>Exercise breakdown</Text>
+          {result.exerciseBreakdown.map((entry) => (
+            <View key={entry.exerciseType} style={styles.breakdownRow}>
+              <Text style={[styles.breakdownExercise, { color: theme.text }]}>
+                {formatExerciseLabel(entry.exerciseType)}
+              </Text>
+              <Text style={[styles.breakdownMeta, { color: theme.textSecondary }]}>
+                {formatExerciseCount(entry.exerciseType, entry.targetReps)} per round ·{' '}
+                {formatExerciseCount(entry.exerciseType, entry.totalReps)} total
+              </Text>
+            </View>
+          ))}
+        </View>
+      )}
 
       <Text style={[styles.duration, { color: theme.textSecondary }]}>
         {formatWorkoutTimeLimit(result.timeLimitSeconds)} cap

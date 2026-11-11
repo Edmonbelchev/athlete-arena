@@ -1,6 +1,7 @@
 import type { ExerciseType } from '@/constants/challenges';
 import { formatExerciseCount, formatExerciseLabel, formatHoldSeconds, isHoldExercise } from '@/constants/challenges';
 import { formatChallengeDuration, formatRaceTime } from '@/constants/friendChallenges';
+import { isRepOnlyAmrapScore } from '@/constants/customWorkouts';
 import type { CustomWorkoutExercise, CustomWorkoutType } from '@/types/customWorkouts';
 
 import type { ShopAvatarDisplay, ShopFrameDisplay } from '@/types/shop';
@@ -264,6 +265,14 @@ export function formatFriendWorkoutScore(challenge: FriendChallenge): string {
   const myReps = challenge.workoutTotalReps ?? challenge.completedReps;
   const opponentReps = challenge.opponentWorkoutTotalReps ?? challenge.opponentCompletedReps;
   const opponentName = getOpponentDisplayName(challenge);
+
+  if (
+    isRepOnlyAmrapScore(challenge.workoutType, myRounds, myReps) ||
+    isRepOnlyAmrapScore(challenge.workoutType, opponentRounds, opponentReps)
+  ) {
+    // Single-exercise AMRAP: every rep is a round.
+    return `You ${myReps} reps · ${opponentName} ${opponentReps} reps`;
+  }
 
   return `You ${myRounds} rnd · ${myReps} reps · ${opponentName} ${opponentRounds} rnd · ${opponentReps} reps`;
 }

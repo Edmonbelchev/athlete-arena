@@ -1,7 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 
-import { formatExerciseCount, formatExerciseLabel } from '@/constants/challenges';
-import { getCustomWorkoutTypeDefinition } from '@/constants/customWorkouts';
+import { formatExerciseCount, formatExerciseLabel, isHoldExercise } from '@/constants/challenges';
+import { getCustomWorkoutTypeDefinition, isSingleExerciseAmrap } from '@/constants/customWorkouts';
 import { Radius, Spacing } from '@/constants/theme';
 import {
   expandLadderSteps,
@@ -82,6 +82,27 @@ export function WorkoutCircuitPreview({
         </View>
         <Text style={[styles.footer, { color: theme.textSecondary }]}>
           {rounds} rounds · {expandRoundsSteps(exercises, rounds).length} total steps
+        </Text>
+      </View>
+    );
+  }
+
+  if (isSingleExerciseAmrap(workoutType, exercises)) {
+    const exerciseType = exercises[0].exerciseType;
+
+    return (
+      <View style={[styles.card, { backgroundColor: theme.backgroundElement, borderColor: theme.border }]}>
+        <Text style={[styles.title, { color: theme.text }]}>{typeDefinition.label} workout</Text>
+        <View style={styles.row}>
+          <Text style={[styles.step, { color: theme.primary }]}>1</Text>
+          <Text style={[styles.exercise, { color: theme.text }]}>
+            Max {formatExerciseLabel(exerciseType)}
+          </Text>
+        </View>
+        <Text style={[styles.footer, { color: theme.textSecondary }]}>
+          {isHoldExercise(exerciseType)
+            ? 'Hold as long as you can before the timer ends.'
+            : 'As many reps as possible before the timer ends.'}
         </Text>
       </View>
     );
