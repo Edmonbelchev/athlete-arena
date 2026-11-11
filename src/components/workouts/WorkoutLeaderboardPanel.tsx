@@ -7,6 +7,7 @@ import { AppIcon } from '@/components/ui/AppIcon';
 import { Radius, Spacing } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import type { CustomWorkoutType } from '@/types/customWorkouts';
+import { isRepOnlyAmrapScore } from '@/constants/customWorkouts';
 import type { LeaderboardEntry } from '@/types/leaderboard';
 import {
   getWorkoutLeaderboardPeriodLabel,
@@ -61,6 +62,11 @@ function getScoreParts(
       display: `${entry.scoreAmount} min`,
       subLabel: `${entry.tiebreakAmount} reps`,
     };
+  }
+
+  // Single-exercise AMRAP: every rep is a round - show reps only.
+  if (isRepOnlyAmrapScore('amrap', entry.scoreAmount, entry.tiebreakAmount)) {
+    return { display: `${entry.tiebreakAmount} reps`, subLabel: 'max reps' };
   }
 
   return {

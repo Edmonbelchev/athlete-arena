@@ -1,7 +1,10 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 
+import { isSingleExerciseAmrap, normalizeWorkoutExercisesForSave } from '@/constants/customWorkouts';
 import type { CustomWorkoutExercise, CustomWorkoutLaunchConfig, AmrapWorkoutResult } from '@/types/customWorkouts';
 import { buildExerciseBreakdown } from '@/services/customWorkoutService';
+
+import { applyAmrapRep, INITIAL_AMRAP_PROGRESS, type AmrapProgress } from './amrapProgress';
 
 interface UseAmrapWorkoutOptions {
   config: CustomWorkoutLaunchConfig;
@@ -12,28 +15,22 @@ export function useAmrapWorkout({ config, onComplete }: UseAmrapWorkoutOptions) 
   const [sessionLive, setSessionLive] = useState(false);
   const [startedAt, setStartedAt] = useState<string | null>(null);
   const [completed, setCompleted] = useState(false);
-  const [currentExerciseIndex, setCurrentExerciseIndex] = useState(0);
-  const [currentExerciseReps, setCurrentExerciseReps] = useState(0);
-  const [completedRounds, setCompletedRounds] = useState(0);
-  const [totalReps, setTotalReps] = useState(0);
-  const [repTotalsByType, setRepTotalsByType] = useState<Record<string, number>>({});
+  const [progress, setProgress] = useState<AmrapProgress>(INITIAL_AMRAP_PROGRESS);
   const completedRef = useRef(false);
   const timerStartedRef = useRef(false);
-  const snapshotRef = useRef({
-    completedRounds: 0,
-    totalReps: 0,
-    repTotalsByType: {} as Record<string, number>,
-  });
+  const snapshotRef = useRef<AmrapProgress>(INITIAL_AMRAP_PROGRESS);
 
-  const exercises = config.exercises;
+  // Single-exercise AMRAP has no rep target (max reps until the cap) - see isSingleExerciseAmrap.
+  const exercises = useMemo(
+    () => normalizeWorkoutExercisesForSave('amrap', config.exercises),
+    [config.exercises],
+  );
+  const singleExercise = isSingleExerciseAmrap('amrap', exercises);
+  const currentExerciseIndex = progress.exerciseIndex;
   const currentExercise = exercises[currentExerciseIndex] ?? exercises[0];
 
-  const result = useMemo((): AmrapWorkoutResult | null => {
-    if (!startedAt || !completed) {
-      return null;
-    }
-
-    return {
+  const buildResult = useCallback(
+    (startedAtValue: string): AmrapWorkoutResult => ({
       workoutType: 'amrap',
       title: config.title,
       templateId: config.templateId,
@@ -42,10 +39,19 @@ export function useAmrapWorkout({ config, onComplete }: UseAmrapWorkoutOptions) 
       completedRounds: snapshotRef.current.completedRounds,
       totalReps: snapshotRef.current.totalReps,
       exerciseBreakdown: buildExerciseBreakdown(exercises, snapshotRef.current.repTotalsByType),
-      startedAt,
+      startedAt: startedAtValue,
       completedAt: new Date().toISOString(),
-    };
-  }, [completed, config.catalogWorkoutId, config.templateId, config.timeLimitSeconds, config.title, exercises, startedAt]);
+    }),
+    [config.catalogWorkoutId, config.templateId, config.timeLimitSeconds, config.title, exercises],
+  );
+
+  const result = useMemo((): AmrapWorkoutResult | null => {
+    if (!startedAt || !completed) {
+      return null;
+    }
+
+    return buildResult(startedAt);
+  }, [buildResult, completed, startedAt]);
 
   const finishWorkout = useCallback(() => {
     if (completedRef.current || !startedAt) {
@@ -54,22 +60,8 @@ export function useAmrapWorkout({ config, onComplete }: UseAmrapWorkoutOptions) 
 
     completedRef.current = true;
     setCompleted(true);
-
-    const finalResult: AmrapWorkoutResult = {
-      workoutType: 'amrap',
-      title: config.title,
-      templateId: config.templateId,
-      catalogWorkoutId: config.catalogWorkoutId,
-      timeLimitSeconds: config.timeLimitSeconds,
-      completedRounds: snapshotRef.current.completedRounds,
-      totalReps: snapshotRef.current.totalReps,
-      exerciseBreakdown: buildExerciseBreakdown(exercises, snapshotRef.current.repTotalsByType),
-      startedAt,
-      completedAt: new Date().toISOString(),
-    };
-
-    onComplete?.(finalResult);
-  }, [config.catalogWorkoutId, config.templateId, config.timeLimitSeconds, config.title, exercises, onComplete, startedAt]);
+    onComplete?.(buildResult(startedAt));
+  }, [buildResult, onComplete, startedAt]);
 
   const startWorkout = useCallback(() => {
     if (sessionLive) {
@@ -89,50 +81,19 @@ export function useAmrapWorkout({ config, onComplete }: UseAmrapWorkoutOptions) 
       setStartedAt(new Date().toISOString());
     }
 
-    const exercise = exercises[currentExerciseIndex];
-    if (!exercise) {
-      return;
-    }
-
-    const nextExerciseReps = currentExerciseReps + 1;
-    const nextTotalReps = snapshotRef.current.totalReps + 1;
-    const nextRepTotals = {
-      ...snapshotRef.current.repTotalsByType,
-      [exercise.exerciseType]: (snapshotRef.current.repTotalsByType[exercise.exerciseType] ?? 0) + 1,
-    };
-
-    snapshotRef.current.totalReps = nextTotalReps;
-    snapshotRef.current.repTotalsByType = nextRepTotals;
-    setCurrentExerciseReps(nextExerciseReps);
-    setTotalReps(nextTotalReps);
-    setRepTotalsByType(nextRepTotals);
-
-    if (nextExerciseReps < exercise.targetReps) {
-      return;
-    }
-
-    const isLastExercise = currentExerciseIndex >= exercises.length - 1;
-
-    if (isLastExercise) {
-      const nextRounds = snapshotRef.current.completedRounds + 1;
-      snapshotRef.current.completedRounds = nextRounds;
-      setCompletedRounds(nextRounds);
-      setCurrentExerciseIndex(0);
-      setCurrentExerciseReps(0);
-      return;
-    }
-
-    setCurrentExerciseIndex((value) => value + 1);
-    setCurrentExerciseReps(0);
-  }, [currentExerciseIndex, currentExerciseReps, exercises, sessionLive, startedAt]);
+    const next = applyAmrapRep(snapshotRef.current, exercises);
+    snapshotRef.current = next;
+    setProgress(next);
+  }, [exercises, sessionLive]);
 
   return {
     exercises,
+    singleExercise,
     currentExercise,
     currentExerciseIndex,
-    currentExerciseReps,
-    completedRounds,
-    totalReps,
+    currentExerciseReps: progress.exerciseReps,
+    completedRounds: progress.completedRounds,
+    totalReps: progress.totalReps,
     sessionLive,
     startedAt,
     completed,

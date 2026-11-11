@@ -10,7 +10,6 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-import { WorkoutGuideAnimation } from '@/components/challenges/WorkoutGuideAnimation';
 import { XpCoinRewardLabel } from '@/components/rewards/XpCoinRewardLabel';
 import type { ExerciseType } from '@/constants/challenges';
 import { Spacing } from '@/constants/theme';
@@ -22,7 +21,8 @@ const CONFETTI_PIECES = 14;
 interface DailyMissionCompleteOverlayProps {
   targetReps: number;
   exerciseLabel: string;
-  exerciseType: ExerciseType;
+  /** Kept for callers; no longer rendered. */
+  exerciseType?: ExerciseType;
   xp: number;
   coins: number;
   showWeeklyStreakComplete?: boolean;
@@ -69,7 +69,7 @@ function ConfettiPiece({ index }: { index: number }) {
 
   return (
     <Animated.View
-      style={StyleSheet.flatten([
+      style={[
         styles.confetti,
         style,
         {
@@ -79,7 +79,7 @@ function ConfettiPiece({ index }: { index: number }) {
           borderRadius: size / 3,
           backgroundColor: color,
         },
-      ])}
+      ]}
     />
   );
 }
@@ -112,11 +112,11 @@ function PulsingRing() {
 
   return (
     <Animated.View
-      style={StyleSheet.flatten([
+      style={[
         styles.pulseRing,
         ringStyle,
         { borderColor: theme.success },
-      ])}
+      ]}
     />
   );
 }
@@ -124,7 +124,6 @@ function PulsingRing() {
 export function DailyMissionCompleteOverlay({
   targetReps,
   exerciseLabel,
-  exerciseType,
   xp,
   coins,
   showWeeklyStreakComplete = false,
@@ -158,12 +157,10 @@ export function DailyMissionCompleteOverlay({
         </Text>
 
         {showWeeklyStreakComplete ? (
-          <View style={styles.weeklyStreakGuide}>
-            <Text style={StyleSheet.flatten([styles.weeklyStreakLabel, { color: theme.streak }])}>
-              Weekly streak complete!
-            </Text>
-            <WorkoutGuideAnimation exerciseType={exerciseType} variant="setup" />
-          </View>
+          // Lightweight hint only - the full weekly streak popup shows after leaving this screen.
+          <Text style={StyleSheet.flatten([styles.weeklyStreakLabel, { color: theme.streak }])}>
+            Weekly streak complete!
+          </Text>
         ) : null}
 
         <XpCoinRewardLabel
@@ -240,11 +237,6 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: '900',
     textAlign: 'center',
-  },
-  weeklyStreakGuide: {
-    width: '100%',
-    alignItems: 'center',
-    gap: Spacing.two,
   },
   weeklyStreakLabel: {
     fontSize: 16,

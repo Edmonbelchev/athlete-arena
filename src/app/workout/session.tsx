@@ -15,6 +15,7 @@ import { ForTimeWorkoutHud } from '@/components/workouts/ForTimeWorkoutHud';
 import { WorkoutRoundCountdownOverlay } from '@/components/workouts/WorkoutRoundCountdownOverlay';
 import { WorkoutStartClockPromptOverlay } from '@/components/workouts/WorkoutStartClockPromptOverlay';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
+import { formatExerciseLabel } from '@/constants/challenges';
 import {
   formatWorkoutTimeLimit,
   getCustomWorkoutTypeLabel,
@@ -175,7 +176,6 @@ function AmrapWorkoutSession({ config }: { config: CustomWorkoutLaunchConfig }) 
     processLandmarks,
   } = useExercisePoseDetection({
     exerciseType: amrap.currentExercise?.exerciseType ?? 'push_ups',
-    exerciseSessionKey: amrap.currentExerciseIndex,
     enabled: canTrack && cameraActive,
     posePreviewLayoutRef,
     onRepDetected: handleRepDetected,
@@ -191,8 +191,11 @@ function AmrapWorkoutSession({ config }: { config: CustomWorkoutLaunchConfig }) 
 
   const setupSubtitle = useMemo(() => {
     const typeLabel = getCustomWorkoutTypeLabel(config.workoutType);
+    if (amrap.singleExercise) {
+      return `${formatWorkoutTimeLimit(config.timeLimitSeconds)} ${typeLabel} · as many reps as possible`;
+    }
     return `${formatWorkoutTimeLimit(config.timeLimitSeconds)} ${typeLabel} · ${config.exercises.length} exercises`;
-  }, [config]);
+  }, [amrap.singleExercise, config]);
 
   if (showWorkout && amrap.completed && savedResult) {
     return (
@@ -200,11 +203,14 @@ function AmrapWorkoutSession({ config }: { config: CustomWorkoutLaunchConfig }) 
         exerciseType={amrap.currentExercise.exerciseType}
         currentReps={amrap.currentExerciseReps}
         targetReps={amrap.currentExercise.targetReps}
+        openEnded={amrap.singleExercise}
         trackingStatus={trackingStatus}
         coachSeverity={coachSeverity}
         repPhase={posePhase}
         cameraActive={false}
         pullUpBarLineY={null}
+        onCameraReady={() => {}}
+        onLandmarksDetected={() => {}}
         completed
         onContinue={handleLeave}
         completeOverlay={<AmrapCompleteOverlay result={savedResult} sessionReward={sessionReward} completedQuests={completedQuests} />}
@@ -225,6 +231,7 @@ function AmrapWorkoutSession({ config }: { config: CustomWorkoutLaunchConfig }) 
         exerciseType={amrap.currentExercise.exerciseType}
         currentReps={amrap.currentExerciseReps}
         targetReps={amrap.currentExercise.targetReps}
+        openEnded={amrap.singleExercise}
         trackingStatus={trackingStatus}
         coachSeverity={coachSeverity}
         repPhase={posePhase}
@@ -233,7 +240,11 @@ function AmrapWorkoutSession({ config }: { config: CustomWorkoutLaunchConfig }) 
         posePreviewLayoutRef={posePreviewLayoutRef}
         onCameraReady={handleCameraReady}
         onLandmarksDetected={processLandmarks}
-        exerciseTransitionKey={`${amrap.currentExerciseIndex}-${amrap.completedRounds}`}
+        // Single-exercise AMRAP counts every rep as a round - keep the key fixed so the exercise
+        // is announced once, not on every rep.
+        exerciseTransitionKey={
+          amrap.singleExercise ? 0 : `${amrap.currentExerciseIndex}-${amrap.completedRounds}`
+        }
         totalReps={amrap.totalReps}
         repSoundEnabled={preferences.repSoundEnabled}
         hudOverlay={
@@ -245,6 +256,7 @@ function AmrapWorkoutSession({ config }: { config: CustomWorkoutLaunchConfig }) 
             secondsRemaining={secondsRemaining}
             timeLimitSeconds={config.timeLimitSeconds}
             timerStarted={Boolean(amrap.startedAt)}
+            singleExercise={amrap.singleExercise}
           />
         }
         centerOverlay={
@@ -271,11 +283,16 @@ function AmrapWorkoutSession({ config }: { config: CustomWorkoutLaunchConfig }) 
         exerciseLabel={config.title}
         exerciseType={amrap.currentExercise.exerciseType}
         targetReps={amrap.currentExercise.targetReps}
+        targetLabel={
+          amrap.singleExercise
+            ? `Max ${formatExerciseLabel(amrap.currentExercise.exerciseType)} in ${formatWorkoutTimeLimit(config.timeLimitSeconds)}`
+            : undefined
+        }
         subtitle={setupSubtitle}
         preview={
           <WorkoutXpPreviewCard
             workoutType="amrap"
-            exercises={config.exercises}
+            exercises={amrap.exercises}
             timeLimitSeconds={config.timeLimitSeconds}
           />
         }
@@ -375,7 +392,6 @@ function EmomWorkoutSession({ config }: { config: CustomWorkoutLaunchConfig }) {
     processLandmarks,
   } = useExercisePoseDetection({
     exerciseType: emom.currentExercise?.exerciseType ?? 'push_ups',
-    exerciseSessionKey: `${emom.clock.currentIntervalIndex}-${emom.currentExerciseIndex}`,
     enabled: canTrack && cameraActive,
     posePreviewLayoutRef,
     onRepDetected: handleRepDetected,
@@ -581,7 +597,6 @@ function ForTimeWorkoutSession({ config }: { config: CustomWorkoutLaunchConfig }
     processLandmarks,
   } = useExercisePoseDetection({
     exerciseType: forTime.currentExercise?.exerciseType ?? 'push_ups',
-    exerciseSessionKey: forTime.currentExerciseIndex,
     enabled: canTrack && cameraActive,
     posePreviewLayoutRef,
     onRepDetected: handleRepDetected,
@@ -623,6 +638,8 @@ function ForTimeWorkoutSession({ config }: { config: CustomWorkoutLaunchConfig }
         repPhase={posePhase}
         cameraActive={false}
         pullUpBarLineY={null}
+        onCameraReady={() => {}}
+        onLandmarksDetected={() => {}}
         completed
         onContinue={handleLeave}
         completeOverlay={<ForTimeCompleteOverlay result={savedResult} sessionReward={sessionReward} completedQuests={completedQuests} />}

@@ -16,6 +16,9 @@ import { MaxContentWidth, Spacing } from '@/constants/theme';
 import { useChallenge } from '@/features/challenges/useChallenge';
 import { useExercisePoseDetection } from '@/features/challenges/useExercisePoseDetection';
 import { useRepCounter } from '@/features/challenges/useRepCounter';
+import { useAuth } from '@/features/auth';
+import { getLocalDateKey } from '@/features/celebrations/celebrationQueue';
+import { celebrateWeeklyStreak } from '@/features/celebrations/celebrationStore';
 import { useProfile } from '@/features/profile/useProfile';
 import { useWeeklyMissionStreak } from '@/features/streaks/useWeeklyMissionStreak';
 import { useDrainNativeCameraOnLeave } from '@/hooks/use-drain-native-camera-on-leave';
@@ -38,6 +41,8 @@ export default function ChallengeScreen() {
   const id = useRouteParam('id');
   const { challenge, isLoading, error, applyChallenge } = useChallenge(id);
   const { applyXpDelta, refresh: refreshProfile } = useProfile();
+  const { session } = useAuth();
+  const userId = session?.user.id ?? null;
   const { weeklyStreak, refresh: refreshWeeklyStreak } = useWeeklyMissionStreak();
   const { workoutStarted, startWorkout } = useWorkoutSession('daily', id);
   const [syncError, setSyncError] = useState<string | null>(null);
@@ -114,6 +119,17 @@ export default function ChallengeScreen() {
         applyXpDelta(updated.xp_reward);
         if (completesWeeklyStreak) {
           setShowWeeklyStreakComplete(true);
+          // The full celebration popup waits until the user leaves this screen (CelebrationHost).
+          if (userId) {
+            const streak = weeklyStreakRef.current;
+            void celebrateWeeklyStreak({
+              userId,
+              streakKey: getLocalDateKey(),
+              targetDays: streak.targetDays,
+              rewardXp: streak.rewardXp,
+              rewardCoins: streak.rewardCoins,
+            });
+          }
         }
         void refreshProfile();
         void refreshWeeklyStreak();
@@ -124,7 +140,7 @@ export default function ChallengeScreen() {
         setIsSyncing(false);
       }
     },
-    [applyChallenge, applyXpDelta, refreshProfile, refreshWeeklyStreak],
+    [applyChallenge, applyXpDelta, refreshProfile, refreshWeeklyStreak, userId],
   );
 
   const repCounter = useRepCounter({

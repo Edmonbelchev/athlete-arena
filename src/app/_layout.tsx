@@ -9,6 +9,7 @@ import { ActivityIndicator, Platform, StyleSheet, View } from 'react-native';
 import { AuthProvider, useAuth } from '@/features/auth';
 import { AuthDeepLinkHandler } from '@/features/auth/AuthDeepLinkHandler';
 import { AchievementUnlockProvider } from '@/features/achievements/AchievementUnlockProvider';
+import { CelebrationHost } from '@/features/celebrations/CelebrationHost';
 import { TitleUnlockProvider } from '@/features/titles/TitleUnlockProvider';
 import { PremiumProvider } from '@/features/subscription/PremiumProvider';
 import { RevenueCatBootstrap } from '@/features/subscription/RevenueCatBootstrap';
@@ -80,6 +81,7 @@ function ThemedRootNavigator() {
         <AvatarHeadshotSync />
       </OnboardingGate>
       <ChallengeNotificationBanner />
+      <CelebrationHost />
     </ThemeProvider>
   );
 }

@@ -14,7 +14,7 @@ import { WorkoutCircuitPreview } from '@/components/workouts/WorkoutCircuitPrevi
 import { EmoteDisplay } from '@/components/shop/EmoteDisplay';
 import { PrimaryButton } from '@/components/ui/PrimaryButton';
 import { formatExerciseLabel, formatHoldSeconds, isHoldExercise } from '@/constants/challenges';
-import { getCustomWorkoutSessionPath, getCustomWorkoutTypeLabel } from '@/constants/customWorkouts';
+import { getCustomWorkoutSessionPath, getCustomWorkoutTypeLabel, isRepOnlyAmrapScore } from '@/constants/customWorkouts';
 import { getFriendChallengeCoinReward } from '@/constants/coins';
 import {
     FRIEND_RACE_TIMER_START_HINT,
@@ -190,6 +190,21 @@ function getFriendResultScores(
       }
 
       const rounds = mine ? challenge.completedRounds : challenge.opponentCompletedRounds;
+      // Single-exercise AMRAP: every rep is a round - show it as reps.
+      const repOnly =
+        isRepOnlyAmrapScore(
+          challenge.workoutType,
+          challenge.completedRounds,
+          challenge.workoutTotalReps ?? challenge.completedReps,
+        ) ||
+        isRepOnlyAmrapScore(
+          challenge.workoutType,
+          challenge.opponentCompletedRounds,
+          challenge.opponentWorkoutTotalReps ?? challenge.opponentCompletedReps,
+        );
+      if (repOnly) {
+        return { ...base, score: finished ? String(reps) : '—', caption: 'reps' };
+      }
       return {
         ...base,
         score: finished ? String(rounds ?? 0) : '—',

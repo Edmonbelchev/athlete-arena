@@ -91,7 +91,7 @@ function ConfettiPiece({
 
   return (
     <Animated.View
-      style={StyleSheet.flatten([
+      style={[
         styles.confetti,
         style,
         {
@@ -101,7 +101,7 @@ function ConfettiPiece({
           borderRadius: size / 3,
           backgroundColor: color,
         },
-      ])}
+      ]}
     />
   );
 }
@@ -133,7 +133,7 @@ function PulsingRing({ accentColor }: { accentColor: string }) {
 
   return (
     <Animated.View
-      style={StyleSheet.flatten([styles.pulseRing, ringStyle, { borderColor: accentColor }])}
+      style={[styles.pulseRing, ringStyle, { borderColor: accentColor }]}
     />
   );
 }

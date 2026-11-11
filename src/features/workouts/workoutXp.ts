@@ -200,6 +200,24 @@ export interface WorkoutXpRangePreview {
   hint: string;
 }
 
+/** Reps per minute assumed for a single-exercise AMRAP XP estimate (low / high effort). */
+const SINGLE_AMRAP_REPS_PER_MINUTE = { low: 6, high: 20 } as const;
+
+/** Single-exercise AMRAP: no round target - estimate from a plausible rep pace over the cap. */
+function previewSingleExerciseAmrapXp(exerciseType: ExerciseType, durationSeconds: number): WorkoutXpRangePreview {
+  const minutes = Math.max(1, Math.floor(durationSeconds / 60));
+  const timeBonus = minutes * AMRAP_XP_PER_WORKOUT_MINUTE;
+  const hold = isHoldExercise(exerciseType);
+  const lowAmount = hold ? Math.floor(durationSeconds * 0.25) : minutes * SINGLE_AMRAP_REPS_PER_MINUTE.low;
+  const highAmount = hold ? durationSeconds : minutes * SINGLE_AMRAP_REPS_PER_MINUTE.high;
+
+  return {
+    minXp: scaleAndClampWorkoutXp(getAmountXp(exerciseType, lowAmount) + AMRAP_XP_PER_WORKOUT_MINUTE),
+    maxXp: scaleAndClampWorkoutXp(getAmountXp(exerciseType, highAmount) + timeBonus),
+    hint: hold ? 'Every second you hold before the cap earns XP.' : 'Every rep before the time cap earns XP.',
+  };
+}
+
 export function previewWorkoutSessionXpRange(
   workoutType: CustomWorkoutType,
   exercises: CustomWorkoutExercise[],
@@ -237,6 +255,10 @@ export function previewWorkoutSessionXpRange(
     }
     case 'amrap':
     default: {
+      if (breakdown.length === 1) {
+        return previewSingleExerciseAmrapXp(breakdown[0].exerciseType, durationSeconds);
+      }
+
       const roundRepXp = oneRoundRepXp(breakdown);
       const repsPerRound = sumRequiredRepsFromBreakdown(breakdown);
       const secondsPerRound = Math.max(45, 30 + repsPerRound * 2);

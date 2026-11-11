@@ -4,11 +4,14 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react';
 
 import { useAuth } from '@/features/auth';
+import { detectLevelUp } from '@/features/celebrations/celebrationQueue';
+import { celebrateLevelUp, reconcileCelebratedLevel } from '@/features/celebrations/celebrationStore';
 import { calculateLevel } from '@/features/xp/levelUtils';
 import { formatUserError } from '@/lib/errors';
 import { getProfile } from '@/services/profileService';
@@ -93,6 +96,31 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     void refresh();
   }, [refresh]);
+
+  // Level-up detection for every XP source (local deltas, patches and server refreshes): compare
+  // the level before and after each XP change and queue the celebration popup.
+  const xpBaselineRef = useRef<{ userId: string; totalXp: number } | null>(null);
+  const profileId = profile?.id ?? null;
+  const profileTotalXp = profile?.total_xp ?? null;
+
+  useEffect(() => {
+    if (!profileId || profileTotalXp === null) {
+      return;
+    }
+
+    const previous = xpBaselineRef.current;
+    xpBaselineRef.current = { userId: profileId, totalXp: profileTotalXp };
+
+    if (!previous || previous.userId !== profileId) {
+      void reconcileCelebratedLevel(profileId, profileTotalXp);
+      return;
+    }
+
+    const levelUp = detectLevelUp(previous.totalXp, profileTotalXp);
+    if (levelUp) {
+      void celebrateLevelUp(profileId, levelUp.fromXp, levelUp.toXp);
+    }
+  }, [profileId, profileTotalXp]);
 
   const value = useMemo(
     () => ({
