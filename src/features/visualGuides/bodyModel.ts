@@ -35,6 +35,8 @@ export interface BodyPose {
   rightArm: LimbPose;
   /** Lift the whole body off the floor (meters), e.g. a jump. */
   lift?: number;
+  /** Turn the whole body about the vertical axis (degrees; positive brings the left side forward). */
+  yaw?: number;
 }
 
 export interface Vec3 {
@@ -124,6 +126,15 @@ export function buildSkeleton(pose: BodyPose, options: BuildSkeletonOptions = {}
     joints[`${side}Mouth`] = add(head, add(scale(up, -0.06), { x: 0.025 * sign, y: 0, z: 0.08 }));
   }
 
+  if (pose.yaw) {
+    const cos = Math.cos(rad(pose.yaw));
+    const sin = Math.sin(rad(pose.yaw));
+    for (const name of Object.keys(joints) as JointName[]) {
+      const { x, y, z } = joints[name];
+      joints[name] = { x: x * cos + z * sin, y, z: -x * sin + z * cos };
+    }
+  }
+
   // Rest the lowest joint on the floor (joints sit footHeight above it), then apply any lift.
   const lowest = Math.min(...Object.values(joints).map((joint) => joint.y));
   const shiftY = -lowest + segment.footHeight + (pose.lift ?? 0);
@@ -161,6 +172,7 @@ export function blendPose(a: BodyPose, b: BodyPose, t: number): BodyPose {
     leftArm: mixLimb(a.leftArm, b.leftArm),
     rightArm: mixLimb(a.rightArm, b.rightArm),
     lift: mix(a.lift ?? 0, b.lift ?? 0),
+    yaw: mix(a.yaw ?? 0, b.yaw ?? 0),
   };
 }
 

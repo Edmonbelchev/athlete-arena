@@ -267,10 +267,12 @@ const RUN_ARM_FORWARD: LimbPose = { upperPitch: 32, lowerPitch: 145, upperSpread
 const RUN_ARM_BACK: LimbPose = { upperPitch: -24, lowerPitch: 40, upperSpread: 10, lowerSpread: 6 };
 const RUN_ARM_MID: LimbPose = { upperPitch: 12, lowerPitch: 120, upperSpread: 6, lowerSpread: -26 };
 /**
- * Thigh driven up level with the hip, shin hanging, toes pointed down. The knee goes a little
- * out to the side so the thigh shows from the front (straight at the lens it looks short).
+ * Thigh driven straight up in front to hip level, shin hanging under the knee, toes pointed down -
+ * like sprinting on the spot. The camera looks down a little so the forward thigh shows.
  */
-const KNEE_DRIVE: LimbPose = { upperPitch: 95, lowerPitch: 6, upperSpread: 16, lowerSpread: 8, footPitch: 45 };
+const KNEE_DRIVE: LimbPose = { upperPitch: 92, lowerPitch: -4, upperSpread: 6, lowerSpread: 3, footPitch: 40 };
+/** The standing leg pushes off the ball of the foot. */
+const RUN_SUPPORT_LEG: LimbPose = { upperPitch: 2, lowerPitch: -2, upperSpread: 3, lowerSpread: 3, footPitch: 60 };
 const SUPPORT_LEG: LimbPose = { upperPitch: 0, lowerPitch: 0, upperSpread: 3, lowerSpread: 3, footPitch: 90 };
 /** Between steps: both feet down, arms swinging through. */
 const RUN_FEET_DOWN: BodyPose = {
@@ -283,20 +285,22 @@ const RUN_FEET_DOWN: BodyPose = {
 /** One knee up; the opposite arm drives forward, like running. */
 const kneeUpPose = (side: BodySide): BodyPose => ({
   torsoPitch: 4,
-  leftLeg: side === 'left' ? KNEE_DRIVE : SUPPORT_LEG,
-  rightLeg: side === 'right' ? KNEE_DRIVE : SUPPORT_LEG,
+  lift: 0.05,
+  leftLeg: side === 'left' ? KNEE_DRIVE : RUN_SUPPORT_LEG,
+  rightLeg: side === 'right' ? KNEE_DRIVE : RUN_SUPPORT_LEG,
   leftArm: side === 'left' ? RUN_ARM_BACK : RUN_ARM_FORWARD,
   rightArm: side === 'right' ? RUN_ARM_BACK : RUN_ARM_FORWARD,
 });
 
 const HIGH_KNEES: PoseGuideDefinition = {
-  // Facing the phone, viewed from waist height so the raised thighs show.
-  camera: { height: 1.0, tiltDeg: 0, yawDeg: 0, distance: 2.6 },
+  // Facing the phone, viewed from a little above the hips so the thighs coming forward show.
+  camera: { height: 1.35, tiltDeg: 10, yawDeg: 0, distance: 2.7 },
+  // Quick and springy: a small hop off the ground with each knee, like running on the spot.
   keyframes: [
-    { pose: RUN_FEET_DOWN, moveMs: 170, holdMs: 60 },
-    { pose: kneeUpPose('left'), moveMs: 200, holdMs: 90 },
-    { pose: RUN_FEET_DOWN, moveMs: 170, holdMs: 60 },
-    { pose: kneeUpPose('right'), moveMs: 200, holdMs: 90 },
+    { pose: RUN_FEET_DOWN, moveMs: 130, holdMs: 30 },
+    { pose: kneeUpPose('left'), moveMs: 160, holdMs: 70 },
+    { pose: RUN_FEET_DOWN, moveMs: 130, holdMs: 30 },
+    { pose: kneeUpPose('right'), moveMs: 160, holdMs: 70 },
   ],
   mat: { halfWidth: 0.45, back: -0.45, front: 0.55 },
   // Face-on, the pumping fists sit in front of the chest, level with it by depth.
@@ -399,35 +403,60 @@ const STAR_JUMPS: PoseGuideDefinition = {
   mat: { halfWidth: 0.6, back: -0.45, front: 0.45 },
 };
 
-// --- Knee strikes: facing the phone, fists up in a guard; drive each knee up high. ----------
+// --- Knee strikes: facing the phone, fists up in a guard. Load back, then turn and crunch down into
+// the knee, elbows driving down to meet it. Then the other side. -----------------------------------
 
-/** Thigh driven up above hip level, shin tucked under. */
-const KNEE_STRIKE_LEG: LimbPose = { upperPitch: 110, lowerPitch: 0, upperSpread: 18, lowerSpread: 8, footPitch: 40 };
+/** Feet about shoulder width, knees soft. */
+const KNEE_STRIKE_STANCE_LEG: LimbPose = { upperPitch: 4, lowerPitch: -2, upperSpread: 7, lowerSpread: 5, footPitch: 90 };
+/** Striking leg loaded back behind the body, on its toes. */
+const KNEE_LOAD_LEG: LimbPose = { upperPitch: -22, lowerPitch: -40, upperSpread: 8, lowerSpread: 6, footPitch: 30 };
+/** Knee driven straight up in front of the hips, shin tucked under it. The body's turn carries it across. */
+const KNEE_STRIKE_LEG: LimbPose = { upperPitch: 112, lowerPitch: -34, upperSpread: 4, lowerSpread: 2, footPitch: 20 };
+/** Standing leg pushed straight. */
+const KNEE_STRIKE_SUPPORT_LEG: LimbPose = { upperPitch: 0, lowerPitch: 0, upperSpread: 4, lowerSpread: 3, footPitch: 80 };
+/** Arms reaching forward at head height, as if grabbing to pull something down onto the knee. */
+const KNEE_REACH_ARM: LimbPose = { upperPitch: 78, lowerPitch: 98, upperSpread: 14, lowerSpread: -16 };
+/** Elbows driven down to the knee, fists by the face. */
+const ELBOW_DRIVE_ARM: LimbPose = { upperPitch: 34, lowerPitch: 155, upperSpread: 6, lowerSpread: -24 };
+
 const KNEE_GUARD: BodyPose = {
   torsoPitch: 4,
-  leftLeg: SUPPORT_LEG,
-  rightLeg: SUPPORT_LEG,
+  leftLeg: KNEE_STRIKE_STANCE_LEG,
+  rightLeg: KNEE_STRIKE_STANCE_LEG,
   leftArm: GUARD_ARM,
   rightArm: GUARD_ARM,
 };
-/** One knee up; the torso leans back a little into the strike, guard stays up. */
+/** Wind-up: striking leg back, chest tall, arms reaching up; a slight turn away from the strike. */
+const kneeLoadPose = (side: BodySide): BodyPose => ({
+  torsoPitch: -6,
+  yaw: side === 'left' ? -10 : 10,
+  leftLeg: side === 'left' ? KNEE_LOAD_LEG : KNEE_STRIKE_SUPPORT_LEG,
+  rightLeg: side === 'right' ? KNEE_LOAD_LEG : KNEE_STRIKE_SUPPORT_LEG,
+  leftArm: KNEE_REACH_ARM,
+  rightArm: KNEE_REACH_ARM,
+});
+/** The strike: hips turn so the knee drives across, chest crunches down onto it, elbows meet it. */
 const kneeStrikePose = (side: BodySide): BodyPose => ({
-  ...KNEE_GUARD,
-  torsoPitch: -4,
-  leftLeg: side === 'left' ? KNEE_STRIKE_LEG : SUPPORT_LEG,
-  rightLeg: side === 'right' ? KNEE_STRIKE_LEG : SUPPORT_LEG,
+  torsoPitch: 24,
+  yaw: side === 'left' ? 22 : -22,
+  leftLeg: side === 'left' ? KNEE_STRIKE_LEG : KNEE_STRIKE_SUPPORT_LEG,
+  rightLeg: side === 'right' ? KNEE_STRIKE_LEG : KNEE_STRIKE_SUPPORT_LEG,
+  leftArm: ELBOW_DRIVE_ARM,
+  rightArm: ELBOW_DRIVE_ARM,
 });
 
 const KNEE_STRIKES: PoseGuideDefinition = {
-  // Same view as high knees: waist height, so the raised thighs show.
-  camera: { height: 1.0, tiltDeg: 0, yawDeg: 0, distance: 2.6 },
+  // Waist height, so the knee driving across the body shows.
+  camera: { height: 1.05, tiltDeg: 0, yawDeg: 0, distance: 2.8 },
   keyframes: [
-    { pose: KNEE_GUARD, moveMs: 200, holdMs: 160 },
-    { pose: kneeStrikePose('left'), moveMs: 180, holdMs: 120 },
-    { pose: KNEE_GUARD, moveMs: 200, holdMs: 160 },
-    { pose: kneeStrikePose('right'), moveMs: 180, holdMs: 120 },
+    { pose: KNEE_GUARD, moveMs: 240, holdMs: 140 },
+    { pose: kneeLoadPose('left'), moveMs: 220, holdMs: 60 },
+    { pose: kneeStrikePose('left'), moveMs: 170, holdMs: 150 },
+    { pose: KNEE_GUARD, moveMs: 240, holdMs: 140 },
+    { pose: kneeLoadPose('right'), moveMs: 220, holdMs: 60 },
+    { pose: kneeStrikePose('right'), moveMs: 170, holdMs: 150 },
   ],
-  mat: { halfWidth: 0.45, back: -0.45, front: 0.55 },
+  mat: { halfWidth: 0.5, back: -0.5, front: 0.55 },
   limbsInFrontOfBody: true,
 };
 
