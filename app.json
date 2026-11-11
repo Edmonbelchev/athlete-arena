@@ -2,7 +2,7 @@
   "expo": {
     "name": "Athlete Arena",
     "slug": "athlete-arena",
-    "version": "1.3.0",
+    "version": "1.5.0",
     "orientation": "default",
     "icon": "./assets/images/logo.png",
     "scheme": "athletearena",
