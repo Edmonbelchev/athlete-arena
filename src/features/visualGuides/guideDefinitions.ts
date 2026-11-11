@@ -352,25 +352,28 @@ const TUCK_JUMPS: PoseGuideDefinition = {
 
 /** Fists up by the chin, elbows bent in front of the body. */
 const GUARD_ARM: LimbPose = { upperPitch: 38, lowerPitch: 150, upperSpread: 2, lowerSpread: -26 };
-/** Arm straight out at shoulder height, aimed a little in toward the centerline. */
-const PUNCH_ARM: LimbPose = { upperPitch: 86, lowerPitch: 88, upperSpread: -10, lowerSpread: -10 };
+/** Arm punched in toward the centerline, aimed a little low so from the floor it crosses the chest, not the face. */
+const PUNCH_ARM: LimbPose = { upperPitch: 66, lowerPitch: 68, upperSpread: -8, lowerSpread: -8 };
 const BOXING_STANCE = {
   leftLeg: { upperPitch: 14, lowerPitch: -4, upperSpread: 6, lowerSpread: 4, footPitch: 90 },
   rightLeg: { upperPitch: -14, lowerPitch: -20, upperSpread: 6, lowerSpread: 4, footPitch: 60 },
 };
-const BOXING_GUARD: BodyPose = { torsoPitch: 6, ...BOXING_STANCE, leftArm: GUARD_ARM, rightArm: GUARD_ARM };
-const JAB: BodyPose = { ...BOXING_GUARD, torsoPitch: 9, leftArm: PUNCH_ARM };
-const CROSS: BodyPose = { ...BOXING_GUARD, torsoPitch: 11, rightArm: PUNCH_ARM };
+/** Fists at the chin (a touch lower than the knee-strike guard, so the face shows from the floor). */
+const BOX_GUARD_ARM: LimbPose = { upperPitch: 24, lowerPitch: 128, upperSpread: 8, lowerSpread: -22 };
+const BOXING_GUARD: BodyPose = { torsoPitch: 6, ...BOXING_STANCE, leftArm: BOX_GUARD_ARM, rightArm: BOX_GUARD_ARM };
+// Each punch turns the hips and shoulders into it (the cross, from the back hand, turns more).
+const JAB: BodyPose = { ...BOXING_GUARD, torsoPitch: 9, yaw: 14, leftArm: PUNCH_ARM };
+const CROSS: BodyPose = { ...BOXING_GUARD, torsoPitch: 11, yaw: -22, rightArm: PUNCH_ARM };
 
 const SHADOW_BOXING: PoseGuideDefinition = {
-  // Facing the phone. Viewed from just above the shoulders, punches land in front of the chest
-  // instead of rising across the face (a punch straight at the lens has no length to show).
-  camera: { height: 1.6, tiltDeg: 8, yawDeg: 0, distance: 1.9 },
+  // Phone on the floor like in a real workout, facing the person. Punches aim in toward the
+  // centerline and a little low, so from below they cross the chest instead of the face.
+  camera: { ...PHONE_ON_FLOOR, yawDeg: 0, distance: 2.5 },
   keyframes: [
-    { pose: BOXING_GUARD, moveMs: 160, holdMs: 260 },
-    { pose: JAB, moveMs: 130, holdMs: 100 },
-    { pose: BOXING_GUARD, moveMs: 150, holdMs: 200 },
-    { pose: CROSS, moveMs: 140, holdMs: 100 },
+    { pose: BOXING_GUARD, moveMs: 160, holdMs: 260, anchor: 'feet' },
+    { pose: JAB, moveMs: 130, holdMs: 100, anchor: 'feet' },
+    { pose: BOXING_GUARD, moveMs: 150, holdMs: 200, anchor: 'feet' },
+    { pose: CROSS, moveMs: 140, holdMs: 100, anchor: 'feet' },
   ],
   mat: { halfWidth: 0.45, back: -0.5, front: 0.5 },
 };
