@@ -65,6 +65,9 @@ export function SpinWheel({ segments, size = 280, target, onSpinEnd }: SpinWheel
   const radius = center - RIM_WIDTH;
   const hubSize = radius * HUB_SIZE_RATIO;
   const step = segments.length > 0 ? 360 / segments.length : 360;
+  // Svg width/height props are not tablet-scaled like styles are (see lib/tabletScale), so the
+  // drawings fill their (scaled) container through a viewBox instead of fixed pixel sizes.
+  const viewBox = `0 0 ${size} ${size}`;
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ rotate: `${rotation.value}deg` }],
@@ -97,7 +100,7 @@ export function SpinWheel({ segments, size = 280, target, onSpinEnd }: SpinWheel
   return (
     <View style={[styles.container, { width: size, height: size }]}>
       {/* Static frame with marquee bulbs; the wheel turns inside it. */}
-      <Svg width={size} height={size} style={StyleSheet.absoluteFill}>
+      <Svg width="100%" height="100%" viewBox={viewBox} style={StyleSheet.absoluteFill}>
         <Circle cx={center} cy={center} r={center - 1} fill="#1E293B" />
         <Circle cx={center} cy={center} r={center - 1} stroke={theme.streak} strokeWidth={2} fill="none" />
         {Array.from({ length: RIM_BULBS }, (_, index) => {
@@ -114,7 +117,7 @@ export function SpinWheel({ segments, size = 280, target, onSpinEnd }: SpinWheel
         })}
       </Svg>
       <Animated.View style={[animatedStyle, { width: size, height: size }]}>
-        <Svg width={size} height={size}>
+        <Svg width="100%" height="100%" viewBox={viewBox}>
           <Circle cx={center} cy={center} r={radius} fill={theme.backgroundSelected} />
 
           {segments.map((segment, index) => (
@@ -165,7 +168,7 @@ export function SpinWheel({ segments, size = 280, target, onSpinEnd }: SpinWheel
       </View>
 
       <View pointerEvents="none" style={styles.pointer}>
-        <Svg width={32} height={48} viewBox="0 0 32 48">
+        <Svg width="100%" height="100%" viewBox="0 0 32 48">
           <Path
             d="M16 46.5 L2.5 15 A13.5 13.5 0 1 1 29.5 15 Z"
             fill={theme.streak}
@@ -194,6 +197,8 @@ const styles = StyleSheet.create({
   },
   pointer: {
     position: 'absolute',
+    width: 32,
+    height: 48,
     // Keeps the tip on the wheel's rim, with the head above the frame.
     top: -23,
   },
