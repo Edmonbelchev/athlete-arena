@@ -78,8 +78,8 @@ export function LevelUpCelebrationModal({ celebration, onClose }: LevelUpCelebra
       setDisplayLevel(next.level);
       setBurst((value) => value + 1);
       levelScale.value = withSequence(
-        withTiming(1.35, { duration: 140, easing: Easing.out(Easing.quad) }),
-        withSpring(1, { damping: 9, stiffness: 180 }),
+        withTiming(1.12, { duration: 160, easing: Easing.out(Easing.quad) }),
+        withSpring(1, { damping: 20, stiffness: 160 }),
       );
       glow.value = withSequence(withTiming(1, { duration: 140 }), withTiming(0, { duration: 600 }));
       if (Platform.OS !== 'web') {
@@ -102,7 +102,7 @@ export function LevelUpCelebrationModal({ celebration, onClose }: LevelUpCelebra
   }));
   const glowStyle = useAnimatedStyle(() => ({
     opacity: glow.value * 0.6,
-    transform: [{ scale: 1 + glow.value * 0.25 }],
+    transform: [{ scale: 1 + glow.value * 0.15 }],
   }));
 
   return (
@@ -115,7 +115,7 @@ export function LevelUpCelebrationModal({ celebration, onClose }: LevelUpCelebra
       {...(Platform.OS === 'ios' ? { presentationStyle: 'overFullScreen' as const } : {})}>
       <View style={styles.backdrop}>
         <Animated.View
-          entering={ZoomIn.springify().damping(14)}
+          entering={ZoomIn.springify().damping(24).stiffness(180)}
           style={StyleSheet.flatten([
             styles.card,
             { backgroundColor: theme.backgroundElement, borderColor: theme.xp, shadowColor: theme.xp },

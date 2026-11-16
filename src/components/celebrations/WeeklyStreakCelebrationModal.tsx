@@ -25,16 +25,26 @@ import { useTheme } from '@/hooks/use-theme';
 const DAY_POP_INTERVAL_MS = 130;
 const FIRST_DAY_DELAY_MS = 350;
 
-function StreakDay({ index, color, trackColor }: { index: number; color: string; trackColor: string }) {
+function StreakDay({
+  index,
+  color,
+  trackColor,
+  labelColor,
+}: {
+  index: number;
+  color: string;
+  trackColor: string;
+  labelColor: string;
+}) {
   const fill = useSharedValue(0);
-  const scale = useSharedValue(0.6);
+  const scale = useSharedValue(0.85);
 
   useEffect(() => {
     const delay = FIRST_DAY_DELAY_MS + index * DAY_POP_INTERVAL_MS;
     fill.value = withDelay(delay, withTiming(1, { duration: 180 }));
     scale.value = withDelay(
       delay,
-      withSequence(withTiming(1.25, { duration: 140 }), withSpring(1, { damping: 8, stiffness: 200 })),
+      withSequence(withTiming(1.08, { duration: 160 }), withSpring(1, { damping: 20, stiffness: 180 })),
     );
   }, [fill, index, scale]);
 
@@ -44,8 +54,11 @@ function StreakDay({ index, color, trackColor }: { index: number; color: string;
   }));
 
   return (
-    <Animated.View style={[styles.day, style, { backgroundColor: color, borderColor: trackColor }]}>
-      <Text style={styles.dayLabel}>{index + 1}</Text>
+    <Animated.View style={[styles.dayColumn, style]}>
+      <View style={StyleSheet.flatten([styles.day, { backgroundColor: color, borderColor: trackColor }])}>
+        <AppIcon name="flame" size={16} color="#FFFFFF" weight="bold" />
+      </View>
+      <Text style={StyleSheet.flatten([styles.dayLabel, { color: labelColor }])}>{index + 1}</Text>
     </Animated.View>
   );
 }
@@ -67,7 +80,7 @@ export function WeeklyStreakCelebrationModal({ celebration, onClose }: WeeklyStr
       rewardDelay,
       withRepeat(
         withSequence(
-          withTiming(1.12, { duration: 650, easing: Easing.out(Easing.quad) }),
+          withTiming(1.05, { duration: 650, easing: Easing.out(Easing.quad) }),
           withTiming(1, { duration: 650, easing: Easing.in(Easing.quad) }),
         ),
         -1,
@@ -99,7 +112,7 @@ export function WeeklyStreakCelebrationModal({ celebration, onClose }: WeeklyStr
       {...(Platform.OS === 'ios' ? { presentationStyle: 'overFullScreen' as const } : {})}>
       <View style={styles.backdrop}>
         <Animated.View
-          entering={ZoomIn.springify().damping(14)}
+          entering={ZoomIn.springify().damping(24).stiffness(180)}
           style={StyleSheet.flatten([
             styles.card,
             { backgroundColor: theme.backgroundElement, borderColor: theme.streak, shadowColor: theme.streak },
@@ -119,11 +132,17 @@ export function WeeklyStreakCelebrationModal({ celebration, onClose }: WeeklyStr
 
           <View style={styles.dayRow}>
             {Array.from({ length: days }, (_, index) => (
-              <StreakDay key={index} index={index} color={theme.streak} trackColor={theme.backgroundElement} />
+              <StreakDay
+                key={index}
+                index={index}
+                color={theme.streak}
+                trackColor={theme.backgroundElement}
+                labelColor={theme.streak}
+              />
             ))}
           </View>
 
-          <Animated.View entering={FadeInUp.delay(rewardDelay).springify()} style={styles.reward}>
+          <Animated.View entering={FadeInUp.delay(rewardDelay).duration(320)} style={styles.reward}>
             <Text style={StyleSheet.flatten([styles.rewardLabel, { color: theme.textSecondary }])}>Streak bonus</Text>
             <XpCoinRewardLabel
               xp={celebration.rewardXp}
@@ -194,8 +213,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'center',
-    gap: Spacing.two,
+    gap: 3,
     marginVertical: Spacing.two,
+  },
+  dayColumn: {
+    alignItems: 'center',
+    gap: 3,
   },
   day: {
     width: 34,
@@ -206,9 +229,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   dayLabel: {
-    color: '#FFFFFF',
-    fontSize: 13,
-    fontWeight: '900',
+    fontSize: 11,
+    fontWeight: '800',
+    fontVariant: ['tabular-nums'],
   },
   reward: {
     alignItems: 'center',
