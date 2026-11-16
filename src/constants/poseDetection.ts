@@ -116,6 +116,52 @@ export const PUSH_UP_POSTURE = {
   maxWristDriftUpFromFloor: isNativeMobile ? 0.04 : 0.035,
   /** Minimum wrist drop from shoulders while a front-view set is active. */
   minWristBelowShoulderActive: isNativeMobile ? 0.012 : 0.015,
+  /**
+   * Front-view plank with a low, close camera: the hips sit well below the shoulders on screen
+   * (often more than `maxShoulderAboveHipFrontPlank`). Above that span the plank still arms when
+   * the shoulder-to-hip span stays under this many aspect-corrected shoulder widths - standing
+   * upright facing the camera measures ~1.3 or more.
+   */
+  maxTorsoSpanToShoulderWidthFront: 1.0,
+  /** With the wider span above, wrists must sit this share of the span below the hips (on the floor). */
+  minWristBelowHipToSpanFront: 0.3,
+} as const;
+
+/**
+ * Front-view push-up reps (facing the camera). Elbow angles are foreshortened in this view and
+ * low frame rates plus smoothing clip the deepest frame, so depth is measured as the shoulder drop
+ * relative to the arm span (wrists to shoulders) at the top of the rep, with hysteresis.
+ */
+export const PUSH_UP_FRONT_REP = {
+  /** Shoulder drop from the rep top, as a share of the top arm span, that counts as the bottom. */
+  minBottomDepth: 0.18,
+  /** Elbows bent at the bottom: 2D angle at most this (degrees)... */
+  maxBottomElbowAngle: 135,
+  /** ...or at least this many degrees more bent than at the top of the same rep (shallow reps). */
+  minElbowFlexFromTop: 25,
+  /** Depth (share of the arm span) at which a descent starts - below this the body is at the top. */
+  descentStartDepth: 0.08,
+  /** Back at the top: the remaining depth is at most this share of the deepest depth of the rep. */
+  maxTopDepthToBottomDepth: 0.4,
+  /** Elbow extension required to finish a rep (allows a slightly soft lockout late in a set)... */
+  minTopElbowAngle: 130,
+  /** ...or this much straighter than the most-bent frame of the rep (lockout reads under 130°). */
+  minElbowExtensionFromBottom: 15,
+  /** Hands stay planted: max wrist travel during a rep, in shoulder widths (x) / arm spans (y). */
+  maxWristShiftShoulderWidths: 0.35,
+  maxWristShiftArmSpans: 0.2,
+  /**
+   * Consecutive frames failing the hands / body checks that are skipped before the rep is
+   * abandoned - one glitched landmark frame spreads over ~2 frames after smoothing.
+   */
+  maxUnsteadyFrames: 2,
+  /** Apparent shoulder width may grow (leaning toward the camera) or shrink this much mid-rep. */
+  minShoulderWidthRatio: 0.7,
+  maxShoulderWidthRatio: 1.45,
+  /** Arm span (wrists below shoulders) at the top must be at least this (normalized y). */
+  minTopArmSpan: 0.06,
+  /** Consecutive out-of-plank frames at the top before the top line is dropped (glitch tolerance). */
+  plankBreakFramesBeforeTopReset: 3,
 } as const;
 
 export const PULL_UP_THRESHOLDS = {
@@ -268,28 +314,89 @@ export const PLANK_POSTURE = {
   minUpperArmDrop: 0.55,
   /** Elbow sideways offset allowed per unit of drop - the upper arm stands near vertical. */
   maxUpperArmSlant: 0.5,
+  /**
+   * Upper-arm slant allowed while the timer runs. Turning or dropping the head pulls the near
+   * shoulder landmark inward (measured on device: 0.45-0.75 for a second in a steady plank).
+   */
+  holdingUpperArmSlant: 1.0,
   /** Hips below the shoulder→foot line, measured straight down (shoulder widths) - sagging. */
   maxHipSag: 0.32,
   /** Hips above the shoulder→foot line (shoulder widths) - piking. */
   maxHipPike: 0.25,
+  /**
+   * Piking limit when the knee ends the body line (ankle hidden). The short shoulder→knee chord
+   * reads hips higher than they are - real planks on device measured 0.1-0.45 - and a sharply
+   * bent hip is still caught by minHipAngle.
+   */
+  maxHipPikeFromKnee: 0.6,
   /** Knee below the hip→ankle line (shoulder widths) - knees dropped to the floor. */
   maxKneeDrop: 0.2,
   /**
    * Knee and ankle confidence needed for the knees-down check. Lower legs on the floor are the
    * model's weakest points (dark floors, furniture, far side); a misplaced ankle makes a straight
-   * leg look bent, so the check is skipped rather than guessed when tracking is weak.
+   * leg look bent, so the check is skipped rather than guessed when tracking is weak. A hidden
+   * ankle (behind furniture) was measured on device at 0.8 visibility, guessed under the knee.
    */
-  kneeCheckMinVisibility: 0.8,
+  kneeCheckMinVisibility: 0.85,
+  /**
+   * Shoulder→hip→knee angle on screen (degrees) below this is a bent hip: kneeling, tabletop
+   * (hands and knees), child's pose. A straight body stays a straight line from any camera angle,
+   * so a plank reads 150-180°; the hands-and-knees thigh hangs straight down and reads 90-130°.
+   * Judged from the knee, which stays tracked when the ankles are hidden or out of frame.
+   */
+  minHipAngle: 140,
+  /** While the timer runs the hip may bend this much further (degrees) - borderline frames do not flicker. */
+  holdingHipAngleSlack: 10,
+  /** Thigh shorter than this on screen (body-scale units) is too foreshortened to judge the hip angle. */
+  minThighLength: 0.25,
+  /**
+   * Hip→knee→ankle angle (degrees) at or above which the leg reads straight and the ankle always
+   * ends the body line. Below it, an ankle under kneeCheckMinVisibility is checked for a guess.
+   */
+  minStraightLegAngle: 150,
+  /**
+   * A weakly tracked ankle that bends the leg is a guess - the knee then ends the body line - when
+   * it sits this far above the knee on screen (body-scale units)... Hidden feet are guessed folded
+   * back up toward the hip: on device 0.2-0.8 above the knee. Feet on the floor (a knee plank)
+   * read at most ~0.16 above the knee, since the floor only rises slowly toward the horizon.
+   */
+  maxAnkleRiseAboveKnee: 0.2,
+  /**
+   * ...or folds the shin back onto the thigh: hip→knee→ankle under this many degrees (device
+   * guesses read 0-80°; a knee plank with the shins on the floor reads 78° or more on screen).
+   */
+  minPlausibleLegAngle: 60,
+  /** Sag / pike limits are this much looser while the timer runs (hysteresis against flicker). */
+  holdingFormSlack: 1.3,
   /** Good form this long before the timer starts (ms). */
   settleMs: 800,
   /** Good form this long to resume after a pause (ms). */
   resumeMs: 400,
-  /** Bad form tolerated before the timer pauses (ms); not counted toward the hold. */
+  /** Share of the settle / resume window that must be good form - single misread frames do not reset it. */
+  minStartGoodShare: 0.75,
+  /** Bad form tolerated before the timer pauses (ms); credited if form returns in time. */
   graceMs: 1000,
-  /** Tracking lost (body out of view) tolerated before the timer pauses (ms). */
+  /**
+   * Good form needed to end a glitch and credit it (ms): the glitch's own length, up to this.
+   * A lone good-looking frame inside a wrong position (tabletop, kneeling) does not end it.
+   */
+  glitchCloseMs: 200,
+  /**
+   * Tracking lost (body out of view) tolerated before the timer pauses (ms). Also the most a glitch
+   * (bad form, lost tracking and frame gaps together) can last and still be credited.
+   */
   lostGraceMs: 1200,
-  /** Longest frame gap counted toward the hold (ms) - dropped frames do not add time. */
-  maxFrameGapMs: 250,
+  /**
+   * The timer also pauses once this share of the last `badShareWindowMs` was bad form, so a
+   * wrong position with an occasional good-looking frame (tabletop, kneeling) never keeps it running.
+   */
+  maxBadShare: 0.6,
+  badShareWindowMs: 2000,
+  /**
+   * Longest gap between frames still counted as held time (ms). Longer gaps (no pose delivered)
+   * pause the timer - what happened in between is unknown. Time-based, so it works at any frame rate.
+   */
+  maxFrameGapMs: 1200,
 } as const;
 
 export const BURPEE_THRESHOLDS = {

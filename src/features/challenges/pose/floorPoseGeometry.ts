@@ -75,6 +75,11 @@ export function setFloorViewAspect(aspect: number): void {
   }
 }
 
+/** Width / height of the camera preview (see `setFloorViewAspect`). */
+export function getFloorViewAspect(): number {
+  return viewAspect;
+}
+
 /** Aspect-corrected point: one unit of x covers the same screen distance as one unit of y. */
 export function toFloorSpace(landmark: PoseLandmark): Point2D {
   return { x: landmark.x * viewAspect, y: landmark.y };
