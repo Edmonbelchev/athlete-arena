@@ -1,5 +1,6 @@
 import { POSE_REP_MIN_VISIBILITY, PUSH_UP_POSTURE } from '@/constants/poseDetection';
 
+import { getFloorViewAspect } from './floorPoseGeometry';
 import { PoseLandmarkIndex, type PoseLandmark } from './landmarks';
 import { getAverageShoulderY, getAverageWristY } from './pullUpPosture';
 
@@ -298,7 +299,7 @@ export function isFrontViewPushUpPlank(landmarks: PoseLandmark[]): boolean {
   const torsoSpan = hipY - shoulderY;
   if (
     torsoSpan < PUSH_UP_POSTURE.minShoulderAboveHipFront ||
-    torsoSpan > PUSH_UP_POSTURE.maxShoulderAboveHipFrontPlank
+    !isFrontPlankTorsoSpanOk(torsoSpan, shoulderWidth, wristY, hipY)
   ) {
     return false;
   }
@@ -309,6 +310,30 @@ export function isFrontViewPushUpPlank(landmarks: PoseLandmark[]): boolean {
   }
 
   return true;
+}
+
+/**
+ * Shoulder-to-hip span on screen for a front-view plank. A low camera close to the head makes the
+ * span large (hips far below the shoulders on screen) even in a perfect plank, so beyond the fixed
+ * limit the span is judged against shoulder width (scale-free) and the wrists must sit clearly
+ * below the hips, i.e. on the floor in front of the body rather than hanging at the sides.
+ */
+function isFrontPlankTorsoSpanOk(
+  torsoSpan: number,
+  shoulderWidth: number,
+  wristY: number,
+  hipY: number,
+): boolean {
+  if (torsoSpan <= PUSH_UP_POSTURE.maxShoulderAboveHipFrontPlank) {
+    return true;
+  }
+
+  const shoulderWidthY = shoulderWidth * getFloorViewAspect();
+  if (torsoSpan > shoulderWidthY * PUSH_UP_POSTURE.maxTorsoSpanToShoulderWidthFront) {
+    return false;
+  }
+
+  return wristY - hipY >= torsoSpan * PUSH_UP_POSTURE.minWristBelowHipToSpanFront;
 }
 
 /** Relaxed front-view check while reps are in progress (shoulders move; wrists stay on floor). */
@@ -324,8 +349,15 @@ export function isFrontViewPushUpActive(landmarks: PoseLandmark[]): boolean {
 
   const shoulderY = getAverageShoulderY(landmarks);
   const wristY = getAverageWristY(landmarks);
+  const hipY = getAverageHipY(landmarks);
 
-  if (shoulderY === null || wristY === null) {
+  if (shoulderY === null || wristY === null || hipY === null) {
+    return false;
+  }
+
+  // Facing the camera the hips always sit below the shoulders on screen; hips above them is a
+  // flipped (garbage) pose, e.g. while walking back to the phone.
+  if (hipY <= shoulderY) {
     return false;
   }
 
@@ -476,7 +508,7 @@ export function getPushUpPlankHint(landmarks: PoseLandmark[]): string | null {
       return 'Keep your shoulders above your hips in the plank';
     }
 
-    if (torsoSpan > PUSH_UP_POSTURE.maxShoulderAboveHipFrontPlank) {
+    if (!isFrontPlankTorsoSpanOk(torsoSpan, shoulderWidth, wristY, hipY)) {
       return 'Lower into a plank - standing or bent-over arm motion will not count';
     }
 

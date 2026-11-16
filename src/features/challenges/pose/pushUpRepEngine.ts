@@ -1,8 +1,9 @@
-import { PUSH_UP_POSTURE, PUSH_UP_THRESHOLDS } from '@/constants/poseDetection';
+import { PUSH_UP_FRONT_REP, PUSH_UP_POSTURE, PUSH_UP_THRESHOLDS } from '@/constants/poseDetection';
 import type { PushUpPhase } from '@/features/challenges/poseDetection.types';
 
 import { ElbowRepEngine } from './elbowRepEngine';
 import { pushUpElbowAngle, type PoseLandmark } from './landmarks';
+import { PushUpFrontRepCounter } from './pushUpFrontRepCounter';
 import {
   detectPushUpViewMode,
   getPushUpPlankHint,
@@ -27,6 +28,8 @@ function toPushUpThresholds(): AngleThresholdConfig {
 
 export class PushUpRepEngine {
   private readonly elbowEngine: ElbowRepEngine;
+  /** Front-view (facing the camera) reps - depth-normalized; side view keeps the elbow engine. */
+  private readonly frontCounter = new PushUpFrontRepCounter();
   private readyFrames = 0;
   private topHoldFrames = 0;
   private repCountingEnabled = false;
@@ -50,7 +53,11 @@ export class PushUpRepEngine {
   }
 
   get phase(): PushUpPhase {
-    return this.elbowEngine.phase;
+    return this.usesFrontCounter() ? this.frontCounter.phase : this.elbowEngine.phase;
+  }
+
+  private usesFrontCounter(): boolean {
+    return this.isArmed && this.viewMode === 'front';
   }
 
   get armed(): boolean {
@@ -97,6 +104,11 @@ export class PushUpRepEngine {
 
       if (!midRep) {
         this.plankBreakFrames += 1;
+        // A rep has to run plank → bottom → plank, so a real break needs a fresh top - but a
+        // glitch frame or two between reps must not cost the next rep.
+        if (this.plankBreakFrames >= PUSH_UP_FRONT_REP.plankBreakFramesBeforeTopReset) {
+          this.frontCounter.reset();
+        }
         if (this.plankBreakFrames >= this.plankBreakFramesBeforeRelease()) {
           this.releaseSet();
         }
@@ -150,7 +162,9 @@ export class PushUpRepEngine {
     this.recalibrateFloorAtTop(landmarks);
     this.syncRepTopBaseline(landmarks);
 
-    const repCompleted = this.elbowEngine.update(landmarks);
+    const repCompleted = this.usesFrontCounter()
+      ? this.frontCounter.update(landmarks)
+      : this.elbowEngine.update(landmarks);
 
     if (
       this.repCountingEnabled &&
@@ -210,6 +224,7 @@ export class PushUpRepEngine {
     this.offFloorFrames = 0;
     this.plankBreakFrames = 0;
     this.elbowEngine.reset();
+    this.frontCounter.reset();
 
     if (this.hadActiveSet) {
       this.enableRepCounting();
@@ -230,6 +245,7 @@ export class PushUpRepEngine {
     this.repAttemptActive = false;
     this.previousPhase = 'UP';
     this.elbowEngine.reset();
+    this.frontCounter.reset();
   }
 
   /** Track arm extension while arming or waiting to enable rep counting. */
@@ -296,6 +312,7 @@ export class PushUpRepEngine {
   /** No longer in a push-up plank - stop counting until a new plank is held. */
   private releaseSet(): void {
     this.elbowEngine.reset();
+    this.frontCounter.reset();
     this.readyFrames = 0;
     this.topHoldFrames = 0;
     this.repCountingEnabled = false;
@@ -310,6 +327,7 @@ export class PushUpRepEngine {
 
   reset(): void {
     this.elbowEngine.reset();
+    this.frontCounter.reset();
     this.readyFrames = 0;
     this.topHoldFrames = 0;
     this.repCountingEnabled = false;

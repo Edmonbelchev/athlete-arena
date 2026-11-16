@@ -190,7 +190,7 @@ export class ExercisePoseTracker {
 
   process(landmarks: PoseLandmark[], options: PoseTrackerFrameOptions): PoseTrackerFrameResult {
     return landmarks.length === 0
-      ? this.processEmpty()
+      ? this.processEmpty(options)
       : this.processFrame(landmarks, options);
   }
 
@@ -209,7 +209,7 @@ export class ExercisePoseTracker {
     };
   }
 
-  private processEmpty(): PoseTrackerFrameResult {
+  private processEmpty({ counting }: PoseTrackerFrameOptions): PoseTrackerFrameResult {
     const exerciseType = this.type;
     const pullUpArmedEmpty =
       exerciseType === 'pull_ups' && (this.engine as unknown as PullUpRepEngine).armed;
@@ -225,8 +225,11 @@ export class ExercisePoseTracker {
       exerciseType === 'lunges' && (this.engine as unknown as LungeRepEngine).armed;
 
     // A partial jumping-jack or lunge cycle must not survive leaving the camera; a plank pauses.
+    // The plank may still hand over a second it already earned (it reports one per call).
+    let plankSecondCounted = false;
     if (exerciseType === 'jumping_jacks' || exerciseType === 'lunges' || exerciseType === 'plank') {
-      this.engine.update([]);
+      const completed = this.engine.update([]);
+      plankSecondCounted = exerciseType === 'plank' && completed && counting;
     }
 
     const quality = this.gate.evaluate([], {
@@ -252,7 +255,7 @@ export class ExercisePoseTracker {
 
     const trackingStatus = resolveExerciseTrackingStatus(exerciseType, quality, this.engine);
     const coachSeverity = getCoachSeverity(exerciseType, this.engine, [], quality, trackingStatus);
-    return this.result(trackingStatus, coachSeverity, false);
+    return this.result(trackingStatus, coachSeverity, plankSecondCounted);
   }
 
   private processFrame(
@@ -324,7 +327,9 @@ export class ExercisePoseTracker {
       (exerciseType === 'jumping_jacks' && (engine as unknown as JumpingJackRepEngine).armed) ||
       (exerciseType === 'lunges' && (engine as unknown as LungeRepEngine).armed) ||
       (exerciseType === 'sit_ups' && (engine as unknown as SitUpRepEngine).armed) ||
-      (exerciseType === 'plank' && (engine as unknown as PlankHoldEngine).isHolding) ||
+      // The plank engine only returns true for a second already held - also on the frame that
+      // pauses it, when a credited glitch adds two seconds at once.
+      exerciseType === 'plank' ||
       (STANDING_CARDIO_EXERCISES.has(exerciseType) &&
         (engine as unknown as StandingCardioEngine).armed);
 
